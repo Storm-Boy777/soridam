@@ -217,7 +217,7 @@ opictalkdoc/
     │   ├── types/reviews.ts       # 타입 정의
     │   ├── validations/reviews.ts # Zod 스키마
     │   ├── utils/combo-extractor.ts
-    │   ├── auth.ts
+    │   ├── auth.ts               # getUser() + getAuthClaims()
     │   ├── supabase.ts
     │   └── supabase-server.ts
     ├── middleware.ts       # 인증 세션 관리
@@ -434,10 +434,17 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
   - 시험후기: Server Actions only (AI 호출 없음)
   - 스크립트/모의고사/튜터링: CRUD=SA, AI=EF (GPT/Whisper/Gemini TTS/Azure)
   - 비용 영향 없음 (Vercel Hobby $0 + Supabase Pro $25)
+- **페이지 전환 성능 최적화** (3단계):
+  - **Granular Suspense + Streaming**: 레이아웃/페이지의 데이터 의존 섹션만 Suspense로 감싸서 셸 즉시 렌더 (fa60983)
+  - **getClaims() 로컬 JWT 검증 도입**: 표시용 컴포넌트에서 getUser()(34-43ms 서버 왕복) → getAuthClaims()(JWKS 캐시 후 0ms) 교체 (3210ba0)
+    - `lib/auth.ts`에 `getAuthClaims()` 추가 (Asymmetric JWT ES256, WebCrypto 로컬 서명 검증)
+    - 대시보드 레이아웃(배너), 대시보드 페이지(통계 카드, 사이드 패널)에 적용
+    - 마이페이지는 최신 데이터 필요 → `getUser()` 유지
+  - **사용 구분 원칙**: `getUser()` = 프로필 편집, Server Actions (최신 데이터 필수) / `getAuthClaims()` = 표시용 UI (통계, 배너, 등급 표시)
 
 ## 🔮 현재 상태 & 다음 단계
 
-**현재**: Phase 3 (핵심 모듈 이관) — Step 1 시험후기 완료 (DB 실행 + 빌드 + 배포 완료)
+**현재**: Phase 3 (핵심 모듈 이관) — Step 1 시험후기 완료 + 페이지 전환 성능 최적화 완료
 **다음 작업**: Step 2 — 스크립트+쉐도잉 모듈 이관 (Server Actions + Edge Functions 하이브리드)
 
 ### 네비게이션 구조 (확정)
@@ -515,4 +522,4 @@ PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/1
 
 ---
 *최종 업데이트: 2026-02-23*
-*상태: Phase 3 Step 1 시험후기 완료 + T-9 하이브리드 백엔드 결정 — Step 2 스크립트 이관 대기*
+*상태: Phase 3 Step 1 시험후기 완료 + 성능 최적화(Suspense+getClaims) — Step 2 스크립트 이관 대기*
