@@ -230,7 +230,9 @@ export function SubmitTab() {
                     </span>
                     <span className="text-[10px] text-foreground-muted">→</span>
                     <span className="rounded-full bg-primary-50 px-1.5 py-0.5 text-[10px] font-medium text-primary-700">
-                      {ACHIEVED_LEVEL_OPTION_LABELS[sub.achieved_level as AchievedLevelOption]}
+                      {sub.achieved_level
+                        ? ACHIEVED_LEVEL_OPTION_LABELS[sub.achieved_level as AchievedLevelOption]
+                        : '발표 전'}
                     </span>
                     <span
                       className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${

@@ -472,10 +472,18 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
   - Store를 `useQuery` 전환 + 결제 후 `invalidateQueries`로 캐시 자동 갱신
   - **효과**: 재방문 시 0ms 즉시 렌더 (staleTime: 5분), Store 결제 → Dashboard 크레딧 즉시 반영
   - queryKey `["user-credits", userId]`를 Dashboard와 Store가 공유
+- **/reviews TanStack Query 전면 적용** — 시험후기 페이지 성능 최적화 (40e86b4):
+  - `getStats()` → `getStatsAndFrequency()` 통합 (Promise.all 병렬, 서버 쿼리 60-110ms → 20-40ms)
+  - FrequencyTab: `useQuery` + `initialData` (서버 데이터 즉시 렌더, submission_combos 이중 조회 제거)
+  - SubmitTab: `useQuery` + `invalidateQueries` (제출/삭제 시 my-submissions + review-frequency 캐시 자동 갱신)
+  - ListTab: `useInfiniteQuery` (등급 필터별 캐시 + "더 보기" 페이지네이션 캐시)
+  - TopicPagination/QuestionSelector: `useQuery` + `staleTime: Infinity` (510행 고정 데이터 세션 내 1회 로드)
+  - **효과**: 탭 전환 시 캐시 히트 0ms, 위저드 주제/질문 재선택 시 로딩 없음
+  - CLAUDE.md에 "TanStack Query 필수 원칙" + queryKey 목록 추가 (향후 모듈 구현 시 필수 적용)
 
 ## 🔮 현재 상태 & 다음 단계
 
-**현재**: Phase 3 (핵심 모듈 이관) — Step 1 시험후기 완료 + 성능 최적화 완료 (Suspense+getClaims+TanStack Query)
+**현재**: Phase 3 (핵심 모듈 이관) — Step 1 시험후기 완료 + /reviews TanStack Query 전면 적용 완료
 **다음 작업**: Step 2 — 스크립트+쉐도잉 모듈 이관 (Server Actions + Edge Functions 하이브리드)
 
 ### 네비게이션 구조 (확정)
@@ -553,4 +561,4 @@ PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/1
 
 ---
 *최종 업데이트: 2026-02-23*
-*상태: Phase 3 Step 1 시험후기 완료 + 성능 최적화(Suspense+getClaims+TanStack Query) — Step 2 스크립트 이관 대기*
+*상태: Phase 3 Step 1 시험후기 완료 + /reviews TanStack Query 전면 적용 — Step 2 스크립트 이관 대기*

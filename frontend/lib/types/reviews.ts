@@ -3,16 +3,23 @@
 // ── ENUM 리터럴 타입 ──
 
 // 순수 OPIc 등급 (필터, 통계용)
-export const ACHIEVED_LEVELS = ['NH', 'IL', 'IM1', 'IM2', 'IM3', 'IH', 'AL'] as const;
+export const ACHIEVED_LEVELS = ['NL', 'NM', 'NH', 'IL', 'IM1', 'IM2', 'IM3', 'IH', 'AL'] as const;
 export type AchievedLevel = (typeof ACHIEVED_LEVELS)[number];
 
 // 응시 전 등급 (첫 응시 = 'none')
-export const PRE_EXAM_LEVELS = [...ACHIEVED_LEVELS, 'none'] as const;
+export const PRE_EXAM_LEVELS = ['none', ...ACHIEVED_LEVELS] as const;
 export type PreExamLevel = (typeof PRE_EXAM_LEVELS)[number];
 
-// 취득 등급 (미발표 = 'unknown')
-export const ACHIEVED_LEVEL_OPTIONS = [...ACHIEVED_LEVELS, 'unknown'] as const;
-export type AchievedLevelOption = (typeof ACHIEVED_LEVEL_OPTIONS)[number];
+// 취득 등급 (미발표 시 null)
+export const ACHIEVED_LEVEL_OPTIONS = ACHIEVED_LEVELS;
+export type AchievedLevelOption = AchievedLevel;
+
+// 응시 난이도 (시작 레벨 - 재조정 레벨)
+export const EXAM_DIFFICULTIES = [
+  '6-6', '6-5', '5-6', '5-5', '5-4', '4-5', '4-4', '4-3',
+  '3-4', '3-3', '3-2', '2-3', '2-2', '2-1', '1-2', '1-1',
+] as const;
+export type ExamDifficulty = (typeof EXAM_DIFFICULTIES)[number];
 
 export const COMBO_TYPES = ['general_1', 'general_2', 'general_3', 'roleplay', 'advance'] as const;
 export type ComboType = (typeof COMBO_TYPES)[number];
@@ -41,24 +48,39 @@ export type ActualDuration = (typeof ACTUAL_DURATIONS)[number];
 // ── 한글 레이블 매핑 ──
 
 export const ACHIEVED_LEVEL_LABELS: Record<AchievedLevel, string> = {
-  AL: 'AL (Advanced Low)',
-  IH: 'IH (Intermediate High)',
-  IM3: 'IM3 (Intermediate Mid 3)',
-  IM2: 'IM2 (Intermediate Mid 2)',
-  IM1: 'IM1 (Intermediate Mid 1)',
-  IL: 'IL (Intermediate Low)',
-  NH: 'NH (Novice High)',
+  NL: 'NL · Novice Low',
+  NM: 'NM · Novice Mid',
+  NH: 'NH · Novice High',
+  IL: 'IL · Intermediate Low',
+  IM1: 'IM1 · Intermediate Mid 1',
+  IM2: 'IM2 · Intermediate Mid 2',
+  IM3: 'IM3 · Intermediate Mid 3',
+  IH: 'IH · Intermediate High',
+  AL: 'AL · Advanced Low',
 };
 
-// Pill용 짧은 레이블
 export const PRE_EXAM_LEVEL_LABELS: Record<PreExamLevel, string> = {
-  AL: 'AL', IH: 'IH', IM3: 'IM3', IM2: 'IM2', IM1: 'IM1', IL: 'IL', NH: 'NH',
-  none: '없음 (첫 응시)',
+  NL: 'NL · Novice Low',
+  NM: 'NM · Novice Mid',
+  NH: 'NH · Novice High',
+  IL: 'IL · Intermediate Low',
+  IM1: 'IM1 · Intermediate Mid 1',
+  IM2: 'IM2 · Intermediate Mid 2',
+  IM3: 'IM3 · Intermediate Mid 3',
+  IH: 'IH · Intermediate High',
+  AL: 'AL · Advanced Low',
+  none: '처음 응시',
 };
 
-export const ACHIEVED_LEVEL_OPTION_LABELS: Record<AchievedLevelOption, string> = {
-  AL: 'AL', IH: 'IH', IM3: 'IM3', IM2: 'IM2', IM1: 'IM1', IL: 'IL', NH: 'NH',
-  unknown: '아직 모름 (발표 전)',
+export const ACHIEVED_LEVEL_OPTION_LABELS = ACHIEVED_LEVEL_LABELS;
+
+export const EXAM_DIFFICULTY_LABELS: Record<ExamDifficulty, string> = {
+  '6-6': '6-6', '6-5': '6-5',
+  '5-6': '5-6', '5-5': '5-5', '5-4': '5-4',
+  '4-5': '4-5', '4-4': '4-4', '4-3': '4-3',
+  '3-4': '3-4', '3-3': '3-3', '3-2': '3-2',
+  '2-3': '2-3', '2-2': '2-2', '2-1': '2-1',
+  '1-2': '1-2', '1-1': '1-1',
 };
 
 export const EXAM_PURPOSE_LABELS: Record<ExamPurpose, string> = {
@@ -121,14 +143,84 @@ export const COMBO_TYPE_LABELS: Record<ComboType, string> = {
   advance: '어드밴스 (14~15번)',
 };
 
+// ── 서베이 항목 ──
+
+// 라디오 (단일선택)
+export const SURVEY_OCCUPATIONS = ['사업/회사', '재택근무/재택사업', '교사/교육자', '일 경험 없음'] as const;
+export const SURVEY_STUDENT_OPTIONS = ['예', '아니오'] as const;
+export const SURVEY_COURSES = ['학위 과정 수업', '전문 기술 향상을 위한 평생 학습', '어학 수업', '수강 후 5년 이상 지남'] as const;
+export const SURVEY_HOUSING_OPTIONS = [
+  '개인 주택이나 아파트에 홀로 거주',
+  '친구나 룸메이트와 함께 주택이나 아파트에 거주',
+  '가족(배우자/자녀/기타 가족)과 함께 주택이나 아파트에 거주',
+  '학교 기숙사',
+  '군대 막사, 군 시설',
+] as const;
+
+// 체크박스 (복수선택)
+export const SURVEY_LEISURE_OPTIONS = [
+  '영화보기', '클럽/나이트클럽 가기', '박물관 가기', '공원 가기', '스포츠 관람',
+  '주거 개선', '게임하기(비디오, 카드, 보드, 휴대폰 등)', '공연보기', 'SNS에 글 올리기', '캠핑하기',
+  '구직활동하기', '술집/바에 가기', '요리 관련 프로그램 시청하기', '친구들과 문자대화하기', '스파/마사지샵 가기',
+  '당구 치기', '리얼리티쇼 시청하기', '자원봉사하기', '쇼핑하기', '차로 드라이브하기',
+  'TV 시청하기', '뉴스를 보거나 듣기', '콘서트 보기', '시험 대비 과정 수강하기', '해변가기',
+  '체스하기', '카페/커피전문점 가기',
+] as const;
+
+export const SURVEY_HOBBIES_OPTIONS = [
+  '아이에게 책 읽어주기', '음악 감상하기', '글쓰기(편지, 단문, 시 등)', '그림그리기',
+  '애완동물 기르기', '독서', '주식 투자하기', '신문 읽기', '사진 촬영하기',
+  '혼자 노래 부르거나 합창하기', '악기 연주하기', '요리하기', '춤추기', '여행 관련 잡지나 블로그 읽기',
+] as const;
+
+export const SURVEY_SPORTS_OPTIONS = [
+  '농구', '조깅', '야구/소프트볼', '걷기', '축구', '요가', '미식축구', '하이킹/트레킹',
+  '하키', '낚시', '크로켓', '헬스', '골프', '태권도', '배구', '운동 수업 수강하기',
+  '테니스', '아이스 스케이트', '배드민턴', '탁구', '수영', '자전거', '스키/스노우보드', '운동을 전혀 하지 않음',
+] as const;
+
+export const SURVEY_TRAVEL_OPTIONS = ['국내출장', '해외출장', '집에서 보내는 휴가', '국내여행', '해외여행'] as const;
+
+// 서베이 카테고리 구조 (UI 렌더링용)
+export interface SurveyCategory {
+  title: string;
+  name: string;
+  type: 'radio' | 'checkbox';
+  options: readonly string[];
+}
+
+export const SURVEY_CATEGORIES: SurveyCategory[] = [
+  { title: '현재 직업 분야', name: 'survey_occupation', type: 'radio', options: SURVEY_OCCUPATIONS },
+  { title: '학생 여부', name: 'survey_student', type: 'radio', options: SURVEY_STUDENT_OPTIONS },
+  { title: '수강 경력', name: 'survey_course', type: 'radio', options: SURVEY_COURSES },
+  { title: '거주 형태', name: 'survey_housing', type: 'radio', options: SURVEY_HOUSING_OPTIONS },
+  { title: '여가 활동', name: 'survey_leisure', type: 'checkbox', options: SURVEY_LEISURE_OPTIONS },
+  { title: '취미/관심사', name: 'survey_hobbies', type: 'checkbox', options: SURVEY_HOBBIES_OPTIONS },
+  { title: '운동', name: 'survey_sports', type: 'checkbox', options: SURVEY_SPORTS_OPTIONS },
+  { title: '휴가/출장', name: 'survey_travel', type: 'checkbox', options: SURVEY_TRAVEL_OPTIONS },
+];
+
+// 오픽톡닥 추천 서베이 (고정 조합)
+export const RECOMMENDED_SURVEY = {
+  survey_occupation: '일 경험 없음',
+  survey_student: '아니오',
+  survey_course: '수강 후 5년 이상 지남',
+  survey_housing: '개인 주택이나 아파트에 홀로 거주',
+  survey_leisure: ['영화보기', '쇼핑하기', 'TV 시청하기', '공연보기', '콘서트 보기'],
+  survey_hobbies: ['음악 감상하기'],
+  survey_sports: ['조깅', '걷기', '운동을 전혀 하지 않음'],
+  survey_travel: ['집에서 보내는 휴가', '국내여행', '해외여행'],
+} as const;
+
 // ── DB 매핑 타입 ──
 
 export interface Submission {
   id: number;
   user_id: string;
   exam_date: string;
+  exam_difficulty: ExamDifficulty;
   pre_exam_level: PreExamLevel;
-  achieved_level: AchievedLevelOption;
+  achieved_level: AchievedLevelOption | null;
   exam_purpose: ExamPurpose;
   study_methods: StudyMethod[];
   prep_duration: PrepDuration;
@@ -136,6 +228,15 @@ export interface Submission {
   perceived_difficulty: PerceivedDifficulty;
   time_sufficiency: TimeSufficiency;
   actual_duration: ActualDuration;
+  used_recommended_survey: boolean;
+  survey_occupation: string | null;
+  survey_student: string | null;
+  survey_course: string | null;
+  survey_housing: string | null;
+  survey_leisure: string | null;
+  survey_hobbies: string | null;
+  survey_sports: string | null;
+  survey_travel: string | null;
   one_line_review: string | null;
   tips: string | null;
   status: 'draft' | 'complete';
@@ -170,8 +271,9 @@ export interface SubmissionCombo {
 
 export interface Step1FormData {
   exam_date: string;
+  exam_difficulty: ExamDifficulty;
   pre_exam_level: PreExamLevel;
-  achieved_level: AchievedLevelOption;
+  achieved_level: AchievedLevelOption | '';
   exam_purpose: ExamPurpose;
   study_methods: StudyMethod[];
   prep_duration: PrepDuration;
@@ -179,6 +281,15 @@ export interface Step1FormData {
   perceived_difficulty: PerceivedDifficulty;
   time_sufficiency: TimeSufficiency;
   actual_duration: ActualDuration;
+  used_recommended_survey: boolean;
+  survey_occupation: string | null;
+  survey_student: string | null;
+  survey_course: string | null;
+  survey_housing: string | null;
+  survey_leisure: string[];
+  survey_hobbies: string[];
+  survey_sports: string[];
+  survey_travel: string[];
 }
 
 export interface QuestionItem {

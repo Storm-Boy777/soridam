@@ -115,7 +115,9 @@ export function ListTab() {
                 </span>
                 <span className="text-xs text-foreground-muted">→</span>
                 <span className="rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-700">
-                  {ACHIEVED_LEVEL_OPTION_LABELS[review.achieved_level as AchievedLevelOption]}
+                  {review.achieved_level
+                    ? ACHIEVED_LEVEL_OPTION_LABELS[review.achieved_level as AchievedLevelOption]
+                    : '발표 전'}
                 </span>
                 <span className="rounded-full bg-surface-secondary px-2 py-0.5 text-xs text-foreground-muted">
                   {EXAM_PURPOSE_LABELS[review.exam_purpose as ExamPurpose]}
