@@ -1,15 +1,13 @@
 import { Suspense } from "react";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { getUser } from "@/lib/auth";
 import { GradeNudgeBanner } from "@/components/ui/grade-nudge-banner";
 
-// 비동기 서버 컴포넌트: 세션에서 유저 데이터를 읽어 배너에 전달
-// getSession()은 쿠키 로컬 읽기 (네트워크 호출 없음, 즉시)
+// 비동기 서버 컴포넌트: 유저 데이터를 가져와 배너에 전달
+// Suspense 안에서 실행되므로 레이아웃을 차단하지 않음
 async function GradeNudgeBannerLoader() {
-  const supabase = await createServerSupabaseClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
+  const user = await getUser();
   const currentGrade = user?.user_metadata?.current_grade || "";
   const targetGrade = user?.user_metadata?.target_grade || "";
   return <GradeNudgeBanner currentGrade={currentGrade} targetGrade={targetGrade} />;
