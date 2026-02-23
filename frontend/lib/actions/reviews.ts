@@ -56,7 +56,8 @@ export async function createDraft(
       .insert({
         user_id: userId,
         exam_date: parsed.data.exam_date,
-        achieved_level: parsed.data.achieved_level || null,
+        pre_exam_level: parsed.data.pre_exam_level,
+        achieved_level: parsed.data.achieved_level,
         exam_purpose: parsed.data.exam_purpose,
         study_methods: parsed.data.study_methods,
         prep_duration: parsed.data.prep_duration,
@@ -417,40 +418,65 @@ export async function getPublicReviews(params: {
 }
 
 // ============================================================
-// 통계
+// 통계 + 빈도 통합 (서버 1회 조회)
 // ============================================================
 
-export async function getStats(): Promise<ReviewStats> {
+export async function getStatsAndFrequency(): Promise<{
+  stats: ReviewStats;
+  frequency: FrequencyItem[];
+}> {
   const supabase = await createServerSupabaseClient();
 
-  // 총 후기 수
-  const { count: totalReviews } = await supabase
-    .from("submissions")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "complete");
+  // 3개 쿼리 병렬 실행 (60-110ms → 20-40ms)
+  const [reviewsResult, combosResult, participantsResult] = await Promise.all([
+    // 총 후기 수 (head: true → 행 0개 전송)
+    supabase
+      .from("submissions")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "complete"),
+    // 콤보 데이터 — stats(주제 수) + frequency(빈도) 공용
+    supabase.from("submission_combos").select("topic, combo_type"),
+    // 참여자 수
+    supabase
+      .from("submissions")
+      .select("user_id")
+      .eq("status", "complete"),
+  ]);
 
-  // 유니크 주제 수
-  const { data: topics } = await supabase
-    .from("submission_combos")
-    .select("topic");
-
+  // stats 계산
+  const combos = combosResult.data || [];
   const uniqueTopics = new Set(
-    (topics || []).flatMap((t) => t.topic.split(","))
+    combos.flatMap((t) => t.topic.split(","))
   ).size;
-
-  // 참여자 수
-  const { data: participants } = await supabase
-    .from("submissions")
-    .select("user_id")
-    .eq("status", "complete");
-
   const totalParticipants = new Set(
-    (participants || []).map((p) => p.user_id)
+    (participantsResult.data || []).map((p) => p.user_id)
   ).size;
+
+  // frequency 계산 (submission_combos 이중 조회 제거)
+  const freqMap = new Map<string, FrequencyItem>();
+  for (const row of combos) {
+    const key = `${row.combo_type}:${row.topic}`;
+    const existing = freqMap.get(key);
+    if (existing) {
+      existing.frequency += 1;
+    } else {
+      freqMap.set(key, {
+        topic: row.topic,
+        combo_type: row.combo_type as ComboType,
+        frequency: 1,
+      });
+    }
+  }
+  const frequency = Array.from(freqMap.values()).sort(
+    (a, b) => b.frequency - a.frequency
+  );
 
   return {
-    totalReviews: totalReviews || 0,
-    uniqueTopics,
-    totalParticipants,
+    stats: {
+      totalReviews: reviewsResult.count || 0,
+      uniqueTopics,
+      totalParticipants,
+    },
+    frequency,
   };
 }

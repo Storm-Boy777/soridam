@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   BarChart3,
   TrendingUp,
@@ -22,20 +23,21 @@ import {
 
 interface FrequencyTabProps {
   initialStats: ReviewStats;
+  initialFrequency: FrequencyItem[];
 }
 
-export function FrequencyTab({ initialStats }: FrequencyTabProps) {
+export function FrequencyTab({ initialStats, initialFrequency }: FrequencyTabProps) {
   const [subTab, setSubTab] = useState<FrequencyCategory>("일반");
-  const [frequencyData, setFrequencyData] = useState<FrequencyItem[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    setLoading(true);
-    getFrequency().then((result) => {
-      if (result.data) setFrequencyData(result.data);
-      setLoading(false);
-    });
-  }, []);
+  const { data: frequencyData = [], isLoading: loading } = useQuery({
+    queryKey: ["review-frequency"],
+    queryFn: async () => {
+      const result = await getFrequency();
+      return result.data || [];
+    },
+    initialData: initialFrequency,
+    staleTime: 5 * 60 * 1000, // 5분
+  });
 
   // 현재 서브탭에 해당하는 combo_type 필터
   const comboTypes = FREQUENCY_COMBO_MAP[subTab];

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Check, X, HelpCircle } from "lucide-react";
 import { getQuestionsByTopic } from "@/lib/queries/master-questions";
 
@@ -41,17 +42,18 @@ interface MasterQuestion {
   topic: string;
 }
 
-interface SelectedQuestion {
+export interface SelectedQuestion {
   master_question_id: string | null;
   custom_question_text: string | null;
   is_not_remembered: boolean;
   topic: string;
+  question_text?: string;
 }
 
 interface QuestionSelectorProps {
   topic: string;
   category: "일반" | "롤플레이" | "어드밴스";
-  questionCount: number; // 이 콤보에서 선택할 질문 수 (3 또는 2)
+  questionCount: number;
   selectedQuestions: SelectedQuestion[];
   onSelect: (question: SelectedQuestion) => void;
   onRemove: (index: number) => void;
@@ -69,39 +71,16 @@ export function QuestionSelector({
   isCustomMode = false,
   isNotRememberedMode = false,
 }: QuestionSelectorProps) {
-  const [questions, setQuestions] = useState<MasterQuestion[]>([]);
-  const [loading, setLoading] = useState(true);
   const [customText, setCustomText] = useState("");
 
   const remainingCount = questionCount - selectedQuestions.length;
 
-  useEffect(() => {
-    if (isNotRememberedMode || isCustomMode) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    getQuestionsByTopic(topic, category).then((data) => {
-      setQuestions(data);
-      setLoading(false);
-    });
-  }, [topic, category, isNotRememberedMode, isCustomMode]);
-
-  // 기억 안남 모드: 남은 수만큼 자동 생성
-  useEffect(() => {
-    if (isNotRememberedMode && remainingCount > 0) {
-      for (let i = 0; i < remainingCount; i++) {
-        onSelect({
-          master_question_id: null,
-          custom_question_text: null,
-          is_not_remembered: true,
-          topic: "기억 안남",
-        });
-      }
-    }
-    // 한 번만 실행
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isNotRememberedMode]);
+  const { data: questions = [], isLoading: loading } = useQuery({
+    queryKey: ["questions", topic, category],
+    queryFn: () => getQuestionsByTopic(topic, category),
+    staleTime: Infinity, // 고정 데이터, 세션 내 1회 로드
+    enabled: !isNotRememberedMode && !isCustomMode,
+  });
 
   // 선택 완료 여부
   const isComplete = selectedQuestions.length >= questionCount;
@@ -120,6 +99,7 @@ export function QuestionSelector({
       custom_question_text: customText.trim(),
       is_not_remembered: false,
       topic,
+      question_text: customText.trim(),
     });
     setCustomText("");
   };
@@ -146,7 +126,7 @@ export function QuestionSelector({
                   ? "기억 안남"
                   : q.custom_question_text
                     ? `[직접 입력] ${q.custom_question_text}`
-                    : q.master_question_id}
+                    : q.question_text || q.master_question_id}
               </p>
               <button
                 onClick={() => onRemove(idx)}
@@ -166,8 +146,8 @@ export function QuestionSelector({
         </div>
       )}
 
-      {/* 기억 안남 모드 */}
-      {isNotRememberedMode && (
+      {/* 기억 안남 모드 안내 */}
+      {isNotRememberedMode && !isComplete && (
         <div className="flex items-center gap-2 rounded-[var(--radius-md)] bg-surface-secondary p-3 text-xs text-foreground-secondary">
           <HelpCircle size={14} />
           <span>모든 질문이 &quot;기억 안남&quot;으로 표시됩니다</span>
@@ -206,6 +186,7 @@ export function QuestionSelector({
                   custom_question_text: null,
                   is_not_remembered: true,
                   topic: "기억 안남",
+                  question_text: "기억 안남",
                 });
               }
             }}
@@ -245,6 +226,7 @@ export function QuestionSelector({
                         custom_question_text: null,
                         is_not_remembered: false,
                         topic,
+                        question_text: q.question_korean,
                       });
                     }}
                     disabled={isSelected || isComplete}

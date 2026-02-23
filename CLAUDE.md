@@ -205,7 +205,10 @@ opictalkdoc/
 │       └── 003_submissions.sql
 └── frontend/              # Next.js 앱
     ├── app/               # App Router 페이지
+    │   └── providers.tsx  # QueryClientProvider 래퍼
     ├── components/
+    │   ├── dashboard/
+    │   │   └── dashboard-stats.tsx  # useQuery 클라이언트 컴포넌트
     │   └── reviews/       # 시험후기 모듈 UI
     │       ├── reviews-content.tsx
     │       ├── frequency/frequency-tab.tsx
@@ -214,6 +217,7 @@ opictalkdoc/
     ├── lib/
     │   ├── actions/reviews.ts     # Server Actions (12개)
     │   ├── queries/master-questions.ts
+    │   ├── react-query.ts        # QueryClient 팩토리 (서버/브라우저 싱글턴)
     │   ├── types/reviews.ts       # 타입 정의
     │   ├── validations/reviews.ts # Zod 스키마
     │   ├── utils/combo-extractor.ts
@@ -278,6 +282,25 @@ PORTONE_API_SECRET=XFGThRDJX2...
   - 인앱 WebView: CSP, CORS, 리소스 로딩 제한 등
 - **"특정 환경에서만 안 된다"는 보고 → 해당 환경의 알려진 제약사항부터 조사**
 - 환경 제약이면 사용자에게 즉시 알리고, 불필요한 코드 수정을 반복하지 않는다
+
+### ⚠️ 데이터 페칭 필수 원칙: TanStack Query 우선
+- 클라이언트 컴포넌트에서 데이터를 로드할 때 **`useState + useEffect`를 사용하지 않는다**
+- 반드시 **TanStack React Query** (`useQuery`, `useInfiniteQuery`, `useMutation`)를 사용한다
+- 인프라는 이미 구축됨: `app/providers.tsx` (QueryClientProvider), `lib/react-query.ts` (QueryClient 팩토리)
+- **적용 패턴**:
+  - 서버에서 초기 데이터를 가져오는 경우 → `useQuery` + `initialData` (이중 로딩 제거)
+  - 고정 데이터 (master_questions 등) → `staleTime: Infinity` (세션 내 1회 로드)
+  - 페이지네이션 → `useInfiniteQuery` (필터별 캐시 + "더 보기" 캐시)
+  - 일반 동적 데이터 → `staleTime: 5 * 60 * 1000` (5분 캐시)
+  - 데이터 변경 후 갱신 → `queryClient.invalidateQueries()` (관련 캐시 자동 갱신)
+- **서버 쿼리 최적화**: 여러 독립 쿼리는 `Promise.all`로 병렬 실행, 공통 데이터는 1회 조회 후 공유
+- **현재 사용 중인 queryKey 목록**:
+  - `["user-credits", userId]` — 대시보드 + 스토어 공유
+  - `["review-frequency"]` — 빈도 분석 데이터
+  - `["my-submissions"]` — 내 후기 이력
+  - `["public-reviews", levelFilter]` — 공개 후기 (필터별)
+  - `["topics", category]` — 주제 목록 (고정)
+  - `["questions", topic, category]` — 질문 목록 (고정)
 
 1. **코드 수정** - 필요한 변경사항 구현
 2. **사용자가 요청한 경우에만**:
@@ -441,10 +464,18 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
     - 대시보드 레이아웃(배너), 대시보드 페이지(통계 카드, 사이드 패널)에 적용
     - 마이페이지는 최신 데이터 필요 → `getUser()` 유지
   - **사용 구분 원칙**: `getUser()` = 프로필 편집, Server Actions (최신 데이터 필수) / `getAuthClaims()` = 표시용 UI (통계, 배너, 등급 표시)
+- **TanStack Query Hydration 적용** — user_credits 클라이언트 캐싱 (8484327):
+  - QueryClient 팩토리 + Providers 래퍼 구축 (`lib/react-query.ts`, `app/providers.tsx`)
+  - Root Layout에 `<Providers>` (QueryClientProvider) 래핑
+  - DashboardStats를 `useQuery` 클라이언트 컴포넌트로 분리 (`components/dashboard/dashboard-stats.tsx`)
+  - SidePanel을 props 기반으로 변경 (async 제거, `getAuthClaims()` 중복 호출 제거)
+  - Store를 `useQuery` 전환 + 결제 후 `invalidateQueries`로 캐시 자동 갱신
+  - **효과**: 재방문 시 0ms 즉시 렌더 (staleTime: 5분), Store 결제 → Dashboard 크레딧 즉시 반영
+  - queryKey `["user-credits", userId]`를 Dashboard와 Store가 공유
 
 ## 🔮 현재 상태 & 다음 단계
 
-**현재**: Phase 3 (핵심 모듈 이관) — Step 1 시험후기 완료 + 페이지 전환 성능 최적화 완료
+**현재**: Phase 3 (핵심 모듈 이관) — Step 1 시험후기 완료 + 성능 최적화 완료 (Suspense+getClaims+TanStack Query)
 **다음 작업**: Step 2 — 스크립트+쉐도잉 모듈 이관 (Server Actions + Edge Functions 하이브리드)
 
 ### 네비게이션 구조 (확정)
@@ -522,4 +553,4 @@ PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/1
 
 ---
 *최종 업데이트: 2026-02-23*
-*상태: Phase 3 Step 1 시험후기 완료 + 성능 최적화(Suspense+getClaims) — Step 2 스크립트 이관 대기*
+*상태: Phase 3 Step 1 시험후기 완료 + 성능 최적화(Suspense+getClaims+TanStack Query) — Step 2 스크립트 이관 대기*

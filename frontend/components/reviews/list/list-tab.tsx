@@ -1,66 +1,56 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { MessageSquare, ChevronDown, Loader2, Calendar, Award } from "lucide-react";
 import { getPublicReviews } from "@/lib/actions/reviews";
-import type { Submission, AchievedLevel } from "@/lib/types/reviews";
+import type { Submission } from "@/lib/types/reviews";
 import {
   ACHIEVED_LEVELS,
   ACHIEVED_LEVEL_LABELS,
+  ACHIEVED_LEVEL_OPTION_LABELS,
+  PRE_EXAM_LEVEL_LABELS,
   EXAM_PURPOSE_LABELS,
   PREP_DURATION_LABELS,
   PERCEIVED_DIFFICULTY_LABELS,
+  type AchievedLevelOption,
+  type PreExamLevel,
   type ExamPurpose,
   type PrepDuration,
   type PerceivedDifficulty,
 } from "@/lib/types/reviews";
 
 export function ListTab() {
-  const [reviews, setReviews] = useState<Submission[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
   const [levelFilter, setLevelFilter] = useState<string>("");
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
 
   const limit = 10;
 
-  const fetchReviews = async (p: number, append = false) => {
-    if (append) setLoadingMore(true);
-    else setLoading(true);
+  const {
+    data,
+    isLoading: loading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage: loadingMore,
+  } = useInfiniteQuery({
+    queryKey: ["public-reviews", levelFilter],
+    queryFn: async ({ pageParam }) => {
+      const result = await getPublicReviews({
+        level: levelFilter || undefined,
+        page: pageParam,
+        limit,
+      });
+      return result.data || { reviews: [] as Submission[], total: 0 };
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.reduce((acc, p) => acc + p.reviews.length, 0);
+      return loaded < lastPage.total ? allPages.length + 1 : undefined;
+    },
+    staleTime: 5 * 60 * 1000, // 5분
+  });
 
-    const result = await getPublicReviews({
-      level: levelFilter || undefined,
-      page: p,
-      limit,
-    });
-
-    if (result.data) {
-      if (append) {
-        setReviews((prev) => [...prev, ...result.data!.reviews]);
-      } else {
-        setReviews(result.data.reviews);
-      }
-      setTotal(result.data.total);
-    }
-
-    setLoading(false);
-    setLoadingMore(false);
-  };
-
-  useEffect(() => {
-    setPage(1);
-    fetchReviews(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [levelFilter]);
-
-  const hasMore = reviews.length < total;
-
-  const handleLoadMore = () => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchReviews(nextPage, true);
-  };
+  const reviews = data?.pages.flatMap((p) => p.reviews) || [];
+  const total = data?.pages[0]?.total || 0;
 
   return (
     <div className="space-y-6">
@@ -120,11 +110,13 @@ export function ListTab() {
                   <Calendar size={12} />
                   {review.exam_date}
                 </div>
-                {review.achieved_level && (
-                  <span className="rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-700">
-                    {ACHIEVED_LEVEL_LABELS[review.achieved_level as AchievedLevel]}
-                  </span>
-                )}
+                <span className="rounded-full bg-surface-secondary px-2 py-0.5 text-xs text-foreground-muted">
+                  {PRE_EXAM_LEVEL_LABELS[review.pre_exam_level as PreExamLevel]}
+                </span>
+                <span className="text-xs text-foreground-muted">→</span>
+                <span className="rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-700">
+                  {ACHIEVED_LEVEL_OPTION_LABELS[review.achieved_level as AchievedLevelOption]}
+                </span>
                 <span className="rounded-full bg-surface-secondary px-2 py-0.5 text-xs text-foreground-muted">
                   {EXAM_PURPOSE_LABELS[review.exam_purpose as ExamPurpose]}
                 </span>
@@ -158,10 +150,10 @@ export function ListTab() {
           ))}
 
           {/* 더 보기 */}
-          {hasMore && (
+          {hasNextPage && (
             <div className="text-center">
               <button
-                onClick={handleLoadMore}
+                onClick={() => fetchNextPage()}
                 disabled={loadingMore}
                 className="inline-flex items-center gap-2 rounded-[var(--radius-lg)] border border-border px-4 py-2 text-sm font-medium text-foreground-secondary transition-colors hover:bg-surface-secondary disabled:opacity-50"
               >

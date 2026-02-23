@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { ReviewsContent } from "@/components/reviews/reviews-content";
-import { getStats } from "@/lib/actions/reviews";
+import { getStatsAndFrequency } from "@/lib/actions/reviews";
 
 export const metadata = {
   title: "시험후기 | 오픽톡닥",
@@ -8,8 +8,8 @@ export const metadata = {
 
 // 비동기 서버 컴포넌트: 통계 데이터를 가져와 콘텐츠에 전달
 async function ReviewsDataLoader() {
-  const stats = await getStats();
-  return <ReviewsContent initialStats={stats} />;
+  const { stats, frequency } = await getStatsAndFrequency();
+  return <ReviewsContent initialStats={stats} initialFrequency={frequency} />;
 }
 
 // Suspense Fallback: 탭 구조 플레이스홀더

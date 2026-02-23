@@ -1,38 +1,49 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Send, FileText, Trash2, ChevronRight, CheckCircle2 } from "lucide-react";
 import { WizardStep1 } from "./wizard-step1";
 import { WizardStep2 } from "./wizard-step2";
 import { WizardStep3 } from "./wizard-step3";
 import { getMySubmissions, deleteSubmission } from "@/lib/actions/reviews";
 import type { Submission } from "@/lib/types/reviews";
-import { ACHIEVED_LEVEL_LABELS, type AchievedLevel } from "@/lib/types/reviews";
+import {
+  ACHIEVED_LEVEL_OPTION_LABELS,
+  PRE_EXAM_LEVEL_LABELS,
+  type AchievedLevelOption,
+  type PreExamLevel,
+} from "@/lib/types/reviews";
 
 export function SubmitTab() {
+  const queryClient = useQueryClient();
   const [wizardOpen, setWizardOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [submissionId, setSubmissionId] = useState<number | null>(null);
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [completed, setCompleted] = useState(false);
 
-  useEffect(() => {
-    getMySubmissions().then((result) => {
-      if (result.data) setSubmissions(result.data);
-    });
-  }, [completed]);
+  const { data: submissions = [] } = useQuery({
+    queryKey: ["my-submissions"],
+    queryFn: async () => {
+      const result = await getMySubmissions();
+      return result.data || [];
+    },
+    staleTime: 5 * 60 * 1000, // 5분
+  });
 
   const handleDelete = async (id: number) => {
     if (!confirm("정말 삭제하시겠습니까?")) return;
     const result = await deleteSubmission(id);
     if (!result.error) {
-      setSubmissions((prev) => prev.filter((s) => s.id !== id));
+      queryClient.invalidateQueries({ queryKey: ["my-submissions"] });
     }
   };
 
   // 위저드 완료
   const handleComplete = () => {
     setCompleted(true);
+    queryClient.invalidateQueries({ queryKey: ["my-submissions"] });
+    queryClient.invalidateQueries({ queryKey: ["review-frequency"] });
     setWizardOpen(false);
     setCurrentStep(1);
     setSubmissionId(null);
@@ -77,31 +88,29 @@ export function SubmitTab() {
           ))}
         </div>
 
-        {/* 스텝 콘텐츠 */}
-        <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-5 sm:p-6">
-          {currentStep === 1 && (
-            <WizardStep1
-              onComplete={(id) => {
-                setSubmissionId(id);
-                setCurrentStep(2);
-              }}
-            />
-          )}
-          {currentStep === 2 && submissionId && (
-            <WizardStep2
-              submissionId={submissionId}
-              onComplete={() => setCurrentStep(3)}
-              onBack={() => setCurrentStep(1)}
-            />
-          )}
-          {currentStep === 3 && submissionId && (
-            <WizardStep3
-              submissionId={submissionId}
-              onComplete={handleComplete}
-              onBack={() => setCurrentStep(2)}
-            />
-          )}
-        </div>
+        {/* 스텝 콘텐츠 — 각 스텝이 자체 카드를 관리 */}
+        {currentStep === 1 && (
+          <WizardStep1
+            onComplete={(id) => {
+              setSubmissionId(id);
+              setCurrentStep(2);
+            }}
+          />
+        )}
+        {currentStep === 2 && submissionId && (
+          <WizardStep2
+            submissionId={submissionId}
+            onComplete={() => setCurrentStep(3)}
+            onBack={() => setCurrentStep(1)}
+          />
+        )}
+        {currentStep === 3 && submissionId && (
+          <WizardStep3
+            submissionId={submissionId}
+            onComplete={handleComplete}
+            onBack={() => setCurrentStep(2)}
+          />
+        )}
 
         {/* 취소 */}
         <div className="text-center">
@@ -216,11 +225,13 @@ export function SubmitTab() {
                     <span className="text-sm font-medium text-foreground">
                       {sub.exam_date}
                     </span>
-                    {sub.achieved_level && (
-                      <span className="rounded-full bg-primary-50 px-1.5 py-0.5 text-[10px] font-medium text-primary-700">
-                        {ACHIEVED_LEVEL_LABELS[sub.achieved_level as AchievedLevel]}
-                      </span>
-                    )}
+                    <span className="rounded-full bg-surface-secondary px-1.5 py-0.5 text-[10px] font-medium text-foreground-muted">
+                      {PRE_EXAM_LEVEL_LABELS[sub.pre_exam_level as PreExamLevel]}
+                    </span>
+                    <span className="text-[10px] text-foreground-muted">→</span>
+                    <span className="rounded-full bg-primary-50 px-1.5 py-0.5 text-[10px] font-medium text-primary-700">
+                      {ACHIEVED_LEVEL_OPTION_LABELS[sub.achieved_level as AchievedLevelOption]}
+                    </span>
                     <span
                       className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
                         sub.status === "complete"

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
-  ACHIEVED_LEVELS,
+  PRE_EXAM_LEVELS,
+  ACHIEVED_LEVEL_OPTIONS,
   EXAM_PURPOSES,
   STUDY_METHODS,
   PREP_DURATIONS,
@@ -15,7 +16,8 @@ import {
 
 export const step1Schema = z.object({
   exam_date: z.string().min(1, "시험 날짜를 선택해주세요"),
-  achieved_level: z.enum([...ACHIEVED_LEVELS, '' as const]).optional(),
+  pre_exam_level: z.enum(PRE_EXAM_LEVELS, { message: "응시 전 등급을 선택해주세요" }),
+  achieved_level: z.enum(ACHIEVED_LEVEL_OPTIONS, { message: "취득 등급을 선택해주세요" }),
   exam_purpose: z.enum(EXAM_PURPOSES, { message: "시험 목적을 선택해주세요" }),
   study_methods: z
     .array(z.enum(STUDY_METHODS))

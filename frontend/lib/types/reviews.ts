@@ -2,8 +2,17 @@
 
 // ── ENUM 리터럴 타입 ──
 
-export const ACHIEVED_LEVELS = ['AL', 'IH', 'IM3', 'IM2', 'IM1', 'IL', 'NH'] as const;
+// 순수 OPIc 등급 (필터, 통계용)
+export const ACHIEVED_LEVELS = ['NH', 'IL', 'IM1', 'IM2', 'IM3', 'IH', 'AL'] as const;
 export type AchievedLevel = (typeof ACHIEVED_LEVELS)[number];
+
+// 응시 전 등급 (첫 응시 = 'none')
+export const PRE_EXAM_LEVELS = [...ACHIEVED_LEVELS, 'none'] as const;
+export type PreExamLevel = (typeof PRE_EXAM_LEVELS)[number];
+
+// 취득 등급 (미발표 = 'unknown')
+export const ACHIEVED_LEVEL_OPTIONS = [...ACHIEVED_LEVELS, 'unknown'] as const;
+export type AchievedLevelOption = (typeof ACHIEVED_LEVEL_OPTIONS)[number];
 
 export const COMBO_TYPES = ['general_1', 'general_2', 'general_3', 'roleplay', 'advance'] as const;
 export type ComboType = (typeof COMBO_TYPES)[number];
@@ -39,6 +48,17 @@ export const ACHIEVED_LEVEL_LABELS: Record<AchievedLevel, string> = {
   IM1: 'IM1 (Intermediate Mid 1)',
   IL: 'IL (Intermediate Low)',
   NH: 'NH (Novice High)',
+};
+
+// Pill용 짧은 레이블
+export const PRE_EXAM_LEVEL_LABELS: Record<PreExamLevel, string> = {
+  AL: 'AL', IH: 'IH', IM3: 'IM3', IM2: 'IM2', IM1: 'IM1', IL: 'IL', NH: 'NH',
+  none: '없음 (첫 응시)',
+};
+
+export const ACHIEVED_LEVEL_OPTION_LABELS: Record<AchievedLevelOption, string> = {
+  AL: 'AL', IH: 'IH', IM3: 'IM3', IM2: 'IM2', IM1: 'IM1', IL: 'IL', NH: 'NH',
+  unknown: '아직 모름 (발표 전)',
 };
 
 export const EXAM_PURPOSE_LABELS: Record<ExamPurpose, string> = {
@@ -107,7 +127,8 @@ export interface Submission {
   id: number;
   user_id: string;
   exam_date: string;
-  achieved_level: AchievedLevel | null;
+  pre_exam_level: PreExamLevel;
+  achieved_level: AchievedLevelOption;
   exam_purpose: ExamPurpose;
   study_methods: StudyMethod[];
   prep_duration: PrepDuration;
@@ -149,7 +170,8 @@ export interface SubmissionCombo {
 
 export interface Step1FormData {
   exam_date: string;
-  achieved_level: AchievedLevel | '';
+  pre_exam_level: PreExamLevel;
+  achieved_level: AchievedLevelOption;
   exam_purpose: ExamPurpose;
   study_methods: StudyMethod[];
   prep_duration: PrepDuration;

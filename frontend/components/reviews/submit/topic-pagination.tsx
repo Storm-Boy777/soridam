@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { HelpCircle, PenLine, ChevronLeft, ChevronRight } from "lucide-react";
 import { getTopicsByCategory } from "@/lib/queries/master-questions";
 
@@ -47,20 +48,20 @@ export function TopicPagination({
   onNotRemembered,
   onCustomInput,
 }: TopicPaginationProps) {
-  const [topics, setTopics] = useState<{ topic: string; count: number }[]>([]);
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
 
   // PC 3열 × 3행 = 9개, 모바일 2열 × 4행 = 8개 → 페이지당 8개 (호환)
   const itemsPerPage = 8;
 
+  const { data: topics = [], isLoading: loading } = useQuery({
+    queryKey: ["topics", category],
+    queryFn: () => getTopicsByCategory(category),
+    staleTime: Infinity, // 고정 데이터, 세션 내 1회 로드
+  });
+
+  // category 변경 시 page 리셋
   useEffect(() => {
-    setLoading(true);
     setPage(0);
-    getTopicsByCategory(category).then((data) => {
-      setTopics(data);
-      setLoading(false);
-    });
   }, [category]);
 
   const totalPages = Math.ceil(topics.length / itemsPerPage);
