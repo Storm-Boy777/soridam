@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as PortOne from "@portone/browser-sdk/v2";
 import { createClient } from "@/lib/supabase";
 import {
@@ -30,15 +31,25 @@ const PRODUCT_MAP: Record<ProductId, { name: string; price: number }> = {
   script_credit: { name: "스크립트 패키지 횟수권 (10회)", price: 3900 },
 };
 
-/* ── 크레딧 타입 ── */
+/* ── 크레딧 fetch 함수 ── */
 
-interface UserCredits {
-  current_plan: string;
-  mock_exam_credits: number;
-  script_credits: number;
-  plan_mock_exam_credits: number;
-  plan_script_credits: number;
-  plan_expires_at: string | null;
+async function fetchUserCredits(userId: string) {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("user_credits")
+    .select("*")
+    .eq("user_id", userId)
+    .single();
+
+  if (error) throw error;
+  return data as {
+    current_plan: string;
+    mock_exam_credits: number;
+    script_credits: number;
+    plan_mock_exam_credits: number;
+    plan_script_credits: number;
+    plan_expires_at: string | null;
+  };
 }
 
 /* ── 플랜 데이터 ── */
@@ -140,35 +151,22 @@ const PLAN_LABELS: Record<string, string> = {
 
 /* ── 메인 컴포넌트 ── */
 
-export function StoreContent() {
-  const [credits, setCredits] = useState<UserCredits | null>(null);
+export function StoreContent({ userId }: { userId: string }) {
+  const queryClient = useQueryClient();
+  const supabase = createClient();
+
+  const { data: credits } = useQuery({
+    queryKey: ["user-credits", userId],
+    queryFn: () => fetchUserCredits(userId),
+    staleTime: 5 * 60 * 1000, // 5분
+    enabled: !!userId,
+  });
+
   const [loadingProduct, setLoadingProduct] = useState<string | null>(null);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
-
-  const supabase = createClient();
-
-  // 크레딧 조회
-  const fetchCredits = useCallback(async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data } = await supabase
-      .from("user_credits")
-      .select("*")
-      .eq("user_id", user.id)
-      .single();
-
-    if (data) setCredits(data);
-  }, [supabase]);
-
-  useEffect(() => {
-    fetchCredits();
-  }, [fetchCredits]);
 
   // 메시지 5초 후 자동 사라짐
   useEffect(() => {
@@ -211,7 +209,7 @@ export function StoreContent() {
         .then((data) => {
           if (data.success) {
             setMessage({ type: "success", text: "결제가 완료되었습니다!" });
-            fetchCredits();
+            queryClient.invalidateQueries({ queryKey: ["user-credits"] });
           } else {
             setMessage({
               type: "error",
@@ -227,7 +225,8 @@ export function StoreContent() {
         })
         .finally(() => setLoadingProduct(null));
     }
-  }, [fetchCredits]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 결제 처리
   const handlePayment = async (productId: ProductId) => {
@@ -295,7 +294,7 @@ export function StoreContent() {
 
       if (verifyRes.ok && verifyData.success) {
         setMessage({ type: "success", text: "결제가 완료되었습니다!" });
-        await fetchCredits();
+        queryClient.invalidateQueries({ queryKey: ["user-credits"] });
       } else {
         setMessage({
           type: "error",

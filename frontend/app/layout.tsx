@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Noto_Serif_KR } from "next/font/google";
 import localFont from "next/font/local";
+import { Providers } from "./providers";
 import "./globals.css";
 
 const pretendard = localFont({
@@ -55,7 +56,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className={`${pretendard.variable} ${jua.variable} ${fraunces.variable} ${notoSerifKR.variable}`}>
-      <body>{children}</body>
+      <body><Providers>{children}</Providers></body>
     </html>
   );
 }

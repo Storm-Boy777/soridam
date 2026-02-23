@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import {
   BarChart3,
@@ -8,30 +7,15 @@ import {
   ArrowRight,
   TrendingUp,
   Target,
-  BookOpen,
-  Calendar,
-  Crown,
 } from "lucide-react";
 import { getAuthClaims } from "@/lib/auth";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { DashboardStats } from "@/components/dashboard/dashboard-stats";
 
 export const metadata = {
   title: "대시보드 | 오픽톡닥",
 };
 
 /* ── 유틸 ── */
-
-function getPlanLabel(plan: string) {
-  if (plan === "basic") return "베이직";
-  if (plan === "premium") return "프리미엄";
-  return "체험";
-}
-
-function getPlanSub(plan: string) {
-  if (plan === "basic") return "3회권";
-  if (plan === "premium") return "10회권";
-  return "무료";
-}
 
 function getDday(dateStr: string | null) {
   if (!dateStr) return null;
@@ -109,107 +93,15 @@ const learningSteps = [
   },
 ];
 
-/* ── 비동기 서버 컴포넌트: 통계 카드 (Suspense로 감싸서 사용) ── */
+/* ── 사이드 패널 (JWT claims만 읽음, DB 쿼리 없음) ── */
 
-async function DashboardStats() {
-  const claims = await getAuthClaims();
-  const supabase = await createServerSupabaseClient();
-
-  const { data: credits } = claims?.sub
-    ? await supabase
-        .from("user_credits")
-        .select("*")
-        .eq("user_id", claims.sub)
-        .single()
-    : { data: null };
-
-  const plan = credits?.current_plan || "free";
-  const totalMockExam =
-    (credits?.plan_mock_exam_credits || 0) +
-    (credits?.mock_exam_credits || 0);
-  const totalScript =
-    (credits?.plan_script_credits || 0) + (credits?.script_credits || 0);
-
-  const stats = [
-    {
-      label: "현재 플랜",
-      value: getPlanLabel(plan),
-      sub: getPlanSub(plan),
-      icon: Crown,
-      color: "bg-primary-50 text-primary-500",
-      href: "/store",
-    },
-    {
-      label: "남은 모의고사",
-      value: `${totalMockExam}회`,
-      sub: totalMockExam === 0 ? "크레딧 없음" : plan === "free" ? "샘플" : "사용 가능",
-      icon: ClipboardList,
-      color: "bg-secondary-50 text-secondary-600",
-      href: null,
-    },
-    {
-      label: "스크립트 생성",
-      value: totalScript === 0 ? "0회" : `${totalScript}회`,
-      sub: plan === "free" ? "크레딧 구매 필요" : "사용 가능",
-      icon: BookOpen,
-      color: "bg-accent-50 text-accent-500",
-      href: null,
-    },
-    {
-      label: "연속 학습",
-      value: "0일",
-      sub: "시작해 보세요!",
-      icon: Calendar,
-      color: "bg-primary-50 text-primary-500",
-      href: null,
-    },
-  ];
-
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {stats.map((s) => {
-        const inner = (
-          <>
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-foreground-secondary">{s.label}</p>
-              <div
-                className={`flex h-9 w-9 items-center justify-center rounded-[var(--radius-lg)] ${s.color}`}
-              >
-                <s.icon size={18} />
-              </div>
-            </div>
-            <p className="mt-3 text-2xl font-bold text-foreground">
-              {s.value}
-            </p>
-            <p className="mt-0.5 text-xs text-foreground-muted">{s.sub}</p>
-          </>
-        );
-
-        return s.href ? (
-          <Link
-            key={s.label}
-            href={s.href}
-            className="rounded-[var(--radius-xl)] border border-border bg-surface p-5 transition-all hover:border-border-hover hover:shadow-[var(--shadow-card)]"
-          >
-            {inner}
-          </Link>
-        ) : (
-          <div
-            key={s.label}
-            className="rounded-[var(--radius-xl)] border border-border bg-surface p-5"
-          >
-            {inner}
-          </div>
-        );
-      })}
-    </div>
-  );
+interface ClaimsMetadata {
+  target_grade?: string;
+  current_grade?: string;
+  exam_date?: string;
 }
 
-/* ── 비동기 서버 컴포넌트: 사이드 패널 (Suspense로 감싸서 사용) ── */
-
-async function SidePanel() {
-  const claims = await getAuthClaims();
+function SidePanel({ claims }: { claims: { user_metadata?: ClaimsMetadata } | null }) {
   const targetGrade = claims?.user_metadata?.target_grade || "";
   const currentGrade = claims?.user_metadata?.current_grade || "";
   const examDate = claims?.user_metadata?.exam_date || "";
@@ -311,36 +203,12 @@ async function SidePanel() {
   );
 }
 
-/* ── Suspense Fallback: 통계 카드 플레이스홀더 ── */
-
-function StatsPlaceholder() {
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {[1, 2, 3, 4].map((i) => (
-        <div
-          key={i}
-          className="h-[118px] rounded-[var(--radius-xl)] border border-border bg-surface p-5"
-        />
-      ))}
-    </div>
-  );
-}
-
-/* ── Suspense Fallback: 사이드 패널 플레이스홀더 ── */
-
-function SidePanelPlaceholder() {
-  return (
-    <div className="space-y-4 md:col-span-2">
-      <div className="h-[120px] rounded-[var(--radius-xl)] border border-border bg-surface" />
-      <div className="h-[120px] rounded-[var(--radius-xl)] border border-foreground/10 bg-foreground" />
-      <div className="h-[120px] rounded-[var(--radius-xl)] border border-primary-200 bg-gradient-to-br from-primary-50 to-primary-100/50" />
-    </div>
-  );
-}
-
 /* ── 페이지 ── */
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const claims = await getAuthClaims();
+  const userId = claims?.sub as string | undefined;
+
   return (
     <div className="space-y-8 pb-8 pt-2 lg:pt-0">
       {/* 헤더 — 즉시 렌더 */}
@@ -351,10 +219,19 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* 통계 카드 — 데이터 로드 후 스트리밍 */}
-      <Suspense fallback={<StatsPlaceholder />}>
-        <DashboardStats />
-      </Suspense>
+      {/* 통계 카드 — 클라이언트 캐시 (useQuery, staleTime: 5분) */}
+      {userId ? (
+        <DashboardStats userId={userId} />
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="h-[118px] rounded-[var(--radius-xl)] border border-border bg-surface p-5"
+            />
+          ))}
+        </div>
+      )}
 
       {/* 모듈 바로가기 — 즉시 렌더 */}
       <div>
@@ -424,10 +301,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 사이드 패널 — 데이터 로드 후 스트리밍 */}
-        <Suspense fallback={<SidePanelPlaceholder />}>
-          <SidePanel />
-        </Suspense>
+        {/* 사이드 패널 — JWT claims만 사용 (DB 쿼리 없음, 즉시 렌더) */}
+        <SidePanel claims={claims} />
       </div>
     </div>
   );
