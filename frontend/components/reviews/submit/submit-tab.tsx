@@ -56,9 +56,9 @@ export function SubmitTab() {
         {/* 스텝 인디케이터 */}
         <div className="flex items-center gap-3">
           {[
-            { step: 1, label: "기본 정보" },
+            { step: 1, label: "시험 정보" },
             { step: 2, label: "출제 질문" },
-            { step: 3, label: "후기 작성" },
+            { step: 3, label: "후기 + 팁" },
           ].map((s, i) => (
             <div key={s.step} className="flex items-center gap-2">
               <div
@@ -150,16 +150,16 @@ export function SubmitTab() {
       <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-6">
         <h3 className="font-semibold text-foreground">시험 후기 제출하기</h3>
         <p className="mt-1 text-sm text-foreground-secondary">
-          OPIc 시험을 본 후 어떤 질문이 나왔는지 공유해 주세요.
-          모두의 데이터가 더 정확한 빈도 분석을 만듭니다.
+          시험 후기를 제출하면 스크립트 크레딧 2개가 지급됩니다.
+          여러분의 데이터가 더 정확한 빈도 분석을 만듭니다.
         </p>
 
         {/* 3단계 안내 */}
         <div className="mt-6 space-y-4">
           {[
-            { step: 1, title: "기본 정보 + 설문", desc: "시험 날짜, 등급, 시험 배경과 체감 후기를 입력합니다" },
-            { step: 2, title: "출제 질문 입력", desc: "2~15번 문항에 어떤 질문이 나왔는지 선택합니다" },
-            { step: 3, title: "후기 작성", desc: "한줄 후기와 팁/조언을 남기면 완료!" },
+            { step: 1, title: "시험 정보 + 배경 설문", desc: "시험 날짜, Self-Assessment, 등급, 서베이 선택 등을 입력합니다" },
+            { step: 2, title: "출제 질문 입력", desc: "콤보별로 어떤 주제와 질문이 나왔는지 선택합니다" },
+            { step: 3, title: "한줄 후기 + 팁", desc: "간단한 후기와 팁을 남기면 완료!" },
           ].map((s, i) => (
             <div key={s.step} className="flex items-start gap-4">
               <div className="flex flex-col items-center">
