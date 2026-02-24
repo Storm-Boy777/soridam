@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Send, FileText, Trash2, ChevronRight, CheckCircle2 } from "lucide-react";
 import { WizardStep1 } from "./wizard-step1";
-import { WizardStep2 } from "./wizard-step2";
+import { WizardStep2, type ComboResult } from "./wizard-step2";
 import { WizardStep3 } from "./wizard-step3";
 import { getMySubmissions, deleteSubmission } from "@/lib/actions/reviews";
 import type { Submission } from "@/lib/types/reviews";
@@ -21,6 +21,7 @@ export function SubmitTab() {
   const [currentStep, setCurrentStep] = useState(1);
   const [submissionId, setSubmissionId] = useState<number | null>(null);
   const [completed, setCompleted] = useState(false);
+  const [comboResults, setComboResults] = useState<Record<string, ComboResult>>({});
 
   const { data: submissions = [] } = useQuery({
     queryKey: ["my-submissions"],
@@ -47,6 +48,7 @@ export function SubmitTab() {
     setWizardOpen(false);
     setCurrentStep(1);
     setSubmissionId(null);
+    setComboResults({});
   };
 
   // 위저드 모드
@@ -91,6 +93,7 @@ export function SubmitTab() {
         {/* 스텝 콘텐츠 — 각 스텝이 자체 카드를 관리 */}
         {currentStep === 1 && (
           <WizardStep1
+            submissionId={submissionId}
             onComplete={(id) => {
               setSubmissionId(id);
               setCurrentStep(2);
@@ -100,6 +103,8 @@ export function SubmitTab() {
         {currentStep === 2 && submissionId && (
           <WizardStep2
             submissionId={submissionId}
+            comboResults={comboResults}
+            setComboResults={setComboResults}
             onComplete={() => setCurrentStep(3)}
             onBack={() => setCurrentStep(1)}
           />
@@ -119,6 +124,7 @@ export function SubmitTab() {
               setWizardOpen(false);
               setCurrentStep(1);
               setSubmissionId(null);
+              setComboResults({});
             }}
             className="text-xs text-foreground-muted underline hover:text-foreground-secondary"
           >

@@ -39,6 +39,7 @@ interface TopicPaginationProps {
   onSelectTopic: (topic: string) => void;
   onNotRemembered: () => void;
   onCustomInput: () => void;
+  excludedTopics?: string[];
 }
 
 export function TopicPagination({
@@ -47,11 +48,12 @@ export function TopicPagination({
   onSelectTopic,
   onNotRemembered,
   onCustomInput,
+  excludedTopics = [],
 }: TopicPaginationProps) {
   const [page, setPage] = useState(0);
 
-  // PC 3열 × 3행 = 9개, 모바일 2열 × 4행 = 8개 → 페이지당 8개 (호환)
-  const itemsPerPage = 8;
+  // 3열 × 3행 = 9개, 마지막 페이지에 기억안남+직접입력 추가
+  const itemsPerPage = 9;
 
   const { data: topics = [], isLoading: loading } = useQuery({
     queryKey: ["topics", category],
@@ -64,8 +66,13 @@ export function TopicPagination({
     setPage(0);
   }, [category]);
 
-  const totalPages = Math.ceil(topics.length / itemsPerPage);
-  const currentTopics = topics.slice(
+  // 이전 콤보에서 선택한 주제 제외 (같은 카테고리 내)
+  const filteredTopics = excludedTopics.length > 0
+    ? topics.filter((t) => !excludedTopics.includes(t.topic))
+    : topics;
+
+  const totalPages = Math.ceil(filteredTopics.length / itemsPerPage) || 1;
+  const currentTopics = filteredTopics.slice(
     page * itemsPerPage,
     (page + 1) * itemsPerPage
   );
@@ -73,7 +80,7 @@ export function TopicPagination({
   if (loading) {
     return (
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
-        {Array.from({ length: 6 }).map((_, i) => (
+        {Array.from({ length: 9 }).map((_, i) => (
           <div
             key={i}
             className="h-16 animate-pulse rounded-[var(--radius-lg)] bg-surface-secondary"
@@ -103,23 +110,25 @@ export function TopicPagination({
           </button>
         ))}
 
-        {/* 특수 옵션: 기억 안남 */}
-        <button
-          onClick={onNotRemembered}
-          className="flex flex-col items-center gap-1 rounded-[var(--radius-lg)] border border-dashed border-foreground-muted/30 p-3 text-center text-foreground-muted transition-all hover:border-foreground-muted hover:bg-surface-secondary"
-        >
-          <HelpCircle size={18} />
-          <span className="text-xs font-medium">기억 안남</span>
-        </button>
-
-        {/* 특수 옵션: 직접 입력 */}
-        <button
-          onClick={onCustomInput}
-          className="flex flex-col items-center gap-1 rounded-[var(--radius-lg)] border border-dashed border-foreground-muted/30 p-3 text-center text-foreground-muted transition-all hover:border-foreground-muted hover:bg-surface-secondary"
-        >
-          <PenLine size={18} />
-          <span className="text-xs font-medium">직접 입력</span>
-        </button>
+        {/* 특수 옵션: 마지막 페이지에서만 표시 */}
+        {page >= totalPages - 1 && (
+          <>
+            <button
+              onClick={onNotRemembered}
+              className="flex min-h-24 flex-col items-center justify-center gap-1 rounded-[var(--radius-lg)] border border-border bg-surface p-3 text-center text-foreground-secondary transition-all hover:border-primary-300 hover:bg-primary-50/30"
+            >
+              <HelpCircle size={18} />
+              <span className="text-xs font-medium">기억 안남</span>
+            </button>
+            <button
+              onClick={onCustomInput}
+              className="flex min-h-24 flex-col items-center justify-center gap-1 rounded-[var(--radius-lg)] border border-border bg-surface p-3 text-center text-foreground-secondary transition-all hover:border-primary-300 hover:bg-primary-50/30"
+            >
+              <PenLine size={18} />
+              <span className="text-xs font-medium">직접 입력</span>
+            </button>
+          </>
+        )}
       </div>
 
       {/* 페이지네이션 */}

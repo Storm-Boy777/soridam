@@ -89,6 +89,79 @@ export async function createDraft(
 }
 
 // ============================================================
+// Draft 조회 (뒤로가기 시 데이터 복원용)
+// ============================================================
+
+export async function getDraft(
+  submissionId: number
+): Promise<ActionResult<Submission>> {
+  try {
+    const { supabase, userId } = await requireUser();
+
+    const { data, error } = await supabase
+      .from("submissions")
+      .select("*")
+      .eq("id", submissionId)
+      .eq("user_id", userId)
+      .single();
+
+    if (error || !data) return { error: "후기를 찾을 수 없습니다" };
+    return { data: data as Submission };
+  } catch {
+    return { error: "로그인이 필요합니다" };
+  }
+}
+
+// ============================================================
+// Draft 수정 (Step 2→1 뒤로가기 후 재제출)
+// ============================================================
+
+export async function updateDraft(
+  submissionId: number,
+  formData: Record<string, unknown>
+): Promise<ActionResult<{ id: number }>> {
+  const parsed = step1Schema.safeParse(formData);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  try {
+    const { supabase, userId } = await requireUser();
+
+    const { error } = await supabase
+      .from("submissions")
+      .update({
+        exam_date: parsed.data.exam_date,
+        exam_difficulty: parsed.data.exam_difficulty,
+        pre_exam_level: parsed.data.pre_exam_level,
+        achieved_level: parsed.data.achieved_level === 'unknown' ? null : parsed.data.achieved_level,
+        exam_purpose: parsed.data.exam_purpose,
+        study_methods: parsed.data.study_methods,
+        prep_duration: parsed.data.prep_duration,
+        attempt_count: parsed.data.attempt_count,
+        perceived_difficulty: parsed.data.perceived_difficulty,
+        actual_duration: parsed.data.actual_duration,
+        used_recommended_survey: parsed.data.used_recommended_survey,
+        survey_occupation: parsed.data.used_recommended_survey ? null : parsed.data.survey_occupation,
+        survey_student: parsed.data.used_recommended_survey ? null : parsed.data.survey_student,
+        survey_course: parsed.data.used_recommended_survey ? null : parsed.data.survey_course,
+        survey_housing: parsed.data.used_recommended_survey ? null : parsed.data.survey_housing,
+        survey_leisure: parsed.data.used_recommended_survey ? null : parsed.data.survey_leisure.join(","),
+        survey_hobbies: parsed.data.used_recommended_survey ? null : parsed.data.survey_hobbies.join(","),
+        survey_sports: parsed.data.used_recommended_survey ? null : parsed.data.survey_sports.join(","),
+        survey_travel: parsed.data.used_recommended_survey ? null : parsed.data.survey_travel.join(","),
+      })
+      .eq("id", submissionId)
+      .eq("user_id", userId);
+
+    if (error) return { error: "수정에 실패했습니다" };
+    return { data: { id: submissionId } };
+  } catch {
+    return { error: "로그인이 필요합니다" };
+  }
+}
+
+// ============================================================
 // Step 2: 14개 질문 저장
 // ============================================================
 

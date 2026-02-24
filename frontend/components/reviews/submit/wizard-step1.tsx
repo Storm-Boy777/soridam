@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, Controller, useWatch } from "react-hook-form";
+import { useQuery } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Loader2,
@@ -12,7 +13,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { step1Schema, type Step1Input } from "@/lib/validations/reviews";
-import { createDraft } from "@/lib/actions/reviews";
+import { createDraft, getDraft, updateDraft } from "@/lib/actions/reviews";
 import type { ExamDifficulty } from "@/lib/types/reviews";
 import {
   PRE_EXAM_LEVELS,
@@ -38,6 +39,7 @@ import {
 
 interface WizardStep1Props {
   onComplete: (submissionId: number) => void;
+  submissionId?: number | null;
 }
 
 // 재조정 옵션 계산 — 시작 난이도 기준 ±1 범위의 실제 난이도 표시
@@ -49,7 +51,7 @@ function getAdjustmentOptions(start: number) {
   return options;
 }
 
-export function WizardStep1({ onComplete }: WizardStep1Props) {
+export function WizardStep1({ onComplete, submissionId }: WizardStep1Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [diffStart, setDiffStart] = useState<number | null>(null);
@@ -60,6 +62,7 @@ export function WizardStep1({ onComplete }: WizardStep1Props) {
     handleSubmit,
     control,
     setValue,
+    reset,
     formState: { errors },
   } = useForm<Step1Input>({
     resolver: zodResolver(step1Schema),
@@ -86,6 +89,53 @@ export function WizardStep1({ onComplete }: WizardStep1Props) {
     },
   });
 
+  // 기존 draft 로드 (뒤로가기 시 데이터 복원)
+  const { data: draftData, isLoading: loadingDraft } = useQuery({
+    queryKey: ["draft", submissionId],
+    queryFn: async () => {
+      if (!submissionId) return null;
+      const result = await getDraft(submissionId);
+      return result.data || null;
+    },
+    enabled: !!submissionId,
+    staleTime: Infinity,
+  });
+
+  // draft 데이터 로드 시 폼 채우기
+  useEffect(() => {
+    if (!draftData) return;
+
+    // Self-Assessment 파싱 ("6-5" → diffStart=6, diffAdj=5)
+    if (draftData.exam_difficulty) {
+      const parts = draftData.exam_difficulty.split("-");
+      setDiffStart(Number(parts[0]));
+      setDiffAdj(Number(parts[1]));
+    }
+
+    reset({
+      exam_date: draftData.exam_date || "",
+      exam_difficulty: draftData.exam_difficulty as ExamDifficulty,
+      pre_exam_level: draftData.pre_exam_level as Step1Input["pre_exam_level"],
+      achieved_level: (draftData.achieved_level || "unknown") as Step1Input["achieved_level"],
+      exam_purpose: draftData.exam_purpose as Step1Input["exam_purpose"],
+      study_methods: (draftData.study_methods || []) as Step1Input["study_methods"],
+      prep_duration: draftData.prep_duration as Step1Input["prep_duration"],
+      attempt_count: draftData.attempt_count as Step1Input["attempt_count"],
+      perceived_difficulty: draftData.perceived_difficulty as Step1Input["perceived_difficulty"],
+      actual_duration: draftData.actual_duration as Step1Input["actual_duration"],
+      used_recommended_survey: draftData.used_recommended_survey,
+      survey_occupation: draftData.survey_occupation || null,
+      survey_student: draftData.survey_student || null,
+      survey_course: draftData.survey_course || null,
+      survey_housing: draftData.survey_housing || null,
+      survey_leisure: draftData.survey_leisure ? draftData.survey_leisure.split(",") : [],
+      survey_hobbies: draftData.survey_hobbies ? draftData.survey_hobbies.split(",") : [],
+      survey_sports: draftData.survey_sports ? draftData.survey_sports.split(",") : [],
+      survey_travel: draftData.survey_travel ? draftData.survey_travel.split(",") : [],
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftData]);
+
   // 서베이 관련 watch
   const usedRecommended = useWatch({ control, name: "used_recommended_survey" });
   const surveyLeisure = useWatch({ control, name: "survey_leisure" }) || [];
@@ -100,7 +150,11 @@ export function WizardStep1({ onComplete }: WizardStep1Props) {
     setSubmitting(true);
     setError(null);
 
-    const result = await createDraft(data);
+    // 기존 draft가 있으면 UPDATE, 없으면 새로 CREATE
+    const result = submissionId
+      ? await updateDraft(submissionId, data)
+      : await createDraft(data);
+
     setSubmitting(false);
 
     if (result.error) {
@@ -124,6 +178,15 @@ export function WizardStep1({ onComplete }: WizardStep1Props) {
       : [...currentValues, value];
     setValue(fieldName, next, { shouldValidate: false });
   };
+
+  // draft 로딩 중
+  if (submissionId && loadingDraft) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 size={24} className="animate-spin text-primary-500" />
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

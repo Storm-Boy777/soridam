@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Loader2, Check } from "lucide-react";
 import { TopicPagination } from "./topic-pagination";
 import { QuestionSelector } from "./question-selector";
@@ -8,20 +8,21 @@ import type { SelectedQuestion } from "./question-selector";
 import { saveQuestions } from "@/lib/actions/reviews";
 import { COMBO_STEPS, type QuestionItem } from "@/lib/types/reviews";
 
+// 콤보별 선택된 질문 상태
+export interface ComboResult {
+  questions: SelectedQuestion[];
+}
+
 interface WizardStep2Props {
   submissionId: number;
+  comboResults: Record<string, ComboResult>;
+  setComboResults: React.Dispatch<React.SetStateAction<Record<string, ComboResult>>>;
   onComplete: () => void;
   onBack: () => void;
 }
 
-// 콤보별 선택된 질문 상태
-interface ComboResult {
-  questions: SelectedQuestion[];
-}
-
-export function WizardStep2({ submissionId, onComplete, onBack }: WizardStep2Props) {
+export function WizardStep2({ submissionId, comboResults, setComboResults, onComplete, onBack }: WizardStep2Props) {
   const [currentComboIdx, setCurrentComboIdx] = useState(0);
-  const [comboResults, setComboResults] = useState<Record<string, ComboResult>>({});
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -32,6 +33,24 @@ export function WizardStep2({ submissionId, onComplete, onBack }: WizardStep2Pro
 
   // 현재 콤보의 카테고리 (TopicPagination용)
   const category = currentCombo.category;
+
+  // 같은 카테고리의 이전 콤보에서 선택된 주제 수집 (중복 방지)
+  const excludedTopics = useMemo(() => {
+    const topics: string[] = [];
+    for (let i = 0; i < currentComboIdx; i++) {
+      const step = COMBO_STEPS[i];
+      if (step.category !== currentCombo.category) continue;
+      const result = comboResults[step.comboType];
+      if (!result) continue;
+      // 각 콤보의 질문에서 주제 수집 (기억 안남, 직접 입력 제외)
+      for (const q of result.questions) {
+        if (!q.is_not_remembered && q.topic && q.topic !== "직접 입력" && q.topic !== "기억 안남") {
+          if (!topics.includes(q.topic)) topics.push(q.topic);
+        }
+      }
+    }
+    return topics;
+  }, [currentComboIdx, currentCombo.category, comboResults]);
 
   // 모든 콤보 완료 여부
   const allComplete = COMBO_STEPS.every(
@@ -228,6 +247,26 @@ export function WizardStep2({ submissionId, onComplete, onBack }: WizardStep2Pro
           )}
         </div>
 
+        {/* 선택된 질문 요약 */}
+        {isCurrentComplete && (
+          <div className="mt-3 space-y-1.5 border-t border-border pt-3">
+            {currentResult.questions.map((q, idx) => (
+              <div key={idx} className="flex items-baseline gap-2 text-xs">
+                <span className="shrink-0 font-medium text-foreground-muted">
+                  {currentCombo.questionNumbers[idx]}번
+                </span>
+                <span className="text-foreground-secondary">
+                  {q.is_not_remembered
+                    ? "기억 안남"
+                    : q.custom_question_text
+                      ? `[직접 입력] ${q.custom_question_text}`
+                      : q.question_title || q.question_text || q.master_question_id}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {isCurrentComplete && (
           <button
             onClick={handleResetCombo}
@@ -250,6 +289,7 @@ export function WizardStep2({ submissionId, onComplete, onBack }: WizardStep2Pro
             onSelectTopic={handleSelectTopic}
             onNotRemembered={handleNotRemembered}
             onCustomInput={handleCustomInput}
+            excludedTopics={excludedTopics}
           />
         </div>
       )}

@@ -8,6 +8,7 @@ import { ANSWER_TYPE_LABELS, ANSWER_TYPE_COLORS } from "@/lib/types/reviews";
 
 interface MasterQuestion {
   question_id: string;
+  question_title: string;
   question_english: string;
   question_korean: string;
   answer_type: string | null;
@@ -20,6 +21,7 @@ export interface SelectedQuestion {
   is_not_remembered: boolean;
   topic: string;
   question_text?: string;
+  question_title?: string;
 }
 
 interface QuestionSelectorProps {
@@ -199,6 +201,7 @@ export function QuestionSelector({
                         is_not_remembered: false,
                         topic,
                         question_text: q.question_korean,
+                        question_title: q.question_title,
                       });
                     }}
                     disabled={isSelected || isComplete}
