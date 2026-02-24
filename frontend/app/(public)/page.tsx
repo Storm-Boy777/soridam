@@ -161,20 +161,15 @@ export default function HomePage() {
             transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
             className="mt-8 w-[310px] rounded-2xl border border-[#EAE0D5] bg-white/50 px-6 py-7 backdrop-blur-sm sm:w-[530px] sm:px-10 sm:py-9"
           >
-            <div className="space-y-4 text-[0.8rem] leading-[1.9] text-[#8B7E72] sm:text-[1.05rem]">
+            <div className="text-[0.8rem] leading-[1.9] text-[#8B7E72] sm:text-[1.05rem]">
               <p>
-                OPIc은 ★스타가 아닙니다.
+                퇴근길에 듣는 플레이리스트,
                 <br className="hidden sm:block" />{" "}
-                새벽 요가로 하루를 열고, 저녁엔 루프탑에서 와인을 기울인다는
+                주말마다 찾는 단골 카페의 아메리카노,
                 <br className="hidden sm:block" />{" "}
-                남의 멋진 삶을 흉내 내지 마세요.
-              </p>
-              <p>
-                당신의 평범한 하루,
+                친구와 나누는 쓸데없이 긴 수다.
                 <br className="hidden sm:block" />{" "}
-                소파에 누워 좋아하는 예능을 보며 낄낄대던 그 소박한 이야기.
-                <br className="hidden sm:block" />{" "}
-                그 진짜 내 이야기를 할 때, 당신은 가장 나다워지고 가장 돋보입니다.
+                그 익숙한 일상이 OPIc에서 가장 빛나는 대본입니다.
               </p>
             </div>
           </motion.div>
