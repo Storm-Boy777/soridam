@@ -78,7 +78,7 @@ const faqs = [
   },
   {
     q: "무료 체험은 어떻게 이용하나요?",
-    a: "회원가입만 하면 무료 플랜이 자동 적용됩니다. 샘플 모의고사 1회, AI 튜터링 무료, 쉐도잉 훈련 무제한으로 핵심 기능을 바로 경험할 수 있습니다.",
+    a: "회원가입만 하면 무료 플랜이 자동 적용됩니다. 실전 모의고사 1회, 기출 빈도 분석, 체화·쉐도잉 훈련 무제한으로 핵심 기능을 바로 경험할 수 있습니다.",
   },
   {
     q: "언제든지 해지할 수 있나요?",
@@ -203,7 +203,7 @@ export default function HomePage() {
               href="/signup"
               className="inline-flex items-center gap-2 rounded-full bg-[#D4835E] px-8 py-[15px] text-[15px] font-bold text-white shadow-[0_4px_20px_rgba(212,131,94,0.25)] transition-all hover:-translate-y-px hover:bg-[#C07350]"
             >
-              무료로 시작하기 <ArrowRight className="h-4 w-4" />
+              나만의 첫 이야기 시작하기 <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               href="/pricing"
@@ -270,7 +270,8 @@ export default function HomePage() {
       {/* 브릿지 카피 */}
       <ScrollReveal preset="fade-in" duration={0.8}>
         <div className="bg-white px-6 pb-10 text-center text-[1rem] text-[#8B7E72] sm:text-[1.05rem]">
-          그래서 오픽톡닥은{" "}
+          그래서 오픽톡닥은
+          <br className="sm:hidden" />{" "}
           <strong className="text-[#3A2E25]">정확한 데이터</strong>와{" "}
           <strong className="text-[#3A2E25]">당신만의 이야기</strong>로
           준비합니다.
@@ -374,8 +375,9 @@ export default function HomePage() {
                 <div className="my-6 h-px bg-[#EAE0D5]" />
                 <ul className="flex-1 space-y-3">
                   {[
-                    "샘플 모의고사 1회 (고정문제)",
-                    "AI 진단 · 튜터링 무료",
+                    "실전 모의고사 1회 (체험)",
+                    "기출 빈도 분석 제공",
+                    "스크립트 패키지 생성 2회 (후기 제출 시)",
                     "체화 · 쉐도잉 훈련 무제한",
                   ].map((f) => (
                     <li

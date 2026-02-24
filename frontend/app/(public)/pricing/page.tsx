@@ -14,8 +14,9 @@ const plans = [
     description: "OPIc이 어떤 시험인지 경험해 보세요",
     sub: "",
     features: [
-      "샘플 모의고사 1회 (고정문제)",
-      "AI 진단 · 튜터링 무료",
+      "실전 모의고사 1회 (체험)",
+      "기출 빈도 분석 제공",
+      "스크립트 패키지 생성 2회 (후기 제출 시)",
       "체화 · 쉐도잉 훈련 무제한",
     ],
     cta: "무료로 시작하기",
@@ -168,35 +169,39 @@ export default function PricingPage() {
                 <th className="px-2 py-3 text-center font-semibold text-primary-600 sm:px-4">
                   베이직
                 </th>
-                <th className="px-2 py-3 text-center font-semibold text-foreground sm:px-4">
+                <th className="px-2 py-3 text-center font-semibold text-primary-700 sm:px-4">
                   프리미엄
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {[
-                ["실전 모의고사", "샘플 1회", "3회", "10회"],
-                ["스크립트 패키지 생성", "—", "30회", "100회"],
-                ["AI 진단 · 튜터링", "무료", "무료", "무료"],
+                ["실전 모의고사", "1회 (체험)", "3회", "10회"],
+                ["스크립트 패키지 생성", "2회 (후기 제출 시)", "30회", "100회"],
                 ["체화 훈련", "무제한", "무제한", "무제한"],
                 ["쉐도잉 훈련", "무제한", "무제한", "무제한"],
+                ["AI 진단 · 튜터링", "—", "무료", "무료"],
                 ["성적 진단 리포트", "—", "O", "O"],
-                ["성장 데이터 리포트", "—", "—", "O"],
+                ["성장 데이터 리포트", "—", "O", "O"],
                 ["이용 기간", "무제한", "1개월", "2개월"],
-              ].map(([feature, free, basic, premium]) => (
-                <tr key={feature}>
-                  <td className="px-3 py-3 text-foreground sm:px-4">{feature}</td>
-                  <td className="px-2 py-3 text-center text-foreground-secondary sm:px-4">
-                    {free}
-                  </td>
-                  <td className="px-2 py-3 text-center text-foreground-secondary sm:px-4">
-                    {basic}
-                  </td>
-                  <td className="px-2 py-3 text-center text-foreground-secondary sm:px-4">
-                    {premium}
-                  </td>
-                </tr>
-              ))}
+                ["모의고사 회당 비용", "—", "—", "베이직 대비 25%↓"],
+              ].map(([feature, free, basic, premium]) => {
+                const isDiff = basic !== premium;
+                return (
+                  <tr key={feature}>
+                    <td className="px-3 py-3 text-foreground sm:px-4">{feature}</td>
+                    <td className="px-2 py-3 text-center text-foreground-secondary sm:px-4">
+                      {free}
+                    </td>
+                    <td className="px-2 py-3 text-center text-foreground-secondary sm:px-4">
+                      {basic}
+                    </td>
+                    <td className={`px-2 py-3 text-center sm:px-4 ${isDiff ? "bg-primary-50/60 font-medium text-primary-700" : "text-foreground-secondary"}`}>
+                      {premium}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
