@@ -39,9 +39,6 @@ export type AttemptCount = (typeof ATTEMPT_COUNTS)[number];
 export const PERCEIVED_DIFFICULTIES = ['easy', 'normal', 'hard'] as const;
 export type PerceivedDifficulty = (typeof PERCEIVED_DIFFICULTIES)[number];
 
-export const TIME_SUFFICIENCIES = ['sufficient', 'adequate', 'insufficient'] as const;
-export type TimeSufficiency = (typeof TIME_SUFFICIENCIES)[number];
-
 export const ACTUAL_DURATIONS = ['under_20', '20_25', '25_30', '30_35', '35_40'] as const;
 export type ActualDuration = (typeof ACTUAL_DURATIONS)[number];
 
@@ -119,12 +116,6 @@ export const PERCEIVED_DIFFICULTY_LABELS: Record<PerceivedDifficulty, string> = 
   easy: '쉬웠다',
   normal: '보통이었다',
   hard: '어려웠다',
-};
-
-export const TIME_SUFFICIENCY_LABELS: Record<TimeSufficiency, string> = {
-  sufficient: '충분했다',
-  adequate: '적당했다',
-  insufficient: '부족했다',
 };
 
 export const ACTUAL_DURATION_LABELS: Record<ActualDuration, string> = {
@@ -226,7 +217,6 @@ export interface Submission {
   prep_duration: PrepDuration;
   attempt_count: AttemptCount;
   perceived_difficulty: PerceivedDifficulty;
-  time_sufficiency: TimeSufficiency;
   actual_duration: ActualDuration;
   used_recommended_survey: boolean;
   survey_occupation: string | null;
@@ -279,7 +269,6 @@ export interface Step1FormData {
   prep_duration: PrepDuration;
   attempt_count: AttemptCount;
   perceived_difficulty: PerceivedDifficulty;
-  time_sufficiency: TimeSufficiency;
   actual_duration: ActualDuration;
   used_recommended_survey: boolean;
   survey_occupation: string | null;
