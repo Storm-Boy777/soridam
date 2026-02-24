@@ -215,20 +215,21 @@ export function SubmitTab({ initialSubmissions }: SubmitTabProps) {
         </p>
 
         {/* 3단계 안내 */}
-        <div className="mt-6 space-y-4">
+        <div className="relative mt-6">
           {[
             { step: 1, title: "시험 정보 + 배경 설문", desc: "시험 날짜, Self-Assessment, 등급, 서베이 선택 등을 입력합니다" },
             { step: 2, title: "출제 질문 입력", desc: "콤보별로 어떤 주제와 질문이 나왔는지 선택합니다" },
             { step: 3, title: "한줄 후기 + 팁", desc: "간단한 후기와 팁을 남기면 완료!" },
           ].map((s, i) => (
-            <div key={s.step} className="flex items-start gap-4">
-              <div className="flex flex-col items-center">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-border bg-surface-secondary text-sm font-bold text-foreground-muted">
-                  {s.step}
-                </div>
-                {i < 2 && <div className="mt-1 h-6 w-px bg-border" />}
+            <div key={s.step} className="relative flex gap-4 pb-5 last:pb-0">
+              {/* 연결선 — 마지막 제외 */}
+              {i < 2 && (
+                <div className="absolute left-4 top-8 bottom-0 w-px bg-border" />
+              )}
+              <div className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-border bg-surface-secondary text-sm font-bold text-foreground-muted">
+                {s.step}
               </div>
-              <div className="pb-1">
+              <div className="pt-0.5">
                 <p className="font-semibold text-foreground">{s.title}</p>
                 <p className="text-sm text-foreground-secondary">{s.desc}</p>
               </div>
@@ -276,8 +277,8 @@ export function SubmitTab({ initialSubmissions }: SubmitTabProps) {
                   key={sub.id}
                   className="rounded-[var(--radius-lg)] border border-border p-3"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-surface-secondary">
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <div className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-surface-secondary sm:flex">
                       {sub.status === "complete" ? (
                         <FileText size={16} className="text-primary-500" />
                       ) : (
@@ -285,25 +286,23 @@ export function SubmitTab({ initialSubmissions }: SubmitTabProps) {
                       )}
                     </div>
                     <div
-                      className={`flex-1 ${sub.status === "complete" ? "cursor-pointer" : ""}`}
+                      className={`min-w-0 flex-1 ${sub.status === "complete" ? "cursor-pointer" : ""}`}
                       onClick={() => {
                         if (sub.status === "complete") {
                           setExpandedId(isExpanded ? null : sub.id);
                         }
                       }}
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <span className="text-sm font-medium text-foreground">
                           {sub.exam_date}
                         </span>
                         <span className="rounded-full bg-surface-secondary px-1.5 py-0.5 text-[10px] font-medium text-foreground-muted">
-                          {PRE_EXAM_LEVEL_LABELS[sub.pre_exam_level as PreExamLevel]}
+                          {sub.pre_exam_level === 'none' ? '첫 응시' : sub.pre_exam_level}
                         </span>
                         <span className="text-[10px] text-foreground-muted">→</span>
                         <span className="rounded-full bg-primary-50 px-1.5 py-0.5 text-[10px] font-medium text-primary-700">
-                          {sub.achieved_level
-                            ? ACHIEVED_LEVEL_OPTION_LABELS[sub.achieved_level as AchievedLevelOption]
-                            : '발표 전'}
+                          {sub.achieved_level || '발표 전'}
                         </span>
                         <span
                           className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
@@ -316,7 +315,7 @@ export function SubmitTab({ initialSubmissions }: SubmitTabProps) {
                         </span>
                       </div>
                       {sub.one_line_review && (
-                        <p className="mt-0.5 text-xs text-foreground-secondary">
+                        <p className="mt-0.5 truncate text-xs text-foreground-secondary">
                           {sub.one_line_review}
                         </p>
                       )}

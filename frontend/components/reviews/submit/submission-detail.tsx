@@ -66,10 +66,8 @@ export function SubmissionDetail({ submissionId }: SubmissionDetailProps) {
         <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
           <div className="text-foreground-muted">등급 변화</div>
           <div className="text-foreground">
-            {PRE_EXAM_LEVEL_LABELS[submission.pre_exam_level as PreExamLevel]} →{" "}
-            {submission.achieved_level
-              ? ACHIEVED_LEVEL_OPTION_LABELS[submission.achieved_level as AchievedLevelOption]
-              : "발표 전"}
+            {submission.pre_exam_level === 'none' ? '첫 응시' : submission.pre_exam_level} →{" "}
+            {submission.achieved_level || "발표 전"}
           </div>
           {submission.exam_difficulty && (
             <>
