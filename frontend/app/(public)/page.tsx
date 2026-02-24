@@ -126,7 +126,7 @@ export default function HomePage() {
   return (
     <>
       {/* ━━━ 1. Hero — 따뜻한 크림, 편안한 일상 ━━━ */}
-      <section className="relative overflow-hidden bg-[#FAF6F1] px-5 pb-20 pt-24 sm:pb-28 sm:pt-32">
+      <section className="relative flex min-h-[100svh] flex-col items-center overflow-hidden bg-[#FAF6F1] px-5 pb-16 pt-28 sm:pb-20 sm:pt-36">
         {/* 배경 — 따뜻한 조명 글로우 */}
         <div className="pointer-events-none absolute left-1/2 top-[-100px] h-[600px] w-[600px] -translate-x-1/2 bg-[radial-gradient(circle,rgba(212,131,94,0.08)_0%,transparent_70%)]" />
 
@@ -137,19 +137,19 @@ export default function HomePage() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="inline-flex items-center gap-1.5 rounded-full border border-[#EAE0D5] bg-white/60 px-3 py-1 text-[0.7rem] font-bold tracking-wide text-[#8B7E72] sm:px-[18px] sm:py-2 sm:text-[0.85rem]"
           >
-            평범한 하루, 완벽한 대본.
+            나만의 이야기로 채우는 OPIc
           </motion.span>
 
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
-            className="mt-8 text-[26px] font-extrabold leading-[1.3] tracking-[-0.04em] text-[#3A2E25] sm:text-[2.8rem] md:text-[3.4rem]"
+            className="mt-8 text-[32px] font-extrabold leading-[1.3] tracking-[-0.04em] text-[#3A2E25] sm:text-[2.8rem] md:text-[3.4rem]"
           >
             화려한 필터는 끄세요.
             <br />
             <span className="text-[#D4835E]">
-              당신이 평범하게 보내는 일상들이
+              지금 보내는 평범한 하루가
             </span>
             <br />
             가장 완벽한 대본입니다.
@@ -163,8 +163,8 @@ export default function HomePage() {
           transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
           className="relative mx-auto mt-8 max-w-[1100px]"
         >
-          <p className="mb-6 text-center text-[0.85rem] text-[#B5A99D]">
-            이 모든 순간이, 당신만의 대본입니다
+          <p className="mb-6 text-center text-[0.85rem] font-medium text-[#8B7E72] sm:text-[1rem]">
+            어떤 일상을 보내셨나요? 있는 그대로의 당신을 들려주세요.
           </p>
           <div className="flex gap-3 overflow-x-auto px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-4 md:grid md:grid-cols-5 md:overflow-visible md:px-6">
             {illustrations.map((ill) => (
@@ -190,17 +190,6 @@ export default function HomePage() {
         </motion.div>
 
         <div className="relative mx-auto flex max-w-4xl flex-col items-center text-center">
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.45, ease: "easeOut" }}
-            className="mt-6 text-[1.05rem] font-bold leading-[1.8] text-[#3A2E25] sm:text-[1.15rem]"
-          >
-            당신의 이야기를 시작하세요.
-            <br />
-            내 삶의 대본에서는, 이미 내가 주인공이니까요.
-          </motion.p>
-
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -545,15 +534,15 @@ export default function HomePage() {
         <div className="relative mx-auto max-w-3xl px-6">
           <ScrollReveal preset="fade-up">
             <h2 className="text-[1.8rem] font-extrabold leading-[1.35] tracking-[-0.03em] text-[#3A2E25] sm:text-[2.8rem]">
-              당신의 이야기가,
+              진짜 내 이야기로
               <br />
-              가장 완벽한 대본입니다.
+              OPIc을 시작해 보세요.
             </h2>
           </ScrollReveal>
           <ScrollReveal preset="fade-up" delay={0.15}>
             <p className="mt-4 text-[1rem] leading-[1.7] text-[#8B7E72] sm:text-[1.1rem]">
-              남의 삶을 흉내내지 마세요.
-              <br />내 삶의 무대에서, 가장 나답게 말하세요.
+              버벅거려도 괜찮아요.
+              <br />정답은 이미 당신의 일상 속에 있으니까요.
             </p>
           </ScrollReveal>
           <ScrollReveal preset="scale-up" delay={0.3}>
