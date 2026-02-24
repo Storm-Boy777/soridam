@@ -111,18 +111,29 @@ export function SubmissionDetail({ submissionId }: SubmissionDetailProps) {
         <p className="text-xs font-semibold text-foreground">출제 질문</p>
         <div className="space-y-2">
           {/* Q1 자기소개 (항상 첫 번째) */}
-          {questionsByCombo.has("self_intro") && (
-            <div className="rounded-[var(--radius-md)] bg-surface-secondary p-2.5">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-semibold text-foreground-muted">
-                  1번 문항
-                </span>
-                <span className="rounded-full bg-primary-50 px-1.5 py-0.5 text-[10px] font-medium text-primary-700">
-                  자기소개
-                </span>
+          {questionsByCombo.has("self_intro") && (() => {
+            const selfIntroQ = questionsByCombo.get("self_intro")?.[0];
+            return (
+              <div className="rounded-[var(--radius-md)] bg-surface-secondary p-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-semibold text-foreground-muted">
+                    1번 문항
+                  </span>
+                  <span className="rounded-full bg-primary-50 px-1.5 py-0.5 text-[10px] font-medium text-primary-700">
+                    자기소개
+                  </span>
+                </div>
+                <div className="mt-1.5 space-y-0.5 pl-0.5 text-xs">
+                  <p className="text-foreground-secondary">
+                    {selfIntroQ?.master_questions?.question_english || "Let's start the interview now. Tell me something about yourself."}
+                  </p>
+                  <p className="text-foreground-muted">
+                    {selfIntroQ?.master_questions?.question_korean || "그럼 인터뷰를 시작하겠습니다. 본인에 대해 간단히 소개해 주세요."}
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
           {/* 콤보별 질문 (2~15번) */}
           {COMBO_STEPS.map((step) => {
             const comboQuestions = questionsByCombo.get(step.comboType);
@@ -145,13 +156,20 @@ export function SubmissionDetail({ submissionId }: SubmissionDetailProps) {
                       <span className="shrink-0 font-medium text-foreground-muted">
                         {step.questionNumbers[idx]}번
                       </span>
-                      <span className="text-foreground-secondary">
-                        {q.is_not_remembered
-                          ? "기억 안남"
-                          : q.custom_question_text
-                            ? `[직접 입력] ${q.custom_question_text}`
-                            : q.master_questions?.question_title || q.master_questions?.question_korean || "—"}
-                      </span>
+                      {q.is_not_remembered ? (
+                        <span className="text-foreground-secondary">기억 안남</span>
+                      ) : q.custom_question_text ? (
+                        <span className="text-foreground-secondary">[직접 입력] {q.custom_question_text}</span>
+                      ) : (
+                        <div className="space-y-0.5">
+                          <p className="text-foreground-secondary">
+                            {q.master_questions?.question_english || "—"}
+                          </p>
+                          <p className="text-foreground-muted">
+                            {q.master_questions?.question_korean || "—"}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
