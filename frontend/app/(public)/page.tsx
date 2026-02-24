@@ -126,7 +126,7 @@ export default function HomePage() {
   return (
     <>
       {/* ━━━ 1. Hero — 따뜻한 크림, 편안한 일상 ━━━ */}
-      <section className="relative flex min-h-[100svh] flex-col items-center overflow-hidden bg-[#FAF6F1] px-5 pb-16 pt-28 sm:pb-20 sm:pt-36">
+      <section className="relative flex min-h-[100svh] flex-col items-center overflow-hidden bg-[#FAF6F1] px-5 pb-16 pt-24 sm:pb-20 sm:pt-32">
         {/* 배경 — 따뜻한 조명 글로우 */}
         <div className="pointer-events-none absolute left-1/2 top-[-100px] h-[600px] w-[600px] -translate-x-1/2 bg-[radial-gradient(circle,rgba(212,131,94,0.08)_0%,transparent_70%)]" />
 
