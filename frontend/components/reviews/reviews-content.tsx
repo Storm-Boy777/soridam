@@ -6,8 +6,7 @@ import { BarChart3, Send, MessageSquare } from "lucide-react";
 import { FrequencyTab } from "./frequency/frequency-tab";
 import { SubmitTab } from "./submit/submit-tab";
 import { ListTab } from "./list/list-tab";
-import { getSubmissionWithQuestions } from "@/lib/actions/reviews";
-import type { ReviewStats, FrequencyItem, Submission } from "@/lib/types/reviews";
+import type { ReviewStats, FrequencyItem, Submission, SubmissionWithQuestions } from "@/lib/types/reviews";
 
 /* ── 상수 ── */
 
@@ -26,26 +25,19 @@ interface ReviewsContentProps {
   initialFrequency: FrequencyItem[];
   initialSubmissions: Submission[];
   initialPublicReviews: { reviews: Submission[]; total: number };
+  initialSubmissionDetails: Record<number, SubmissionWithQuestions>;
 }
 
-export function ReviewsContent({ initialStats, initialFrequency, initialSubmissions, initialPublicReviews }: ReviewsContentProps) {
+export function ReviewsContent({ initialStats, initialFrequency, initialSubmissions, initialPublicReviews, initialSubmissionDetails }: ReviewsContentProps) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabId>("frequency");
 
-  // 완료된 후기 상세 Prefetch — 페이지 진입 시 바로 실행 (탭 무관)
+  // 서버에서 조회한 완료 후기 상세를 캐시에 즉시 세팅 (클라이언트 RTT 0회)
   useEffect(() => {
-    for (const sub of initialSubmissions) {
-      if (sub.status !== "complete") continue;
-      queryClient.prefetchQuery({
-        queryKey: ["submission-detail", sub.id],
-        queryFn: async () => {
-          const result = await getSubmissionWithQuestions(sub.id);
-          return result.data || null;
-        },
-        staleTime: Infinity,
-      });
+    for (const [id, detail] of Object.entries(initialSubmissionDetails)) {
+      queryClient.setQueryData(["submission-detail", Number(id)], detail);
     }
-  }, [initialSubmissions, queryClient]);
+  }, [initialSubmissionDetails, queryClient]);
 
   return (
     <div>

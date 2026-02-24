@@ -37,6 +37,7 @@ export function SubmitTab({ initialSubmissions }: SubmitTabProps) {
       return result.data || [];
     },
     initialData: initialSubmissions,
+    initialDataUpdatedAt: Date.now(),
     staleTime: 5 * 60 * 1000, // 5분
   });
 

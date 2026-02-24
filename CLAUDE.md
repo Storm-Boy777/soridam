@@ -293,6 +293,8 @@ PORTONE_API_SECRET=XFGThRDJX2...
   - 페이지네이션 → `useInfiniteQuery` (필터별 캐시 + "더 보기" 캐시)
   - 일반 동적 데이터 → `staleTime: 5 * 60 * 1000` (5분 캐시)
   - 데이터 변경 후 갱신 → `queryClient.invalidateQueries()` (관련 캐시 자동 갱신)
+- **서버 사전 조회**: 탭이 여러 개인 페이지는 서버에서 모든 탭의 초기 데이터를 `Promise.all`로 병렬 조회 → 각 탭에 `initialData` 전달
+- **Prefetch 위치**: `prefetchQuery`는 페이지 최상위 컴포넌트에 배치 (자식에 두면 마운트 시점에 의존하여 실행 안 될 수 있음)
 - **서버 쿼리 최적화**: 여러 독립 쿼리는 `Promise.all`로 병렬 실행, 공통 데이터는 1회 조회 후 공유
 - **현재 사용 중인 queryKey 목록**:
   - `["user-credits", userId]` — 대시보드 + 스토어 공유 (후기 완료 시 invalidate)
@@ -301,8 +303,8 @@ PORTONE_API_SECRET=XFGThRDJX2...
   - `["public-reviews", levelFilter]` — 공개 후기 (필터별)
   - `["topics", category]` — 주제 목록 (고정)
   - `["questions", topic, category]` — 질문 목록 (고정)
-  - `["submission-detail", submissionId]` — 완료 후기 상세 (Infinity)
-  - `["submission-questions", submissionId]` — 완료 후기 질문 목록 (Infinity)
+  - `["submission-detail", submissionId]` — 완료 후기 상세 + 질문 통합 (Infinity, prefetch)
+  - `["question-frequency", topic]` — 주제별 질문 빈도 (5분, prefetch)
 
 1. **코드 수정** - 필요한 변경사항 구현
 2. **사용자가 요청한 경우에만**:
@@ -483,7 +485,7 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
   - **효과**: 탭 전환 시 캐시 히트 0ms, 위저드 주제/질문 재선택 시 로딩 없음
   - CLAUDE.md에 "TanStack Query 필수 원칙" + queryKey 목록 추가 (향후 모듈 구현 시 필수 적용)
 
-### 2026-02-24 - 시험후기 위저드 고도화 + 크레딧 25일 룰
+### 2026-02-24 - 시험후기 위저드 고도화 + 크레딧 25일 룰 + 성능 최적화 11단계
 - **크레딧 보상 규칙 변경**: 월 2건 제한 → **25일 룰**
   - 최초 2회: 무조건 스크립트 크레딧 2개 지급
   - 3회차부터: 마지막 지급일로부터 25일 경과 시에만 지급 (OPIc 응시 주기 반영)
@@ -498,10 +500,16 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 - **콤보 간 주제 중복 제거**: 같은 카테고리 이전 콤보에서 선택한 주제를 `excludedTopics`로 필터링
 - **위저드 버그 수정**: 콤보 전환 시 페이지네이션 리셋, 중복 제출 방지 강화
 - **기억안남/직접입력 UX**: 마지막 페이지로 이동, 주제 카드와 동일 스타일 적용, `itemsPerPage` 9개
+- **시험후기 성능 최적화** (8~11차, 누적 11단계):
+  - 8차: 주제별 질문 빈도 + 제출이력 상세 `prefetchQuery` 백그라운드 사전 로딩
+  - 9차: 제출 상세 2 RTT → 1 RTT 통합 (`getSubmissionWithQuestions` nested select) + `submission_questions.topic` 인덱스
+  - 10차: 3탭 서버 사전 조회 — `page.tsx`에서 `Promise.all`로 3개 데이터 병렬 조회 → `initialData`로 모든 탭 0ms 즉시 렌더
+  - 11차: Prefetch 위치 최적화 — `submit-tab.tsx` → `reviews-content.tsx`(페이지 레벨)로 이동, 탭 전환 전에도 사전 로딩
+  - **명칭 통일**: "스크립트 크레딧" → "스크립트 패키지 생성권" (요금제 페이지 일치)
 
 ## 🔮 현재 상태 & 다음 단계
 
-**현재**: Phase 3 (핵심 모듈 이관) — Step 1 시험후기 완료 + 위저드 고도화 + 크레딧 25일 룰 적용
+**현재**: Phase 3 (핵심 모듈 이관) — Step 1 시험후기 완료 + 위저드 고도화 + 크레딧 25일 룰 + 성능 최적화 11단계
 **다음 작업**: Step 2 — 스크립트+쉐도잉 모듈 이관 (Server Actions + Edge Functions 하이브리드)
 
 ### 네비게이션 구조 (확정)
@@ -585,4 +593,4 @@ PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/1
 
 ---
 *최종 업데이트: 2026-02-24*
-*상태: Phase 3 Step 1 시험후기 완료 + 위저드 고도화 + 크레딧 25일 룰 — Step 2 스크립트 이관 대기*
+*상태: Phase 3 Step 1 시험후기 완료 + 성능 최적화 11단계 — Step 2 스크립트 이관 대기*

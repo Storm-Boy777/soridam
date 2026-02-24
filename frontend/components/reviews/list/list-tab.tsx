@@ -53,6 +53,7 @@ export function ListTab({ initialData: initialPublicReviews }: ListTabProps) {
     initialData: levelFilter === "" && initialPublicReviews
       ? { pages: [initialPublicReviews], pageParams: [1] }
       : undefined,
+    initialDataUpdatedAt: levelFilter === "" && initialPublicReviews ? Date.now() : undefined,
     staleTime: 5 * 60 * 1000, // 5분
   });
 

@@ -35,6 +35,7 @@ export function FrequencyTab({ initialStats, initialFrequency }: FrequencyTabPro
       return result.data || [];
     },
     initialData: initialFrequency,
+    initialDataUpdatedAt: Date.now(),
     staleTime: 5 * 60 * 1000, // 5분
   });
 
