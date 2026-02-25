@@ -65,6 +65,7 @@ docs/
 ├── 디자인시스템.md       ← 아토믹 디자인 원칙, 컴포넌트 설계
 ├── 로고에셋.md          ← 로고 사용 가이드, 에셋 파일 경로
 ├── 설계철학.md          ← 서베이 중요성, 설계 방향
+├── 가이드_Next.js+Supabase_페이지전환_성능최적화.md ← 성능 최적화 필수 가이드
 ├── 설계/               ← 기능별 상세 설계 (DB, API, 데이터 플로우)
 │   ├── 공통기반.md      ← DB 원칙, 백엔드 아키텍처, CORS
 │   ├── 시험후기.md      ← submissions 3테이블, 콤보 생성
@@ -87,12 +88,13 @@ docs/
 | "소리담에선 어떻게 했지?" | `docs/참조/소리담_분석결과.md` |
 | "PG사 계약 상태는?" | `docs/사업운영.md` |
 | "UI 컴포넌트 규칙은?" | `docs/디자인시스템.md` |
+| "성능 최적화 패턴은?" | `docs/가이드_Next.js+Supabase_페이지전환_성능최적화.md` |
 
 ### 핵심 개념
 
 - **master_questions (510개)**: 시스템 전체의 SSOT. 모든 모듈이 이 테이블에서 시작됨
 - **answer_type (10가지)**: 평가 체크박스, AI 튜터 진단, 스크립트 전략이 모두 이 값으로 분기
-- **백엔드 아키텍처 (T-8)**: Server Components + Server Actions. Edge Functions 사용 안 함
+- **백엔드 아키텍처 (T-9)**: 하이브리드 — Server Actions(CRUD) + Edge Functions(AI API 호출)
 - **이관 순서**: 시험후기 → 스크립트 → 모의고사 → 튜터링 → 쉐도잉
 
 ## 🎨 디자인 시스템 (현재 적용 중)
@@ -199,27 +201,33 @@ opictalkdoc/
 ├── .gitignore
 ├── README.md
 ├── supabase/
-│   └── migrations/        # DB 마이그레이션
-│       ├── 001_master_questions.sql
-│       ├── 002_payment_tables.sql
-│       └── 003_submissions.sql
+│   ├── migrations/        # DB 마이그레이션
+│   │   ├── 001_master_questions.sql
+│   │   ├── 002_payment_tables.sql
+│   │   ├── 003_submissions.sql
+│   │   └── 004_scripts.sql
+│   └── functions/scripts/index.ts  # Edge Function (generate/correct/refine)
 └── frontend/              # Next.js 앱
     ├── app/               # App Router 페이지
     │   └── providers.tsx  # QueryClientProvider 래퍼
     ├── components/
     │   ├── dashboard/
     │   │   └── dashboard-stats.tsx  # useQuery 클라이언트 컴포넌트
-    │   └── reviews/       # 시험후기 모듈 UI
-    │       ├── reviews-content.tsx
-    │       ├── frequency/frequency-tab.tsx
-    │       ├── submit/{submit-tab,wizard-step1~3,topic-pagination,question-selector}.tsx
-    │       └── list/list-tab.tsx
+    │   ├── reviews/       # 시험후기 모듈 UI
+    │   │   ├── reviews-content.tsx
+    │   │   ├── frequency/frequency-tab.tsx
+    │   │   ├── submit/{submit-tab,wizard-step1~3,topic-pagination,question-selector}.tsx
+    │   │   └── list/list-tab.tsx
+    │   └── scripts/       # 스크립트 모듈 UI
+    │       ├── scripts-content.tsx
+    │       └── create/script-wizard.tsx
     ├── lib/
     │   ├── actions/reviews.ts     # Server Actions (12개)
+    │   ├── actions/scripts.ts     # Server Actions (11개)
     │   ├── queries/master-questions.ts
     │   ├── react-query.ts        # QueryClient 팩토리 (서버/브라우저 싱글턴)
-    │   ├── types/reviews.ts       # 타입 정의
-    │   ├── validations/reviews.ts # Zod 스키마
+    │   ├── types/{reviews,scripts}.ts  # 타입 정의
+    │   ├── validations/{reviews,scripts}.ts # Zod 스키마
     │   ├── utils/combo-extractor.ts
     │   ├── auth.ts               # getUser() + getAuthClaims()
     │   ├── supabase.ts
@@ -255,6 +263,12 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3001
 NEXT_PUBLIC_PORTONE_STORE_ID=store-73f548e3-...
 NEXT_PUBLIC_PORTONE_CHANNEL_KEY=channel-key-06303dde-...
 PORTONE_API_SECRET=XFGThRDJX2...
+
+# OpenAI (GPT-4.1 스크립트 생성, Whisper STT)
+OPENAI_API_KEY=sk-proj-...
+
+# ElevenLabs (TTS 음성 합성)
+ELEVENLABS_API_KEY=sk_d67...
 ```
 
 ## 🚨 Critical Development Workflow
@@ -283,7 +297,10 @@ PORTONE_API_SECRET=XFGThRDJX2...
 - **"특정 환경에서만 안 된다"는 보고 → 해당 환경의 알려진 제약사항부터 조사**
 - 환경 제약이면 사용자에게 즉시 알리고, 불필요한 코드 수정을 반복하지 않는다
 
-### ⚠️ 데이터 페칭 필수 원칙: TanStack Query 우선
+### ⚠️ 데이터 페칭 + 성능 최적화 필수 원칙
+> **IMPORTANT**: 새 모듈 구현 시 반드시 `docs/가이드_Next.js+Supabase_페이지전환_성능최적화.md`를 참조한다.
+> 인증 3계층, Suspense 경계, 서버 병렬 조회, TanStack Query 캐싱, Prefetch, Supabase 쿼리 최적화, 서버 액션 설계 패턴이 정리되어 있다.
+
 - 클라이언트 컴포넌트에서 데이터를 로드할 때 **`useState + useEffect`를 사용하지 않는다**
 - 반드시 **TanStack React Query** (`useQuery`, `useInfiniteQuery`, `useMutation`)를 사용한다
 - 인프라는 이미 구축됨: `app/providers.tsx` (QueryClientProvider), `lib/react-query.ts` (QueryClient 팩토리)
@@ -305,6 +322,13 @@ PORTONE_API_SECRET=XFGThRDJX2...
   - `["questions", topic, category]` — 질문 목록 (고정)
   - `["submission-detail", submissionId]` — 완료 후기 상세 + 질문 통합 (Infinity, prefetch)
   - `["question-frequency", topic]` — 주제별 질문 빈도 (5분, prefetch)
+  - `["topics-all"]` — 전체 주제 목록 (Infinity, 스크립트 위저드)
+  - `["questions-by-category", category]` — 카테고리별 질문 (Infinity, 스크립트 위저드)
+  - `["script-credit"]` — 스크립트 크레딧 잔량 (1분)
+  - `["my-scripts"]` — 내 스크립트 목록 (5분, initialData)
+  - `["script-detail", scriptId]` — 스크립트 상세 (30초, 폴링)
+  - `["shadowing-history"]` — 쉐도잉 이력 (5분, initialData)
+  - `["opic-tips", targetLevel, answerType]` — 학습 팁 (Infinity, Step 3 대기 화면)
 
 1. **코드 수정** - 필요한 변경사항 구현
 2. **사용자가 요청한 경우에만**:
@@ -485,7 +509,25 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
   - **효과**: 탭 전환 시 캐시 히트 0ms, 위저드 주제/질문 재선택 시 로딩 없음
   - CLAUDE.md에 "TanStack Query 필수 원칙" + queryKey 목록 추가 (향후 모듈 구현 시 필수 적용)
 
-### 2026-02-24 - 시험후기 위저드 고도화 + 크레딧 25일 룰 + 성능 최적화 11단계
+### 2026-02-25 - 리브랜딩 결정 + Phase 3 Step 2 스크립트+쉐도잉 모듈 구현 완료
+- **리브랜딩 결정 (P-5)**: 오픽톡닥 → **하루오픽 (HaruOPIc)** — haruopic.com
+  - "하루"가 앞 → 일상/따뜻함, "오픽" → 서비스 성격, 랜딩 카피와 직결
+  - 유지: 디자인 시스템, 슬로건 "말하다, 나답게", 무대 메타포
+- **Step 2 스크립트+쉐도잉 모듈 구현 완료**:
+  - **DB 마이그레이션** (`004_scripts.sql`): 6테이블 + RLS + 인덱스 8개 + RPC 2개 + Storage 버킷 + 프롬프트 시드
+  - **script_specs 60행 시드 마이그레이션**: 소리담 content 컬럼 → 4컬럼 분할 (level_constraints, slot_structure, example_output JSONB, eval_criteria)
+  - **ai_prompt_templates 2행 시드**: script_system (RCTF System Prompt) + script_user (User Prompt 템플릿)
+  - **TypeScript 타입** (`types/scripts.ts`): 4계층 JSON (paragraphs>slots>sentences>parts), T/E/F 분류, DB 매핑 15개 인터페이스
+  - **Zod 스키마** (`validations/scripts.ts`): generate/correct/refine/confirm/createPackage/startShadowing/submitShadowing 7개
+  - **Server Actions** (`actions/scripts.ts`): 11개 (checkScriptCredit, createScript, createCorrectScript, refineScript, confirmScript, deleteScript, getMyScripts, getScriptDetail, getScriptSpec, getShadowingHistory, getScriptStats)
+  - **Edge Function** (`functions/scripts/index.ts`): generate/correct/refine 3라우트, RCTF 프롬프트 조립 (System+User 분리), GPT-4.1 json_schema response_format
+  - **UI**: scripts-content.tsx (3탭 TanStack Query), script-wizard.tsx (3단계 위저드), 서버 병렬 조회
+  - **위저드 Step 1 컴포넌트 재활용**: 시험후기의 `TopicPagination` + `QuestionSelector`를 스크립트 생성 Step 1에서 공유 (기억안남/직접입력 옵셔널 처리)
+  - **목표 등급 게이트**: 미설정 시 `GradeSettingModal` 인라인 표시 — 설정 완료 후 reload, 취소 시 /scripts로 이동
+  - **API 키 설정**: OpenAI + ElevenLabs API 키 `.env.local` 저장 완료
+  - **빌드 테스트 통과** (tsc + next build)
+
+### 2026-02-24 - 시험후기 위저드 고도화 + 크레딧 25일 룰 + 성능 최적화 12단계 + 가이드 문서
 - **크레딧 보상 규칙 변경**: 월 2건 제한 → **25일 룰**
   - 최초 2회: 무조건 스크립트 크레딧 2개 지급
   - 3회차부터: 마지막 지급일로부터 25일 경과 시에만 지급 (OPIc 응시 주기 반영)
@@ -500,17 +542,45 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 - **콤보 간 주제 중복 제거**: 같은 카테고리 이전 콤보에서 선택한 주제를 `excludedTopics`로 필터링
 - **위저드 버그 수정**: 콤보 전환 시 페이지네이션 리셋, 중복 제출 방지 강화
 - **기억안남/직접입력 UX**: 마지막 페이지로 이동, 주제 카드와 동일 스타일 적용, `itemsPerPage` 9개
-- **시험후기 성능 최적화** (8~11차, 누적 11단계):
+- **시험후기 성능 최적화** (8~12차, 누적 12단계):
   - 8차: 주제별 질문 빈도 + 제출이력 상세 `prefetchQuery` 백그라운드 사전 로딩
   - 9차: 제출 상세 2 RTT → 1 RTT 통합 (`getSubmissionWithQuestions` nested select) + `submission_questions.topic` 인덱스
   - 10차: 3탭 서버 사전 조회 — `page.tsx`에서 `Promise.all`로 3개 데이터 병렬 조회 → `initialData`로 모든 탭 0ms 즉시 렌더
   - 11차: Prefetch 위치 최적화 — `submit-tab.tsx` → `reviews-content.tsx`(페이지 레벨)로 이동, 탭 전환 전에도 사전 로딩
+  - 12차: 서버 액션 리팩토링 — 공유 헬퍼 추출(`fetchCombosAndSurveyTypes`, `buildFrequencyList`), 제출 상세 N+1 → `getSubmissionsWithQuestionsBatch` 단일 `.in()` 쿼리
   - **명칭 통일**: "스크립트 크레딧" → "스크립트 패키지 생성권" (요금제 페이지 일치)
+- **성능 최적화 가이드 문서 작성** (`docs/가이드_Next.js+Supabase_페이지전환_성능최적화.md`):
+  - 12차 최적화에서 검증된 패턴을 종합 가이드로 정리 (10개 섹션)
+  - 인증 3계층, Suspense 경계, 서버 병렬 조회, TanStack Query, Prefetch, Supabase 쿼리, 서버 액션 설계
+  - 새 모듈 구현 체크리스트 포함 — 스크립트/모의고사/튜터링 이관 시 적용
 
 ## 🔮 현재 상태 & 다음 단계
 
-**현재**: Phase 3 (핵심 모듈 이관) — Step 1 시험후기 완료 + 위저드 고도화 + 크레딧 25일 룰 + 성능 최적화 11단계
-**다음 작업**: Step 2 — 스크립트+쉐도잉 모듈 이관 (Server Actions + Edge Functions 하이브리드)
+**현재**: Phase 3 (핵심 모듈 이관) — Step 2 스크립트+쉐도잉 UX 고도화 진행 중
+**다음 작업**: Step 2 UX 고도화 (opic_tips→4계층 렌더링→패키지 EF→재생성→허브UI) → 리브랜딩(P-5) → Step 3 모의고사
+
+### ⚠️ Step 2 미완료 항목 (EF 배포 + 클라이언트 연결)
+| # | 작업 | 상세 |
+|---|------|------|
+| 1 | Edge Function Supabase 배포 | `supabase functions deploy scripts` + OPENAI_API_KEY Secrets 설정 |
+| 2 | 클라이언트 → EF 호출 연결 | script-wizard.tsx에서 생성 버튼 클릭 시 EF 호출 + 결과 표시 |
+| 3 | 패키지 생성 EF | ElevenLabs TTS + Whisper 타임스탬프 → Storage 업로드 |
+| 4 | 쉐도잉 훈련 상세 UI | /scripts/shadowing 5단계 UI + 평가 EF |
+
+### ⏳ 리브랜딩 작업 (P-5: 오픽톡닥 → 하루오픽)
+> 스크립트 이관 전에 진행. 상세는 `docs/의사결정.md` P-5, `docs/실행계획.md` 참조.
+
+| # | 작업 | 상세 |
+|---|------|------|
+| 1 | 도메인 구매 | haruopic.com |
+| 2 | DNS 설정 | Vercel에 haruopic.com 연결 |
+| 3 | 기존 도메인 리다이렉트 | opictalkdoc.com → haruopic.com (301), PG 심사 완료까지 유지 |
+| 4 | 코드 텍스트 치환 | "오픽톡닥" → "하루오픽", "OPIcTalkDoc" → "HaruOPIc" |
+| 5 | 로고 재생성 | 반창고 아이콘 + "하루오픽" (temp/generate-logo.html) |
+| 6 | CORS 변경 | haruopic.com 추가 (opictalkdoc.com도 당분간 유지) |
+| 7 | 환경변수 | NEXT_PUBLIC_SITE_URL → haruopic.com |
+| 8 | GitHub 저장소명 | 변경 (선택) |
+| 9 | 문서 일괄 갱신 | CLAUDE.md, 실행계획.md 등 이름/도메인 치환 |
 
 ### 네비게이션 구조 (확정)
 ```
@@ -527,15 +597,20 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 - **모의고사** (/mock-exam): 응시 | 결과 | 나의 이력
 - **튜터링** (/tutoring): 진단 | 처방 | 훈련
 
-### DB 현황
+### DB 현황 (13개 테이블)
 - **master_questions**: 510행 (시드 로드 완료)
 - **orders**: 결제 기록 테이블 (RLS: 본인 조회만)
 - **user_credits**: 사용자 이용권 테이블 (회원가입 트리거로 자동 생성)
-- **submissions**: 후기 마스터 (17컬럼 + credit_granted, RLS: 본인 CRUD + complete 전체 SELECT, 완료 후기 삭제 불가)
+- **submissions**: 후기 마스터 (17컬럼 + credit_granted, RLS: 본인 CRUD + complete 전체 SELECT)
 - **submission_questions**: 14개 질문 기록 (FK → submissions, master_questions)
 - **submission_combos**: 통합 콤보 (인증: 전체 SELECT, 비인증: advance만)
-- **Storage**: audio-recordings 버킷 (공개, RLS 설정 완료)
-- ~~custom_mode_questions~~: 삭제됨 (M-1) → submission_combos로 대체 완료
+- **ai_prompt_templates**: 2행 RCTF System+User Prompt (스크립트+튜터링 공유)
+- **script_specs**: 60행 등급별 규격서 (10 answer_types × 6 levels, 4컬럼 분할)
+- **scripts**: 스크립트 마스터 (생성+교정 통합, UNIQUE(user_id, question_id))
+- **script_packages**: TTS 패키지 WAV+JSON (FK → scripts, CASCADE)
+- **shadowing_sessions**: 쉐도잉 세션 (FK → scripts, script_packages)
+- **shadowing_evaluations**: 쉐도잉 AI 평가 (5영역 + OPIc 등급)
+- **Storage**: audio-recordings + script-packages 버킷
 
 ### 결제 시스템 현황
 - **결제 SDK**: 포트원(PortOne) V2 — `@portone/browser-sdk`
@@ -554,9 +629,11 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 | `mock_exam_credits` | 횟수권으로 구매한 모의고사 크레딧 | 영구 (만료 없음) |
 | `script_credits` | 횟수권으로 구매한 스크립트 크레딧 | 영구 (만료 없음) |
 
-**크레딧 소진 순서 (TODO — 모의고사/스크립트 모듈에서 구현):**
+**크레딧 소진 순서:**
 1. **플랜 크레딧 먼저 차감** (`plan_mock_exam_credits`, `plan_script_credits`) — 만료되는 것부터
 2. **횟수권 크레딧 차감** (`mock_exam_credits`, `script_credits`) — 영구 크레딧은 나중에
+- **스크립트 크레딧**: ✅ 구현 완료 (`consume_script_credit` / `refund_script_credit` RPC)
+- **모의고사 크레딧**: TODO — Step 3 모의고사 모듈에서 구현
 
 **후기 제출 크레딧 보상 (25일 룰, 구현 완료):**
 - 최초 2회: 무조건 스크립트 크레딧 2개 지급
@@ -592,5 +669,5 @@ PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/1
 > 의사결정 기록은 `docs/의사결정.md` 참조
 
 ---
-*최종 업데이트: 2026-02-24*
-*상태: Phase 3 Step 1 시험후기 완료 + 성능 최적화 11단계 — Step 2 스크립트 이관 대기*
+*최종 업데이트: 2026-02-25*
+*상태: Phase 3 Step 2 스크립트+쉐도잉 UX 고도화 중 (5-Step 위저드, opic_tips, 4계층 렌더링, 패키지 EF)*

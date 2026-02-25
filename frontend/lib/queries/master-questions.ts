@@ -10,6 +10,46 @@ const CATEGORY_COMBO_TYPES: Record<string, string[]> = {
   "어드밴스": FREQUENCY_COMBO_MAP["어드밴스"],
 };
 
+// 전체 주제 목록 (스크립트 생성 위저드용)
+export async function getTopics() {
+  const supabase = await createServerSupabaseClient();
+
+  const { data, error } = await supabase
+    .from("master_questions")
+    .select("topic, topic_category")
+    .neq("topic", "자기소개");
+
+  if (error) return [];
+
+  // 유니크 (topic, topic_category) 쌍
+  const seen = new Set<string>();
+  const topics: { topic: string; topic_category: string }[] = [];
+  for (const row of data) {
+    const key = `${row.topic_category}::${row.topic}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      topics.push(row);
+    }
+  }
+  return topics.sort((a, b) => a.topic.localeCompare(b.topic, "ko"));
+}
+
+// 카테고리별 질문 목록 (스크립트 생성 위저드용 — topic_category 기준)
+export async function getQuestionsByCategory(topicCategory: string) {
+  const supabase = await createServerSupabaseClient();
+
+  const { data, error } = await supabase
+    .from("master_questions")
+    .select("question_id, question_title, question_english, question_korean, answer_type, topic, topic_category")
+    .eq("topic_category", topicCategory)
+    .neq("topic", "자기소개")
+    .order("topic")
+    .order("question_id");
+
+  if (error) return [];
+  return data;
+}
+
 // 카테고리별 주제 목록 (Step 2 TopicPagination용) — 카테고리별 빈도순 정렬
 export async function getTopicsByCategory(category: "일반" | "롤플레이" | "어드밴스") {
   const supabase = await createServerSupabaseClient();

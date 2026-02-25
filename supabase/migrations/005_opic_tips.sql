@@ -1,0 +1,111 @@
+-- ============================================================
+-- 005_opic_tips.sql
+-- 스크립트 생성 대기 화면 학습 콘텐츠 (5개 카테고리)
+-- 생성일: 2026-02-25
+-- ============================================================
+
+CREATE TABLE opic_tips (
+  id                SERIAL PRIMARY KEY,
+  category          TEXT NOT NULL CHECK (category IN ('opening','filler','pattern','emotion','tip')),
+  answer_type       TEXT,                           -- NULL이면 전체 answer_type에 표시
+  applicable_levels TEXT[] NOT NULL DEFAULT '{IL,IM1,IM2,IM3,IH,AL}',
+  title             TEXT NOT NULL,                  -- 카드 타이틀 (한국어)
+  expression        TEXT NOT NULL,                  -- 영어 표현/패턴
+  description       TEXT,                           -- 한국어 설명
+  display_order     SMALLINT DEFAULT 0,
+  is_active         BOOLEAN DEFAULT true,
+  created_at        TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- RLS: 전체 SELECT 허용 (공개 데이터)
+ALTER TABLE opic_tips ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "opic_tips_public_read"
+  ON opic_tips FOR SELECT
+  USING (true);
+
+-- 인덱스
+CREATE INDEX idx_opic_tips_category ON opic_tips(category);
+CREATE INDEX idx_opic_tips_answer_type ON opic_tips(answer_type);
+
+-- ============================================================
+-- 시드 데이터: 만능 도입 (opening)
+-- ============================================================
+
+INSERT INTO opic_tips (category, title, expression, description, applicable_levels, display_order) VALUES
+('opening', '만능 도입 — 주제 소개', 'I''d like to talk about ~', '어떤 주제든 시작할 수 있는 만능 도입 문장입니다.', '{IL,IM1,IM2,IM3,IH,AL}', 1),
+('opening', '만능 도입 — 이야기 전달', 'Let me tell you about ~', '"~에 대해 말씀드릴게요" — 자연스러운 스토리 시작 표현입니다.', '{IL,IM1,IM2,IM3,IH,AL}', 2),
+('opening', '만능 도입 — 선호 표현', 'One of my favorite things is ~', '좋아하는 것을 소개할 때 쓰는 자연스러운 도입 표현입니다.', '{IM1,IM2,IM3,IH,AL}', 3),
+('opening', '만능 도입 — 습관/일상', 'I usually ~ when I have free time.', '일상적인 습관을 소개할 때 유용한 패턴입니다.', '{IL,IM1,IM2,IM3,IH,AL}', 4),
+('opening', '만능 도입 — 경험 시작', 'I remember one time when ~', '과거 경험을 이야기할 때 자연스럽게 시작하는 표현입니다.', '{IM2,IM3,IH,AL}', 5),
+('opening', '만능 도입 — 의견 제시', 'In my opinion, ~ is really important because ~', '의견을 제시할 때 사용하는 구조적인 도입 표현입니다.', '{IM3,IH,AL}', 6),
+('opening', '만능 도입 — 비교', 'Compared to the past, things have changed a lot.', '변화를 설명하는 답변에서 시작할 때 유용합니다.', '{IM2,IM3,IH,AL}', 7),
+('opening', '만능 도입 — 이유 설명', 'The reason I like ~ is because ~', '이유를 구조적으로 설명하는 만능 도입 패턴입니다.', '{IM1,IM2,IM3,IH,AL}', 8),
+('opening', '만능 도입 — 장소 묘사', 'There''s this place I really love going to.', '장소 관련 질문에서 자연스럽게 시작하는 표현입니다.', '{IM1,IM2,IM3,IH,AL}', 9),
+('opening', '만능 도입 — 솔직한 고백', 'To be honest, I''m not really into ~, but ~', '관심 없는 주제도 자연스럽게 답변하는 전략입니다.', '{IM3,IH,AL}', 10);
+
+-- ============================================================
+-- 시드 데이터: 필러 (filler)
+-- ============================================================
+
+INSERT INTO opic_tips (category, title, expression, description, applicable_levels, display_order) VALUES
+('filler', '필러 — 시간 벌기', 'Well, let me think about that...', '생각할 시간이 필요할 때 자연스럽게 쓰는 필러입니다.', '{IL,IM1,IM2,IM3,IH,AL}', 1),
+('filler', '필러 — 동의 구하기', 'You know, ~', '청자의 공감을 유도하며 자연스럽게 이어가는 필러입니다.', '{IM1,IM2,IM3,IH,AL}', 2),
+('filler', '필러 — 강조', 'Actually, ~', '"사실은~" — 중요한 포인트를 강조할 때 사용합니다.', '{IM1,IM2,IM3,IH,AL}', 3),
+('filler', '필러 — 요약', 'Basically, ~', '"기본적으로~" — 핵심을 요약할 때 자연스러운 필러입니다.', '{IM2,IM3,IH,AL}', 4),
+('filler', '필러 — 부연', 'I mean, ~', '"그러니까~" — 설명을 보충하거나 정정할 때 사용합니다.', '{IM1,IM2,IM3,IH,AL}', 5),
+('filler', '필러 — 전환', 'So, ~', '이야기 흐름을 자연스럽게 전환할 때 쓰는 간단한 필러입니다.', '{IL,IM1,IM2,IM3,IH,AL}', 6),
+('filler', '필러 — 생각 정리', 'How should I put this...', '"이걸 어떻게 표현하지..." — 생각을 정리하는 자연스러운 표현입니다.', '{IM3,IH,AL}', 7),
+('filler', '필러 — 확인', 'You know what I mean?', '"무슨 말인지 아시죠?" — 원어민이 자주 쓰는 확인 필러입니다.', '{IM2,IM3,IH,AL}', 8),
+('filler', '필러 — 부드러운 시작', 'To be honest with you, ~', '"솔직히 말하자면~" — 진솔한 느낌을 주는 필러입니다.', '{IM2,IM3,IH,AL}', 9),
+('filler', '필러 사용 팁', '적절한 필러 = 유창함의 증거', '필러는 말을 더듬는 게 아니라, 원어민처럼 자연스럽게 말하는 증거입니다. IM 이상에서 필수!', '{IL,IM1,IM2,IM3,IH,AL}', 10);
+
+-- ============================================================
+-- 시드 데이터: 유형별 패턴 (pattern)
+-- ============================================================
+
+INSERT INTO opic_tips (category, answer_type, title, expression, description, applicable_levels, display_order) VALUES
+('pattern', 'description', '묘사 패턴 — 첫인상', 'When I think of ~, the first thing that comes to mind is ~', '묘사 유형에서 대상의 첫인상을 자연스럽게 전달하는 패턴입니다.', '{IM1,IM2,IM3,IH,AL}', 1),
+('pattern', 'description', '묘사 패턴 — 특징 나열', 'What I really like about it is that ~', '좋아하는 특징을 구체적으로 설명하는 패턴입니다.', '{IM1,IM2,IM3,IH,AL}', 2),
+('pattern', 'routine', '루틴 패턴 — 시간 순서', 'First, I ~. Then, I ~. After that, I ~.', '일상 루틴을 시간 순서대로 자연스럽게 나열하는 패턴입니다.', '{IL,IM1,IM2,IM3,IH,AL}', 3),
+('pattern', 'routine', '루틴 패턴 — 빈도', 'I usually ~ about two or three times a week.', '빈도를 구체적으로 언급하면 답변이 더 자연스러워집니다.', '{IL,IM1,IM2,IM3,IH,AL}', 4),
+('pattern', 'past_experience', '경험 패턴 — 기억 꺼내기', 'I still remember the time when ~', '과거 경험을 생생하게 전달하는 시작 패턴입니다.', '{IM2,IM3,IH,AL}', 5),
+('pattern', 'past_experience', '경험 패턴 — 감정 묘사', 'I was so excited/surprised/nervous that ~', '과거 감정을 구체적으로 표현하면 IH 이상의 점수를 받습니다.', '{IM2,IM3,IH,AL}', 6),
+('pattern', 'comparison', '비교 패턴 — 과거 vs 현재', 'In the past, I used to ~, but now I ~', '과거와 현재를 대비하는 만능 비교 패턴입니다.', '{IM2,IM3,IH,AL}', 7),
+('pattern', 'comparison', '비교 패턴 — 차이 강조', 'The biggest difference is that ~', '핵심 차이점을 명확하게 전달하는 패턴입니다.', '{IM2,IM3,IH,AL}', 8),
+('pattern', 'roleplay', '롤플레이 패턴 — 상황 시작', 'Hi, I''m calling because ~', '전화 상황 롤플레이에서 자연스럽게 시작하는 패턴입니다.', '{IM1,IM2,IM3,IH,AL}', 9),
+('pattern', 'roleplay', '롤플레이 패턴 — 요청', 'I was wondering if you could ~', '공손하게 요청하는 만능 패턴입니다. 롤플레이 필수 표현!', '{IM1,IM2,IM3,IH,AL}', 10),
+('pattern', NULL, '만능 마무리 패턴', 'That''s pretty much what I can tell you about ~', '어떤 답변이든 자연스럽게 마무리할 수 있는 만능 패턴입니다.', '{IL,IM1,IM2,IM3,IH,AL}', 11),
+('pattern', NULL, '만능 추가 설명 패턴', 'Another thing I should mention is ~', '내용을 보충할 때 자연스럽게 이어가는 패턴입니다.', '{IM1,IM2,IM3,IH,AL}', 12);
+
+-- ============================================================
+-- 시드 데이터: 감정 표현 (emotion)
+-- ============================================================
+
+INSERT INTO opic_tips (category, title, expression, description, applicable_levels, display_order) VALUES
+('emotion', '감정 — 감동/놀라움', 'I was blown away by ~', '"~에 완전 감동받았어요" — 강한 감동을 표현하는 고급 표현입니다.', '{IH,AL}', 1),
+('emotion', '감정 — 즐거움', 'It really makes me feel alive.', '"정말 살아있다는 느낌이에요" — 깊은 즐거움을 표현합니다.', '{IH,AL}', 2),
+('emotion', '감정 — 편안함', 'It helps me relax and forget about everything.', '편안함과 스트레스 해소를 자연스럽게 표현하는 문장입니다.', '{IM2,IM3,IH,AL}', 3),
+('emotion', '감정 — 흥분', 'I get so excited whenever ~', '"~할 때마다 너무 신나요" — 반복적 흥분을 표현합니다.', '{IM1,IM2,IM3,IH,AL}', 4),
+('emotion', '감정 — 후회', 'I wish I had known about it earlier.', '"더 일찍 알았더라면 좋았을텐데" — 후회를 표현하는 가정법입니다.', '{IH,AL}', 5),
+('emotion', '감정 — 감사', 'I''m really grateful that ~', '감사함을 표현하며 답변에 진정성을 더합니다.', '{IM2,IM3,IH,AL}', 6),
+('emotion', '감정 — 걱정', 'I was kind of worried about ~, but it turned out great.', '걱정→해소 구조는 스토리에 긴장감을 더합니다.', '{IM3,IH,AL}', 7),
+('emotion', '감정 표현 팁', '감정 = IH/AL 차별화 핵심', '같은 내용이라도 감정 표현이 풍부하면 IH 이상의 점수를 받습니다. 감정을 과장해도 괜찮아요!', '{IM2,IM3,IH,AL}', 8),
+('emotion', '감정 — 그리움', 'I really miss the days when ~', '"~하던 시절이 정말 그리워요" — 과거를 회상하며 감정을 담는 표현입니다.', '{IM3,IH,AL}', 9),
+('emotion', '감정 — 성취감', 'I felt so proud of myself when ~', '"~했을 때 정말 뿌듯했어요" — 성취 경험을 진솔하게 전달합니다.', '{IM2,IM3,IH,AL}', 10);
+
+-- ============================================================
+-- 시드 데이터: 등급 업 팁 (tip)
+-- ============================================================
+
+INSERT INTO opic_tips (category, title, expression, description, applicable_levels, display_order) VALUES
+('tip', 'IL→IM 핵심 전략', '기본 문장을 반복하세요', 'IL에서 IM으로 올라가려면 "I like ~", "I usually ~" 같은 기본 패턴을 다양한 주제에 반복 적용하세요.', '{IL,IM1}', 1),
+('tip', 'IM→IH 핵심 전략', '감정과 디테일을 추가하세요', 'IM에서 IH로 올라가려면 단순 나열이 아니라, 감정("I was so excited")과 구체적 디테일을 추가하세요.', '{IM2,IM3}', 2),
+('tip', 'IH→AL 핵심 전략', '복잡한 구조를 자연스럽게', 'IH에서 AL로 올라가려면 가정법, 관계절, 분사구문 등 복잡한 문법을 자연스럽게 구사해야 합니다.', '{IH,AL}', 3),
+('tip', '시간 관리 팁', '1분 30초가 목표입니다', 'OPIc 답변 시간은 보통 1분 30초~2분이 적당합니다. 너무 짧으면 내용 부족, 너무 길면 집중력이 떨어집니다.', '{IL,IM1,IM2,IM3,IH,AL}', 4),
+('tip', '서베이 전략', '관심사를 전략적으로 선택하세요', 'OPIc 서베이에서 잘 아는 주제를 선택하면, 더 자연스럽고 풍부한 답변이 가능합니다.', '{IL,IM1,IM2,IM3,IH,AL}', 5),
+('tip', '쉬운 표현의 힘', '쉬운 표현을 유창하게 > 어려운 표현을 더듬으며', '복잡한 어휘보다 쉬운 표현을 막힘 없이 말하는 것이 더 높은 점수를 받습니다.', '{IL,IM1,IM2,IM3}', 6),
+('tip', '돌발 질문 대처법', 'I''ve never really thought about that, but ~', '처음 듣는 주제라도 당황하지 마세요. 이 표현으로 시작하면 자연스럽게 이어갈 수 있습니다.', '{IM1,IM2,IM3,IH,AL}', 7),
+('tip', '구체적 숫자의 마법', '모호함 → 숫자로 바꾸세요', '"가끔" 대신 "일주일에 2~3번", "좀" 대신 "약 30분 정도" — 구체적 숫자가 답변을 살립니다.', '{IL,IM1,IM2,IM3,IH,AL}', 8),
+('tip', '반복의 기술', '같은 말을 다르게 표현하세요', '"I love it. I mean, it''s really my favorite thing." — 같은 내용을 다른 표현으로 반복하면 유창하게 들립니다.', '{IM1,IM2,IM3,IH,AL}', 9),
+('tip', '나만의 스토리가 최고의 무기', '외운 답변 < 진짜 경험', 'OPIc에서 가장 자연스러운 답변은 실제 경험에서 나옵니다. 스크립트를 외우되, 자기 이야기를 담으세요.', '{IL,IM1,IM2,IM3,IH,AL}', 10);
