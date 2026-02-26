@@ -283,7 +283,10 @@ PORTONE_API_SECRET=XFGThRDJX2...
 # OpenAI (GPT-4.1 스크립트 생성, Whisper STT)
 OPENAI_API_KEY=sk-proj-...
 
-# ElevenLabs (TTS 음성 합성)
+# Gemini (TTS - 현재 사용)
+GEMINI_API_KEY=AIzaSyC...
+
+# ElevenLabs (TTS - 향후 전환 예정)
 ELEVENLABS_API_KEY=sk_d67...
 ```
 
@@ -594,6 +597,20 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
   - **타이머 버그 수정**: stale closure → ref 기반 카운터, useState 오용 → useEffect
   - **evaluate_shadowing 프롬프트 업데이트**: ACTFL 기준 5영역 평가 가이드라인
   - **빌드 통과 확인**
+- **Step5Complete 패키지 생성 대기 UX 개선**:
+  - OPIc 팁 자동 순환 표시 (Step 3과 동일, TanStack Query `staleTime: Infinity`)
+  - 시뮬레이션 프로그레스 (20% → 85% 점진 증가)
+  - 브랜딩 스피너 (Headphones 아이콘 + 따뜻한 카피)
+  - TipCard 공통 컴포넌트: Lucide 아이콘 (MessageCircleHeart, Repeat2, BookOpenText, Heart, GraduationCap)
+  - 헤더 바 + 카운터(`3/52`) + 한글 의미 하이라이트 박스 구조
+  - 좌우 화살표 카드 외부 배치 (겹침 해결) + `max-w-lg` 너비 확대
+- **쉐도잉 duplicate key 에러 수정**:
+  - 원인: GPT가 슬롯별 index를 1부터 재시작 → 전체 문장에서 중복 key 발생
+  - `step-listen.tsx`, `step-recite.tsx`: `key={sent.index}` → `key={i}`
+  - `scripts-package/index.ts`: `extractSentences()`에 `globalIndex++` 보정 코드 추가
+  - DB 기존 3개 `script_packages` 레코드 인덱스 순차 보정 완료
+  - `scripts/index.ts`: JSON Schema `index` 필드에 description 추가 (근본 원인 해결)
+- **EF 배포 완료**: scripts + scripts-package 모두 프로덕션 배포
 
 ### 2026-02-24 - 시험후기 위저드 고도화 + 크레딧 25일 룰 + 성능 최적화 12단계 + 가이드 문서
 - **크레딧 보상 규칙 변경**: 월 2건 제한 → **25일 룰**
@@ -624,15 +641,8 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 
 ## 🔮 현재 상태 & 다음 단계
 
-**현재**: Phase 3 (핵심 모듈 이관) — Step 2 스크립트+쉐도잉 모듈 전체 완료 (패키지 EF + 쉐도잉 UI 포함)
-**다음 작업**: EF 배포 + 테스트 → 리브랜딩(P-5) → Step 3 모의고사
-
-### ⚠️ Step 2 배포 전 필요사항
-| # | 작업 | 상세 |
-|---|------|------|
-| 1 | Supabase Secrets 설정 | ELEVENLABS_API_KEY (scripts-package EF용) |
-| 2 | Edge Function 배포 | scripts (evaluate 추가) + scripts-package (신규) |
-| 3 | E2E 테스트 | 패키지 생성 → 쉐도잉 5단계 → 실전 평가 |
+**현재**: Phase 3 (핵심 모듈 이관) — Step 2 스크립트+쉐도잉 ✅ 완료 + 배포 완료
+**다음 작업**: 리브랜딩(P-5) → Step 3 모의고사
 
 ### ⏳ 리브랜딩 작업 (P-5: 오픽톡닥 → 하루오픽)
 > 스크립트 이관 전에 진행. 상세는 `docs/의사결정.md` P-5, `docs/실행계획.md` 참조.

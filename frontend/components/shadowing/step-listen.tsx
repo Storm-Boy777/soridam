@@ -41,7 +41,7 @@ export function StepListen() {
         <div className="space-y-3">
           {sentences.map((sent, i) => (
             <div
-              key={sent.index}
+              key={i}
               className={`rounded-lg p-2.5 transition-colors ${
                 i === activeIndex
                   ? "bg-primary-50 ring-1 ring-primary-200"

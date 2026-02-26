@@ -18,8 +18,8 @@ export type TargetLevel = (typeof TARGET_LEVELS)[number];
 export const PACKAGE_STATUSES = ['processing', 'completed', 'partial', 'failed'] as const;
 export type PackageStatus = (typeof PACKAGE_STATUSES)[number];
 
-// TTS 음성
-export const TTS_VOICES = ['Mark', 'Alexandra'] as const;
+// TTS 음성 (Gemini TTS prebuilt voices)
+export const TTS_VOICES = ['Zephyr', 'Aoede'] as const;
 export type TtsVoice = (typeof TTS_VOICES)[number];
 
 // 쉐도잉 세션 상태
@@ -68,8 +68,8 @@ export const PACKAGE_STATUS_LABELS: Record<PackageStatus, string> = {
 };
 
 export const TTS_VOICE_LABELS: Record<TtsVoice, string> = {
-  Mark: 'Mark (남성)',
-  Alexandra: 'Alexandra (여성)',
+  Zephyr: 'Zephyr (중성)',
+  Aoede: 'Aoede (여성)',
 };
 
 export const SHADOWING_STEP_LABELS: Record<ShadowingStep, string> = {

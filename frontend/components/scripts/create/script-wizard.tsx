@@ -26,6 +26,11 @@ import {
   Headphones,
   Volume2,
   Package,
+  MessageCircleHeart,
+  Repeat2,
+  BookOpenText,
+  Heart,
+  GraduationCap,
 } from "lucide-react";
 import { TopicPagination } from "@/components/reviews/submit/topic-pagination";
 import {
@@ -576,6 +581,8 @@ export function ScriptWizard({
             onGoToScripts={() => router.push("/scripts")}
             onCreateNew={resetWizard}
             scriptId={generatedScriptId ?? undefined}
+            targetLevel={targetLevel}
+            answerType={answerType}
           />
         )}
       </div>
@@ -818,12 +825,13 @@ function Step2Input({
    Step 3: AI 생성 중 + 학습 콘텐츠 카드 로테이션
    ══════════════════════════════════════════════════════════════ */
 
-const TIP_CATEGORY_EMOJIS: Record<OpicTipCategory, string> = {
-  opening: "💬",
-  filler: "🔄",
-  pattern: "📝",
-  emotion: "❤️",
-  tip: "💡",
+// 카테고리별 Lucide 아이콘 컴포넌트
+const TIP_CATEGORY_ICONS: Record<OpicTipCategory, typeof MessageCircleHeart> = {
+  opening: MessageCircleHeart,
+  filler: Repeat2,
+  pattern: BookOpenText,
+  emotion: Heart,
+  tip: GraduationCap,
 };
 
 const TIP_CATEGORY_LABELS: Record<OpicTipCategory, string> = {
@@ -833,6 +841,113 @@ const TIP_CATEGORY_LABELS: Record<OpicTipCategory, string> = {
   emotion: "감정 표현",
   tip: "등급 팁",
 };
+
+// 타이틀에서 카테고리 접두사 제거 ("감정 — 즐거움" → "즐거움")
+function stripCategoryPrefix(title: string): string {
+  const idx = title.indexOf("—");
+  if (idx === -1) return title;
+  return title.slice(idx + 1).trim();
+}
+
+// 설명에서 "한국어 뜻" 부분과 해설 분리
+function parseDescription(desc: string): { korean: string; note: string } {
+  const quoteMatch = desc.match(/^["""](.+?)["""][\s—\-]+(.+)$/);
+  if (quoteMatch) return { korean: quoteMatch[1], note: quoteMatch[2] };
+  const dashMatch = desc.match(/^(.+?)[\s]—[\s](.+)$/);
+  if (dashMatch) return { korean: dashMatch[1], note: dashMatch[2] };
+  return { korean: "", note: desc };
+}
+
+/** 팁 카드 (Step 3 / Step 5 공통) */
+function TipCard({
+  tip,
+  tipList,
+  tipIndex,
+  onPrev,
+  onNext,
+}: {
+  tip: OpicTip;
+  tipList: OpicTip[];
+  tipIndex: number;
+  onPrev: () => void;
+  onNext: () => void;
+}) {
+  const shortTitle = stripCategoryPrefix(tip.title);
+  const parsed = tip.description ? parseDescription(tip.description) : null;
+  const CategoryIcon = TIP_CATEGORY_ICONS[tip.category];
+
+  return (
+    <div className="mt-8 w-full max-w-lg">
+      {/* 화살표 + 카드 가로 배치 */}
+      <div className="flex items-center gap-2">
+        {/* 좌 화살표 */}
+        {tipList.length > 1 ? (
+          <button
+            onClick={onPrev}
+            className="shrink-0 rounded-full border border-border bg-surface p-1.5 text-foreground-muted shadow-sm transition-colors hover:bg-surface-secondary hover:text-foreground"
+          >
+            <ChevronLeft size={16} />
+          </button>
+        ) : (
+          <div className="w-[30px] shrink-0" />
+        )}
+
+        {/* 카드 */}
+        <div className="min-w-0 flex-1 overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface shadow-sm">
+          {/* 상단 카테고리 바 */}
+          <div className="flex items-center justify-between border-b border-border bg-primary-50/50 px-4 py-2">
+            <div className="flex items-center gap-1.5">
+              <CategoryIcon size={14} className="text-primary-500" />
+              <span className="text-[12px] font-semibold text-primary-700">
+                {TIP_CATEGORY_LABELS[tip.category]}
+              </span>
+              <span className="text-[11px] text-foreground-muted">
+                {shortTitle}
+              </span>
+            </div>
+            <span className="text-[11px] tabular-nums text-foreground-muted">
+              {tipIndex + 1}/{tipList.length}
+            </span>
+          </div>
+
+          {/* 본문 */}
+          <div className="px-4 py-3.5">
+            <p className="text-[15px] font-semibold leading-relaxed text-foreground">
+              {tip.expression}
+            </p>
+
+            {parsed && (
+              <div className="mt-2.5 rounded-lg bg-primary-50/40 px-3 py-2">
+                {parsed.korean && (
+                  <p className="text-[13px] font-medium text-primary-600">
+                    {parsed.korean}
+                  </p>
+                )}
+                {parsed.note && (
+                  <p className="mt-0.5 text-[11px] leading-relaxed text-foreground-secondary">
+                    {parsed.note}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 우 화살표 */}
+        {tipList.length > 1 ? (
+          <button
+            onClick={onNext}
+            className="shrink-0 rounded-full border border-border bg-surface p-1.5 text-foreground-muted shadow-sm transition-colors hover:bg-surface-secondary hover:text-foreground"
+          >
+            <ChevronRight size={16} />
+          </button>
+        ) : (
+          <div className="w-[30px] shrink-0" />
+        )}
+      </div>
+    </div>
+  );
+}
 
 function Step3Loading({
   targetLevel,
@@ -904,73 +1019,15 @@ function Step3Loading({
       </p>
       <p className="mt-1 text-xs text-foreground-muted">약 15~30초 소요</p>
 
-      {/* 학습 콘텐츠 카드 */}
+      {/* 학습 팁 카드 */}
       {currentTip && (
-        <div className="mt-8 w-full max-w-md">
-          <div className="relative overflow-hidden rounded-[var(--radius-xl)] border border-primary-100 bg-primary-50/30 p-5">
-            {/* 카테고리 뱃지 */}
-            <div className="mb-3 flex items-center gap-2">
-              <span className="text-lg">
-                {TIP_CATEGORY_EMOJIS[currentTip.category]}
-              </span>
-              <span className="rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-semibold text-primary-700">
-                {TIP_CATEGORY_LABELS[currentTip.category]}
-              </span>
-            </div>
-
-            {/* 타이틀 */}
-            <p className="text-sm font-semibold text-foreground">
-              {currentTip.title}
-            </p>
-
-            {/* 영어 표현 */}
-            <p className="mt-2 text-base font-medium text-primary-600">
-              {currentTip.expression}
-            </p>
-
-            {/* 한국어 설명 */}
-            {currentTip.description && (
-              <p className="mt-1.5 text-xs text-foreground-secondary">
-                {currentTip.description}
-              </p>
-            )}
-
-            {/* 네비게이션 버튼 */}
-            {tipList.length > 1 && (
-              <>
-                <button
-                  onClick={goToPrev}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 text-foreground-muted shadow-sm transition-colors hover:bg-white hover:text-foreground"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <button
-                  onClick={goToNext}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 text-foreground-muted shadow-sm transition-colors hover:bg-white hover:text-foreground"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* 인디케이터 도트 */}
-          {tipList.length > 1 && (
-            <div className="mt-3 flex justify-center gap-1.5">
-              {tipList.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setTipIndex(i)}
-                  className={`h-1.5 rounded-full transition-all ${
-                    i === tipIndex
-                      ? "w-4 bg-primary-500"
-                      : "w-1.5 bg-primary-200"
-                  }`}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        <TipCard
+          tip={currentTip}
+          tipList={tipList}
+          tipIndex={tipIndex}
+          onPrev={goToPrev}
+          onNext={goToNext}
+        />
       )}
     </div>
   );
@@ -1243,20 +1300,64 @@ function Step5Complete({
   onGoToScripts,
   onCreateNew,
   scriptId,
+  targetLevel,
+  answerType,
 }: {
   onGoToScripts: () => void;
   onCreateNew: () => void;
   scriptId?: string;
+  targetLevel: string;
+  answerType?: string;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [selectedVoice, setSelectedVoice] = useState<TtsVoice>("Mark");
+  const [selectedVoice, setSelectedVoice] = useState<TtsVoice>("Zephyr");
   const [packageState, setPackageState] = useState<
     "idle" | "phase1" | "phase2" | "completed" | "partial" | "error"
   >("idle");
   const [progress, setProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
   const [packageId, setPackageId] = useState<string | null>(null);
+
+  // 팁 데이터 (패키지 생성 대기 중 표시)
+  const [tipIndex, setTipIndex] = useState(0);
+  const tipIntervalRef = useRef<ReturnType<typeof setInterval>>(null);
+
+  const { data: tips } = useQuery({
+    queryKey: ["opic-tips", targetLevel, answerType],
+    queryFn: async () => {
+      const result = await getOpicTips(targetLevel, answerType);
+      if (result.error) return [];
+      return result.data ?? [];
+    },
+    staleTime: Infinity,
+  });
+
+  const tipList = tips ?? [];
+
+  // 패키지 생성 중일 때만 팁 자동 전환
+  useEffect(() => {
+    if (packageState !== "phase1" && packageState !== "phase2") return;
+    if (tipList.length <= 1) return;
+    tipIntervalRef.current = setInterval(() => {
+      setTipIndex((prev) => (prev + 1) % tipList.length);
+    }, 5000);
+    return () => {
+      if (tipIntervalRef.current) clearInterval(tipIntervalRef.current);
+    };
+  }, [packageState, tipList.length]);
+
+  // 시뮬레이션 프로그레스 (20% → 85%까지 점진 증가, 완료 시 100%로 점프)
+  useEffect(() => {
+    if (packageState !== "phase1" && packageState !== "phase2") return;
+    const timer = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 85) return prev;
+        return Math.min(85, prev + Math.random() * 4 + 1);
+      });
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [packageState]);
 
   async function handleCreatePackage() {
     if (!scriptId) return;
@@ -1356,33 +1457,65 @@ function Step5Complete({
 
   // 패키지 생성 중 (phase1/phase2)
   if (packageState === "phase1" || packageState === "phase2") {
-    const phaseLabel =
-      packageState === "phase1"
-        ? "원어민 음성 생성 중..."
-        : "쉐도잉 데이터 생성 중...";
+    const currentTip = tipList[tipIndex] as OpicTip | undefined;
+
+    const goTipPrev = () => {
+      if (tipList.length <= 1) return;
+      setTipIndex((prev) => (prev - 1 + tipList.length) % tipList.length);
+      if (tipIntervalRef.current) clearInterval(tipIntervalRef.current);
+      tipIntervalRef.current = setInterval(() => {
+        setTipIndex((prev) => (prev + 1) % tipList.length);
+      }, 5000);
+    };
+
+    const goTipNext = () => {
+      if (tipList.length <= 1) return;
+      setTipIndex((prev) => (prev + 1) % tipList.length);
+      if (tipIntervalRef.current) clearInterval(tipIntervalRef.current);
+      tipIntervalRef.current = setInterval(() => {
+        setTipIndex((prev) => (prev + 1) % tipList.length);
+      }, 5000);
+    };
 
     return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <Loader2 size={40} className="animate-spin text-primary-500" />
-        <h2 className="mt-4 text-lg font-semibold text-foreground">
-          {phaseLabel}
-        </h2>
-        <p className="mt-2 text-center text-sm text-foreground-secondary">
-          약 30~60초 소요됩니다. 잠시만 기다려주세요.
+      <div className="flex flex-col items-center justify-center py-8">
+        {/* 브랜드 스피너 (Step 3과 통일) */}
+        <div className="relative mb-6">
+          <div className="h-16 w-16 animate-spin rounded-full border-4 border-primary-100 border-t-primary-500" />
+          <Headphones
+            size={24}
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-primary-500"
+          />
+        </div>
+
+        <p className="text-sm font-medium text-foreground">
+          원어민 음성을 준비하고 있어요...
         </p>
+        <p className="mt-1 text-xs text-foreground-muted">약 30~60초 소요</p>
 
         {/* 프로그레스 바 */}
-        <div className="mt-6 w-full max-w-xs">
+        <div className="mt-5 w-full max-w-xs">
           <div className="h-2 overflow-hidden rounded-full bg-surface-secondary">
             <div
               className="h-2 rounded-full bg-primary-500 transition-all duration-1000"
-              style={{ width: `${progress}%` }}
+              style={{ width: `${Math.round(progress)}%` }}
             />
           </div>
-          <p className="mt-1 text-center text-xs text-foreground-muted">
-            {progress}%
+          <p className="mt-1.5 text-center text-xs text-foreground-muted">
+            {Math.round(progress)}%
           </p>
         </div>
+
+        {/* 학습 팁 카드 */}
+        {currentTip && (
+          <TipCard
+            tip={currentTip}
+            tipList={tipList}
+            tipIndex={tipIndex}
+            onPrev={goTipPrev}
+            onNext={goTipNext}
+            />
+        )}
       </div>
     );
   }

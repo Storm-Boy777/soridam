@@ -67,7 +67,7 @@ export type ConfirmScriptInput = z.infer<typeof confirmScriptSchema>;
 
 export const createPackageSchema = z.object({
   script_id: z.string().uuid("유효한 스크립트 ID가 필요합니다"),
-  tts_voice: z.enum(TTS_VOICES).optional().default('Mark'),
+  tts_voice: z.enum(TTS_VOICES).optional().default('Zephyr'),
 });
 
 export type CreatePackageInput = z.infer<typeof createPackageSchema>;

@@ -47,7 +47,7 @@ const scriptGenerationSchema = {
                     items: {
                       type: "object",
                       properties: {
-                        index: { type: "integer" },
+                        index: { type: "integer", description: "전체 스크립트 기준 1부터 시작하는 연속 번호. 슬롯/단락 구분 없이 전체 문장을 순서대로 1, 2, 3, 4... 로 매긴다." },
                         english: { type: "string" },
                         korean: { type: "string" },
                       },

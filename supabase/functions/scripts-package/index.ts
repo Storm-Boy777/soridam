@@ -1,5 +1,5 @@
 // 스크립트 패키지 생성 Edge Function
-// Phase 1: ElevenLabs TTS → MP3 → Storage 업로드
+// Phase 1: Gemini TTS → PCM → WAV → Storage 업로드
 // Phase 2: Whisper STT word-level → 타임스탬프 매칭 → JSON → Storage
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -7,18 +7,14 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
-const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY")!;
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")!;
+
+const TTS_MODEL = "gemini-2.5-pro-preview-tts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
-};
-
-// TTS 음성 ID 매핑
-const VOICE_IDS: Record<string, string> = {
-  Mark: "UgBBYS2sOqTuMpoF3BR0",
-  Alexandra: "kdmDKE6EkgrWrrykO9Qt",
 };
 
 // ── 라우터 ──
@@ -57,10 +53,70 @@ Deno.serve(async (req: Request) => {
   }
 });
 
-// ── Phase 1: TTS 음성 생성 ──
+// ── PCM → WAV 변환 ──
+
+function pcmToWav(
+  pcmData: ArrayBuffer,
+  sampleRate: number = 44100
+): ArrayBuffer {
+  const pcmLength = pcmData.byteLength;
+  const wavBuffer = new ArrayBuffer(44 + pcmLength);
+  const view = new DataView(wavBuffer);
+
+  // RIFF 헤더
+  view.setUint32(0, 0x52494646, false); // "RIFF"
+  view.setUint32(4, 36 + pcmLength, true);
+  view.setUint32(8, 0x57415645, false); // "WAVE"
+
+  // fmt 서브청크
+  view.setUint32(12, 0x666d7420, false); // "fmt "
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM
+  view.setUint16(22, 1, true); // 모노
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+
+  // data 서브청크
+  view.setUint32(36, 0x64617461, false); // "data"
+  view.setUint32(40, pcmLength, true);
+
+  const wavBytes = new Uint8Array(wavBuffer);
+  wavBytes.set(new Uint8Array(pcmData), 44);
+
+  return wavBuffer;
+}
+
+// ── 리샘플링 (24kHz → 44.1kHz 선형 보간) ──
+
+function resample(
+  inputData: Int16Array,
+  inputSampleRate: number,
+  outputSampleRate: number
+): Int16Array {
+  const sampleRateRatio = inputSampleRate / outputSampleRate;
+  const newLength = Math.round(inputData.length / sampleRateRatio);
+  const result = new Int16Array(newLength);
+
+  for (let i = 0; i < newLength; i++) {
+    const index = i * sampleRateRatio;
+    const indexFloor = Math.floor(index);
+    const indexCeil = Math.min(indexFloor + 1, inputData.length - 1);
+    const fraction = index - indexFloor;
+    result[i] = Math.round(
+      inputData[indexFloor] * (1 - fraction) +
+        inputData[indexCeil] * fraction
+    );
+  }
+
+  return result;
+}
+
+// ── Phase 1: Gemini TTS 음성 생성 ──
 
 async function handleGeneratePackage(supabase: any, body: any) {
-  const { script_id, tts_voice = "Mark", user_id } = body;
+  const { script_id, tts_voice = "Zephyr", user_id } = body;
   if (!script_id) return jsonResponse({ error: "script_id 필수" }, 400);
   if (!user_id) return jsonResponse({ error: "user_id 필수" }, 400);
 
@@ -80,7 +136,10 @@ async function handleGeneratePackage(supabase: any, body: any) {
   }
 
   if (script.status !== "confirmed") {
-    return jsonResponse({ error: "확정된 스크립트만 패키지 생성 가능합니다" }, 400);
+    return jsonResponse(
+      { error: "확정된 스크립트만 패키지 생성 가능합니다" },
+      400
+    );
   }
 
   if (!script.english_text || script.english_text.length < 10) {
@@ -127,50 +186,95 @@ async function handleGeneratePackage(supabase: any, body: any) {
   const packageId = pkg.id;
 
   try {
-    // ElevenLabs TTS API 호출
-    const voiceId = VOICE_IDS[tts_voice] || VOICE_IDS.Mark;
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY가 설정되지 않았습니다");
+    }
 
     await updatePackageProgress(supabase, packageId, 20);
 
+    // Gemini TTS API 호출
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 180000); // 180초
+
+    console.log(`🎵 Gemini TTS 호출: model=${TTS_MODEL}, voice=${tts_voice}`);
+
     const ttsResponse = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${TTS_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
-        headers: {
-          "xi-api-key": ELEVENLABS_API_KEY,
-          "Content-Type": "application/json",
-          Accept: "audio/mpeg",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text: script.english_text,
-          model_id: "eleven_multilingual_v2",
-          voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.75,
-            style: 0.0,
-            use_speaker_boost: true,
+          contents: [
+            {
+              parts: [
+                {
+                  text: `Read aloud as if you are talking to a friend:\n${script.english_text}`,
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            response_modalities: ["AUDIO"],
+            speech_config: {
+              voice_config: {
+                prebuilt_voice_config: {
+                  voice_name: tts_voice,
+                },
+              },
+            },
           },
         }),
+        signal: controller.signal,
       }
     );
 
+    clearTimeout(timeoutId);
+
     if (!ttsResponse.ok) {
       const errText = await ttsResponse.text();
-      console.error("ElevenLabs TTS 에러:", ttsResponse.status, errText);
-      await failPackage(supabase, packageId, "TTS 음성 생성 실패");
+      console.error("Gemini TTS 에러:", ttsResponse.status, errText);
+      await failPackage(supabase, packageId, `TTS 음성 생성 실패 (${ttsResponse.status})`);
       return jsonResponse({ error: "음성 생성에 실패했습니다" }, 500);
+    }
+
+    const ttsData = await ttsResponse.json();
+
+    // base64 PCM 추출
+    const base64Audio =
+      ttsData.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+
+    if (!base64Audio) {
+      console.error("Gemini 응답에 오디오 데이터 없음");
+      await failPackage(supabase, packageId, "TTS 응답에 오디오 없음");
+      return jsonResponse({ error: "음성 데이터를 받지 못했습니다" }, 500);
     }
 
     await updatePackageProgress(supabase, packageId, 40);
 
-    // MP3 바이너리 → Storage 업로드
-    const audioBuffer = await ttsResponse.arrayBuffer();
-    const audioPath = `audio/${packageId}.mp3`;
+    // base64 → PCM → 리샘플(24kHz→44.1kHz) → WAV
+    const binaryString = atob(base64Audio);
+    const pcmBytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      pcmBytes[i] = binaryString.charCodeAt(i);
+    }
+
+    const pcmData = new Int16Array(pcmBytes.buffer);
+    const resampled = resample(pcmData, 24000, 44100);
+    const wavBuffer = pcmToWav(resampled.buffer as ArrayBuffer, 44100);
+
+    console.log("✅ WAV 변환 완료:", {
+      pcmSize: pcmBytes.length,
+      resampledSize: resampled.length * 2,
+      wavSize: wavBuffer.byteLength,
+    });
+
+    // Storage 업로드
+    const audioPath = `audio/${packageId}.wav`;
 
     const { error: uploadError } = await supabase.storage
       .from("script-packages")
-      .upload(audioPath, audioBuffer, {
-        contentType: "audio/mpeg",
+      .upload(audioPath, wavBuffer, {
+        contentType: "audio/wav",
         upsert: true,
       });
 
@@ -185,7 +289,7 @@ async function handleGeneratePackage(supabase: any, body: any) {
       .from("script_packages")
       .update({
         wav_file_path: audioPath,
-        wav_file_size: audioBuffer.byteLength,
+        wav_file_size: wavBuffer.byteLength,
         progress: 60,
       })
       .eq("id", packageId);
@@ -194,7 +298,7 @@ async function handleGeneratePackage(supabase: any, body: any) {
       success: true,
       package_id: packageId,
       wav_file_path: audioPath,
-      file_size: audioBuffer.byteLength,
+      file_size: wavBuffer.byteLength,
     });
   } catch (err) {
     console.error("Phase 1 실패:", err);
@@ -203,7 +307,10 @@ async function handleGeneratePackage(supabase: any, body: any) {
       packageId,
       err instanceof Error ? err.message : "음성 생성 중 오류"
     );
-    return jsonResponse({ error: "패키지 생성 중 오류가 발생했습니다" }, 500);
+    return jsonResponse(
+      { error: "패키지 생성 중 오류가 발생했습니다" },
+      500
+    );
   }
 }
 
@@ -261,7 +368,7 @@ async function handleGenerateShadowing(supabase: any, body: any) {
 
     // Whisper STT (word-level timestamps)
     const formData = new FormData();
-    formData.append("file", audioData, "audio.mp3");
+    formData.append("file", audioData, "audio.wav");
     formData.append("model", "whisper-1");
     formData.append("response_format", "verbose_json");
     formData.append("timestamp_granularities[]", "word");
@@ -290,7 +397,10 @@ async function handleGenerateShadowing(supabase: any, body: any) {
 
     if (whisperWords.length === 0) {
       await partialPackage(supabase, package_id, "음성 인식 결과 없음");
-      return jsonResponse({ error: "음성에서 단어를 인식하지 못했습니다" }, 500);
+      return jsonResponse(
+        { error: "음성에서 단어를 인식하지 못했습니다" },
+        500
+      );
     }
 
     await updatePackageProgress(supabase, package_id, 80);
@@ -347,7 +457,10 @@ async function handleGenerateShadowing(supabase: any, body: any) {
       package_id,
       err instanceof Error ? err.message : "타임스탬프 생성 중 오류"
     );
-    return jsonResponse({ error: "쉐도잉 데이터 생성에 실패했습니다" }, 500);
+    return jsonResponse(
+      { error: "쉐도잉 데이터 생성에 실패했습니다" },
+      500
+    );
   }
 }
 
@@ -363,11 +476,12 @@ function extractSentences(paragraphs: any): SentenceData[] {
   if (!paragraphs?.paragraphs) return [];
 
   const sentences: SentenceData[] = [];
+  let globalIndex = 1;
   for (const para of paragraphs.paragraphs) {
     for (const slot of para.slots || []) {
       for (const sent of slot.sentences || []) {
         sentences.push({
-          index: sent.index,
+          index: globalIndex++,
           english: sent.english,
           korean: sent.korean,
         });
@@ -406,7 +520,9 @@ function matchSentencesToWords(
   let searchStart = 0;
 
   for (const sentence of sentences) {
-    const sentenceWords = normalizeText(sentence.english).split(/\s+/).filter(Boolean);
+    const sentenceWords = normalizeText(sentence.english)
+      .split(/\s+/)
+      .filter(Boolean);
     if (sentenceWords.length === 0) continue;
 
     const windowSize = sentenceWords.length;
@@ -417,7 +533,11 @@ function matchSentencesToWords(
     // 슬라이딩 윈도우로 최적 매칭 위치 탐색
     const searchEnd = Math.min(words.length, searchStart + windowSize * 3);
 
-    for (let i = searchStart; i <= searchEnd - windowSize && i < words.length; i++) {
+    for (
+      let i = searchStart;
+      i <= searchEnd - windowSize && i < words.length;
+      i++
+    ) {
       const windowWords = words
         .slice(i, i + windowSize)
         .map((w) => normalizeText(w.word));
@@ -445,12 +565,12 @@ function matchSentencesToWords(
         duration: Math.round((endTime - startTime) * 100) / 100,
       });
 
-      // 다음 검색 시작점을 현재 매칭 끝으로 이동
       searchStart = bestEnd;
     } else {
       // 매칭 실패 시 이전 결과 기반으로 추정
-      const prevEnd = results.length > 0 ? results[results.length - 1].end : 0;
-      const estimatedDuration = sentenceWords.length * 0.4; // 단어당 0.4초 추정
+      const prevEnd =
+        results.length > 0 ? results[results.length - 1].end : 0;
+      const estimatedDuration = sentenceWords.length * 0.4;
       results.push({
         index: sentence.index,
         english: sentence.english,
@@ -470,7 +590,7 @@ function matchSentencesToWords(
 function normalizeText(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, "") // 구두점 제거
+    .replace(/[^a-z0-9\s]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -486,8 +606,11 @@ function calculateSimilarity(a: string[], b: string[]): number {
   for (let i = 0; i < Math.min(a.length, b.length); i++) {
     if (a[i] === b[i]) {
       matches++;
-    } else if (levenshteinDistance(a[i], b[i]) <= Math.max(1, Math.floor(a[i].length / 3))) {
-      matches += 0.7; // 부분 매칭
+    } else if (
+      levenshteinDistance(a[i], b[i]) <=
+      Math.max(1, Math.floor(a[i].length / 3))
+    ) {
+      matches += 0.7;
     }
   }
 
@@ -529,18 +652,15 @@ function fillTimestampGaps(timestamps: TimestampResult[]): void {
     const gap = curr.start - prev.end;
 
     if (gap > 0.5) {
-      // 큰 갭 → 중간값으로 조정
       const mid = (prev.end + curr.start) / 2;
       prev.end = Math.round(mid * 100) / 100;
       curr.start = Math.round(mid * 100) / 100;
     } else if (gap < 0) {
-      // 오버랩 → 경계를 중간값으로 조정
       const mid = (prev.end + curr.start) / 2;
       prev.end = Math.round(mid * 100) / 100;
       curr.start = Math.round(mid * 100) / 100;
     }
 
-    // duration 재계산
     prev.duration = Math.round((prev.end - prev.start) * 100) / 100;
     curr.duration = Math.round((curr.end - curr.start) * 100) / 100;
   }
@@ -578,7 +698,6 @@ async function partialPackage(
   packageId: string,
   errorMessage: string
 ) {
-  // Phase 2 실패 → partial (음성은 유효, 기본 재생 가능)
   await supabase
     .from("script_packages")
     .update({

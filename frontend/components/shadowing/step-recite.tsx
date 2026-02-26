@@ -122,9 +122,9 @@ export function StepRecite() {
       {reciteShowPeek && (
         <div className="rounded-[var(--radius-xl)] border border-amber-200 bg-amber-50/50 p-4">
           <div className="space-y-2">
-            {sentences.map((sent) => (
+            {sentences.map((sent, i) => (
               <p
-                key={sent.index}
+                key={i}
                 className="text-sm leading-relaxed text-foreground-secondary"
               >
                 {sent.english}
