@@ -26,6 +26,8 @@ export interface ShadowingState {
   currentTime: number;
   playbackRate: number;
   displayMode: DisplayMode;
+  seekRequest: { time: number; id: number } | null; // 문장 클릭 → 재생 요청
+  repeatTargetIndex: number | null; // null=OFF, 숫자=해당 문장 반복
 
   // === Step 2: 따라읽기 ===
   shadowIndex: number;
@@ -60,6 +62,9 @@ export interface ShadowingState {
   setCurrentTime: (time: number) => void;
   setPlaybackRate: (rate: number) => void;
   setDisplayMode: (mode: DisplayMode) => void;
+  seekTo: (time: number) => void; // 특정 시간으로 이동 + 재생 요청
+  toggleRepeat: () => void; // 반복 토글 (현재 재생 문장 고정 or 해제)
+  setRepeatTarget: (index: number) => void; // 반복 대상 문장 변경
 
   // Step 2: 따라읽기
   setShadowIndex: (index: number) => void;
@@ -94,6 +99,8 @@ const initialState = {
   currentTime: 0,
   playbackRate: 1.0,
   displayMode: "both" as DisplayMode,
+  seekRequest: null,
+  repeatTargetIndex: null,
   shadowIndex: 0,
   shadowHintLevel: "full" as TextHintLevel,
   shadowCompleted: [],
@@ -129,12 +136,28 @@ export const useShadowingStore = create<ShadowingState>()(
           isPlaying: false,
           isRecording: false,
           recordingDuration: 0,
+          repeatTargetIndex: null,
+          seekRequest: null,
         }),
 
       setPlaying: (playing) => set({ isPlaying: playing }),
       setCurrentTime: (time) => set({ currentTime: time }),
       setPlaybackRate: (rate) => set({ playbackRate: rate }),
       setDisplayMode: (mode) => set({ displayMode: mode }),
+      seekTo: (time) => set({ seekRequest: { time, id: Date.now() } }),
+      toggleRepeat: () =>
+        set((state) => {
+          if (state.repeatTargetIndex != null) {
+            // OFF: 반복 해제
+            return { repeatTargetIndex: null };
+          }
+          // ON: 현재 재생 중인 문장을 찾아서 고정
+          const idx = state.sentences.findIndex(
+            (s) => state.currentTime >= s.start && state.currentTime < s.end
+          );
+          return { repeatTargetIndex: idx >= 0 ? idx : 0 };
+        }),
+      setRepeatTarget: (index) => set({ repeatTargetIndex: index }),
 
       // Step 2: 따라읽기
       setShadowIndex: (index) => set({ shadowIndex: index }),

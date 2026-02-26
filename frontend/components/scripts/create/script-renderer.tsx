@@ -158,21 +158,24 @@ export function ScriptRenderer({
       <div className="space-y-3">
         {/* 영어 블록 */}
         <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface">
-          {paragraphs.map((para) => {
+          {paragraphs.map((para, pi) => {
             const labels = PARAGRAPH_LABELS[para.type] || {
               en: para.type,
               ko: para.label || para.type,
             };
+            const showHeader = pi === 0 || paragraphs[pi - 1].type !== para.type;
             return (
-              <div key={para.type}>
-                <div className="flex items-center gap-2 border-b border-border bg-surface-secondary px-4 py-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-primary-600">
-                    {labels.en}
-                  </span>
-                  <span className="text-[10px] text-foreground-muted">
-                    {labels.ko}
-                  </span>
-                </div>
+              <div key={`${para.type}-${pi}`}>
+                {showHeader && (
+                  <div className="flex items-center gap-2 border-b border-border bg-surface-secondary px-4 py-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-primary-600">
+                      {labels.en}
+                    </span>
+                    <span className="text-[10px] text-foreground-muted">
+                      {labels.ko}
+                    </span>
+                  </div>
+                )}
                 <div className="px-4 py-3 sm:px-5">
                   <div className="space-y-2">
                     {para.slots.map((slot, si) => (
@@ -188,21 +191,24 @@ export function ScriptRenderer({
         </div>
         {/* 한글 블록 */}
         <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface">
-          {paragraphs.map((para) => {
+          {paragraphs.map((para, pi) => {
             const labels = PARAGRAPH_LABELS[para.type] || {
               en: para.type,
               ko: para.label || para.type,
             };
+            const showHeader = pi === 0 || paragraphs[pi - 1].type !== para.type;
             return (
-              <div key={para.type}>
-                <div className="flex items-center gap-2 border-b border-border bg-surface-secondary px-4 py-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-primary-600">
-                    {labels.en}
-                  </span>
-                  <span className="text-[10px] text-foreground-muted">
-                    {labels.ko}
-                  </span>
-                </div>
+              <div key={`${para.type}-${pi}`}>
+                {showHeader && (
+                  <div className="flex items-center gap-2 border-b border-border bg-surface-secondary px-4 py-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-primary-600">
+                      {labels.en}
+                    </span>
+                    <span className="text-[10px] text-foreground-muted">
+                      {labels.ko}
+                    </span>
+                  </div>
+                )}
                 <div className="px-4 py-3 sm:px-5">
                   <div className="space-y-2">
                     {para.slots.map((slot, si) => (
@@ -226,21 +232,24 @@ export function ScriptRenderer({
   // both / en / ko: 단락별 슬롯 기반 렌더링
   return (
     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface">
-      {paragraphs.map((para) => {
+      {paragraphs.map((para, pi) => {
         const labels = PARAGRAPH_LABELS[para.type] || {
           en: para.type,
           ko: para.label || para.type,
         };
+        const showHeader = pi === 0 || paragraphs[pi - 1].type !== para.type;
         return (
-          <div key={para.type}>
-            <div className="flex items-center gap-2 border-b border-border bg-surface-secondary px-4 py-2.5">
-              <span className="text-xs font-bold uppercase tracking-wider text-primary-600">
-                {labels.en}
-              </span>
-              <span className="text-[11px] text-foreground-muted">
-                {labels.ko}
-              </span>
-            </div>
+          <div key={`${para.type}-${pi}`}>
+            {showHeader && (
+              <div className="flex items-center gap-2 border-b border-border bg-surface-secondary px-4 py-2.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-primary-600">
+                  {labels.en}
+                </span>
+                <span className="text-[11px] text-foreground-muted">
+                  {labels.ko}
+                </span>
+              </div>
+            )}
             <div className="px-4 py-3.5 sm:px-5">
               <div className="space-y-3">
                 {para.slots.map((slot, si) => {
@@ -428,27 +437,30 @@ export function ScriptSummaryView({
       {fullTextEnglish && (
         <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface">
           {paragraphs && paragraphs.length > 0 ? (
-            paragraphs.map((para) => {
+            paragraphs.map((para, pi) => {
               const paraLabels = PARAGRAPH_LABELS[para.type] || {
                 en: para.type,
                 ko: para.label || para.type,
               };
+              const showHeader = pi === 0 || paragraphs[pi - 1].type !== para.type;
               // 이 단락의 전체 텍스트를 슬롯별로 추출
               const slotTexts = para.slots.map((slot) =>
                 slot.sentences.map((s) => s.english).join(" ")
               );
 
               return (
-                <div key={para.type}>
-                  {/* 단락 헤더 */}
-                  <div className="flex items-center gap-2 border-b border-border bg-surface-secondary px-4 py-2">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-primary-600">
-                      {paraLabels.en}
-                    </span>
-                    <span className="text-[10px] text-foreground-muted">
-                      {paraLabels.ko}
-                    </span>
-                  </div>
+                <div key={`${para.type}-${pi}`}>
+                  {/* 단락 헤더 — 같은 type 연속 시 생략 */}
+                  {showHeader && (
+                    <div className="flex items-center gap-2 border-b border-border bg-surface-secondary px-4 py-2">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-primary-600">
+                        {paraLabels.en}
+                      </span>
+                      <span className="text-[10px] text-foreground-muted">
+                        {paraLabels.ko}
+                      </span>
+                    </div>
+                  )}
                   {/* 슬롯별 텍스트 + 하이라이트 */}
                   <div className="px-4 py-3 sm:px-5">
                     <div className="space-y-2 text-[15px] leading-[1.9]">

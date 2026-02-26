@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -14,12 +14,19 @@ import {
   Eye,
   CheckCircle2,
   Clock,
+  ChevronLeft,
   ChevronRight,
   Package,
   Loader2,
   AlertCircle,
   Play,
+  Coffee,
+  Clapperboard,
+  Lightbulb,
+  BookOpen,
+  type LucideIcon,
 } from "lucide-react";
+import { TOPIC_ICONS } from "@/components/reviews/submit/topic-pagination";
 import {
   getMyScripts,
   getShadowingHistory,
@@ -27,6 +34,7 @@ import {
   deleteScript,
   createPackage,
 } from "@/lib/actions/scripts";
+import { getTopicsByCategory } from "@/lib/queries/master-questions";
 import type { ScriptListItem, ShadowingHistoryItem } from "@/lib/types/scripts";
 import {
   SCRIPT_SOURCE_LABELS,
@@ -105,82 +113,68 @@ function CreateTab() {
         <Info size={18} className="mt-0.5 shrink-0 text-primary-500" />
         <div>
           <p className="text-sm font-medium text-foreground">
-            AI 맞춤 스크립트란?
+            나만의 맞춤 스크립트란?
           </p>
           <p className="mt-1 text-sm text-foreground-secondary">
             시험 빈출 주제와 내 경험을 조합하여, 자연스럽고 외우기 쉬운 영어
-            답변 스크립트를 AI가 생성해 줍니다.
+            답변 스크립트가 자동으로 만들어집니다.
           </p>
         </div>
       </div>
 
-      {/* 생성 시작 */}
-      <Link
-        href="/scripts/create"
-        className="group flex items-center justify-between rounded-[var(--radius-xl)] border border-border bg-surface p-5 transition-all hover:border-primary-300 hover:shadow-sm"
-      >
-        <div className="flex items-center gap-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-50">
-            <PenTool size={18} className="text-primary-500" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-foreground">
-              새 스크립트 생성
-            </h3>
-            <p className="mt-0.5 text-sm text-foreground-secondary">
-              나의 소소한 일상이 가장 자연스러운 영어 대본이 됩니다
-            </p>
-          </div>
-        </div>
-        <ChevronRight
-          size={16}
-          className="shrink-0 text-foreground-muted transition-transform group-hover:translate-x-0.5"
-        />
-      </Link>
-
-      {/* 생성 과정 안내 */}
+      {/* 생성 과정 + CTA 카드 */}
       <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-6">
         <h3 className="font-semibold text-foreground">스크립트 생성 과정</h3>
         <p className="mt-1 text-sm text-foreground-secondary">
           3단계로 나만의 맞춤 스크립트를 완성합니다
         </p>
 
-        <div className="mt-6 space-y-4">
+        {/* 3단계 안내 */}
+        <div className="relative mt-6">
           {[
-            {
-              step: 1,
-              title: "주제·질문 선택",
-              desc: "빈출 주제 목록에서 준비할 질문을 선택합니다",
-            },
-            {
-              step: 2,
-              title: "내 경험 입력 + 목표 등급 선택",
-              desc: "한국어로 경험을 입력하고 목표 등급을 설정합니다",
-            },
-            {
-              step: 3,
-              title: "AI 스크립트 생성 → 확인 → 확정",
-              desc: "AI가 생성한 답변을 확인하고, 최대 3회 수정 후 확정합니다",
-            },
+            { step: 1, title: "주제·질문 선택", desc: "빈출 주제 목록에서 준비할 질문을 선택합니다" },
+            { step: 2, title: "내 경험 입력 + 목표 등급 선택", desc: "한국어로 경험을 입력하고 목표 등급을 설정합니다" },
+            { step: 3, title: "AI 스크립트 생성 → 확인 → 확정", desc: "AI가 생성한 답변을 확인하고, 최대 3회 수정 후 확정합니다" },
           ].map((s, i) => (
-            <div key={s.step} className="flex items-start gap-4">
-              <div className="flex flex-col items-center">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-border bg-surface-secondary text-sm font-bold text-foreground-muted">
-                  {s.step}
-                </div>
-                {i < 2 && <div className="mt-1 h-6 w-px bg-border" />}
+            <div key={s.step} className="relative flex gap-4 pb-5 last:pb-0">
+              {i < 2 && (
+                <div className="absolute left-4 top-8 bottom-0 w-px bg-border" />
+              )}
+              <div className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-border bg-surface-secondary text-sm font-bold text-foreground-muted">
+                {s.step}
               </div>
-              <div className="pb-1">
+              <div className="pt-0.5">
                 <p className="font-semibold text-foreground">{s.title}</p>
                 <p className="text-sm text-foreground-secondary">{s.desc}</p>
               </div>
             </div>
           ))}
         </div>
+
+        {/* CTA */}
+        <div className="mt-6 border-t border-border pt-4">
+          <Link
+            href="/scripts/create"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-lg)] bg-primary-500 px-5 text-sm font-medium text-white transition-colors hover:bg-primary-600"
+          >
+            <PenTool size={16} />
+            스크립트 생성 시작하기
+          </Link>
+        </div>
       </div>
     </div>
   );
 }
+
+/* ── 카테고리 상수 ── */
+
+const CATEGORIES = [
+  { id: "일반", label: "일반", icon: Coffee },
+  { id: "롤플레이", label: "롤플레이", icon: Clapperboard },
+  { id: "어드밴스", label: "어드밴스", icon: Lightbulb },
+] as const;
+
+const DEFAULT_TOPIC_ICON: LucideIcon = BookOpen;
 
 /* ── 내 스크립트 탭 ── */
 
@@ -203,6 +197,91 @@ function MyScriptsTab({
   });
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [topicPage, setTopicPage] = useState(0);
+
+  // 반응형 페이지 크기: 모바일 5개, PC 10개
+  const [topicPerPage, setTopicPerPage] = useState(5);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 640px)");
+    const update = () => setTopicPerPage(mq.matches ? 10 : 5);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  // 선택된 카테고리의 빈도 데이터 (출제 빈도순 정렬)
+  const { data: frequencyTopics } = useQuery({
+    queryKey: ["topics", selectedCategory],
+    queryFn: () =>
+      getTopicsByCategory(
+        selectedCategory as "일반" | "롤플레이" | "어드밴스"
+      ),
+    enabled: !!selectedCategory,
+    staleTime: Infinity,
+  });
+
+  // 카테고리별 스크립트 개수
+  const categoryCounts = useMemo(() => {
+    if (!scripts) return {};
+    const counts: Record<string, number> = {};
+    for (const s of scripts) {
+      const cat = s.category || "기타";
+      counts[cat] = (counts[cat] || 0) + 1;
+    }
+    return counts;
+  }, [scripts]);
+
+  // 선택된 카테고리의 주제 목록 (빈도순) + 보유 스크립트 개수
+  const sortedTopics = useMemo(() => {
+    if (!scripts || !selectedCategory) return [];
+
+    // 보유 스크립트 개수 계산
+    const scriptCounts: Record<string, number> = {};
+    for (const s of scripts) {
+      if (s.category !== selectedCategory) continue;
+      const topic = s.topic || "기타";
+      scriptCounts[topic] = (scriptCounts[topic] || 0) + 1;
+    }
+
+    // 빈도순 정렬 (frequencyTopics 순서 활용)
+    if (frequencyTopics?.length) {
+      const freqOrder = new Map(
+        frequencyTopics.map((t, i) => [t.topic, i])
+      );
+      return Object.entries(scriptCounts)
+        .sort(
+          (a, b) =>
+            (freqOrder.get(a[0]) ?? 999) - (freqOrder.get(b[0]) ?? 999)
+        )
+        .map(([topic, count]) => ({ topic, count }));
+    }
+
+    // 빈도 데이터 미도착 시 스크립트 수 순 폴백
+    return Object.entries(scriptCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([topic, count]) => ({ topic, count }));
+  }, [scripts, selectedCategory, frequencyTopics]);
+
+  // 필터링된 스크립트
+  const filteredScripts = useMemo(() => {
+    if (!scripts) return [];
+    let result = scripts;
+    if (selectedCategory) {
+      result = result.filter((s) => s.category === selectedCategory);
+    }
+    if (selectedTopic) {
+      result = result.filter((s) => s.topic === selectedTopic);
+    }
+    return result;
+  }, [scripts, selectedCategory, selectedTopic]);
+
+  function handleCategoryChange(cat: string | null) {
+    setSelectedCategory(cat);
+    setSelectedTopic(null);
+    setTopicPage(0);
+  }
 
   async function handleDelete(scriptId: string) {
     if (!confirm("이 스크립트를 삭제하시겠습니까? 연결된 패키지도 함께 삭제됩니다.")) return;
@@ -249,15 +328,124 @@ function MyScriptsTab({
   }
 
   return (
-    <div className="space-y-3">
-      {scripts.map((script) => (
-        <ScriptCard
-          key={script.id}
-          script={script}
-          onDelete={handleDelete}
-          isDeleting={deletingId === script.id}
-        />
-      ))}
+    <div className="space-y-4">
+      {/* 카테고리 필터 */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => handleCategoryChange(null)}
+          className={`inline-flex flex-1 items-center justify-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors sm:flex-none sm:gap-1.5 sm:px-3 sm:text-sm ${
+            selectedCategory === null
+              ? "bg-primary-500 text-white"
+              : "bg-surface-secondary text-foreground-secondary hover:bg-border hover:text-foreground"
+          }`}
+        >
+          전체
+          <span className={`text-[10px] sm:text-xs ${selectedCategory === null ? "text-white/80" : "text-foreground-muted"}`}>
+            {scripts.length}
+          </span>
+        </button>
+        {CATEGORIES.map((cat) => {
+          const count = categoryCounts[cat.id] || 0;
+          if (count === 0) return null;
+          const active = selectedCategory === cat.id;
+          return (
+            <button
+              key={cat.id}
+              onClick={() => handleCategoryChange(cat.id)}
+              className={`inline-flex flex-1 items-center justify-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors sm:flex-none sm:gap-1.5 sm:px-3 sm:text-sm ${
+                active
+                  ? "bg-primary-500 text-white"
+                  : "bg-surface-secondary text-foreground-secondary hover:bg-border hover:text-foreground"
+              }`}
+            >
+              <cat.icon size={14} className="hidden sm:block" />
+              {cat.label}
+              <span className={`text-[10px] sm:text-xs ${active ? "text-white/80" : "text-foreground-muted"}`}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 주제 필터 (카테고리 선택 시에만, 빈도순 페이지네이션) */}
+      {selectedCategory && sortedTopics.length > 0 && (() => {
+        const totalPages = Math.ceil(sortedTopics.length / topicPerPage) || 1;
+        const currentItems = sortedTopics.slice(
+          topicPage * topicPerPage,
+          (topicPage + 1) * topicPerPage
+        );
+
+        return (
+          <div className="space-y-2">
+            <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-10 sm:gap-2">
+              {currentItems.map((item) => {
+                const Icon = TOPIC_ICONS[item.topic] || DEFAULT_TOPIC_ICON;
+                const isSelected = selectedTopic === item.topic;
+                return (
+                  <button
+                    key={item.topic}
+                    onClick={() => setSelectedTopic(isSelected ? null : item.topic)}
+                    className={`flex flex-col items-center gap-0.5 rounded-[var(--radius-lg)] border p-2 text-center transition-all ${
+                      isSelected
+                        ? "border-primary-500 bg-primary-50 text-primary-700"
+                        : "border-border bg-surface text-foreground hover:border-primary-300 hover:bg-primary-50/30"
+                    }`}
+                  >
+                    <Icon
+                      size={14}
+                      className={isSelected ? "text-primary-600" : "text-primary-400"}
+                    />
+                    <span className="text-[10px] font-medium leading-tight sm:text-[11px]">{item.topic}</span>
+                    <span className="text-[10px] text-foreground-muted">{item.count}개</span>
+                  </button>
+                );
+              })}
+            </div>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  onClick={() => setTopicPage((p) => Math.max(0, p - 1))}
+                  disabled={topicPage === 0}
+                  className="flex h-7 w-7 items-center justify-center rounded-[var(--radius-md)] border border-border text-foreground-secondary transition-colors hover:bg-surface-secondary disabled:opacity-30"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <span className="text-xs text-foreground-muted">
+                  {topicPage + 1} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setTopicPage((p) => Math.min(totalPages - 1, p + 1))}
+                  disabled={topicPage >= totalPages - 1}
+                  className="flex h-7 w-7 items-center justify-center rounded-[var(--radius-md)] border border-border text-foreground-secondary transition-colors hover:bg-surface-secondary disabled:opacity-30"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* 스크립트 목록 */}
+      {filteredScripts.length === 0 ? (
+        <div className="flex flex-col items-center py-8 text-center">
+          <p className="text-sm text-foreground-secondary">
+            해당 조건의 스크립트가 없습니다
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredScripts.map((script) => (
+            <ScriptCard
+              key={script.id}
+              script={script}
+              onDelete={handleDelete}
+              isDeleting={deletingId === script.id}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -334,7 +522,13 @@ function ScriptCard({
       {/* 주제 + 질문 */}
       <div className="mt-2">
         {script.topic && (
-          <p className="text-sm font-medium text-foreground">{script.topic}</p>
+          <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+            {(() => {
+              const Icon = TOPIC_ICONS[script.topic] || DEFAULT_TOPIC_ICON;
+              return <Icon size={14} className="shrink-0 text-foreground-secondary" />;
+            })()}
+            {script.topic}
+          </p>
         )}
         {script.question_korean && (
           <p className="mt-0.5 text-xs text-foreground-secondary line-clamp-1">
@@ -420,6 +614,20 @@ function ShadowingTab({
 }: {
   initialData?: ShadowingHistoryItem[];
 }) {
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [topicPage, setTopicPage] = useState(0);
+
+  // 반응형 페이지 크기: 모바일 5개, PC 10개
+  const [topicPerPage, setTopicPerPage] = useState(5);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 640px)");
+    const update = () => setTopicPerPage(mq.matches ? 10 : 5);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
   const { data: history, isLoading: historyLoading } = useQuery({
     queryKey: ["shadowing-history"],
     queryFn: async () => {
@@ -442,7 +650,68 @@ function ShadowingTab({
     staleTime: 5 * 60 * 1000,
   });
 
+  // 빈도 데이터 (주제 정렬용)
+  const { data: frequencyTopics } = useQuery({
+    queryKey: ["topics", selectedCategory],
+    queryFn: () =>
+      getTopicsByCategory(
+        selectedCategory as "일반" | "롤플레이" | "어드밴스"
+      ),
+    enabled: !!selectedCategory,
+    staleTime: Infinity,
+  });
+
   const isLoading = historyLoading || scriptsLoading;
+
+  // 카테고리별 스크립트 개수
+  const categoryCounts = useMemo(() => {
+    if (!shadowableScripts) return {};
+    const counts: Record<string, number> = {};
+    for (const s of shadowableScripts) {
+      const cat = s.category || "기타";
+      counts[cat] = (counts[cat] || 0) + 1;
+    }
+    return counts;
+  }, [shadowableScripts]);
+
+  // 주제 목록 (빈도순) + 보유 개수
+  const sortedTopics = useMemo(() => {
+    if (!shadowableScripts || !selectedCategory) return [];
+    const scriptCounts: Record<string, number> = {};
+    for (const s of shadowableScripts) {
+      if (s.category !== selectedCategory) continue;
+      const topic = s.topic || "기타";
+      scriptCounts[topic] = (scriptCounts[topic] || 0) + 1;
+    }
+    if (frequencyTopics?.length) {
+      const freqOrder = new Map(frequencyTopics.map((t, i) => [t.topic, i]));
+      return Object.entries(scriptCounts)
+        .sort((a, b) => (freqOrder.get(a[0]) ?? 999) - (freqOrder.get(b[0]) ?? 999))
+        .map(([topic, count]) => ({ topic, count }));
+    }
+    return Object.entries(scriptCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([topic, count]) => ({ topic, count }));
+  }, [shadowableScripts, selectedCategory, frequencyTopics]);
+
+  // 필터링된 스크립트
+  const filteredScripts = useMemo(() => {
+    if (!shadowableScripts) return [];
+    let result = shadowableScripts;
+    if (selectedCategory) {
+      result = result.filter((s) => s.category === selectedCategory);
+    }
+    if (selectedTopic) {
+      result = result.filter((s) => s.topic === selectedTopic);
+    }
+    return result;
+  }, [shadowableScripts, selectedCategory, selectedTopic]);
+
+  function handleCategoryChange(cat: string | null) {
+    setSelectedCategory(cat);
+    setSelectedTopic(null);
+    setTopicPage(0);
+  }
 
   return (
     <div className="space-y-6">
@@ -450,7 +719,7 @@ function ShadowingTab({
       <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-6">
         <h3 className="font-semibold text-foreground">쉐도잉 훈련</h3>
         <p className="mt-1 text-sm text-foreground-secondary">
-          패키지가 완료된 스크립트를 선택하여 5단계 점진 훈련을 시작합니다.
+          패키지가 완료된 스크립트를 선택하여 4단계 점진 훈련을 시작합니다.
         </p>
 
         {isLoading ? (
@@ -470,14 +739,125 @@ function ShadowingTab({
             </p>
           </div>
         ) : (
-          <div className="mt-4 space-y-3">
-            {shadowableScripts.map((script) => (
+          <div className="mt-4 space-y-4">
+            {/* 카테고리 필터 */}
+            <div className="flex items-center gap-1 sm:gap-2">
+              <button
+                onClick={() => handleCategoryChange(null)}
+                className={`inline-flex flex-1 items-center justify-center gap-0.5 rounded-full px-2 py-1.5 text-xs font-medium transition-colors sm:flex-none sm:gap-1.5 sm:px-3 sm:text-sm ${
+                  selectedCategory === null
+                    ? "bg-primary-500 text-white"
+                    : "bg-surface-secondary text-foreground-secondary hover:bg-border hover:text-foreground"
+                }`}
+              >
+                전체
+                <span className={`text-[10px] sm:text-xs ${selectedCategory === null ? "text-white/80" : "text-foreground-muted"}`}>
+                  {shadowableScripts.length}
+                </span>
+              </button>
+              {CATEGORIES.map((cat) => {
+                const count = categoryCounts[cat.id] || 0;
+                if (count === 0) return null;
+                const active = selectedCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => handleCategoryChange(cat.id)}
+                    className={`inline-flex flex-1 items-center justify-center gap-0.5 rounded-full px-2 py-1.5 text-xs font-medium transition-colors sm:flex-none sm:gap-1.5 sm:px-3 sm:text-sm ${
+                      active
+                        ? "bg-primary-500 text-white"
+                        : "bg-surface-secondary text-foreground-secondary hover:bg-border hover:text-foreground"
+                    }`}
+                  >
+                    <cat.icon size={14} className="hidden sm:block" />
+                    {cat.label}
+                    <span className={`text-[10px] sm:text-xs ${active ? "text-white/80" : "text-foreground-muted"}`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 주제 필터 (카테고리 선택 시에만, 빈도순 페이지네이션) */}
+            {selectedCategory && sortedTopics.length > 0 && (() => {
+              const totalPages = Math.ceil(sortedTopics.length / topicPerPage) || 1;
+              const currentItems = sortedTopics.slice(
+                topicPage * topicPerPage,
+                (topicPage + 1) * topicPerPage
+              );
+
+              return (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-10 sm:gap-2">
+                    {currentItems.map((item) => {
+                      const Icon = TOPIC_ICONS[item.topic] || DEFAULT_TOPIC_ICON;
+                      const isSelected = selectedTopic === item.topic;
+                      return (
+                        <button
+                          key={item.topic}
+                          onClick={() => setSelectedTopic(isSelected ? null : item.topic)}
+                          className={`flex flex-col items-center gap-0.5 rounded-[var(--radius-lg)] border p-2 text-center transition-all ${
+                            isSelected
+                              ? "border-primary-500 bg-primary-50 text-primary-700"
+                              : "border-border bg-surface text-foreground hover:border-primary-300 hover:bg-primary-50/30"
+                          }`}
+                        >
+                          <Icon
+                            size={14}
+                            className={isSelected ? "text-primary-600" : "text-primary-400"}
+                          />
+                          <span className="text-[10px] font-medium leading-tight sm:text-[11px]">{item.topic}</span>
+                          <span className="text-[10px] text-foreground-muted">{item.count}개</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => setTopicPage((p) => Math.max(0, p - 1))}
+                        disabled={topicPage === 0}
+                        className="flex h-7 w-7 items-center justify-center rounded-[var(--radius-md)] border border-border text-foreground-secondary transition-colors hover:bg-surface-secondary disabled:opacity-30"
+                      >
+                        <ChevronLeft size={14} />
+                      </button>
+                      <span className="text-xs text-foreground-muted">
+                        {topicPage + 1} / {totalPages}
+                      </span>
+                      <button
+                        onClick={() => setTopicPage((p) => Math.min(totalPages - 1, p + 1))}
+                        disabled={topicPage >= totalPages - 1}
+                        className="flex h-7 w-7 items-center justify-center rounded-[var(--radius-md)] border border-border text-foreground-secondary transition-colors hover:bg-surface-secondary disabled:opacity-30"
+                      >
+                        <ChevronRight size={14} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* 스크립트 목록 */}
+            {filteredScripts.length === 0 ? (
+              <div className="flex flex-col items-center py-8 text-center">
+                <p className="text-sm text-foreground-secondary">
+                  해당 조건의 스크립트가 없습니다
+                </p>
+              </div>
+            ) : (
+            <div className="space-y-3">
+            {filteredScripts.map((script) => (
               <div
                 key={script.id}
                 className="flex items-center justify-between rounded-lg border border-border bg-surface-secondary/50 p-3"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground">
+                  <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                    {(() => {
+                      const Icon = TOPIC_ICONS[script.topic || ""] || DEFAULT_TOPIC_ICON;
+                      return <Icon size={14} className="shrink-0 text-foreground-secondary" />;
+                    })()}
                     {script.topic || "주제 없음"}
                   </p>
                   {script.question_korean && (
@@ -505,6 +885,8 @@ function ShadowingTab({
                 )}
               </div>
             ))}
+            </div>
+            )}
           </div>
         )}
       </div>

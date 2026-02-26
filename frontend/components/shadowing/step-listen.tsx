@@ -11,38 +11,46 @@ const DISPLAY_MODES: { mode: DisplayMode; icon: React.ElementType; label: string
 ];
 
 export function StepListen() {
-  const { sentences, displayMode, setDisplayMode } = useShadowingStore();
+  const { sentences, displayMode, repeatTargetIndex, setDisplayMode, seekTo, setRepeatTarget } = useShadowingStore();
   const activeIndex = useActiveSentenceIndex();
 
   return (
-    <div className="space-y-4">
-      {/* 표시 모드 토글 */}
-      <div className="flex justify-center">
-        <div className="inline-flex rounded-lg border border-border bg-surface-secondary p-0.5">
-          {DISPLAY_MODES.map(({ mode, icon: Icon, label }) => (
-            <button
-              key={mode}
-              onClick={() => setDisplayMode(mode)}
-              className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                displayMode === mode
-                  ? "bg-surface text-foreground shadow-sm"
-                  : "text-foreground-muted hover:text-foreground-secondary"
-              }`}
-            >
-              <Icon size={13} />
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
+    <div className="space-y-3">
+      {/* 오디오 플레이어 — 단일 라인 */}
+      <ShadowingPlayer showSpeedControl compact />
 
-      {/* 스크립트 텍스트 */}
-      <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-4 sm:p-6">
-        <div className="space-y-3">
+      {/* 스크립트 텍스트 카드 */}
+      <div className="rounded-[var(--radius-xl)] border border-border bg-surface">
+        {/* 카드 헤더: 표시 모드 토글 */}
+        <div className="flex items-center justify-end border-b border-border px-4 py-2">
+          <div className="inline-flex rounded-lg border border-border bg-surface-secondary p-0.5">
+            {DISPLAY_MODES.map(({ mode, icon: Icon, label }) => (
+              <button
+                key={mode}
+                onClick={() => setDisplayMode(mode)}
+                className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                  displayMode === mode
+                    ? "bg-surface text-foreground shadow-sm"
+                    : "text-foreground-muted hover:text-foreground-secondary"
+                }`}
+              >
+                <Icon size={12} />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 문장 목록 */}
+        <div className="space-y-3 p-4 sm:p-6">
           {sentences.map((sent, i) => (
             <div
               key={i}
-              className={`rounded-lg p-2.5 transition-colors ${
+              onClick={() => {
+                seekTo(sent.start);
+                if (repeatTargetIndex != null) setRepeatTarget(i);
+              }}
+              className={`cursor-pointer rounded-lg p-2.5 transition-colors hover:bg-primary-50/50 ${
                 i === activeIndex
                   ? "bg-primary-50 ring-1 ring-primary-200"
                   : ""
@@ -76,9 +84,6 @@ export function StepListen() {
           ))}
         </div>
       </div>
-
-      {/* 오디오 플레이어 */}
-      <ShadowingPlayer showSpeedControl />
     </div>
   );
 }

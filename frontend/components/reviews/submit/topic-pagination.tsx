@@ -61,7 +61,7 @@ import {
 import { getTopicsByCategory } from "@/lib/queries/master-questions";
 
 // 주제별 Lucide 아이콘 매핑
-const TOPIC_ICONS: Record<string, LucideIcon> = {
+export const TOPIC_ICONS: Record<string, LucideIcon> = {
   // ── 일반 ──
   집: Home,
   TV: Tv,
