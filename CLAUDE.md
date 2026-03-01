@@ -65,6 +65,8 @@ docs/
 ├── 디자인시스템.md       ← 아토믹 디자인 원칙, 컴포넌트 설계
 ├── 로고에셋.md          ← 로고 사용 가이드, 에셋 파일 경로
 ├── 설계철학.md          ← 서베이 중요성, 설계 방향
+├── 오픽시험구조.md       ← OPIc 시험 구조 + DB 현황 + 재설계 논의
+├── 이현석DB_분석.md      ← 이현석 OPIc DB 분석 (431질문, 198세트, 28토픽, 41RP)
 ├── 가이드_Next.js+Supabase_페이지전환_성능최적화.md ← 성능 최적화 필수 가이드
 ├── 설계/               ← 기능별 상세 설계 (DB, API, 데이터 플로우)
 │   ├── 공통기반.md      ← DB 원칙, 백엔드 아키텍처, CORS
@@ -73,6 +75,11 @@ docs/
 │   ├── 스크립트.md      ← scripts 통합 테이블, RCTF 프롬프트
 │   ├── 튜터링.md        ← 6테이블, 4레벨 재설계
 │   └── 쉐도잉.md        ← 2테이블, 클라이언트 완결
+├── OPIc 자료/이현석/    ← 이현석 DB 추출 데이터
+│   ├── questions_master.json  ← 고유 질문 431개
+│   ├── sets_master.json       ← 세트/콤보 198개
+│   ├── topics_master.json     ← 토픽 28개 + RP 41개
+│   └── vision_extracted.json  ← 원본 추출 데이터 660엔트리
 └── 참조/               ← 소리담 원본 분석 (읽기 전용 레퍼런스)
     ├── 소리담_기능분석.md  ← 이관 요약 + 분석결과 인덱스
     └── 소리담_분석결과.md  ← 상세 레퍼런스 (스키마, API, 타입, 플로우)
@@ -92,8 +99,8 @@ docs/
 
 ### 핵심 개념
 
-- **master_questions (510개)**: 시스템 전체의 SSOT. 모든 모듈이 이 테이블에서 시작됨
-- **answer_type (10가지)**: 평가 체크박스, AI 튜터 진단, 스크립트 전략이 모두 이 값으로 분기
+- **master_questions (471개)**: 시스템 전체의 SSOT. 모든 모듈이 이 테이블에서 시작됨. DB 원본: `docs/질문 DB/questions_db.xlsx`
+- **question_type (10가지)**: 묘사/루틴/비교/경험3종/비교변화/사회적이슈/질문하기/대안제시. 평가 체크박스, AI 튜터 진단, 스크립트 전략이 모두 이 값으로 분기
 - **백엔드 아키텍처 (T-9)**: 하이브리드 — Server Actions(CRUD) + Edge Functions(AI API 호출)
 - **이관 순서**: 시험후기 → 스크립트 → 모의고사 → 튜터링 → 쉐도잉
 
@@ -479,7 +486,7 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
   - `custom_mode_questions` DROP + `find_similar_questions_by_frequency` DROP (M-1)
   - `submissions` 테이블 (16컬럼: 시험정보 + 설문 7개 + 후기 + 상태관리)
   - `submission_questions` 테이블 (14개 질문 기록, FK → submissions + master_questions)
-  - `submission_combos` 테이블 (통합 콤보, combo_type 영어 5종)
+  - `submission_combos` 테이블 (통합 콤보, combo_type: general_1/general_2/general_3/roleplay/advance)
   - RLS 정책: 본인 CRUD + complete 전체 SELECT (M-4)
   - `increment_script_credits` RPC 함수 (크레딧 보상용)
   - psql로 Supabase에 직접 실행 완료 (3테이블 확인됨)
@@ -646,6 +653,22 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
   - Zustand store: `shadowRound`, `nextShadowRound`, overlap 상태 3개 제거 + `setShadowHintLevel` 추가
   - 키보드 단축키 1~5 → 1~4, 네비게이션 4단계, 레이블 변경 (recite: "혼자 말하기")
 
+### 2026-02-28 - 이현석 OPIc DB 전체 분석 완료
+- **이현석 강사 OPIc DB PDF(735p) Vision 추출 → 구조화**:
+  - 원본: `docs/OPIc 자료/이현석/오픽DB전체_이현석.pdf`
+  - `vision_extracted.json` (660 엔트리, p45-75 미리보기 섹션 제거 후)
+  - `questions_master.json` — 고유 질문 **431개** (raw 565에서 중복 제거)
+  - `sets_master.json` — 세트/콤보 **198개** (일반 103 + 어드밴스 32 + 롤플레이 63)
+  - `topics_master.json` — 일반 토픽 **28개** + 롤플레이 시나리오 **41개**
+- **롤플레이 선택형/공통형 분류** (p474 폰트 색상 기준):
+  - 노란색 폰트 = 선택형 **11개**, 흰색 폰트 = 공통형 **30개**
+  - `build_master_json.py`에 `RP_SELECTED` 분류 로직 추가
+- **혼합 토픽 확인**: Housing(9선택+1공통), Overseas Trips(3선택+2공통)
+- **어드밴스 콤보 survey_type**: 부모 토픽 상속 (선택형 6, 공통형 21, 혼합 5)
+- **일반 콤보 3문제 순서 확인**: [Int] 묘사/설명 → [Int/Adv] 상세/비교 → [Adv] 과거경험/변화
+- **`docs/이현석DB_분석.md` 작성**: 전체 분석 결과 문서화
+- **master_questions 재설계(D-1) 사전 데이터 확보**: 이현석 DB가 현재 DB의 5가지 문제점 해결 가능
+
 ### 2026-02-27 - 스크립트 탭 UX 개선: 카테고리/주제 필터 + CTA 버튼
 - **내 스크립트 탭 카테고리/주제 필터 추가**:
   - 1단계 카테고리 필터: 일반(Coffee)/롤플레이(Clapperboard)/어드밴스(Lightbulb) + 보유 스크립트 개수
@@ -659,10 +682,21 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
   - 후기 제출 탭과 동일한 패턴: "스크립트 생성 시작하기" 테라코타 CTA 버튼
   - "AI 맞춤 스크립트" → "나만의 맞춤 스크립트" 문구 변경
 
+### 2026-03-01 - D-1: master_questions 전면 교체 결정
+- **신규 DB(`docs/질문 DB/questions_db.xlsx`) 471행으로 전면 교체 결정**
+  - 기존 510행(소리담 이관) → 471행(신규 구성)
+  - 11컬럼: id, category, sub_category, topic, survey_type, question_english, question_korean, question_short, question_type_kor, question_type_eng, tag
+  - ID 체계: `FRN_GEN_COM_DESC_01` (토픽코드_카테고리_서베이_타입_번호)
+  - 카테고리: 일반(223) + 롤플레이(183) + 어드밴스(63) + 시스템(2)
+  - question_type 10종: 묘사/루틴/비교/경험3종/비교변화/사회적이슈/질문하기/대안제시
+  - survey_type: 공통형(355) + 선택형(114) + 시스템(2)
+  - tag: Int(166) + Adv(295)
+- **의사결정.md D-1 완료 처리**, 실행계획.md Step 0 갱신
+
 ## 🔮 현재 상태 & 다음 단계
 
-**현재**: Phase 3 (핵심 모듈 이관) — Step 2 스크립트+쉐도잉 ✅ 완료 + UX 개선 완료
-**다음 작업**: Step 3 모의고사 → Step 4 튜터링 → 리브랜딩(P-5)
+**현재**: Phase 3 (핵심 모듈 이관) — Step 2 ✅ 완료 + D-1 DB 전면 교체 ✅ 완료 (마이그레이션 대기)
+**다음 작업**: D-1 마이그레이션 실행 → Step 3 모의고사 → Step 4 튜터링 → 리브랜딩(P-5)
 
 ### ⏳ 리브랜딩 작업 (P-5: 오픽톡닥 → 하루오픽)
 > Phase 3 전체 완료(Step 4 튜터링까지) 후 진행. 상세는 `docs/의사결정.md` P-5, `docs/실행계획.md` 참조.
@@ -695,14 +729,14 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 - **튜터링** (/tutoring): 진단 | 처방 | 훈련
 
 ### DB 현황 (13개 테이블)
-- **master_questions**: 510행 (시드 로드 완료)
+- **master_questions**: 471행 (D-1 전면 교체 — 11컬럼, 새 ID 체계. 원본: `docs/질문 DB/questions_db.xlsx`)
 - **orders**: 결제 기록 테이블 (RLS: 본인 조회만)
 - **user_credits**: 사용자 이용권 테이블 (회원가입 트리거로 자동 생성)
 - **submissions**: 후기 마스터 (17컬럼 + credit_granted, RLS: 본인 CRUD + complete 전체 SELECT)
 - **submission_questions**: 14개 질문 기록 (FK → submissions, master_questions)
 - **submission_combos**: 통합 콤보 (인증: 전체 SELECT, 비인증: advance만)
 - **ai_prompt_templates**: 2행 RCTF System+User Prompt (스크립트+튜터링 공유)
-- **script_specs**: 60행 등급별 규격서 (10 answer_types × 6 levels, 4컬럼 분할)
+- **script_specs**: 60행 등급별 규격서 (10 question_types × 6 levels, 4컬럼 분할)
 - **scripts**: 스크립트 마스터 (생성+교정 통합, UNIQUE(user_id, question_id))
 - **script_packages**: TTS 패키지 WAV+JSON (FK → scripts, CASCADE)
 - **shadowing_sessions**: 쉐도잉 세션 (FK → scripts, script_packages)
@@ -766,5 +800,5 @@ PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/1
 > 의사결정 기록은 `docs/의사결정.md` 참조
 
 ---
-*최종 업데이트: 2026-02-26*
-*상태: Phase 3 Step 2 스크립트+쉐도잉 모듈 전체 구현 완료 — EF 배포 대기*
+*최종 업데이트: 2026-03-01*
+*상태: Phase 3 Step 2 ✅ + D-1 DB 교체 ✅ → 마이그레이션 실행 → Step 3 모의고사*
