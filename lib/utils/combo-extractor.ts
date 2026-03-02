@@ -32,14 +32,14 @@ function extractTopics(questions: QuestionItem[]): string {
   return topics.join(",") || "일반";
 }
 
-// 콤보 유효성 검증: 모든 질문이 master_question_id 보유 + 기억함 + 커스텀 아님
+// 콤보 유효성 검증: 모든 질문이 question_id 보유 + 기억함 + 커스텀 아님
 function isValidForCombo(
   questions: QuestionItem[],
   excludeTopics: boolean
 ): boolean {
   return questions.every(
     (q) =>
-      q.master_question_id &&
+      q.question_id &&
       !q.is_not_remembered &&
       !q.custom_question_text &&
       (!excludeTopics || !EXCLUDED_TOPICS.includes(q.topic))
@@ -69,7 +69,7 @@ export function extractCombos(questions: QuestionItem[]): ExtractedCombo[] {
       combo_type: range.comboType,
       topic: extractTopics(rangeQuestions),
       question_ids: rangeQuestions
-        .map((q) => q.master_question_id!)
+        .map((q) => q.question_id!)
         .filter(Boolean),
     });
   }

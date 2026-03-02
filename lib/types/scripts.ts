@@ -316,7 +316,7 @@ export interface ScriptListItem {
 // 스크립트 상세 (스크립트 뷰어)
 export interface ScriptDetail extends Script {
   package: ScriptPackage | null;
-  master_question?: {
+  question_detail?: {
     id: string;
     question_english: string;
     question_korean: string;

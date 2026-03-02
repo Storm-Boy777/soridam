@@ -221,7 +221,7 @@ export async function saveQuestions(
         question_number: 1,
         combo_type: "self_intro",
         topic: "자기소개",
-        master_question_id: selfIntroResult.data?.id || null,
+        question_id: selfIntroResult.data?.id || null,
         custom_question_text: null,
         is_not_remembered: false,
       },
@@ -230,7 +230,7 @@ export async function saveQuestions(
         question_number: q.question_number,
         combo_type: q.combo_type,
         topic: q.topic,
-        master_question_id: q.master_question_id,
+        question_id: q.question_id,
         custom_question_text: q.custom_question_text,
         is_not_remembered: q.is_not_remembered,
       })),
@@ -294,6 +294,8 @@ export async function completeSubmission(
         step_completed: 3,
         status: "complete",
         submitted_at: new Date().toISOString(),
+        exam_approved: "approved",
+        exam_approved_at: new Date().toISOString(),
       })
       .eq("id", submission_id)
       .eq("status", "draft")
@@ -463,7 +465,7 @@ export async function getDraftQuestions(
 ): Promise<ActionResult<{
   combo_type: string;
   topic: string;
-  master_question_id: string | null;
+  question_id: string | null;
   custom_question_text: string | null;
   is_not_remembered: boolean;
   question_title: string | null;
@@ -484,7 +486,7 @@ export async function getDraftQuestions(
 
     const { data, error } = await supabase
       .from("submission_questions")
-      .select("combo_type, topic, master_question_id, custom_question_text, is_not_remembered, questions(question_short, question_korean)")
+      .select("combo_type, topic, question_id, custom_question_text, is_not_remembered, questions(question_short, question_korean)")
       .eq("submission_id", submissionId)
       .order("question_number");
 
@@ -496,7 +498,7 @@ export async function getDraftQuestions(
       return {
         combo_type: q.combo_type as string,
         topic: q.topic as string,
-        master_question_id: q.master_question_id as string | null,
+        question_id: q.question_id as string | null,
         custom_question_text: q.custom_question_text as string | null,
         is_not_remembered: q.is_not_remembered as boolean,
         question_title: mq?.question_short || null,
@@ -700,9 +702,9 @@ export async function getQuestionFrequency(topic: string, category?: FrequencyCa
 
   let query = supabase
     .from("submission_questions")
-    .select("master_question_id, combo_type, questions!inner(question_english, question_korean, question_type_eng)")
+    .select("question_id, combo_type, questions!inner(question_english, question_korean, question_type_eng)")
     .eq("topic", topic)
-    .not("master_question_id", "is", null)
+    .not("question_id", "is", null)
     .not("is_not_remembered", "eq", true);
 
   // 카테고리별 combo_type 필터
@@ -719,7 +721,7 @@ export async function getQuestionFrequency(topic: string, category?: FrequencyCa
   const freqMap = new Map<string, QuestionFrequencyItem>();
   for (const row of data || []) {
     const mq = row.questions as unknown as { question_english: string; question_korean: string; question_type_eng: string | null };
-    const key = row.master_question_id!;
+    const key = row.question_id!;
     const existing = freqMap.get(key);
     if (existing) {
       existing.frequency += 1;

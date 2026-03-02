@@ -67,7 +67,7 @@ export function SubmitTab({ initialSubmissions }: SubmitTabProps) {
             restored[q.combo_type] = { questions: [] };
           }
           restored[q.combo_type].questions.push({
-            master_question_id: q.master_question_id,
+            question_id: q.question_id,
             custom_question_text: q.custom_question_text,
             is_not_remembered: q.is_not_remembered,
             topic: q.topic,

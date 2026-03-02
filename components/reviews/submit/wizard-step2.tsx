@@ -104,7 +104,7 @@ export function WizardStep2({ submissionId, comboResults, setComboResults, onCom
     const notRememberedQuestions: SelectedQuestion[] = Array.from(
       { length: remaining },
       () => ({
-        master_question_id: null,
+        question_id: null,
         custom_question_text: null,
         is_not_remembered: true,
         topic: "기억 안남",
@@ -179,7 +179,7 @@ export function WizardStep2({ submissionId, comboResults, setComboResults, onCom
           question_number: step.questionNumbers[idx],
           combo_type: step.comboType,
           topic: q.topic,
-          master_question_id: q.master_question_id,
+          question_id: q.question_id,
           custom_question_text: q.custom_question_text,
           is_not_remembered: q.is_not_remembered,
         });
@@ -261,7 +261,7 @@ export function WizardStep2({ submissionId, comboResults, setComboResults, onCom
                     ? "기억 안남"
                     : q.custom_question_text
                       ? `[직접 입력] ${q.custom_question_text}`
-                      : q.question_title || q.question_text || q.master_question_id}
+                      : q.question_title || q.question_text || q.question_id}
                 </span>
               </div>
             ))}

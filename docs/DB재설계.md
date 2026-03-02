@@ -1,12 +1,13 @@
-# master_questions DB 재설계
+# questions DB 재설계 (마이그레이션 완료)
 
-> **목적**: 기존 master_questions 510행을 보강하여, 후기 제출 → 빈도 축적 → 확정 세트 승격 → 모의고사 활용으로 이어지는 자가 성장 DB를 설계한다.
+> **상태**: ✅ **마이그레이션 완료** (2026-03-02) — `master_questions`(510행) → `questions`(471행) 전면 교체 완료.
+> **목적**: 기존 master_questions 510행의 문제점을 해결하여, 후기 제출 → 빈도 축적 → 확정 세트 승격 → 모의고사 활용으로 이어지는 자가 성장 DB를 설계한다.
 > **참조 자료**:
-> - [`오픽시험구조.md`](오픽시험구조.md) — 시험 구조 + 현재 DB 현황 + 문제점
+> - [`오픽시험구조.md`](오픽시험구조.md) — 시험 구조 + 현재 DB 현황
 > - [`이현석DB_분석.md`](이현석DB_분석.md) — 질문 원문 DB 분석 (1,011문항, 138세트)
 > - [`강지완_기출분석.md`](강지완_기출분석.md) — 출제 빈도 통계 (680명)
 > - [`기출매칭_분석.md`](기출매칭_분석.md) — 실제 기출 10건 매칭 검증
-> **최종 업데이트**: 2026-02-27
+> **최종 업데이트**: 2026-03-02
 
 ---
 
@@ -50,7 +51,7 @@
     │                                   │
     └───────────┬───────────────────────┘
                 │
-        master_questions (개별 질문 풀)
+        questions (개별 질문 풀, 471행)
                 │
         confirmed_combos (확정 세트)
                 │
@@ -72,9 +73,9 @@
 
 ---
 
-## 2. 현재 문제점 (재설계 이유)
+## 2. 이전 문제점 (재설계 이유) — ✅ questions 마이그레이션으로 해결 완료
 
-> `오픽시험구조.md` §9, §10 기반
+> `오픽시험구조.md` §9, §10 기반. 아래 문제점들은 master_questions(510행) 당시 기준이며, questions(471행) 마이그레이션으로 대부분 해결됨.
 
 | # | 문제 | 상세 |
 |---|------|------|
@@ -94,7 +95,7 @@
 
 ### 3.1 테이블 구조
 
-**현재**: `master_questions` 단일 테이블 510행
+**이전**: `master_questions` 단일 테이블 510행 → **현재**: `questions` 테이블 471행 (마이그레이션 완료)
 
 **논의**:
 
@@ -104,7 +105,7 @@
 | B | 질문 + 세트 2테이블 분리 | 세트 관리 자연스러움 | 기존 코드 수정 필요 |
 | C | 주제 + 질문 + 세트 3테이블 | 가장 정규화 | 복잡도 증가 |
 
-**결정**: ✅ **방안 C — 3테이블 (topics + master_questions + confirmed_combos)**
+**결정**: ✅ **방안 C — 3테이블 (topics + questions + confirmed_combos)**
 
 ```
 topics (주제 ~30행)
@@ -124,7 +125,7 @@ confirmed_combos (확정 세트)
 ```
 
 - topics 테이블: 주제 메타데이터 (parent_topic, survey_type, 아이콘 등) 한 곳에서 관리
-- master_questions: FK → topics, 개별 질문 풀
+- questions: FK → topics, 개별 질문 풀 (471행)
 - confirmed_combos: 확정 세트 (이현석 시드 + 사용자 후기 승격)
 - 3.2 parent_topic, 3.7 survey_type도 topics 테이블 컬럼으로 자연스럽게 해결
 
@@ -444,14 +445,14 @@ restaurant(21), industry(12), internet(12), geography(11), phone(11), recycling(
 
 ---
 
-### 3.8 기존 모듈 영향 범위
+### 3.8 모듈별 영향 범위
 
-| 모듈 | 현재 master_questions 사용 방식 | 재설계 시 영향 |
-|------|-------------------------------|---------------|
-| **후기 제출** | topic/question 선택 UI + combo 기록 | 확정 세트 선택 UI 추가 |
-| **빈도 분석** | submission_combos 집계 | 세트별 빈도 추가 가능 |
-| **스크립트 생성** | topic/question 선택 → GPT 프롬프트 | question_english 활용 가능 |
-| **모의고사** (미구현) | 기출 콤보 재활용 예정 | 확정 세트가 출제 풀 |
+| 모듈 | questions 사용 방식 | 상태 |
+|------|-------------------|------|
+| **후기 제출** | topic/question 선택 UI + combo 기록 | ✅ questions 마이그레이션 반영 완료 |
+| **빈도 분석** | submission_combos 집계 | ✅ questions 마이그레이션 반영 완료 |
+| **스크립트 생성** | topic/question 선택 → GPT 프롬프트 | ✅ questions 마이그레이션 반영 완료 |
+| **모의고사** (미구현) | 기출 콤보 재활용 예정 | Step 3 예정 |
 | **튜터링** (미구현) | question_type별 진단 예정 | question_type 10가지 확정 완료 |
 
 ---
@@ -546,11 +547,11 @@ restaurant(21), industry(12), internet(12), geography(11), phone(11), recycling(
 | 6 | **Music 1문항 어드밴스** | Music #3에 어드밴스 1문항 (2문항이 정상) | 확인 필요 |
 | 7 | **한국어 텍스트 없음** | PyMuPDF에서 THEJung 커스텀 폰트 깨짐 | pdftotext 출력에서 매칭 예정 |
 
-### 4.6 현재 DB(510행)와 비교
+### 4.6 현재 questions(471행)와 이현석 추출 비교
 
-| 항목 | 현재 DB | 이현석 추출 | 차이 |
-|------|---------|-----------|------|
-| 총 질문 수 | 510 | 650 (중복 포함) | +140 (중복 제거 시 ~560) |
+| 항목 | questions (현재) | 이현석 추출 | 차이 |
+|------|-----------------|-----------|------|
+| 총 질문 수 | 471 | 650 (중복 포함) | +179 (중복 제거 시 ~560) |
 | 영어 원문 | 없음 | 있음 | 신규 |
 | 한국어 | 있음 | 없음 (폰트 깨짐) | 매칭 필요 |
 | 세트 정보 | 없음 | 229세트 | 신규 |
@@ -572,7 +573,7 @@ restaurant(21), industry(12), internet(12), geography(11), phone(11), recycling(
 | | 빈도 데이터 | 자체 축적 (강지완 X) | 사용자 후기가 쌓이면 자체 데이터가 더 정확 |
 | | 확정 세트 컨셉 | 채택 | 개별 질문 기반 + N회 이상 콤보 → 세트 승격 |
 | | 이현석 세트 | 확정 세트 시드로 활용 | 이미 증명된 데이터 |
-| | 3.1 테이블 구조 | **방안 C: 3테이블** (topics + master_questions + confirmed_combos) | 주제 메타데이터 분리 → 3.2, 3.7도 함께 해결 |
+| | 3.1 테이블 구조 | **방안 C: 3테이블** (topics + questions + confirmed_combos) | 주제 메타데이터 분리 → 3.2, 3.7도 함께 해결 |
 | | 3.2 parent_topic | **topics 테이블 컬럼** | 3.1에서 topics 분리됨 → 자연스럽게 해결 |
 | | 3.3 confirmed_combos | **5회+관리자 승인, 타입 별도, 시드 10회, 정렬 배열, 빈도→최근순** | 반자동 승격 (품질 보장), question_ids INTEGER[] 정렬 배열 |
 | | 3.4 question_type | **10가지 확정 (일반 6 + RP 2 + ADV 2, Q13=past_special)** | rp_11/rp_12/adv_14/adv_15 명명, question_type_ko 추가 |
@@ -580,6 +581,9 @@ restaurant(21), industry(12), internet(12), geography(11), phone(11), recycling(
 | | 3.6 영어 원문 | **3컬럼 (english + korean + title_short), 교차 비교 후 원문 확정** | 동일 문장=원문 사용, 차이=최소 패러프레이징, 한국어/타이틀=자체 생성 |
 | | 3.7 survey_type | **topics 테이블 컬럼, 선택형/공통형 2가지만** | 시스템 제외, 주제별 고정 속성, 콤보 유형 무관 |
 
+| 2026-03-01 | D-1 결정 | **master_questions → questions 전면 교체 결정** | 신규 471행 DB(questions_db.xlsx), 새 ID 체계, 11컬럼 |
+| 2026-03-02 | 마이그레이션 완료 | **questions 테이블 생성 + 471행 삽입 완료**, 코드·문서 전면 업데이트 | master_questions 의존 코드 모두 questions로 전환 |
+
 ---
 
-*최종 업데이트: 2026-02-28*
+*최종 업데이트: 2026-03-02*

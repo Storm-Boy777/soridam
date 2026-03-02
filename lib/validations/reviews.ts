@@ -64,7 +64,7 @@ export const questionItemSchema = z.object({
   question_number: z.number().min(2).max(15),
   combo_type: z.enum(COMBO_TYPES),
   topic: z.string().min(1, "주제를 선택해주세요"),
-  master_question_id: z.string().nullable(),
+  question_id: z.string().nullable(),
   custom_question_text: z.string().nullable(),
   is_not_remembered: z.boolean(),
 });

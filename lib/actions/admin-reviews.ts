@@ -180,7 +180,7 @@ export async function saveAdminReview(
         question_number: 1,
         combo_type: "self_intro",
         topic: "자기소개",
-        master_question_id: selfIntroData?.id || null,
+        question_id: selfIntroData?.id || null,
         custom_question_text: null,
         is_not_remembered: false,
       },
@@ -193,7 +193,7 @@ export async function saveAdminReview(
           question_number: q.questionNumber,
           combo_type: setConfig?.comboType || "general_1",
           topic: q.topic,
-          master_question_id: q.questionId,
+          question_id: q.questionId,
           custom_question_text: q.questionId ? null : q.description,
           is_not_remembered: !q.questionId,
         };

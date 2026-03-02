@@ -245,7 +245,7 @@ export interface SubmissionQuestion {
   question_number: number;
   combo_type: ComboType;
   topic: string;
-  master_question_id: string | null;
+  question_id: string | null;
   custom_question_text: string | null;
   is_not_remembered: boolean;
   created_at: string;
@@ -288,7 +288,7 @@ export interface QuestionItem {
   question_number: number;
   combo_type: ComboType;
   topic: string;
-  master_question_id: string | null;
+  question_id: string | null;
   custom_question_text: string | null;
   is_not_remembered: boolean;
 }

@@ -326,7 +326,7 @@ const { data, fetchNextPage, hasNextPage } = useInfiniteQuery({
 
 ### 5-3. 고정 데이터: staleTime: Infinity
 
-변하지 않는 마스터 데이터(510개 질문 등)는 세션 내 1회만 로드.
+변하지 않는 마스터 데이터(471개 질문 등)는 세션 내 1회만 로드.
 
 ```tsx
 const { data: topics = [] } = useQuery({
@@ -460,7 +460,7 @@ const { data } = await supabase
     *,
     submission_questions(
       *,
-      master_questions(question_id, question_title, question_english, question_korean, answer_type, topic)
+      questions(id, question_short, question_english, question_korean, question_type_eng, topic)
     )
   `)
   .eq("id", id)
@@ -476,7 +476,7 @@ const details = await Promise.all(ids.map(id => getSubmissionWithQuestions(id)))
 // ✅ 1 쿼리 — .in()으로 일괄 조회
 const { data } = await supabase
   .from("submissions")
-  .select("*, submission_questions(*, master_questions(...))")
+  .select("*, submission_questions(*, questions(...))")
   .in("id", submissionIds)
   .eq("user_id", userId);
 ```
@@ -549,7 +549,7 @@ export async function getStatsAndFrequency() {
 async function fetchCombosAndSurveyTypes(supabase) {
   const [combosResult, surveyTypeResult] = await Promise.all([
     supabase.from("submission_combos").select("topic, combo_type"),
-    supabase.from("master_questions").select("topic, survey_type"),
+    supabase.from("questions").select("topic, survey_type"),
   ]);
   // 공통 가공 로직
   return { combos, surveyTypeMap, error };
@@ -573,7 +573,7 @@ export async function getSubmissionsWithQuestionsBatch(submissionIds: number[]) 
   if (submissionIds.length === 0) return {};
   const { data } = await supabase
     .from("submissions")
-    .select("*, submission_questions(*, master_questions(...))")
+    .select("*, submission_questions(*, questions(...))")
     .in("id", submissionIds)
     .eq("user_id", userId);
   // Record<id, data> 형태로 반환

@@ -16,7 +16,7 @@ interface Question {
 }
 
 export interface SelectedQuestion {
-  master_question_id: string | null;
+  question_id: string | null;
   custom_question_text: string | null;
   is_not_remembered: boolean;
   topic: string;
@@ -62,14 +62,14 @@ export function QuestionSelector({
   // 이미 선택된 질문 ID
   const selectedIds = new Set(
     selectedQuestions
-      .map((q) => q.master_question_id)
+      .map((q) => q.question_id)
       .filter(Boolean)
   );
 
   const handleCustomSubmit = () => {
     if (!customText.trim() || isComplete) return;
     onSelect({
-      master_question_id: null,
+      question_id: null,
       custom_question_text: customText.trim(),
       is_not_remembered: false,
       topic,
@@ -100,7 +100,7 @@ export function QuestionSelector({
                   ? "기억 안남"
                   : q.custom_question_text
                     ? `[직접 입력] ${q.custom_question_text}`
-                    : q.question_text || q.master_question_id}
+                    : q.question_text || q.question_id}
               </p>
               <button
                 onClick={() => onRemove(idx)}
@@ -156,7 +156,7 @@ export function QuestionSelector({
             onClick={() => {
               for (let i = 0; i < remainingCount; i++) {
                 onSelect({
-                  master_question_id: null,
+                  question_id: null,
                   custom_question_text: null,
                   is_not_remembered: true,
                   topic: "기억 안남",
@@ -196,7 +196,7 @@ export function QuestionSelector({
                     onClick={() => {
                       if (isSelected || isComplete) return;
                       onSelect({
-                        master_question_id: q.id,
+                        question_id: q.id,
                         custom_question_text: null,
                         is_not_remembered: false,
                         topic,

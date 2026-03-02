@@ -199,7 +199,7 @@ export function ScriptWizard({
   // ── Step 1 → Step 2 (QuestionSelector의 SelectedQuestion → QuestionOption 변환) ──
   const handleQuestionSelect = useCallback(
     (sq: SelectedQuestion) => {
-      if (!sq.master_question_id || !selectedTopic || !selectedCategory) return;
+      if (!sq.question_id || !selectedTopic || !selectedCategory) return;
 
       const cached = queryClient.getQueryData<
         Array<{
@@ -211,7 +211,7 @@ export function ScriptWizard({
         }>
       >(["questions", selectedTopic, selectedCategory]);
 
-      const full = cached?.find((q) => q.id === sq.master_question_id);
+      const full = cached?.find((q) => q.id === sq.question_id);
       if (!full) return;
 
       setSelectedQuestion({
@@ -336,14 +336,14 @@ export function ScriptWizard({
 
   const handleRegenerate = useCallback(async () => {
     // 재생성에 필요한 질문 정보 (selectedQuestion 또는 scriptDetail에서)
-    const question = selectedQuestion || (scriptDetail?.master_question
+    const question = selectedQuestion || (scriptDetail?.question_detail
       ? {
-          question_id: scriptDetail.master_question.id,
-          question_english: scriptDetail.master_question.question_english,
-          question_korean: scriptDetail.master_question.question_korean,
-          topic: scriptDetail.master_question.topic,
-          topic_category: scriptDetail.master_question.category,
-          answer_type: scriptDetail.master_question.question_type_eng,
+          question_id: scriptDetail.question_detail.id,
+          question_english: scriptDetail.question_detail.question_english,
+          question_korean: scriptDetail.question_detail.question_korean,
+          topic: scriptDetail.question_detail.topic,
+          topic_category: scriptDetail.question_detail.category,
+          answer_type: scriptDetail.question_detail.question_type_eng,
         }
       : null);
 

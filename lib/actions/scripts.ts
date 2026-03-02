@@ -453,7 +453,7 @@ export async function getScriptDetail(
       package: Array.isArray(data.script_packages) && data.script_packages.length > 0
         ? data.script_packages[0]
         : null,
-      master_question: question ?? undefined,
+      question_detail: question ?? undefined,
     };
 
     return { data: detail };
