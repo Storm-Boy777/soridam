@@ -92,7 +92,7 @@ export function EvalWaiting({
   };
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col items-center px-4 py-12">
+    <div className="mx-auto flex max-w-lg flex-col items-center px-3 py-8 sm:px-4 sm:py-12">
       {/* 메인 상태 */}
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-50">
         {isReportReady ? (
@@ -155,9 +155,9 @@ export function EvalWaiting({
                   />
                 </div>
               </div>
-              <div className="flex w-28 items-center gap-1.5">
+              <div className="flex w-20 items-center gap-1 sm:w-28 sm:gap-1.5">
                 {getStatusIcon(status)}
-                <span className="text-xs text-foreground-secondary">
+                <span className="text-[11px] text-foreground-secondary sm:text-xs">
                   {getStatusLabel(status)}
                 </span>
               </div>
@@ -167,7 +167,7 @@ export function EvalWaiting({
       </div>
 
       {/* 종합 분석 상태 */}
-      <div className="mt-6 w-full rounded-xl border border-border bg-surface p-4">
+      <div className="mt-4 w-full rounded-xl border border-border bg-surface p-3 sm:mt-6 sm:p-4">
         <div className="flex items-center gap-2">
           {holisticStatus === "completed" ? (
             <CheckCircle2 size={16} className="text-green-500" />

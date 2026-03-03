@@ -201,20 +201,21 @@ function StartTab() {
     <div className="space-y-6">
       {/* 활성 세션 복원 배너 */}
       {activeSession && (
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-primary-200 bg-primary-50/50 p-4">
-          <div className="flex items-center gap-3">
-            <Play size={18} className="shrink-0 text-primary-500" />
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                진행 중인 모의고사가 있습니다
-              </p>
-              <p className="text-xs text-foreground-secondary">
-                {MOCK_EXAM_MODE_LABELS[activeSession.mode as MockExamMode]} ·
-                Q{activeSession.current_question}/15
-              </p>
+        <div className="rounded-xl border border-primary-200 bg-primary-50/50 p-3 sm:p-4">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3">
+            <div className="flex flex-1 items-center gap-3">
+              <Play size={18} className="shrink-0 text-primary-500" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">
+                  진행 중인 모의고사가 있습니다
+                </p>
+                <p className="text-xs text-foreground-secondary">
+                  {MOCK_EXAM_MODE_LABELS[activeSession.mode as MockExamMode]} ·
+                  Q{activeSession.current_question}/15
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
+            <div className="flex gap-2">
             <button
               onClick={async () => {
                 if (!confirm("진행 중인 모의고사를 포기하시겠습니까? 사용한 크레딧은 복구되지 않습니다.")) return;
@@ -225,10 +226,10 @@ function StartTab() {
                 setIsAbandoning(false);
               }}
               disabled={isAbandoning}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground-secondary hover:bg-surface-secondary disabled:opacity-50"
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground-secondary hover:bg-surface-secondary disabled:opacity-50 sm:w-28 sm:flex-none"
             >
               {isAbandoning ? <Loader2 size={14} className="animate-spin" /> : null}
-              포기하기
+              그만두기
             </button>
             <button
               onClick={() =>
@@ -236,25 +237,27 @@ function StartTab() {
                   `/mock-exam/session?id=${activeSession.session_id}`
                 )
               }
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600"
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 sm:w-28 sm:flex-none"
             >
               이어하기
               <ArrowRight size={14} />
             </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* 안내 배너 */}
-      <div className="flex items-start gap-3 rounded-xl border border-primary-200 bg-primary-50/50 p-4">
+      <div className="flex items-start gap-2.5 rounded-xl border border-primary-200 bg-primary-50/50 p-3 sm:gap-3 sm:p-4">
         <Info size={18} className="mt-0.5 shrink-0 text-primary-500" />
         <div>
           <p className="text-sm font-medium text-foreground">
-            실전 모의고사란?
+            모의고사 안내
           </p>
-          <p className="mt-1 text-sm text-foreground-secondary">
-            실제 OPIc 시험과 동일한 환경에서 15문제를 풀고, AI가 답변을
-            분석하여 예상 등급과 상세 피드백을 제공합니다.
+          <p className="mt-0.5 text-xs text-foreground-secondary sm:mt-1 sm:text-sm">
+            실제 OPIc과 동일하게 15문제를 풀고, 예상 등급과 상세 피드백을 받습니다.
+            <span className="font-medium text-foreground-secondary"> 훈련 모드</span>는 자유롭게 연습하고,
+            <span className="font-medium text-foreground-secondary"> 실전 모드</span>는 40분 제한으로 실제 시험처럼 진행됩니다.
           </p>
         </div>
       </div>
@@ -275,19 +278,20 @@ function StartTab() {
       )}
 
       {/* 기출 선택 */}
-      <div className="rounded-xl border border-border bg-surface p-6">
+      <div className="rounded-xl border border-border bg-surface p-4 sm:p-6">
         <ExamPoolSelector
           pools={pools}
           selectedId={selectedPoolId}
           onSelect={setSelectedPoolId}
           isLoading={poolLoading}
           onRefresh={() => refetchPool()}
+          disabled={!!activeSession}
         />
       </div>
 
       {/* 모드 선택 — 기출 선택 후에만 표시 */}
       {selectedPoolId && (
-        <div className="rounded-xl border border-border bg-surface p-6">
+        <div className="rounded-xl border border-border bg-surface p-4 sm:p-6">
           <ModeSelector
             selectedMode={selectedMode}
             onSelect={setSelectedMode}
@@ -384,9 +388,9 @@ function ResultsTab({
   if (!sessionId || completed.length === 0) {
     return (
       <div className="space-y-6">
-        <div className="rounded-xl border border-border bg-surface p-6">
+        <div className="rounded-xl border border-border bg-surface p-4 sm:p-6">
           <h3 className="font-semibold text-foreground">모의고사 결과</h3>
-          <div className="mt-6 flex flex-col items-center py-8 text-center">
+          <div className="mt-4 flex flex-col items-center py-6 text-center sm:mt-6 sm:py-8">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-surface-secondary">
               <BarChart3 size={24} className="text-foreground-muted" />
             </div>
@@ -394,7 +398,7 @@ function ResultsTab({
               아직 완료된 모의고사가 없습니다
             </p>
             <p className="mt-1 text-xs text-foreground-muted">
-              모의고사를 응시하면 AI 평가 결과가 여기에 표시됩니다
+              모의고사를 응시하면 평가 결과가 여기에 표시됩니다
             </p>
           </div>
         </div>
@@ -406,12 +410,12 @@ function ResultsTab({
   if (!sessionData?.report) {
     return (
       <div className="space-y-6">
-        <div className="rounded-xl border border-border bg-surface p-6">
+        <div className="rounded-xl border border-border bg-surface p-4 sm:p-6">
           <h3 className="font-semibold text-foreground">결과 처리 중</h3>
-          <div className="mt-6 flex flex-col items-center py-8 text-center">
+          <div className="mt-4 flex flex-col items-center py-6 text-center sm:mt-6 sm:py-8">
             <Loader2 size={32} className="animate-spin text-primary-400" />
             <p className="mt-3 text-sm text-foreground-secondary">
-              AI가 답변을 분석하고 있습니다. 잠시만 기다려주세요.
+              답변을 분석하고 있습니다. 잠시만 기다려주세요.
             </p>
             <p className="mt-1 text-xs text-foreground-muted">
               보통 2~5분 정도 소요됩니다.
@@ -487,9 +491,9 @@ function HistoryTab({
   if (items.length === 0) {
     return (
       <div className="space-y-6">
-        <div className="rounded-xl border border-border bg-surface p-6">
+        <div className="rounded-xl border border-border bg-surface p-4 sm:p-6">
           <h3 className="font-semibold text-foreground">나의 응시 이력</h3>
-          <div className="mt-6 flex flex-col items-center py-8 text-center">
+          <div className="mt-4 flex flex-col items-center py-6 text-center sm:mt-6 sm:py-8">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-surface-secondary">
               <ClipboardList size={24} className="text-foreground-muted" />
             </div>
@@ -546,77 +550,78 @@ function HistoryTab({
               onViewResult(item.session_id);
             }
           }}
-          className="w-full rounded-xl border border-border bg-surface p-4 text-left transition-colors hover:border-primary-200"
+          className="w-full rounded-xl border border-border bg-surface p-3 text-left transition-colors hover:border-primary-200 sm:p-4"
         >
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2">
-              {/* 등급 배지 */}
-              {item.final_level ? (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-50">
-                  <span className="text-sm font-bold text-primary-600">
-                    {item.final_level}
-                  </span>
-                </div>
-              ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-secondary">
-                  <Trophy size={16} className="text-foreground-muted" />
-                </div>
-              )}
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* 등급 배지 */}
+            {item.final_level ? (
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-50 sm:h-10 sm:w-10">
+                <span className="text-xs font-bold text-primary-600 sm:text-sm">
+                  {item.final_level}
+                </span>
+              </div>
+            ) : (
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-secondary sm:h-10 sm:w-10">
+                <Trophy size={16} className="text-foreground-muted" />
+              </div>
+            )}
 
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-foreground">
-                    {MOCK_EXAM_MODE_LABELS[item.mode]}
-                  </span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                      item.status === "completed"
-                        ? "bg-green-50 text-green-600"
-                        : "bg-foreground-muted/10 text-foreground-muted"
-                    }`}
-                  >
-                    {SESSION_STATUS_LABELS[item.status]}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-foreground-muted">
-                  <Calendar size={10} />
-                  {new Date(item.started_at).toLocaleDateString("ko-KR")}
-                </div>
+            {/* 모드 + 날짜 */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="text-sm font-medium text-foreground">
+                  {MOCK_EXAM_MODE_LABELS[item.mode]}
+                </span>
+                <span
+                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium sm:px-2 ${
+                    item.status === "completed"
+                      ? "bg-green-50 text-green-600"
+                      : "bg-foreground-muted/10 text-foreground-muted"
+                  }`}
+                >
+                  {SESSION_STATUS_LABELS[item.status]}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] text-foreground-muted sm:text-xs">
+                <Calendar size={10} />
+                {new Date(item.started_at).toLocaleDateString("ko-KR")}
               </div>
             </div>
 
-            {/* FACT 점수 + 결과 보기 화살표 */}
-            <div className="flex items-center gap-2">
+            {/* FACT 점수 + 화살표 */}
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
               {item.total_score != null && (
                 <div className="text-right">
-                  <p className="text-lg font-bold text-foreground">
+                  <p className="text-base font-bold text-foreground sm:text-lg">
                     {item.total_score}
                   </p>
-                  <p className="text-[10px] text-foreground-muted">/ 100점</p>
+                  <p className="text-[10px] text-foreground-muted">/ 100</p>
                 </div>
               )}
               {item.status === "completed" && item.final_level && (
-                <ArrowRight size={14} className="text-foreground-muted" />
+                <ArrowRight size={14} className="hidden text-foreground-muted sm:block" />
               )}
             </div>
           </div>
 
           {/* 주제 요약 + FACT 미니 */}
-          <div className="mt-2 flex items-center justify-between">
-            {item.topic_summary && (
-              <p className="truncate text-xs text-foreground-muted">
-                {item.topic_summary}
-              </p>
-            )}
-            {item.score_f != null && (
-              <div className="flex gap-2 text-[10px] text-foreground-muted shrink-0 ml-2">
-                <span>F:{item.score_f?.toFixed(1)}</span>
-                <span>A:{item.score_a?.toFixed(1)}</span>
-                <span>C:{item.score_c?.toFixed(1)}</span>
-                <span>T:{item.score_t?.toFixed(1)}</span>
-              </div>
-            )}
-          </div>
+          {(item.topic_summary || item.score_f != null) && (
+            <div className="mt-1.5 flex items-center justify-between gap-2 border-t border-border/50 pt-1.5 sm:mt-2 sm:pt-2">
+              {item.topic_summary && (
+                <p className="min-w-0 truncate text-[11px] text-foreground-muted sm:text-xs">
+                  {item.topic_summary}
+                </p>
+              )}
+              {item.score_f != null && (
+                <div className="flex shrink-0 gap-1.5 text-[10px] text-foreground-muted sm:gap-2">
+                  <span>F:{item.score_f?.toFixed(1)}</span>
+                  <span>A:{item.score_a?.toFixed(1)}</span>
+                  <span>C:{item.score_c?.toFixed(1)}</span>
+                  <span>T:{item.score_t?.toFixed(1)}</span>
+                </div>
+              )}
+            </div>
+          )}
         </button>
       ))}
     </div>
@@ -635,8 +640,8 @@ function LevelTrendMini({
   const maxLevel = 7; // AL
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
-      <h4 className="text-xs font-medium text-foreground-muted mb-3">등급 추이</h4>
+    <div className="rounded-xl border border-border bg-surface p-3 sm:p-4">
+      <h4 className="mb-2 text-xs font-medium text-foreground-muted sm:mb-3">등급 추이</h4>
       <div className="flex items-end gap-1" style={{ height: 80 }}>
         {items.map((item, i) => {
           const levelNum = OPIC_LEVEL_ORDER[item.final_level as OpicLevel] ?? 0;

@@ -132,7 +132,7 @@ export function ResultSummary({
   return (
     <div className="space-y-6">
       {/* 1. 등급 + FACT 요약 카드 */}
-      <div className="rounded-xl border border-border bg-surface p-6">
+      <div className="rounded-xl border border-border bg-surface p-4 sm:p-6">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-foreground">모의고사 결과</h3>
           <span className="text-xs text-foreground-muted">
@@ -142,9 +142,9 @@ export function ResultSummary({
         </div>
 
         {/* 등급 배지 */}
-        <div className="mt-6 flex flex-col items-center">
-          <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-primary-50 ring-4 ring-primary-100">
-            <span className="text-3xl font-bold text-primary-600">
+        <div className="mt-4 flex flex-col items-center sm:mt-6">
+          <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-primary-50 ring-4 ring-primary-100 sm:h-24 sm:w-24">
+            <span className="text-2xl font-bold text-primary-600 sm:text-3xl">
               {report.final_level || "—"}
             </span>
             {levelDiff?.direction === "up" && (
@@ -207,7 +207,7 @@ export function ResultSummary({
       </div>
 
       {/* 2. FACT 영역별 점수 */}
-      <div className="rounded-xl border border-border bg-surface p-6">
+      <div className="rounded-xl border border-border bg-surface p-4 sm:p-6">
         <h4 className="flex items-center gap-2 font-semibold text-foreground">
           <Target size={16} className="text-primary-500" />
           FACT 영역별 점수
@@ -240,7 +240,7 @@ export function ResultSummary({
       </div>
 
       {/* 3. 영역별 분석 (INT/ADV/AL 통과율) */}
-      <div className="rounded-xl border border-border bg-surface p-6">
+      <div className="rounded-xl border border-border bg-surface p-4 sm:p-6">
         <h4 className="flex items-center gap-2 font-semibold text-foreground">
           <BookOpen size={16} className="text-primary-500" />
           영역별 분석
@@ -288,7 +288,7 @@ export function ResultSummary({
 
       {/* 4. 발음 통계 */}
       {(report.avg_accuracy_score || report.avg_prosody_score || report.avg_fluency_score) && (
-        <div className="rounded-xl border border-border bg-surface p-6">
+        <div className="rounded-xl border border-border bg-surface p-4 sm:p-6">
           <h4 className="flex items-center gap-2 font-semibold text-foreground">
             <Mic2 size={16} className="text-primary-500" />
             발음 평균 점수
@@ -303,7 +303,7 @@ export function ResultSummary({
 
       {/* 5. 훈련 권장 + 스크립트 CTA (UX 5-2) */}
       {report.training_recommendations && report.training_recommendations.length > 0 && (
-        <div className="rounded-xl border border-border bg-surface p-6">
+        <div className="rounded-xl border border-border bg-surface p-4 sm:p-6">
           <h4 className="flex items-center gap-2 font-semibold text-foreground">
             <Sparkles size={16} className="text-primary-500" />
             우선 훈련 항목
@@ -341,7 +341,7 @@ export function ResultSummary({
 
       {/* 6. 종합 피드백 (접기/펼치기) */}
       {(report.comprehensive_feedback || report.overall_comments_ko) && (
-        <div className="rounded-xl border border-border bg-surface p-6">
+        <div className="rounded-xl border border-border bg-surface p-4 sm:p-6">
           <button
             onClick={() => setShowFeedback(!showFeedback)}
             className="flex w-full items-center justify-between"
@@ -376,9 +376,9 @@ export function ResultSummary({
       <div className="rounded-xl border border-border bg-surface">
         <button
           onClick={() => setShowDetail(!showDetail)}
-          className="flex w-full items-center justify-between p-6"
+          className="flex w-full items-center justify-between p-4 sm:p-6"
         >
-          <h4 className="font-semibold text-foreground">문항별 상세 분석</h4>
+          <h4 className="text-sm font-semibold text-foreground sm:text-base">문항별 상세 분석</h4>
           <span className="flex items-center gap-1 text-sm text-primary-500">
             {showDetail ? "접기" : "펼치기"}
             {showDetail ? (
@@ -389,7 +389,7 @@ export function ResultSummary({
           </span>
         </button>
         {showDetail && (
-          <div className="border-t border-border px-6 pb-6">
+          <div className="border-t border-border px-3 pb-4 sm:px-6 sm:pb-6">
             <ResultDetail
               evaluations={evaluations}
               answers={answers}

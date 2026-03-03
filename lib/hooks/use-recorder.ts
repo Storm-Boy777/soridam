@@ -40,9 +40,9 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
   const {
     maxDuration = 240,
     minDuration = 1,
-    silenceThreshold = 0.02,
+    silenceThreshold = 0.05,     // 4x 증폭 기준: 무음
     silenceTimeout = 3,
-    lowVolumeThreshold = 0.08,
+    lowVolumeThreshold = 0.15,   // 4x 증폭 기준: 너무 조용
     timeWarningAt = 30,
   } = options;
 
@@ -68,15 +68,17 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
   // 무음 감지 (UX 2-3)
   const silenceStartRef = useRef<number | null>(null);
 
-  // 볼륨 분석 + 경고 판정
+  // ── 볼륨 분석 (소리담 검증 패턴: getByteFrequencyData + 증폭) ──
   const updateVolume = useCallback(() => {
     if (!analyserRef.current) return;
 
     const analyser = analyserRef.current;
     const dataArray = new Uint8Array(analyser.frequencyBinCount);
     analyser.getByteFrequencyData(dataArray);
+
+    // 소리담 패턴: 평균 → 0~1 정규화 + 4배 증폭
     const avg = dataArray.reduce((sum, v) => sum + v, 0) / dataArray.length;
-    const normalizedVolume = avg / 255;
+    const normalizedVolume = Math.min(1, (avg / 255) * 4);
     setVolume(normalizedVolume);
 
     // 무음 감지
@@ -91,7 +93,6 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
       }
     } else {
       silenceStartRef.current = null;
-      // 낮은 볼륨 경고
       if (normalizedVolume < lowVolumeThreshold) {
         setWarning("too_quiet");
       } else {
@@ -124,6 +125,12 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
       // Web Audio API 볼륨 분석
       const audioCtx = new AudioContext();
       audioCtxRef.current = audioCtx;
+
+      // AudioContext가 suspended 상태면 resume (브라우저 autoplay 정책)
+      if (audioCtx.state === "suspended") {
+        await audioCtx.resume();
+      }
+
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;

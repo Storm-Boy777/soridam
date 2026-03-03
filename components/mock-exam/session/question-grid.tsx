@@ -44,7 +44,7 @@ export function QuestionGrid({
   };
 
   return (
-    <div className="grid grid-cols-8 justify-items-center gap-1 md:flex md:flex-wrap md:justify-center md:gap-1.5">
+    <div className="grid grid-cols-8 justify-items-center gap-1 md:flex md:justify-between md:gap-1.5">
       {Array.from({ length: 15 }, (_, i) => i + 1).map((qNum) => {
         const status = getStatus(qNum);
         const canNavigate =
@@ -62,7 +62,7 @@ export function QuestionGrid({
             onClick={() => canNavigate && onNavigate?.(qNum)}
             disabled={!canNavigate}
             style={gridCol}
-            className={`flex h-5 w-full items-center justify-center rounded text-[10px] font-bold transition-colors md:h-8 md:w-8 md:rounded-lg md:text-xs ${
+            className={`flex h-5 w-full items-center justify-center rounded text-[10px] font-bold transition-colors md:h-8 md:flex-1 md:rounded-lg md:text-xs ${
               STATUS_STYLES[status] || STATUS_STYLES.default
             } ${canNavigate ? "cursor-pointer hover:opacity-80" : "cursor-default"}`}
             title={`Q${qNum}`}

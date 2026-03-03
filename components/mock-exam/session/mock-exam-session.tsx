@@ -40,7 +40,6 @@ import type {
 
 // Q1 자기소개도 questions 테이블에서 조회 (SLF_SYS_SYS_UNK_01)
 
-
 // ── 세션 페이즈 ──
 type SessionPhase = "exam" | "completing" | "waiting";
 
@@ -96,8 +95,23 @@ export function MockExamSession({
       )
   );
   const [error, setError] = useState<string | null>(null);
-  const [showQuestion, setShowQuestion] = useState(false);
+  const [showQuestion, setShowQuestion] = useState<"hidden" | "en" | "ko">("hidden");
   const [showTimeWarning, setShowTimeWarning] = useState(false);
+
+  // ── AVA 컨테이너 높이 측정 (세로 볼륨바 높이 동기화) ──
+  const avaContainerRef = useRef<HTMLDivElement>(null);
+  const [avaHeight, setAvaHeight] = useState(0);
+  useEffect(() => {
+    const el = avaContainerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setAvaHeight(entry.contentRect.height);
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // ── 오프라인 감지 ──
   const [isOnline, setIsOnline] = useState(true);
@@ -295,7 +309,7 @@ export function MockExamSession({
     questionPlayer.reset();
     setUploadState("idle");
     setError(null);
-    setShowQuestion(false);
+    setShowQuestion("hidden");
   }, [currentQ, sessionId, queryClient, recorder, questionPlayer]);
 
   // ── "다음" 버튼 핸들러 (소리담 패턴: 1클릭으로 중지+업로드+이동) ──
@@ -528,9 +542,9 @@ export function MockExamSession({
           </div>
         </div>
 
-        {/* 훈련 모드: 질문 텍스트 (기본 숨김, 토글 가능) */}
+        {/* 훈련 모드: 질문 텍스트 — PC만 push-down 토글 (모바일은 AVA 오버레이) */}
         {isTraining && currentQuestion && (
-          <div className="mb-2 rounded-xl border border-border bg-primary-50/30 p-2 md:mb-4 md:p-3">
+          <div className="hidden rounded-xl border border-border bg-primary-50/30 md:mb-4 md:block md:p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-medium text-primary-700">
@@ -541,14 +555,14 @@ export function MockExamSession({
                 </span>
               </div>
               <button
-                onClick={() => setShowQuestion((prev) => !prev)}
+                onClick={() => setShowQuestion((prev) => prev === "hidden" ? "en" : "hidden")}
                 className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-foreground-muted hover:bg-primary-100/50 hover:text-foreground-secondary"
               >
-                {showQuestion ? <EyeOff size={14} /> : <Eye size={14} />}
-                {showQuestion ? "숨기기" : "질문 보기"}
+                {showQuestion !== "hidden" ? <EyeOff size={14} /> : <Eye size={14} />}
+                {showQuestion !== "hidden" ? "숨기기" : "질문 보기"}
               </button>
             </div>
-            {showQuestion && (
+            {showQuestion !== "hidden" && (
               <div className="mt-2 border-t border-border/50 pt-2">
                 <p className="text-sm font-medium text-foreground">
                   {currentQuestion.question_english}
@@ -573,17 +587,61 @@ export function MockExamSession({
             좌측: AVA 면접관 + 재생 컨트롤
             우측: 녹음 시간 + 볼륨 + 상태 + Next
            ════════════════════════════════════════════════════ */}
-        <div className="flex min-h-0 flex-1 flex-col md:rounded-2xl md:border md:border-border md:bg-surface md:p-5">
-          <div className="flex min-h-0 flex-1 flex-col gap-2 md:grid md:grid-cols-12 md:gap-5">
+        <div className="flex min-h-0 flex-1 flex-col md:flex-none md:rounded-2xl md:border md:border-border md:bg-surface md:p-5">
+          <div className="flex min-h-0 flex-1 flex-col gap-2 md:flex-row md:gap-5">
             {/* === 좌측: AVA 면접관 === */}
-            <div className="flex min-h-0 flex-1 flex-col gap-2 md:flex-none md:col-span-5 md:gap-3">
+            <div className="flex min-h-0 flex-1 flex-col gap-2 md:flex-none md:w-[42%] md:gap-3">
               {/* 아바타 — aspect-ratio로 이미지와 비율 일치 */}
-              <div className="relative w-full min-h-0 flex-1 overflow-hidden rounded-xl border border-border md:flex-none md:aspect-[4/3]" style={{ backgroundColor: "#F7F3EE" }}>
+              <div ref={avaContainerRef} className="relative w-full min-h-0 flex-1 overflow-hidden rounded-xl border border-border md:flex-none md:aspect-square" style={{ backgroundColor: "#F7F3EE" }}>
                 <AvaAvatar
                   isSpeaking={questionPlayer.isPlaying}
                   isListening={recorder.state === "recording"}
-                  onInteract={handlePlayQuestion}
                 />
+
+                {/* 모바일 전용: 훈련 모드 질문 오버레이 (AVA 이미지 위) */}
+                {isTraining && currentQuestion && (
+                  <>
+                    {/* 상단: 주제 태그 + EN/한글 토글 버튼 */}
+                    <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between p-2 md:hidden">
+                      <span className="rounded-full bg-black/40 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
+                        Q{currentQ} · {currentQuestion.category} · {currentQuestion.topic}
+                      </span>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => setShowQuestion((prev) => prev === "en" ? "hidden" : "en")}
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-medium backdrop-blur-sm ${
+                            showQuestion === "en"
+                              ? "bg-white/80 text-black"
+                              : "bg-black/40 text-white"
+                          }`}
+                        >
+                          EN
+                        </button>
+                        <button
+                          onClick={() => setShowQuestion((prev) => prev === "ko" ? "hidden" : "ko")}
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-medium backdrop-blur-sm ${
+                            showQuestion === "ko"
+                              ? "bg-white/80 text-black"
+                              : "bg-black/40 text-white"
+                          }`}
+                        >
+                          한글
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 하단: 질문 텍스트 오버레이 (선택한 언어만) */}
+                    {showQuestion !== "hidden" && (
+                      <div className="absolute inset-x-0 bottom-0 z-10 max-h-[60%] overflow-y-auto bg-black/60 px-2.5 py-2 backdrop-blur-sm md:hidden">
+                        <p className="text-[11px] leading-relaxed text-white">
+                          {showQuestion === "en"
+                            ? currentQuestion.question_english
+                            : currentQuestion.question_korean}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               {/* 재생 컨트롤 (데스크탑만) */}
@@ -591,7 +649,7 @@ export function MockExamSession({
                 {/* 재생 프로그레스 바 */}
                 <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-border">
                   <div
-                    className="h-full rounded-full bg-primary-500 transition-all"
+                    className="h-full rounded-full bg-primary-500 transition-[width] duration-300 ease-linear"
                     style={{ width: `${questionPlayer.playbackProgress}%` }}
                   />
                 </div>
@@ -642,8 +700,44 @@ export function MockExamSession({
               </div>
             </div>
 
+            {/* === 세로 볼륨바: LED 세그먼트 미터 (데스크탑, AVA 높이 동기화) === */}
+            <div
+              className="hidden w-4 flex-shrink-0 md:flex md:flex-col md:items-center md:gap-1"
+              style={{ height: avaHeight > 0 ? avaHeight : undefined }}
+            >
+              {/* w-full 필수: 부모 items-center가 자식 width를 content로 축소시키는 문제 방지 */}
+              <div className="flex w-full flex-1 flex-col-reverse gap-px rounded-lg border border-border bg-surface-secondary p-0.5">
+                {Array.from({ length: 24 }).map((_, i) => {
+                  const threshold = (i + 1) / 24;
+                  const vol =
+                    recorder.state === "recording" ? recorder.volume : 0;
+                  const lit = vol >= threshold;
+                  const color =
+                    i < 16
+                      ? lit ? "bg-primary-300" : "bg-border"
+                      : i < 21
+                        ? lit ? "bg-primary-500" : "bg-border"
+                        : lit ? "bg-accent-500" : "bg-border";
+                  return (
+                    <div
+                      key={i}
+                      className={`w-full flex-1 rounded-sm transition-colors duration-75 ${color}`}
+                    />
+                  );
+                })}
+              </div>
+              <Mic
+                size={12}
+                className={`shrink-0 transition-colors ${
+                  recorder.state === "recording"
+                    ? "animate-pulse text-primary-500"
+                    : "text-foreground-muted"
+                }`}
+              />
+            </div>
+
             {/* === 우측: 수험자 녹음 === */}
-            <div className="flex flex-col gap-1 md:flex-1 md:col-span-7 md:gap-2">
+            <div className="flex flex-col gap-1 md:flex-1 md:gap-2">
               {/* 녹음 시간 표시 (데스크탑만) */}
               <div className="hidden items-center justify-between rounded-xl border border-border bg-surface-secondary p-3 md:flex">
                 <span className="text-sm font-medium text-foreground-secondary">
@@ -658,44 +752,6 @@ export function MockExamSession({
                 >
                   {formatTime(recorder.duration)}
                 </span>
-              </div>
-
-              {/* 마이크 볼륨 바 (데스크탑만) */}
-              <div className="hidden items-center gap-2 rounded-xl border border-border bg-surface-secondary px-4 py-2 md:flex">
-                <Mic
-                  size={16}
-                  className={`shrink-0 transition-colors ${
-                    recorder.state === "recording"
-                      ? "animate-pulse text-green-500"
-                      : "text-foreground-muted"
-                  }`}
-                />
-                <div className="flex flex-1 items-center gap-[2px]">
-                  {Array.from({ length: 24 }).map((_, i) => {
-                    const threshold = (i + 1) / 24;
-                    const vol =
-                      recorder.state === "recording" ? recorder.volume : 0;
-                    const lit = vol >= threshold * 0.6;
-                    const color =
-                      i < 16
-                        ? lit
-                          ? "bg-green-400"
-                          : "bg-border"
-                        : i < 21
-                          ? lit
-                            ? "bg-yellow-400"
-                            : "bg-border"
-                          : lit
-                            ? "bg-red-400"
-                            : "bg-border";
-                    return (
-                      <div
-                        key={i}
-                        className={`h-3 flex-1 rounded-sm transition-colors duration-75 ${color}`}
-                      />
-                    );
-                  })}
-                </div>
               </div>
 
               {/* ── 상태 표시 영역 (데스크탑만) ── */}
@@ -745,11 +801,6 @@ export function MockExamSession({
                         Recording...
                       </span>
                     </div>
-                    {recorder.duration < 10 && (
-                      <p className="z-10 mt-2 text-[10px] text-primary-500/60 md:text-xs">
-                        최소 10초 이상 답변해야 합니다.
-                      </p>
-                    )}
                     {recorder.warningMessage && (
                       <p
                         className={`z-10 mt-2 text-xs font-medium ${
@@ -838,7 +889,7 @@ export function MockExamSession({
               </div>
 
               {/* 모바일 전용: 컴팩트 녹음 상태 */}
-              <div className="flex flex-col gap-1.5 md:hidden">
+              <div className="flex min-h-12 flex-col justify-center gap-1.5 md:hidden">
                 {/* 녹음 중 상태 */}
                 {recorder.state === "recording" && (
                   <div className="rounded-lg border border-primary-100 bg-primary-50 px-3 py-2">
@@ -852,12 +903,9 @@ export function MockExamSession({
                     <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-primary-100">
                       <div
                         className="h-full rounded-full bg-primary-500 transition-all"
-                        style={{ width: `${Math.min(recorder.volume * 150, 100)}%` }}
+                        style={{ width: `${Math.min(recorder.volume * 100, 100)}%` }}
                       />
                     </div>
-                    {recorder.duration < 10 && (
-                      <p className="mt-1 text-[10px] text-primary-400">최소 10초 이상 답변해야 합니다</p>
-                    )}
                   </div>
                 )}
 

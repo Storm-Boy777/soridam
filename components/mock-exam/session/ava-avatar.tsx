@@ -20,7 +20,7 @@ export function AvaAvatar({
     <div className={`relative h-full w-full ${className}`}>
       <Image
         src="/images/ava-avatar-new.png"
-        alt="AVA - AI 시험관"
+        alt="AVA 시험관"
         fill
         className="object-cover"
         sizes="(max-width: 768px) 100vw, 40vw"

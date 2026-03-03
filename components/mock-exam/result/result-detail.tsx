@@ -130,7 +130,7 @@ function QuestionAccordion({
       {/* 헤더 */}
       <button
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-surface-secondary/30 transition-colors"
+        className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-surface-secondary/30 sm:gap-3 sm:px-4 sm:py-3"
       >
         {/* 번호 */}
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-secondary text-[10px] font-bold text-foreground-secondary">
@@ -190,7 +190,7 @@ function QuestionAccordion({
 
       {/* 펼침 콘텐츠 */}
       {open && (
-        <div className="border-t border-border px-4 py-4 space-y-4 bg-surface-secondary/20">
+        <div className="space-y-3 border-t border-border bg-surface-secondary/20 px-3 py-3 sm:space-y-4 sm:px-4 sm:py-4">
           {isSkipped ? (
             <p className="text-sm text-foreground-muted">이 문항은 건너뛰었습니다.</p>
           ) : !evaluation || evaluation.skipped ? (

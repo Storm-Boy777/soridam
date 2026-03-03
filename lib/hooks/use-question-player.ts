@@ -86,7 +86,6 @@ export function useQuestionPlayer(
 
       audio.onplay = () => setIsPlaying(true);
 
-      // 재생 진행률 트래킹
       audio.ontimeupdate = () => {
         if (audio.duration) {
           setPlaybackProgress((audio.currentTime / audio.duration) * 100);
@@ -97,11 +96,9 @@ export function useQuestionPlayer(
         setPlaybackProgress(100);
         setIsPlaying(false);
         setHasPlayed(true);
-        // 리플레이 윈도우 시작 (첫 재생 후에만)
         if (!hasReplayed) {
           startReplayWindow();
         }
-        // 자동 녹음 콜백
         onPlaybackEndedRef.current?.();
       };
 
@@ -139,7 +136,6 @@ export function useQuestionPlayer(
     audio.onended = () => {
       setPlaybackProgress(100);
       setIsPlaying(false);
-      // 자동 녹음 콜백
       onPlaybackEndedRef.current?.();
     };
 

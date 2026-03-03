@@ -37,13 +37,12 @@ export function ModeSelector({ selectedMode, onSelect }: ModeSelectorProps) {
             </div>
             <span className="font-semibold text-foreground">훈련 모드</span>
           </div>
-          <ul className="mt-3 space-y-1.5">
+          <ul className="mt-3 space-y-1.5 pl-10">
             {[
+              "시간 제한 없이 자유롭게 연습",
+              "질문 텍스트 확인 가능",
               "문제 완료 후 개별 평가 즉시 확인",
               "72시간 내 이어하기 가능",
-              "문제 간 pause 자유",
-              "이전 문제 되돌아가기 가능",
-              "녹음 재생 확인 가능",
             ].map((text) => (
               <li
                 key={text}
@@ -71,13 +70,12 @@ export function ModeSelector({ selectedMode, onSelect }: ModeSelectorProps) {
             </div>
             <span className="font-semibold text-foreground">실전 모드</span>
           </div>
-          <ul className="mt-3 space-y-1.5">
+          <ul className="mt-3 space-y-1.5 pl-10">
             {[
-              "실제 OPIc처럼 40분 카운트다운",
+              "실제 OPIc처럼 40분 제한",
+              "질문 텍스트 보기 없음",
               "전체 완료 후에만 결과 확인",
               "90분 내 이어하기 가능",
-              "이전 문제 되돌아가기 불가",
-              "녹음 완료 후 바로 제출",
             ].map((text) => (
               <li
                 key={text}

@@ -104,7 +104,7 @@ export function DeviceTest({ onComplete, onBack }: DeviceTestProps) {
         }
         recordingUrlRef.current = URL.createObjectURL(blob);
         setHasRecording(true);
-        setMicOk(true);
+        setMicOk(false);
         stream.getTracks().forEach((t) => t.stop());
         audioCtx.close();
         if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
@@ -150,7 +150,10 @@ export function DeviceTest({ onComplete, onBack }: DeviceTestProps) {
     const audio = new Audio(recordingUrlRef.current);
     audioRef.current = audio;
     setIsPlayingRecording(true);
-    audio.onended = () => setIsPlayingRecording(false);
+    audio.onended = () => {
+      setIsPlayingRecording(false);
+      setMicOk(true);
+    };
     audio.play();
   }, []);
 
@@ -184,7 +187,7 @@ export function DeviceTest({ onComplete, onBack }: DeviceTestProps) {
             <div className="relative h-full w-full overflow-hidden rounded-3xl shadow-2xl">
               <Image
                 src="/images/ava-avatar-new.png"
-                alt="AVA - AI 시험관"
+                alt="AVA 시험관"
                 width={256}
                 height={256}
                 className="h-full w-full object-cover"
