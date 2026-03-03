@@ -3,12 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, CheckCircle2 } from "lucide-react";
+import { SurveyIntro } from "../start/survey-intro";
 import { DeviceTest } from "../start/device-test";
 import { MockExamSession } from "./mock-exam-session";
 import { getSession } from "@/lib/actions/mock-exam";
 import { MOCK_EXAM_MODE_LABELS, type MockExamMode } from "@/lib/types/mock-exam";
 
-type Phase = "loading" | "restoring" | "device-test" | "session" | "error";
+type Phase = "loading" | "restoring" | "survey" | "device-test" | "session" | "error";
 
 interface MockExamSessionWrapperProps {
   sessionId: string;
@@ -54,18 +55,25 @@ export function MockExamSessionWrapper({
         // 복원 표시 후 1.5초 대기 → 세션 진입
         setTimeout(() => setPhase("session"), 1500);
       } else {
-        // 아직 시작 전이면 디바이스 테스트
-        setPhase("device-test");
+        // 아직 시작 전이면 서베이부터 시작
+        setPhase("survey");
       }
     }
   }, [isLoading, queryError, sessionResult]);
 
+  // 서베이 완료 → 디바이스 테스트
+  const handleSurveyComplete = useCallback(() => {
+    setPhase("device-test");
+  }, []);
+
+  // 디바이스 테스트 완료 → 세션 시작
   const handleDeviceTestComplete = useCallback(() => {
     setPhase("session");
   }, []);
 
+  // 디바이스 테스트 뒤로가기 → 서베이로 복귀
   const handleDeviceTestBack = useCallback(() => {
-    window.location.href = "/mock-exam";
+    setPhase("survey");
   }, []);
 
   // 로딩
@@ -133,15 +141,20 @@ export function MockExamSessionWrapper({
     );
   }
 
+  // 서베이
+  if (phase === "survey") {
+    return (
+      <SurveyIntro onComplete={handleSurveyComplete} />
+    );
+  }
+
   // 디바이스 테스트
   if (phase === "device-test") {
     return (
-      <div className="mx-auto w-full max-w-2xl px-4 py-8">
-        <DeviceTest
-          onComplete={handleDeviceTestComplete}
-          onBack={handleDeviceTestBack}
-        />
-      </div>
+      <DeviceTest
+        onComplete={handleDeviceTestComplete}
+        onBack={handleDeviceTestBack}
+      />
     );
   }
 

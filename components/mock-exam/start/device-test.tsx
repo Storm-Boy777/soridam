@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import Image from "next/image";
 import {
-  Volume2,
   Mic,
-  MicOff,
-  CheckCircle2,
   Play,
   Square,
   Loader2,
+  CheckCircle2,
+  AlertCircle,
+  ArrowRight,
 } from "lucide-react";
 
 interface DeviceTestProps {
@@ -17,12 +18,14 @@ interface DeviceTestProps {
 }
 
 export function DeviceTest({ onComplete, onBack }: DeviceTestProps) {
-  const [step, setStep] = useState<"speaker" | "mic">("speaker");
-  const [speakerOk, setSpeakerOk] = useState(false);
-  const [micOk, setMicOk] = useState(false);
+  // 스피커 테스트
   const [isPlayingTest, setIsPlayingTest] = useState(false);
+  const [speakerOk, setSpeakerOk] = useState(false);
+
+  // 마이크 테스트
   const [isRecording, setIsRecording] = useState(false);
   const [hasRecording, setHasRecording] = useState(false);
+  const [micOk, setMicOk] = useState(false);
   const [isPlayingRecording, setIsPlayingRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [volume, setVolume] = useState(0);
@@ -36,29 +39,33 @@ export function DeviceTest({ onComplete, onBack }: DeviceTestProps) {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number | null>(null);
 
-  // 스피커 테스트 오디오 재생
+  // 스피커 테스트 — AVA 음성 재생
   const playTestAudio = useCallback(() => {
     setIsPlayingTest(true);
-    // 간단한 비프 사운드 생성 (외부 파일 불필요)
-    const audioCtx = new AudioContext();
-    const oscillator = audioCtx.createOscillator();
-    const gainNode = audioCtx.createGain();
-    oscillator.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-    oscillator.frequency.value = 440; // A4 음
-    gainNode.gain.value = 0.3;
-    oscillator.start();
-    setTimeout(() => {
-      oscillator.stop();
-      audioCtx.close();
+    const audio = new Audio(
+      "https://rwdsyqnrrpwkureqfxwb.supabase.co/storage/v1/object/public/audio-recordings/questions/SPK_SYS_SYS_UNK_01.wav"
+    );
+    audio.onended = () => {
       setIsPlayingTest(false);
-    }, 1500);
+      setSpeakerOk(true);
+    };
+    audio.onerror = () => {
+      setIsPlayingTest(false);
+      setSpeakerOk(true);
+    };
+    audio.play().catch(() => {
+      setIsPlayingTest(false);
+    });
   }, []);
 
   // 마이크 녹음 시작
   const startRecording = useCallback(async () => {
     try {
       setMicError(null);
+      setMicOk(false);
+      setHasRecording(false);
+      setRecordingDuration(0);
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true },
       });
@@ -74,7 +81,8 @@ export function DeviceTest({ onComplete, onBack }: DeviceTestProps) {
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       const updateVolume = () => {
         analyser.getByteFrequencyData(dataArray);
-        const avg = dataArray.reduce((sum, v) => sum + v, 0) / dataArray.length;
+        const avg =
+          dataArray.reduce((sum, v) => sum + v, 0) / dataArray.length;
         setVolume(avg / 255);
         animFrameRef.current = requestAnimationFrame(updateVolume);
       };
@@ -96,6 +104,7 @@ export function DeviceTest({ onComplete, onBack }: DeviceTestProps) {
         }
         recordingUrlRef.current = URL.createObjectURL(blob);
         setHasRecording(true);
+        setMicOk(true);
         stream.getTracks().forEach((t) => t.stop());
         audioCtx.close();
         if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
@@ -105,7 +114,6 @@ export function DeviceTest({ onComplete, onBack }: DeviceTestProps) {
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.start();
       setIsRecording(true);
-      setRecordingDuration(0);
 
       // 타이머 (최대 10초)
       timerRef.current = setInterval(() => {
@@ -156,114 +164,153 @@ export function DeviceTest({ onComplete, onBack }: DeviceTestProps) {
     };
   }, []);
 
+  const allTestsComplete = speakerOk && micOk;
+
   return (
-    <div className="mx-auto max-w-lg space-y-6">
-      {/* 단계 인디케이터 */}
-      <div className="flex items-center justify-center gap-3">
-        {[
-          { key: "speaker", label: "스피커", done: speakerOk },
-          { key: "mic", label: "마이크", done: micOk },
-        ].map((s, i) => (
-          <div key={s.key} className="flex items-center gap-2">
-            <div
-              className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-                s.done
-                  ? "bg-green-100 text-green-600"
-                  : step === s.key
-                    ? "bg-primary-100 text-primary-600"
-                    : "bg-surface-secondary text-foreground-muted"
-              }`}
-            >
-              {s.done ? <CheckCircle2 size={14} /> : i + 1}
-            </div>
-            <span
-              className={`text-sm ${
-                step === s.key
-                  ? "font-medium text-foreground"
-                  : "text-foreground-muted"
-              }`}
-            >
-              {s.label}
-            </span>
-            {i === 0 && (
-              <div className="mx-2 h-px w-8 bg-border" />
-            )}
-          </div>
-        ))}
+    <div className="mx-auto max-w-6xl px-4 py-8 lg:py-12">
+      {/* 타이틀 */}
+      <div className="mb-6 border-b border-border pb-4 lg:mb-8 lg:pb-6">
+        <h1 className="text-2xl font-bold text-foreground lg:text-3xl">
+          Pre-Test Setup
+        </h1>
       </div>
 
-      {/* 스피커 테스트 */}
-      {step === "speaker" && (
-        <div className="rounded-xl border border-border bg-surface p-6">
-          <div className="flex items-center gap-2">
-            <Volume2 size={18} className="text-primary-500" />
-            <h3 className="font-semibold text-foreground">스피커 테스트</h3>
+      {/* 메인 2열 레이아웃 */}
+      <div className="flex flex-col gap-8 lg:grid lg:grid-cols-2 lg:gap-16">
+        {/* 왼쪽: AVA 캐릭터 + Play 버튼 */}
+        <div className="flex flex-col items-center gap-6 lg:justify-center">
+          <div className="relative mx-auto h-48 w-48 lg:h-64 lg:w-64">
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary-300/20 to-secondary-300/20 blur-xl" />
+            <div className="relative h-full w-full overflow-hidden rounded-3xl shadow-2xl">
+              <Image
+                src="/images/ava-avatar.PNG"
+                alt="AVA - AI 시험관"
+                width={256}
+                height={256}
+                className="h-full w-full object-cover"
+                priority
+                unoptimized
+              />
+            </div>
           </div>
 
-          <div className="mt-6 flex flex-col items-center gap-4">
-            <button
-              onClick={playTestAudio}
-              disabled={isPlayingTest}
-              className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-500 text-white shadow-lg transition-transform hover:scale-105 disabled:opacity-50"
-            >
-              {isPlayingTest ? (
-                <Loader2 size={24} className="animate-spin" />
-              ) : (
-                <Play size={24} className="ml-1" />
-              )}
-            </button>
-            <p className="text-sm text-foreground-secondary">
-              {isPlayingTest
-                ? "소리를 재생 중입니다..."
-                : "버튼을 눌러 소리를 확인하세요"}
-            </p>
+          {/* Play 버튼 (스피커 테스트) */}
+          <button
+            onClick={playTestAudio}
+            disabled={isPlayingTest}
+            className="flex w-32 items-center justify-center gap-2 rounded-xl bg-primary-500 py-3 font-semibold text-white shadow-lg transition-all hover:bg-primary-600 hover:shadow-xl disabled:opacity-60 lg:py-4"
+          >
+            {isPlayingTest ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Play size={18} className="ml-0.5" />
+            )}
+            Play
+          </button>
 
-            <button
-              onClick={() => {
-                setSpeakerOk(true);
-                setStep("mic");
-              }}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-green-50 px-4 py-2 text-sm font-medium text-green-700 hover:bg-green-100"
-            >
+          {speakerOk && (
+            <p className="flex items-center gap-1.5 text-sm text-green-600">
               <CheckCircle2 size={14} />
-              소리가 잘 들립니다
-            </button>
-          </div>
+              스피커 확인 완료
+            </p>
+          )}
         </div>
-      )}
 
-      {/* 마이크 테스트 */}
-      {step === "mic" && (
-        <div className="rounded-xl border border-border bg-surface p-6">
-          <div className="flex items-center gap-2">
-            <Mic size={18} className="text-primary-500" />
-            <h3 className="font-semibold text-foreground">마이크 테스트</h3>
-          </div>
+        {/* 오른쪽: 3단계 안내 + 버튼 영역 */}
+        <div className="flex flex-col gap-5 lg:gap-6">
+          {/* 3단계 안내 */}
+          {[
+            {
+              num: "1",
+              text: "Play 아이콘(▶)을 눌러 질문을 듣고 재생 음량을 조정하십시오.",
+            },
+            {
+              num: "2",
+              text: "마이크 점검을 위해 Start Recording을 누르고 답변 후 Stop Recording을 눌러 녹음을 마칩니다.",
+            },
+            {
+              num: "3",
+              text: "Play Recording을 눌러 음성이 정상 녹음되었는지 확인하십시오.",
+            },
+          ].map((step) => (
+            <div key={step.num} className="flex items-center gap-3 lg:gap-4">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary-50 lg:h-12 lg:w-12">
+                <span className="text-lg font-bold text-primary-500 lg:text-xl">
+                  {step.num}
+                </span>
+              </div>
+              <p className="text-sm leading-relaxed text-foreground lg:text-base">
+                {step.text}
+              </p>
+            </div>
+          ))}
 
+          {/* 마이크 에러 */}
           {micError && (
-            <div className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-600">
-              <MicOff size={14} className="mr-1 inline" />
+            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
+              <AlertCircle size={14} className="mr-1 inline" />
               {micError}
             </div>
           )}
 
-          <div className="mt-6 flex flex-col items-center gap-4">
-            {/* 녹음 버튼 */}
-            <button
-              onClick={isRecording ? stopRecording : startRecording}
-              className={`flex h-16 w-16 items-center justify-center rounded-full text-white shadow-lg transition-transform hover:scale-105 ${
-                isRecording
-                  ? "animate-pulse bg-accent-500"
-                  : "bg-primary-500"
-              }`}
-            >
-              {isRecording ? <Square size={24} /> : <Mic size={24} />}
-            </button>
+          {/* 버튼 영역 */}
+          <div className="rounded-2xl border border-border bg-surface-secondary p-4 lg:p-6">
+            <div className="mb-4 flex gap-3 lg:mb-6 lg:gap-4">
+              {/* Start Recording / Stop / Re-record */}
+              <button
+                onClick={isRecording ? stopRecording : startRecording}
+                className={`relative flex flex-1 items-center justify-center gap-1.5 overflow-hidden rounded-xl py-3 text-sm font-semibold transition-all lg:gap-2 lg:py-4 lg:text-base ${
+                  isRecording
+                    ? "bg-foreground text-white"
+                    : "bg-primary-500 text-white shadow-lg hover:bg-primary-600 hover:shadow-xl"
+                }`}
+              >
+                {/* 녹음 진행률 배경 */}
+                {isRecording && (
+                  <div
+                    className="absolute inset-0 bg-accent-500/30 transition-all duration-1000 ease-linear"
+                    style={{ width: `${(recordingDuration / 10) * 100}%` }}
+                  />
+                )}
+                <span className="relative z-10 flex items-center gap-1.5 lg:gap-2">
+                  {isRecording ? (
+                    <>
+                      <Square size={18} />
+                      Stop Recording ({10 - recordingDuration}s)
+                    </>
+                  ) : hasRecording ? (
+                    <>
+                      <Mic size={18} />
+                      Re-record
+                    </>
+                  ) : (
+                    <>
+                      <Mic size={18} />
+                      Start Recording
+                    </>
+                  )}
+                </span>
+              </button>
+
+              {/* Play Recording */}
+              <button
+                onClick={playRecording}
+                disabled={!hasRecording || isPlayingRecording}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl py-3 text-sm font-semibold transition-all lg:gap-2 lg:py-4 lg:text-base ${
+                  !hasRecording || isPlayingRecording
+                    ? "cursor-not-allowed bg-primary-100 text-primary-500/50"
+                    : "bg-primary-100 text-primary-500 shadow hover:bg-primary-200 hover:shadow-lg"
+                }`}
+              >
+                <Play size={18} />
+                Play Recording
+              </button>
+            </div>
 
             {/* 볼륨 바 */}
             {isRecording && (
-              <div className="flex w-48 items-center gap-2">
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-secondary">
+              <div className="mb-4 flex items-center gap-2">
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface">
                   <div
                     className="h-full rounded-full bg-primary-500 transition-all"
                     style={{ width: `${Math.min(volume * 100, 100)}%` }}
@@ -275,56 +322,50 @@ export function DeviceTest({ onComplete, onBack }: DeviceTestProps) {
               </div>
             )}
 
-            <p className="text-sm text-foreground-secondary">
-              {isRecording
-                ? "말해보세요... (최대 10초)"
-                : hasRecording
-                  ? "녹음이 완료되었습니다"
-                  : "버튼을 눌러 녹음을 시작하세요"}
-            </p>
+            {/* 상태 메시지 */}
+            <div className="py-2 text-center">
+              {allTestsComplete ? (
+                <div className="flex flex-col items-center gap-1.5 text-green-600">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 size={18} />
+                    <span className="font-semibold">
+                      장비 테스트가 완료되었습니다!
+                    </span>
+                  </div>
+                  <span className="text-sm text-foreground-secondary">
+                    Next 버튼을 눌러 모의고사를 시작해주세요.
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2 text-amber-600">
+                  <AlertCircle size={18} />
+                  <span className="font-semibold">
+                    스피커와 마이크 테스트를 진행해주세요
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
 
-            {/* 녹음 재생 */}
-            {hasRecording && !isRecording && (
-              <button
-                onClick={playRecording}
-                disabled={isPlayingRecording}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-surface-secondary px-4 py-2 text-sm font-medium text-foreground-secondary hover:bg-border"
-              >
-                <Play size={14} />
-                {isPlayingRecording ? "재생 중..." : "녹음 재생 확인"}
-              </button>
-            )}
+          {/* 하단 버튼 */}
+          <div className="flex justify-between">
+            <button
+              onClick={onBack}
+              className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground-secondary hover:bg-surface-secondary"
+            >
+              ← 돌아가기
+            </button>
 
-            {hasRecording && !isRecording && (
-              <button
-                onClick={() => setMicOk(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-green-50 px-4 py-2 text-sm font-medium text-green-700 hover:bg-green-100"
-              >
-                <CheckCircle2 size={14} />
-                마이크가 잘 작동합니다
-              </button>
-            )}
+            <button
+              onClick={onComplete}
+              disabled={!allTestsComplete}
+              className="flex items-center gap-2 rounded-lg bg-primary-500 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-40 lg:px-10 lg:py-3"
+            >
+              Next
+              <ArrowRight size={16} />
+            </button>
           </div>
         </div>
-      )}
-
-      {/* 하단 버튼 */}
-      <div className="flex justify-between">
-        <button
-          onClick={onBack}
-          className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground-secondary hover:bg-surface-secondary"
-        >
-          ← 돌아가기
-        </button>
-
-        {speakerOk && micOk && (
-          <button
-            onClick={onComplete}
-            className="rounded-lg bg-primary-500 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-600"
-          >
-            시험 시작 →
-          </button>
-        )}
       </div>
     </div>
   );
