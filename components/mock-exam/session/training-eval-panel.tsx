@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useImperativeHandle,
+  forwardRef,
+} from "react";
 import {
   X,
   CheckCircle2,
@@ -54,6 +61,12 @@ interface TrainingEvalPanelProps {
   questionIds: string[]; // session.question_ids (Q1~Q15)
 }
 
+// ── 외부에서 호출 가능한 메서드 ──
+
+export interface TrainingEvalPanelRef {
+  openPanel: (questionNumber: number) => void;
+}
+
 // ── 토스트 알림 아이템 ──
 
 interface EvalToast {
@@ -64,12 +77,10 @@ interface EvalToast {
 
 // ── 메인 컴포넌트 ──
 
-export function TrainingEvalPanel({
-  sessionId,
-  evalStatusMap,
-  questions,
-  questionIds,
-}: TrainingEvalPanelProps) {
+export const TrainingEvalPanel = forwardRef<
+  TrainingEvalPanelRef,
+  TrainingEvalPanelProps
+>(function TrainingEvalPanel({ sessionId, evalStatusMap, questions, questionIds }, ref) {
   // 이미 알림 표시한 문항
   const notifiedRef = useRef<Set<number>>(new Set());
   // 토스트 큐
@@ -148,6 +159,9 @@ export function TrainingEvalPanel({
     },
     [sessionId]
   );
+
+  // 외부에서 openPanel 호출 가능하도록 노출
+  useImperativeHandle(ref, () => ({ openPanel }), [openPanel]);
 
   // 패널 닫기
   const closePanel = useCallback(() => {
@@ -323,7 +337,7 @@ export function TrainingEvalPanel({
       )}
     </>
   );
-}
+});
 
 // ── 통과율 바 ──
 

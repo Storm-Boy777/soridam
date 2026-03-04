@@ -28,7 +28,10 @@ import { SessionTimer } from "./session-timer";
 import { QuestionGrid } from "./question-grid";
 import { AvaAvatar } from "./ava-avatar";
 import { EvalWaiting } from "../evaluation/eval-waiting";
-import { TrainingEvalPanel } from "./training-eval-panel";
+import {
+  TrainingEvalPanel,
+  type TrainingEvalPanelRef,
+} from "./training-eval-panel";
 import { submitAnswer, completeSession } from "@/lib/actions/mock-exam";
 import type {
   MockTestSession,
@@ -79,6 +82,9 @@ export function MockExamSession({
   const { session, answers: initialAnswers, questions } = initialData;
   const mode = session.mode as MockExamMode;
   const isTraining = mode === "training";
+
+  // ── 훈련 모드 평가 패널 ref ──
+  const evalPanelRef = useRef<TrainingEvalPanelRef>(null);
 
   // ── 세션 상태 ──
   const [phase, setPhase] = useState<SessionPhase>(
@@ -473,6 +479,7 @@ export function MockExamSession({
               answeredQuestions={answeredQuestions}
               skippedQuestions={new Set()}
               evalStatuses={evalStatusMap}
+              onEvalClick={(qNum) => evalPanelRef.current?.openPanel(qNum)}
             />
           </div>
         </div>
@@ -1079,6 +1086,7 @@ export function MockExamSession({
       {/* ── 훈련 모드 개별 평가 패널 ── */}
       {isTraining && (
         <TrainingEvalPanel
+          ref={evalPanelRef}
           sessionId={sessionId}
           evalStatusMap={evalStatusMap}
           questions={questions}
