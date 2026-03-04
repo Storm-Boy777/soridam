@@ -5,7 +5,7 @@ import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { step1Schema, step2Schema, step3Schema } from "@/lib/validations/reviews";
 import { extractCombos } from "@/lib/utils/combo-extractor";
 import {
-  ANSWER_TYPE_ORDER,
+  QUESTION_TYPE_ORDER,
   FREQUENCY_COMBO_MAP,
   type Submission,
   type SubmissionWithQuestions,
@@ -729,17 +729,17 @@ export async function getQuestionFrequency(topic: string, category?: FrequencyCa
       freqMap.set(key, {
         question_english: mq.question_english,
         question_korean: mq.question_korean,
-        answer_type: mq.question_type_eng,
+        question_type: mq.question_type_eng,
         frequency: 1,
       });
     }
   }
 
-  // 빈도순 → 같은 빈도면 answer_type순 → 같은 타입이면 가나다순
+  // 빈도순 → 같은 빈도면 question_type순 → 같은 타입이면 가나다순
   const result = Array.from(freqMap.values()).sort((a, b) => {
     if (a.frequency !== b.frequency) return b.frequency - a.frequency;
-    const orderA = ANSWER_TYPE_ORDER[a.answer_type || ""] ?? 99;
-    const orderB = ANSWER_TYPE_ORDER[b.answer_type || ""] ?? 99;
+    const orderA = QUESTION_TYPE_ORDER[a.question_type || ""] ?? 99;
+    const orderB = QUESTION_TYPE_ORDER[b.question_type || ""] ?? 99;
     if (orderA !== orderB) return orderA - orderB;
     return (a.question_korean || "").localeCompare(b.question_korean || "", "ko");
   });

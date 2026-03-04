@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Check, X, HelpCircle } from "lucide-react";
 import { getQuestionsByTopic } from "@/lib/queries/master-questions";
-import { ANSWER_TYPE_LABELS, ANSWER_TYPE_COLORS } from "@/lib/types/reviews";
+import { QUESTION_TYPE_LABELS, QUESTION_TYPE_COLORS } from "@/lib/types/reviews";
 
 interface Question {
   id: string;
@@ -215,10 +215,10 @@ export function QuestionSelector({
                       {q.question_type_eng && (
                         <span
                           className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                            ANSWER_TYPE_COLORS[q.question_type_eng] || "bg-gray-100 text-gray-700"
+                            QUESTION_TYPE_COLORS[q.question_type_eng] || "bg-gray-100 text-gray-700"
                           }`}
                         >
-                          {ANSWER_TYPE_LABELS[q.question_type_eng] || q.question_type_eng}
+                          {QUESTION_TYPE_LABELS[q.question_type_eng] || q.question_type_eng}
                         </span>
                       )}
                       {isSelected && (

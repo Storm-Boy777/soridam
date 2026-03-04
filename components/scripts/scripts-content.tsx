@@ -43,7 +43,7 @@ import {
   SCRIPT_STATUS_LABELS,
   TARGET_LEVEL_SHORT_LABELS,
 } from "@/lib/types/scripts";
-import { ANSWER_TYPE_LABELS, ANSWER_TYPE_COLORS } from "@/lib/types/reviews";
+import { QUESTION_TYPE_LABELS, QUESTION_TYPE_COLORS } from "@/lib/types/reviews";
 
 /* ── 상수 ── */
 
@@ -536,14 +536,14 @@ function ScriptCard({
   onDelete: (id: string) => void;
   isDeleting: boolean;
 }) {
-  const answerTypeLabel =
-    script.answer_type && ANSWER_TYPE_LABELS[script.answer_type]
-      ? ANSWER_TYPE_LABELS[script.answer_type]
-      : script.answer_type;
+  const questionTypeLabel =
+    script.question_type && QUESTION_TYPE_LABELS[script.question_type]
+      ? QUESTION_TYPE_LABELS[script.question_type]
+      : script.question_type;
 
-  const answerTypeColor =
-    script.answer_type && ANSWER_TYPE_COLORS[script.answer_type]
-      ? ANSWER_TYPE_COLORS[script.answer_type]
+  const questionTypeColor =
+    script.question_type && QUESTION_TYPE_COLORS[script.question_type]
+      ? QUESTION_TYPE_COLORS[script.question_type]
       : "bg-gray-100 text-gray-700";
 
   const levelLabel =
@@ -570,12 +570,12 @@ function ScriptCard({
             {script.topic}
           </span>
         )}
-        {/* answer_type 뱃지 */}
-        {script.answer_type && (
+        {/* question_type 뱃지 */}
+        {script.question_type && (
           <span
-            className={`rounded-full px-2 py-0.5 text-xs font-medium ${answerTypeColor}`}
+            className={`rounded-full px-2 py-0.5 text-xs font-medium ${questionTypeColor}`}
           >
-            {answerTypeLabel}
+            {questionTypeLabel}
           </span>
         )}
         {/* 등급 뱃지 */}

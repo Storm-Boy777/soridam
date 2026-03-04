@@ -1,7 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase-server";
-import { FREQUENCY_COMBO_MAP, ANSWER_TYPE_ORDER } from "@/lib/types/reviews";
+import { FREQUENCY_COMBO_MAP, QUESTION_TYPE_ORDER } from "@/lib/types/reviews";
 
 // 카테고리 → combo_type 매핑
 const CATEGORY_COMBO_TYPES: Record<string, string[]> = {
@@ -105,8 +105,8 @@ export async function getQuestionsByTopic(
 
   // question_type_eng 순 → 같은 타입이면 가나다순
   return data.sort((a, b) => {
-    const orderA = ANSWER_TYPE_ORDER[a.question_type_eng || ""] ?? 99;
-    const orderB = ANSWER_TYPE_ORDER[b.question_type_eng || ""] ?? 99;
+    const orderA = QUESTION_TYPE_ORDER[a.question_type_eng || ""] ?? 99;
+    const orderB = QUESTION_TYPE_ORDER[b.question_type_eng || ""] ?? 99;
     if (orderA !== orderB) return orderA - orderB;
     return (a.question_korean || "").localeCompare(b.question_korean || "", "ko");
   });

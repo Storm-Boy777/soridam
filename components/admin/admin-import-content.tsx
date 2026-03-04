@@ -29,7 +29,7 @@ import {
   type CandidateQuestion,
 } from "@/lib/actions/admin-reviews";
 import type { QuestionMatch } from "@/lib/utils/question-matcher";
-import { ANSWER_TYPE_ORDER } from "@/lib/types/reviews";
+import { QUESTION_TYPE_ORDER } from "@/lib/types/reviews";
 
 // ── 세트 구조 + 카테고리 매핑 ──
 
@@ -198,14 +198,14 @@ export function AdminImportContent() {
     for (const cat of Object.keys(map)) {
       for (const topic of Object.keys(map[cat])) {
         map[cat][topic].sort((a, b) => {
-          const orderA = ANSWER_TYPE_ORDER[a.question_type_eng || ""] ?? 99;
-          const orderB = ANSWER_TYPE_ORDER[b.question_type_eng || ""] ?? 99;
+          const orderA = QUESTION_TYPE_ORDER[a.question_type_eng || ""] ?? 99;
+          const orderB = QUESTION_TYPE_ORDER[b.question_type_eng || ""] ?? 99;
           if (orderA !== orderB) return orderA - orderB;
           return (a.question_korean || "").localeCompare(b.question_korean || "", "ko");
         });
         // 디버그: 정렬 결과 확인 (확인 후 제거)
         if (topic.includes("TV") || topic.includes("텔레비전")) {
-          console.log(`[정렬 확인] ${cat}/${topic}:`, map[cat][topic].map(q => `${q.question_type_eng}(${ANSWER_TYPE_ORDER[q.question_type_eng || ""] ?? 99}): ${q.question_short}`));
+          console.log(`[정렬 확인] ${cat}/${topic}:`, map[cat][topic].map(q => `${q.question_type_eng}(${QUESTION_TYPE_ORDER[q.question_type_eng || ""] ?? 99}): ${q.question_short}`));
         }
       }
     }

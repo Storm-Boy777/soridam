@@ -192,7 +192,7 @@ async function handleGenerate(supabase: any, body: any) {
   // Pass 1: 스크립트 생성
   const { system, user } = await assemblePass1Prompt(
     supabase,
-    script.answer_type,
+    script.question_type,
     script.target_level,
     script.question_english,
     script.question_korean,
@@ -207,7 +207,7 @@ async function handleGenerate(supabase: any, body: any) {
     supabase,
     pass1Result.full_text.english,
     script.target_level,
-    script.answer_type,
+    script.question_type,
     script.question_english
   );
 
@@ -269,7 +269,7 @@ async function handleCorrect(supabase: any, body: any) {
   // Pass 1: 교정 생성
   const { system, user } = await assemblePass1Prompt(
     supabase,
-    script.answer_type,
+    script.question_type,
     script.target_level,
     script.question_english,
     script.question_korean,
@@ -284,7 +284,7 @@ async function handleCorrect(supabase: any, body: any) {
     supabase,
     pass1Result.full_text.english,
     script.target_level,
-    script.answer_type,
+    script.question_type,
     script.question_english
   );
 
@@ -347,7 +347,7 @@ async function handleRefine(supabase: any, body: any) {
   // Pass 1: 수정 생성
   const { system, user: baseUser } = await assemblePass1Prompt(
     supabase,
-    script.answer_type,
+    script.question_type,
     script.target_level,
     script.question_english,
     script.question_korean,
@@ -387,7 +387,7 @@ ${user_prompt || "전체적으로 더 자연스럽게 개선해주세요."}
     supabase,
     pass1Result.full_text.english,
     script.target_level,
-    script.answer_type,
+    script.question_type,
     script.question_english
   );
 
@@ -428,7 +428,7 @@ ${user_prompt || "전체적으로 더 자연스럽게 개선해주세요."}
 
 async function assemblePass1Prompt(
   supabase: any,
-  answerType: string,
+  questionType: string,
   targetLevel: string,
   questionEnglish: string,
   questionKorean: string,
@@ -448,7 +448,7 @@ async function assemblePass1Prompt(
   }
 
   // script_specs 로드
-  const guideId = `${answerType}_${targetLevel}`;
+  const guideId = `${questionType}_${targetLevel}`;
   const { data: spec } = await supabase
     .from("script_specs")
     .select(
@@ -481,7 +481,7 @@ ${spec.level_constraints}
 
 ---
 
-## ② STRUCTURE — ${answerType} × ${targetLevel}
+## ② STRUCTURE — ${questionType} × ${targetLevel}
 
 ${spec.slot_structure}
 
@@ -498,7 +498,7 @@ ${exampleJson}
 Question: ${questionEnglish}
 Question (Korean): ${questionKorean}
 ${inputLabel}: ${learnerInput || "(없음 — Level 3 확장 정책 적용)"}
-Answer type: ${answerType}
+Answer type: ${questionType}
 Total slots: ${spec.total_slots}
 
 ---
@@ -531,7 +531,7 @@ async function runPass2Analysis(
   supabase: any,
   fullEnglishText: string,
   targetLevel: string,
-  answerType: string,
+  questionType: string,
   questionEnglish: string
 ): Promise<AnalysisLists> {
   try {
@@ -549,7 +549,7 @@ async function runPass2Analysis(
     }
 
     const userPrompt = `Target level: ${targetLevel}
-Answer type: ${answerType}
+Answer type: ${questionType}
 Question: ${questionEnglish}
 
 Script:

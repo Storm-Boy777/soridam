@@ -53,7 +53,7 @@ import {
   ScriptFlatText,
   ScriptSummaryView,
 } from "./script-renderer";
-import { ANSWER_TYPE_LABELS } from "@/lib/types/reviews";
+import { QUESTION_TYPE_LABELS } from "@/lib/types/reviews";
 import { TARGET_LEVELS } from "@/lib/types/scripts";
 import type {
   TargetLevel,
@@ -103,7 +103,7 @@ interface QuestionOption {
   question_korean: string;
   topic: string;
   topic_category: string;      // questions.category
-  answer_type: string;         // questions.question_type_eng
+  question_type: string;         // questions.question_type_eng
 }
 
 /* ── 위저드 5단계 정의 ── */
@@ -221,7 +221,7 @@ export function ScriptWizard({
         question_korean: full.question_korean,
         topic: full.topic,
         topic_category: selectedCategory,
-        answer_type: full.question_type_eng || "",
+        question_type: full.question_type_eng || "",
       });
       setStep(2);
     },
@@ -242,7 +242,7 @@ export function ScriptWizard({
         category: selectedQuestion.topic_category,
         question_english: selectedQuestion.question_english,
         question_korean: selectedQuestion.question_korean,
-        answer_type: selectedQuestion.answer_type,
+        question_type: selectedQuestion.question_type,
         target_level: targetLevel,
         user_story: userInput,
       };
@@ -344,7 +344,7 @@ export function ScriptWizard({
           question_korean: scriptDetail.question_detail.question_korean,
           topic: scriptDetail.question_detail.topic,
           topic_category: scriptDetail.question_detail.category,
-          answer_type: scriptDetail.question_detail.question_type_eng,
+          question_type: scriptDetail.question_detail.question_type_eng,
         }
       : null);
 
@@ -364,7 +364,7 @@ export function ScriptWizard({
         category: question.topic_category,
         question_english: question.question_english,
         question_korean: question.question_korean,
-        answer_type: question.answer_type,
+        question_type: question.question_type,
         target_level: scriptDetail?.target_level || targetLevel,
         user_story: regenerateStory,
       };
@@ -461,9 +461,9 @@ export function ScriptWizard({
     );
   }
 
-  // opic_tips 필터용 answer_type
-  const answerType =
-    selectedQuestion?.answer_type || scriptDetail?.answer_type || undefined;
+  // opic_tips 필터용 question_type
+  const questionType =
+    selectedQuestion?.question_type || scriptDetail?.question_type || undefined;
 
   return (
     <div className="flex h-0 flex-grow flex-col md:h-auto md:flex-1">
@@ -559,7 +559,7 @@ export function ScriptWizard({
         {step === 3 && (
           <Step3Loading
             targetLevel={targetLevel}
-            answerType={answerType}
+            questionType={questionType}
           />
         )}
 
@@ -581,7 +581,7 @@ export function ScriptWizard({
             onCreateNew={resetWizard}
             scriptId={generatedScriptId ?? undefined}
             targetLevel={targetLevel}
-            answerType={answerType}
+            questionType={questionType}
           />
         )}
       </div>
@@ -820,12 +820,12 @@ function Step2Input({
         <label className="text-sm font-semibold text-foreground">
           목표 등급
         </label>
-        <div className="mt-2 flex flex-wrap gap-2">
+        <div className="mt-2 grid grid-cols-6 gap-1.5 sm:gap-2">
           {TARGET_LEVELS.map((level) => (
             <button
               key={level}
               onClick={() => onTargetLevelChange(level)}
-              className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+              className={`rounded-lg py-1.5 text-xs font-medium transition-colors sm:rounded-full sm:py-1.5 sm:text-sm ${
                 targetLevel === level
                   ? "bg-primary-500 text-white"
                   : "border border-border bg-surface text-foreground-secondary hover:border-primary-300"
@@ -1026,19 +1026,19 @@ function TipCard({
 
 function Step3Loading({
   targetLevel,
-  answerType,
+  questionType,
 }: {
   targetLevel: string;
-  answerType?: string;
+  questionType?: string;
 }) {
   const [tipIndex, setTipIndex] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval>>(null);
 
   // opic_tips 조회
   const { data: tips } = useQuery({
-    queryKey: ["opic-tips", targetLevel, answerType],
+    queryKey: ["opic-tips", targetLevel, questionType],
     queryFn: async () => {
-      const result = await getOpicTips(targetLevel, answerType);
+      const result = await getOpicTips(targetLevel, questionType);
       if (result.error) return [];
       return result.data ?? [];
     },
@@ -1183,9 +1183,9 @@ function Step4Result({
             {detail.target_level}
           </span>
         )}
-        {detail.answer_type && (
+        {detail.question_type && (
           <span className="inline-flex items-center rounded-full border border-primary-200 bg-primary-50 px-2.5 py-1 text-xs font-semibold text-primary-700">
-            {ANSWER_TYPE_LABELS[detail.answer_type] || detail.answer_type}
+            {QUESTION_TYPE_LABELS[detail.question_type] || detail.question_type}
           </span>
         )}
         {detail.word_count && (
@@ -1346,13 +1346,13 @@ function Step5Complete({
   onCreateNew,
   scriptId,
   targetLevel,
-  answerType,
+  questionType,
 }: {
   onGoToScripts: () => void;
   onCreateNew: () => void;
   scriptId?: string;
   targetLevel: string;
-  answerType?: string;
+  questionType?: string;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -1369,9 +1369,9 @@ function Step5Complete({
   const tipIntervalRef = useRef<ReturnType<typeof setInterval>>(null);
 
   const { data: tips } = useQuery({
-    queryKey: ["opic-tips", targetLevel, answerType],
+    queryKey: ["opic-tips", targetLevel, questionType],
     queryFn: async () => {
-      const result = await getOpicTips(targetLevel, answerType);
+      const result = await getOpicTips(targetLevel, questionType);
       if (result.error) return [];
       return result.data ?? [];
     },

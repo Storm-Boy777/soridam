@@ -13,8 +13,8 @@ import type {
 import {
   FREQUENCY_CATEGORIES,
   FREQUENCY_COMBO_MAP,
-  ANSWER_TYPE_LABELS,
-  ANSWER_TYPE_COLORS,
+  QUESTION_TYPE_LABELS,
+  QUESTION_TYPE_COLORS,
 } from "@/lib/types/reviews";
 
 interface FrequencyTabProps {
@@ -304,11 +304,11 @@ export function FrequencyTab({ initialStats, initialFrequency }: FrequencyTabPro
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="min-w-0 flex-1">
                                     <p className="text-xs font-medium text-foreground">
-                                      {q.answer_type && (
+                                      {q.question_type && (
                                         <span className={`mr-1.5 inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium align-middle ${
-                                          ANSWER_TYPE_COLORS[q.answer_type] || "bg-gray-100 text-gray-700"
+                                          QUESTION_TYPE_COLORS[q.question_type] || "bg-gray-100 text-gray-700"
                                         }`}>
-                                          {ANSWER_TYPE_LABELS[q.answer_type] || q.answer_type}
+                                          {QUESTION_TYPE_LABELS[q.question_type] || q.question_type}
                                         </span>
                                       )}
                                       {q.question_english}

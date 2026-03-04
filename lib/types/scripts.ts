@@ -163,7 +163,7 @@ export interface Script {
   user_story: string | null;
   user_original_answer: string | null;
   target_level: TargetLevel | null;
-  answer_type: string | null;
+  question_type: string | null;
   ai_model: string | null;
   word_count: number | null;
   generation_time: number | null;
@@ -234,7 +234,7 @@ export interface ShadowingEvaluation {
 export interface ScriptSpec {
   id: number;
   guide_id: string;
-  answer_type: string;
+  question_type: string;
   target_level: TargetLevel;
   total_slots: number;
   level_constraints: string;
@@ -265,7 +265,7 @@ export interface GenerateScriptInput {
   category: string;
   question_english: string;
   question_korean: string;
-  answer_type: string;
+  question_type: string;
   target_level: TargetLevel;
   user_story?: string;  // 한국어 스토리 (선택)
 }
@@ -276,7 +276,7 @@ export interface CorrectScriptInput {
   category: string;
   question_english: string;
   question_korean: string;
-  answer_type: string;
+  question_type: string;
   target_level: TargetLevel;
   user_original_answer: string;  // 학습자 영어 답변 (필수)
 }
@@ -301,7 +301,7 @@ export interface ScriptListItem {
   question_english: string | null;
   question_short: string | null;
   target_level: TargetLevel | null;
-  answer_type: string | null;
+  question_type: string | null;
   word_count: number | null;
   status: ScriptStatus;
   refine_count: number;

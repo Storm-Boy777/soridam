@@ -343,7 +343,7 @@ export interface FrequencyItem {
 export interface QuestionFrequencyItem {
   question_english: string;
   question_korean: string;
-  answer_type: string | null;
+  question_type: string | null;
   frequency: number;
 }
 
@@ -351,7 +351,7 @@ export interface QuestionFrequencyItem {
 // 일반: 묘사 → 루틴 → 비교 → 경험(어린시절) → 경험(최근)
 // 롤플레이: rp_11 → rp_12 → 경험(특별)
 // 어드밴스: adv_14 → adv_15
-export const ANSWER_TYPE_ORDER: Record<string, number> = {
+export const QUESTION_TYPE_ORDER: Record<string, number> = {
   description: 1,
   routine: 2,
   comparison: 3,
@@ -365,7 +365,7 @@ export const ANSWER_TYPE_ORDER: Record<string, number> = {
 };
 
 // question_type_eng 한글 레이블 (questions.question_type_kor 기준, 짧은 뱃지 문구)
-export const ANSWER_TYPE_LABELS: Record<string, string> = {
+export const QUESTION_TYPE_LABELS: Record<string, string> = {
   description: "묘사",
   routine: "루틴",
   comparison: "비교",
@@ -379,7 +379,7 @@ export const ANSWER_TYPE_LABELS: Record<string, string> = {
 };
 
 // question_type_eng 뱃지 색상 (테라코타/웜톤 디자인 시스템 기준)
-export const ANSWER_TYPE_COLORS: Record<string, string> = {
+export const QUESTION_TYPE_COLORS: Record<string, string> = {
   description: "bg-blue-50 text-blue-700",
   routine: "bg-green-50 text-green-700",
   comparison: "bg-purple-50 text-purple-700",

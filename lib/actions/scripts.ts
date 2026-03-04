@@ -127,7 +127,7 @@ export async function createScript(
           topic: parsed.data.topic,
           question_english: parsed.data.question_english,
           question_korean: parsed.data.question_korean,
-          answer_type: parsed.data.answer_type,
+          question_type: parsed.data.question_type,
           target_level: parsed.data.target_level,
           user_story: parsed.data.user_story || null,
           status: "draft",
@@ -210,7 +210,7 @@ export async function createCorrectScript(
           topic: parsed.data.topic,
           question_english: parsed.data.question_english,
           question_korean: parsed.data.question_korean,
-          answer_type: parsed.data.answer_type,
+          question_type: parsed.data.question_type,
           target_level: parsed.data.target_level,
           user_original_answer: parsed.data.user_original_answer,
           status: "draft",
@@ -392,7 +392,7 @@ export async function getMyScripts(): Promise<ActionResult<ScriptListItem[]>> {
       .select(`
         id, question_id, source, title, english_text,
         topic, category, question_korean, question_english, target_level,
-        answer_type, word_count, status, refine_count,
+        question_type, word_count, status, refine_count,
         created_at, updated_at,
         script_packages(id, status, progress),
         questions(question_short)
@@ -472,7 +472,7 @@ export async function getScriptDetail(
 // ============================================================
 
 export async function getScriptSpec(
-  answerType: string,
+  questionType: string,
   targetLevel: string
 ): Promise<ActionResult<ScriptSpec>> {
   try {
@@ -481,7 +481,7 @@ export async function getScriptSpec(
     const { data, error } = await supabase
       .from("script_specs")
       .select("*")
-      .eq("answer_type", answerType)
+      .eq("question_type", questionType)
       .eq("target_level", targetLevel)
       .single();
 
@@ -537,7 +537,7 @@ export async function getShadowingHistory(): Promise<ActionResult<ShadowingHisto
 
 export async function getOpicTips(
   targetLevel: string,
-  answerType?: string
+  questionType?: string
 ): Promise<ActionResult<OpicTip[]>> {
   try {
     const supabase = await createServerSupabaseClient();
@@ -549,8 +549,8 @@ export async function getOpicTips(
       .eq("is_active", true)
       .order("display_order");
 
-    if (answerType) {
-      query = query.or(`answer_type.eq.${answerType},answer_type.is.null`);
+    if (questionType) {
+      query = query.or(`question_type.eq.${questionType},question_type.is.null`);
     }
 
     const { data, error } = await query;
@@ -824,7 +824,7 @@ export async function getShadowableScripts(): Promise<
       .select(`
         id, question_id, source, title, english_text,
         topic, category, question_korean, question_english, target_level,
-        answer_type, word_count, status, refine_count,
+        question_type, word_count, status, refine_count,
         created_at, updated_at,
         script_packages!inner(id, status, progress)
       `)
