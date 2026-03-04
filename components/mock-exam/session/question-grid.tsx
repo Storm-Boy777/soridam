@@ -29,8 +29,10 @@ interface QuestionGridProps {
   answeredQuestions: Set<number>;
   skippedQuestions: Set<number>;
   evalStatuses: Record<number, EvalStatus>;
+  viewingEvalQNum?: number | null; // 현재 보고 있는 평가 문항
   onNavigate?: (questionNumber: number) => void;
   onEvalClick?: (questionNumber: number) => void;
+  onReturnToSession?: () => void; // 평가 뷰에서 세션으로 복귀
 }
 
 export function QuestionGrid({
@@ -39,8 +41,10 @@ export function QuestionGrid({
   answeredQuestions,
   skippedQuestions,
   evalStatuses,
+  viewingEvalQNum,
   onNavigate,
   onEvalClick,
+  onReturnToSession,
 }: QuestionGridProps) {
   const isTraining = mode === "training";
 
@@ -64,7 +68,12 @@ export function QuestionGrid({
   };
 
   const handleClick = (qNum: number, status: QStatus) => {
-    // 평가 완료된 문항 → 패널 열기 (훈련 모드)
+    // 평가 뷰 중 현재 문항 클릭 → 세션 복귀
+    if (qNum === currentQ && viewingEvalQNum != null && onReturnToSession) {
+      onReturnToSession();
+      return;
+    }
+    // 평가 완료된 문항 → 평가 보기 (훈련 모드)
     if (status === "eval_done" && isTraining && onEvalClick) {
       onEvalClick(qNum);
       return;
@@ -86,10 +95,11 @@ export function QuestionGrid({
         const status = getStatus(qNum);
         const canClick =
           isTraining &&
-          qNum !== currentQ &&
-          (status === "eval_done" ||
-            answeredQuestions.has(qNum) ||
-            skippedQuestions.has(qNum));
+          ((qNum === currentQ && viewingEvalQNum != null) || // 평가 뷰 중 현재 문항 → 세션 복귀
+            (qNum !== currentQ &&
+              (status === "eval_done" ||
+                answeredQuestions.has(qNum) ||
+                skippedQuestions.has(qNum))));
 
         // 모바일 grid: 9→col2, 10→col3, ... 15→col8
         const gridCol = qNum > 8 ? { gridColumnStart: qNum - 7 } : undefined;
@@ -102,7 +112,7 @@ export function QuestionGrid({
             style={gridCol}
             className={`flex h-5 w-full items-center justify-center rounded text-[10px] font-bold transition-colors md:h-8 md:flex-1 md:rounded-lg md:text-xs ${
               STATUS_STYLES[status]
-            } ${canClick ? "cursor-pointer hover:opacity-80" : "cursor-default"}`}
+            } ${viewingEvalQNum === qNum ? "ring-2 ring-emerald-300 scale-110" : ""} ${canClick ? "cursor-pointer hover:opacity-80" : "cursor-default"}`}
             title={
               status === "eval_done"
                 ? `Q${qNum} — 평가 완료 (클릭하여 확인)`

@@ -180,6 +180,7 @@ export interface MockTestEvaluation {
   filler_count: number | null;
   long_pause_count: number | null;
   pronunciation_assessment: PronunciationAssessment | null;
+  audio_url: string | null; // mock_test_answers에서 JOIN
   model: string | null;
   prompt_version: string;
   tokens_used: number | null;

@@ -770,19 +770,36 @@ export async function getEvaluation(input: {
   try {
     const { supabase, userId } = await requireUser();
 
-    const { data, error } = await supabase
-      .from("mock_test_evaluations")
-      .select("*")
-      .eq("session_id", input.session_id)
-      .eq("question_number", input.question_number)
-      .eq("user_id", userId)
-      .maybeSingle();
+    // 평가 + 답변 오디오 URL 병렬 조회
+    const [evalRes, answerRes] = await Promise.all([
+      supabase
+        .from("mock_test_evaluations")
+        .select("*")
+        .eq("session_id", input.session_id)
+        .eq("question_number", input.question_number)
+        .eq("user_id", userId)
+        .maybeSingle(),
+      supabase
+        .from("mock_test_answers")
+        .select("audio_url")
+        .eq("session_id", input.session_id)
+        .eq("question_number", input.question_number)
+        .eq("user_id", userId)
+        .maybeSingle(),
+    ]);
 
-    if (error) {
+    if (evalRes.error) {
       return { error: "평가 조회 실패" };
     }
 
-    return { data: (data as MockTestEvaluation) || null };
+    if (!evalRes.data) return { data: null };
+
+    return {
+      data: {
+        ...(evalRes.data as MockTestEvaluation),
+        audio_url: answerRes.data?.audio_url ?? null,
+      },
+    };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "평가 조회 실패" };
   }

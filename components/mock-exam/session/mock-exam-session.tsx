@@ -28,10 +28,7 @@ import { SessionTimer } from "./session-timer";
 import { QuestionGrid } from "./question-grid";
 import { AvaAvatar } from "./ava-avatar";
 import { EvalWaiting } from "../evaluation/eval-waiting";
-import {
-  TrainingEvalPanel,
-  type TrainingEvalPanelRef,
-} from "./training-eval-panel";
+import { TrainingEvalPanel } from "./training-eval-panel";
 import { submitAnswer, completeSession } from "@/lib/actions/mock-exam";
 import type {
   MockTestSession,
@@ -83,12 +80,14 @@ export function MockExamSession({
   const mode = session.mode as MockExamMode;
   const isTraining = mode === "training";
 
-  // ── 훈련 모드 평가 패널 ref ──
-  const evalPanelRef = useRef<TrainingEvalPanelRef>(null);
+  // ── 훈련 모드: 인라인 평가 뷰 상태 ──
+  const [viewingEvalQNum, setViewingEvalQNum] = useState<number | null>(null);
 
   // ── 훈련 모드 평가 완료 알림 배너 ──
   const [evalBanner, setEvalBanner] = useState<number | null>(null);
   const evalBannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 이미 알림 표시한 문항 추적
+  const evalNotifiedRef = useRef<Set<number>>(new Set());
 
   const handleEvalNotify = useCallback((qNum: number) => {
     setEvalBanner(qNum);
@@ -180,6 +179,19 @@ export function MockExamSession({
       });
     }
   }, [evalPolling.evalStatuses]);
+
+  // ── 훈련 모드: evalStatusMap 변화 감지 → 평가 완료 알림 ──
+  useEffect(() => {
+    if (!isTraining) return;
+    for (const [qStr, status] of Object.entries(evalStatusMap)) {
+      const qNum = Number(qStr);
+      if (qNum <= 1 || evalNotifiedRef.current.has(qNum)) continue;
+      if (status === "completed" || status === "skipped" || status === "failed") {
+        evalNotifiedRef.current.add(qNum);
+        if (status === "completed") handleEvalNotify(qNum);
+      }
+    }
+  }, [evalStatusMap, isTraining, handleEvalNotify]);
 
   // ── 업로드 재시도 ref ──
   const uploadRetryRef = useRef(0);
@@ -489,13 +501,27 @@ export function MockExamSession({
               answeredQuestions={answeredQuestions}
               skippedQuestions={new Set()}
               evalStatuses={evalStatusMap}
-              onEvalClick={(qNum) => evalPanelRef.current?.openPanel(qNum)}
+              viewingEvalQNum={viewingEvalQNum}
+              onEvalClick={(qNum) => setViewingEvalQNum(qNum)}
+              onReturnToSession={() => setViewingEvalQNum(null)}
             />
           </div>
         </div>
       </div>
 
-      {/* ── 메인 영역 ── */}
+      {/* ── 메인 영역: 평가 뷰 / 세션 뷰 조건부 렌더링 ── */}
+      {isTraining && viewingEvalQNum ? (
+        <TrainingEvalPanel
+          sessionId={sessionId}
+          questionNumber={viewingEvalQNum}
+          questionInfo={(() => {
+            const qId = session.question_ids?.[viewingEvalQNum - 1];
+            const q = qId ? questionsMap.get(qId) : null;
+            return q ? { question_type_eng: q.question_type_eng, topic: q.topic, category: q.category } : null;
+          })()}
+          onClose={() => setViewingEvalQNum(null)}
+        />
+      ) : (
       <div className="mx-auto flex w-full max-w-5xl min-h-0 flex-1 flex-col overflow-hidden px-3 py-2 sm:px-6 sm:py-4">
         {/* 5단계 진행 가이드 (relative 컨테이너 — 알림 배너 오버랩용) */}
         <div className="relative mb-2 rounded-xl border border-border bg-surface p-2 md:mb-4 md:p-3">
@@ -1067,6 +1093,7 @@ export function MockExamSession({
           </div>
         </div>
       </div>
+      )}
 
       {/* 40분 경고 모달 (실전 모드) */}
       {showTimeWarning && !isTraining && (
@@ -1104,17 +1131,6 @@ export function MockExamSession({
         </div>
       )}
 
-      {/* ── 훈련 모드 개별 평가 패널 ── */}
-      {isTraining && (
-        <TrainingEvalPanel
-          ref={evalPanelRef}
-          sessionId={sessionId}
-          evalStatusMap={evalStatusMap}
-          questions={questions}
-          questionIds={session.question_ids || []}
-          onEvalNotify={handleEvalNotify}
-        />
-      )}
     </div>
   );
 }

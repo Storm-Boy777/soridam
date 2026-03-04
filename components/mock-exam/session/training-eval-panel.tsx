@@ -1,15 +1,8 @@
 "use client";
 
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-  useImperativeHandle,
-  forwardRef,
-} from "react";
-import {
-  X,
+  ArrowLeft,
   CheckCircle2,
   XCircle,
   Mic2,
@@ -19,6 +12,8 @@ import {
   ChevronUp,
   Loader2,
   BarChart3,
+  Volume2,
+  Pause,
 } from "lucide-react";
 import { getEvaluation } from "@/lib/actions/mock-exam";
 import type {
@@ -27,7 +22,6 @@ import type {
   CorrectionItem,
   DeepAnalysis,
   PronunciationAssessment,
-  EvalStatus,
 } from "@/lib/types/mock-exam";
 
 // question_type 한글
@@ -48,221 +42,149 @@ const QT_KO: Record<string, string> = {
 
 interface TrainingEvalPanelProps {
   sessionId: string;
-  evalStatusMap: Record<number, EvalStatus>;
-  questions: Array<{
-    id: string;
-    question_english: string;
-    question_korean: string;
+  questionNumber: number;
+  questionInfo: {
     question_type_eng: string;
     topic: string;
     category: string;
-    audio_url: string | null;
-  }>;
-  questionIds: string[]; // session.question_ids (Q1~Q15)
-  onEvalNotify?: (questionNumber: number) => void;
+  } | null;
+  onClose: () => void;
 }
 
-// ── 외부에서 호출 가능한 메서드 ──
+// ── 메인 컴포넌트 (인라인 뷰 — 세션 콘텐츠 영역을 대체) ──
 
-export interface TrainingEvalPanelRef {
-  openPanel: (questionNumber: number) => void;
-}
+export function TrainingEvalPanel({
+  sessionId,
+  questionNumber,
+  questionInfo,
+  onClose,
+}: TrainingEvalPanelProps) {
+  const [data, setData] = useState<MockTestEvaluation | null>(null);
+  const [loading, setLoading] = useState(true);
 
-
-// ── 메인 컴포넌트 ──
-
-export const TrainingEvalPanel = forwardRef<
-  TrainingEvalPanelRef,
-  TrainingEvalPanelProps
->(function TrainingEvalPanel({ sessionId, evalStatusMap, questions, questionIds, onEvalNotify }, ref) {
-  // 이미 알림 표시한 문항
-  const notifiedRef = useRef<Set<number>>(new Set());
-  // 패널 열기 (어떤 문항의 상세를 보는지)
-  const [panelQNum, setPanelQNum] = useState<number | null>(null);
-  // 패널 평가 데이터
-  const [panelData, setPanelData] = useState<MockTestEvaluation | null>(null);
-  const [panelLoading, setPanelLoading] = useState(false);
-
-  // questions 맵
-  const qMap = new Map(questions.map((q) => [q.id, q]));
-
-  // evalStatusMap 변화 감지 → 부모에게 알림 전달
+  // questionNumber 변경 시 데이터 로드
   useEffect(() => {
-    for (const [qStr, status] of Object.entries(evalStatusMap)) {
-      const qNum = Number(qStr);
-      if (qNum <= 1) continue; // Q1 제외
-      if (notifiedRef.current.has(qNum)) continue;
-
-      if (status === "completed" || status === "skipped" || status === "failed") {
-        notifiedRef.current.add(qNum);
-
-        if (status === "completed") {
-          onEvalNotify?.(qNum);
-        }
-      }
-    }
-  }, [evalStatusMap, onEvalNotify]);
-
-  // 패널 열기
-  const openPanel = useCallback(
-    async (qNum: number) => {
-      setPanelQNum(qNum);
-      setPanelLoading(true);
-      setPanelData(null);
-
-      const res = await getEvaluation({
-        session_id: sessionId,
-        question_number: qNum,
-      });
-
-      setPanelData(res.data || null);
-      setPanelLoading(false);
-    },
-    [sessionId]
-  );
-
-  // 외부에서 openPanel 호출 가능하도록 노출
-  useImperativeHandle(ref, () => ({ openPanel }), [openPanel]);
-
-  // 패널 닫기
-  const closePanel = useCallback(() => {
-    setPanelQNum(null);
-    setPanelData(null);
-  }, []);
-
-  // 현재 패널 문항의 질문 정보
-  const panelQuestionId = panelQNum ? questionIds[panelQNum - 1] : null;
-  const panelQuestion = panelQuestionId ? qMap.get(panelQuestionId) : null;
+    setLoading(true);
+    setData(null);
+    getEvaluation({
+      session_id: sessionId,
+      question_number: questionNumber,
+    }).then((res) => {
+      setData(res.data || null);
+      setLoading(false);
+    });
+  }, [sessionId, questionNumber]);
 
   return (
-    <>
-      {/* ── 바텀 시트 패널 ── */}
-      {panelQNum && (
-        <>
-          {/* 배경 오버레이 */}
-          <div
-            className="fixed inset-0 z-50 bg-black/30 animate-fadeIn"
-            onClick={closePanel}
-          />
-
-          {/* 패널 */}
-          <div className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-2xl border-t border-border bg-surface shadow-2xl animate-slideUp md:inset-x-auto md:right-4 md:bottom-4 md:left-auto md:w-[420px] md:rounded-2xl md:border">
-            {/* 헤더 */}
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface px-4 py-3">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-50">
-                  <BarChart3 size={14} className="text-primary-500" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-foreground">
-                    Q{panelQNum} 개별 평가
-                  </h3>
-                  {panelQuestion && (
-                    <p className="text-[10px] text-foreground-muted">
-                      {QT_KO[panelQuestion.question_type_eng] || panelQuestion.question_type_eng}
-                      {panelQuestion.topic && ` · ${panelQuestion.topic}`}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <button
-                onClick={closePanel}
-                className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-surface-secondary"
-              >
-                <X size={16} className="text-foreground-muted" />
-              </button>
-            </div>
-
-            {/* 콘텐츠 */}
-            <div className="px-4 py-4">
-              {panelLoading ? (
-                <div className="flex flex-col items-center py-8">
-                  <Loader2
-                    size={24}
-                    className="animate-spin text-primary-500"
-                  />
-                  <p className="mt-2 text-sm text-foreground-secondary">
-                    평가 결과를 불러오는 중...
-                  </p>
-                </div>
-              ) : !panelData ? (
-                <p className="py-8 text-center text-sm text-foreground-muted">
-                  평가 데이터가 없습니다.
-                </p>
-              ) : panelData.skipped ? (
-                <p className="py-8 text-center text-sm text-foreground-muted">
-                  이 문항은 건너뛰었습니다.
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {/* 통과율 요약 바 */}
-                  {panelData.pass_rate != null && (
-                    <PassRateBar
-                      passRate={panelData.pass_rate}
-                      passCount={panelData.pass_count}
-                      failCount={panelData.fail_count}
-                      checkboxType={panelData.checkbox_type}
-                    />
-                  )}
-
-                  {/* 나의 답변 */}
-                  {panelData.transcript && (
-                    <TranscriptSection
-                      transcript={panelData.transcript}
-                      wpm={panelData.wpm}
-                      audioDuration={panelData.audio_duration}
-                      fillerCount={panelData.filler_count}
-                      longPauseCount={panelData.long_pause_count}
-                    />
-                  )}
-
-                  {/* 발음 점수 */}
-                  {panelData.pronunciation_assessment && (
-                    <PronunciationSection
-                      assessment={panelData.pronunciation_assessment}
-                    />
-                  )}
-
-                  {/* 체크박스 상세 */}
-                  {panelData.checkboxes && (
-                    <CheckboxSection
-                      checkboxes={panelData.checkboxes}
-                      passCount={panelData.pass_count}
-                      failCount={panelData.fail_count}
-                    />
-                  )}
-
-                  {/* 교정 사항 */}
-                  {panelData.corrections &&
-                    panelData.corrections.length > 0 && (
-                      <CorrectionsSection
-                        corrections={panelData.corrections}
-                      />
-                    )}
-
-                  {/* 심층 분석 */}
-                  {panelData.deep_analysis && (
-                    <DeepAnalysisSection analysis={panelData.deep_analysis} />
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* 하단 닫기 버튼 */}
-            <div className="sticky bottom-0 border-t border-border bg-surface px-4 py-3">
-              <button
-                onClick={closePanel}
-                className="w-full rounded-xl bg-surface-secondary py-2.5 text-sm font-medium text-foreground-secondary transition-colors hover:bg-border"
-              >
-                닫기
-              </button>
-            </div>
+    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col overflow-hidden px-3 py-2 sm:px-6 sm:py-4 animate-fadeIn">
+      {/* 헤더 */}
+      <div className="mb-3 flex items-center gap-3 md:mb-4">
+        <button
+          onClick={onClose}
+          className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-surface-secondary md:h-9 md:w-9"
+        >
+          <ArrowLeft size={18} className="text-foreground-secondary" />
+        </button>
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50 md:h-9 md:w-9">
+            <BarChart3 size={14} className="text-emerald-600 md:h-[18px] md:w-[18px]" />
           </div>
-        </>
-      )}
-    </>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground md:text-base">
+              Q{questionNumber} 개별 평가
+            </h3>
+            {questionInfo && (
+              <p className="text-[10px] text-foreground-muted md:text-xs">
+                {QT_KO[questionInfo.question_type_eng] || questionInfo.question_type_eng}
+                {questionInfo.topic && ` · ${questionInfo.topic}`}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 콘텐츠 — 스크롤 영역 */}
+      <div className="flex-1 overflow-y-auto rounded-xl border border-border bg-surface p-4 md:p-6">
+        {loading ? (
+          <div className="flex flex-col items-center py-12">
+            <Loader2 size={24} className="animate-spin text-primary-500" />
+            <p className="mt-2 text-sm text-foreground-secondary">
+              평가 결과를 불러오는 중...
+            </p>
+          </div>
+        ) : !data ? (
+          <p className="py-12 text-center text-sm text-foreground-muted">
+            평가 데이터가 없습니다.
+          </p>
+        ) : data.skipped ? (
+          <p className="py-12 text-center text-sm text-foreground-muted">
+            이 문항은 건너뛰었습니다.
+          </p>
+        ) : (
+          <div className="space-y-4 md:space-y-6">
+            {/* 통과율 요약 바 */}
+            {data.pass_rate != null && (
+              <PassRateBar
+                passRate={data.pass_rate}
+                passCount={data.pass_count}
+                failCount={data.fail_count}
+                checkboxType={data.checkbox_type}
+              />
+            )}
+
+            {/* 나의 답변 */}
+            {data.transcript && (
+              <TranscriptSection
+                transcript={data.transcript}
+                audioUrl={data.audio_url}
+                wpm={data.wpm}
+                audioDuration={data.audio_duration}
+                fillerCount={data.filler_count}
+                longPauseCount={data.long_pause_count}
+              />
+            )}
+
+            {/* 발음 점수 */}
+            {data.pronunciation_assessment && (
+              <PronunciationSection
+                assessment={data.pronunciation_assessment}
+              />
+            )}
+
+            {/* 체크박스 상세 */}
+            {data.checkboxes && (
+              <CheckboxSection
+                checkboxes={data.checkboxes}
+                passCount={data.pass_count}
+                failCount={data.fail_count}
+              />
+            )}
+
+            {/* 교정 사항 */}
+            {data.corrections && data.corrections.length > 0 && (
+              <CorrectionsSection corrections={data.corrections} />
+            )}
+
+            {/* 심층 분석 */}
+            {data.deep_analysis && (
+              <DeepAnalysisSection analysis={data.deep_analysis} />
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 하단 돌아가기 버튼 */}
+      <div className="mt-3 md:mt-4">
+        <button
+          onClick={onClose}
+          className="w-full rounded-xl bg-surface-secondary py-2.5 text-sm font-medium text-foreground-secondary transition-colors hover:bg-border md:py-3"
+        >
+          시험으로 돌아가기
+        </button>
+      </div>
+    </div>
   );
-});
+}
 
 // ── 통과율 바 ──
 
@@ -292,12 +214,12 @@ function PassRateBar({
         : "text-red-500";
 
   return (
-    <div className="rounded-xl border border-border bg-surface-secondary/30 p-3">
+    <div className="rounded-xl border border-border bg-surface-secondary/30 p-3 md:p-4">
       <div className="flex items-center justify-between">
-        <span className="text-xs text-foreground-muted">
+        <span className="text-xs text-foreground-muted md:text-sm">
           체크박스 통과율 {checkboxType && `(${checkboxType})`}
         </span>
-        <div className="flex items-center gap-2 text-[11px]">
+        <div className="flex items-center gap-2 text-[11px] md:text-xs">
           <span className="flex items-center gap-0.5 text-green-600">
             <CheckCircle2 size={11} /> {passCount ?? 0}
           </span>
@@ -308,14 +230,14 @@ function PassRateBar({
       </div>
       <div className="mt-2 flex items-center gap-3">
         <div className="flex-1">
-          <div className="h-2.5 overflow-hidden rounded-full bg-surface-secondary">
+          <div className="h-2.5 overflow-hidden rounded-full bg-surface-secondary md:h-3">
             <div
               className={`h-full rounded-full ${color} transition-all duration-500`}
               style={{ width: `${pct}%` }}
             />
           </div>
         </div>
-        <span className={`text-lg font-bold ${textColor}`}>{pct}%</span>
+        <span className={`text-lg font-bold md:text-xl ${textColor}`}>{pct}%</span>
       </div>
     </div>
   );
@@ -325,26 +247,97 @@ function PassRateBar({
 
 function TranscriptSection({
   transcript,
+  audioUrl,
   wpm,
   audioDuration,
   fillerCount,
   longPauseCount,
 }: {
   transcript: string;
+  audioUrl: string | null;
   wpm: number | null;
   audioDuration: number | null;
   fillerCount: number | null;
   longPauseCount: number | null;
 }) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  // 오디오 재생/정지 토글
+  const togglePlay = useCallback(() => {
+    if (!audioUrl) return;
+
+    if (!audioRef.current) {
+      audioRef.current = new Audio(audioUrl);
+      audioRef.current.addEventListener("ended", () => {
+        setIsPlaying(false);
+        setProgress(0);
+      });
+      audioRef.current.addEventListener("timeupdate", () => {
+        const audio = audioRef.current;
+        if (audio && audio.duration > 0) {
+          setProgress((audio.currentTime / audio.duration) * 100);
+        }
+      });
+    }
+
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play();
+      setIsPlaying(true);
+    }
+  }, [audioUrl, isPlaying]);
+
+  // 컴포넌트 언마운트 시 정리
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
   return (
     <div>
-      <p className="mb-1.5 text-xs font-medium text-foreground-muted">
-        나의 답변
-      </p>
-      <p className="whitespace-pre-wrap rounded-lg bg-white p-3 text-sm leading-relaxed text-foreground border border-border">
+      <div className="mb-1.5 flex items-center justify-between md:mb-2">
+        <p className="text-xs font-medium text-foreground-muted md:text-sm">
+          나의 답변
+        </p>
+        {audioUrl && (
+          <button
+            onClick={togglePlay}
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium transition-colors md:text-xs ${
+              isPlaying
+                ? "bg-primary-100 text-primary-700"
+                : "bg-surface-secondary text-foreground-secondary hover:bg-border"
+            }`}
+          >
+            {isPlaying ? (
+              <Pause size={12} className="shrink-0" />
+            ) : (
+              <Volume2 size={12} className="shrink-0" />
+            )}
+            {isPlaying ? "일시정지" : "내 답변 듣기"}
+          </button>
+        )}
+      </div>
+      {/* 오디오 프로그레스 바 */}
+      {audioUrl && isPlaying && (
+        <div className="mb-2 h-1 overflow-hidden rounded-full bg-surface-secondary">
+          <div
+            className="h-full rounded-full bg-primary-500 transition-[width] duration-300 ease-linear"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      )}
+      <p className="whitespace-pre-wrap rounded-lg bg-white p-3 text-sm leading-relaxed text-foreground border border-border md:p-4 md:text-base md:leading-7">
         {transcript}
       </p>
-      <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-foreground-muted">
+      <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-foreground-muted md:mt-2 md:text-xs">
         {wpm != null && wpm > 0 && <span>WPM: {wpm.toFixed(0)}</span>}
         {audioDuration != null && audioDuration > 0 && (
           <span>{audioDuration.toFixed(0)}초</span>
@@ -379,11 +372,11 @@ function PronunciationSection({
 
   return (
     <div>
-      <p className="mb-2 flex items-center gap-1 text-xs font-medium text-foreground-muted">
+      <p className="mb-2 flex items-center gap-1 text-xs font-medium text-foreground-muted md:text-sm">
         <Mic2 size={12} className="text-primary-400" />
         발음 평가
       </p>
-      <div className="flex gap-2">
+      <div className="flex gap-2 md:gap-3">
         {scores.map((s) => {
           const v = s.value ?? 0;
           const color =
@@ -401,10 +394,10 @@ function PronunciationSection({
           return (
             <div
               key={s.label}
-              className={`flex-1 rounded-lg ${bgColor} px-3 py-2 text-center`}
+              className={`flex-1 rounded-lg ${bgColor} px-3 py-2 text-center md:rounded-xl md:px-4 md:py-3`}
             >
-              <p className="text-[10px] text-foreground-muted">{s.label}</p>
-              <p className={`text-lg font-bold ${color}`}>
+              <p className="text-[10px] text-foreground-muted md:text-xs">{s.label}</p>
+              <p className={`text-lg font-bold md:text-xl ${color}`}>
                 {v > 0 ? v.toFixed(0) : "-"}
               </p>
             </div>
@@ -455,28 +448,28 @@ function CheckboxSection({
 
   return (
     <div>
-      <p className="mb-2 text-xs font-medium text-foreground-muted">
+      <p className="mb-2 text-xs font-medium text-foreground-muted md:text-sm">
         체크박스 상세
       </p>
 
       {/* 실패 항목 */}
       {failed.length > 0 && (
-        <div className="space-y-1">
+        <div className="space-y-1 md:space-y-2">
           {failed.map(([id, cb]) => (
             <div
               key={id}
-              className="flex items-start gap-2 rounded-lg bg-red-50/50 px-2.5 py-2"
+              className="flex items-start gap-2 rounded-lg bg-red-50/50 px-2.5 py-2 md:px-3 md:py-2.5"
             >
               <XCircle
                 size={12}
                 className="mt-0.5 shrink-0 text-red-400"
               />
               <div className="min-w-0">
-                <span className="text-[10px] font-mono font-medium text-red-500">
+                <span className="text-[10px] font-mono font-medium text-red-500 md:text-xs">
                   {id}
                 </span>
                 {cb.evidence && (
-                  <p className="text-[10px] leading-relaxed text-foreground-secondary">
+                  <p className="text-[10px] leading-relaxed text-foreground-secondary md:text-xs md:leading-5">
                     {cb.evidence}
                   </p>
                 )}
