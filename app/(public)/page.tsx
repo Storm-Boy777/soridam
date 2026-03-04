@@ -60,11 +60,11 @@ const services = [
 ];
 
 const illustrations = [
-  { src: "/images/hero-beer.jpeg", caption: "퇴근 후 맥주 한 캔" },
-  { src: "/images/hero-coffee.jpeg", caption: "주말 아침 커피" },
-  { src: "/images/hero-sofa.jpeg", caption: "소파 위 넷플릭스" },
-  { src: "/images/hero-game.jpeg", caption: "친구랑 게임" },
-  { src: "/images/hero-chat.jpeg", caption: "친구와 수다" },
+  { src: "/images/hero-beer.webp", caption: "퇴근 후 맥주 한 캔" },
+  { src: "/images/hero-coffee.webp", caption: "주말 아침 커피" },
+  { src: "/images/hero-sofa.webp", caption: "소파 위 넷플릭스" },
+  { src: "/images/hero-game.webp", caption: "친구랑 게임" },
+  { src: "/images/hero-chat.webp", caption: "친구와 수다" },
 ];
 
 const faqs = [
@@ -166,30 +166,41 @@ export default function HomePage() {
           <p className="mb-6 text-center text-[0.85rem] font-medium text-[#8B7E72] sm:text-[1rem]">
             어떤 일상을 보내셨나요? 있는 그대로의 당신을 들려주세요.
           </p>
-          <div className="flex gap-3 overflow-x-auto px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-4 md:grid md:grid-cols-5 md:overflow-visible md:px-6">
-            {illustrations.map((ill, i) => (
-              <ScrollReveal
+          <motion.div
+            variants={{
+              hidden: {},
+              visible: { transition: { staggerChildren: 0.08 } },
+            }}
+            initial="hidden"
+            animate="visible"
+            className="flex gap-3 overflow-x-auto px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-4 md:grid md:grid-cols-5 md:overflow-visible md:px-6"
+          >
+            {illustrations.map((ill) => (
+              <motion.div
                 key={ill.caption}
-                preset="fade-left"
-                delay={i * 0.12}
-                duration={0.6}
+                variants={{
+                  hidden: { opacity: 0, y: 24, scale: 0.95 },
+                  visible: { opacity: 1, y: 0, scale: 1 },
+                }}
+                transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
                 className="w-[36vw] flex-shrink-0 sm:w-[28vw] md:w-auto"
               >
                 <div className="overflow-hidden rounded-2xl">
                   <Image
                     src={ill.src}
                     alt={ill.caption}
-                    width={900}
-                    height={1200}
+                    width={600}
+                    height={800}
+                    sizes="(max-width: 768px) 36vw, (max-width: 1024px) 28vw, 200px"
                     className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
                   />
                 </div>
                 <p className="mt-2.5 text-center text-[0.8rem] font-medium text-[#8B7E72]">
                   {ill.caption}
                 </p>
-              </ScrollReveal>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </motion.div>
 
         <div className="relative mx-auto flex max-w-4xl flex-col items-center text-center">
@@ -216,53 +227,50 @@ export default function HomePage() {
 
       </section>
 
-      {/* ━━━ 2. Stats (전략 넛지) — 2단 레이아웃 ━━━ */}
+      {/* ━━━ 2. Stats (전략 넛지) — 세로 중앙 레이아웃 ━━━ */}
       <section className="bg-white py-20 sm:py-[120px]">
-        <div className="mx-auto grid max-w-[1080px] grid-cols-1 items-center gap-12 px-6 md:grid-cols-2 md:gap-20">
-          {/* 왼쪽: 질문 카드 */}
-          <div>
-            <ScrollReveal preset="fade-up">
-              <Pill>전략 점검</Pill>
-              <h2 className="mt-5 text-[1.8rem] font-extrabold leading-[1.3] tracking-[-0.03em] text-[#3A2E25] sm:text-[2.4rem]">
-                OPIc, 정말 알고
-                <br />
-                준비하고 계세요?
-              </h2>
-            </ScrollReveal>
-            <div className="mt-8 space-y-2.5">
-              {[
-                { quote: "\u201c서베이가 중요하다더라\u201d", nudge: "얼마나?" },
-                { quote: "\u201c5-5가 좋다더라\u201d", nudge: "왜?" },
-                { quote: "\u201c스크립트 외우면 안 된대\u201d", nudge: "대안이 뭔데?" },
-              ].map((item, i) => (
-                <ScrollReveal key={item.quote} preset="fade-left" delay={i * 0.1} duration={0.5}>
-                  <div className="grid grid-cols-[13fr_auto_7fr] items-center rounded-[14px] bg-[#FAF6F1] px-3 py-5 text-[0.95rem] text-[#8B7E72] transition-colors hover:bg-[#F3ECE4] sm:px-4 sm:text-[1rem]">
-                    <span className="text-left">{item.quote}</span>
-                    <span className="px-3 font-bold text-[#3A2E25]">→</span>
-                    <strong className="text-right font-bold text-[#3A2E25]">{item.nudge}</strong>
-                  </div>
-                </ScrollReveal>
-              ))}
-            </div>
+        <div className="mx-auto max-w-[1080px] px-6">
+          {/* 헤딩 */}
+          <ScrollReveal preset="fade-up" className="text-center">
+            <Pill>전략 점검</Pill>
+            <h2 className="mt-5 text-[1.8rem] font-extrabold leading-[1.3] tracking-[-0.03em] text-[#3A2E25] sm:text-[2.4rem]">
+              OPIc, 정말 알고 준비하고 계세요?
+            </h2>
+          </ScrollReveal>
+
+          {/* 질문 카드 3열 — 모바일 1열, PC 가로 배치 */}
+          <div className="mx-auto mt-10 grid max-w-[860px] gap-2.5 sm:mt-12 sm:grid-cols-3 sm:gap-4">
+            {[
+              { quote: "\u201c서베이가 중요하다더라\u201d", nudge: "얼마나?" },
+              { quote: "\u201c5-5가 좋다더라\u201d", nudge: "왜?" },
+              { quote: "\u201c스크립트 외우면 안 된대\u201d", nudge: "대안이 뭔데?" },
+            ].map((item, i) => (
+              <ScrollReveal key={item.quote} preset="fade-up" delay={i * 0.08} duration={0.5}>
+                <div className="flex flex-row items-center justify-between rounded-[14px] bg-[#FAF6F1] px-4 py-5 transition-colors hover:bg-[#F3ECE4] sm:flex-col sm:gap-3 sm:px-5 sm:py-7 sm:text-center">
+                  <span className="text-[0.95rem] text-[#8B7E72] sm:text-[1rem]">{item.quote}</span>
+                  <span className="px-3 font-bold text-[#3A2E25] sm:hidden">→</span>
+                  <span className="hidden text-[#D4835E] sm:block">↓</span>
+                  <strong className="text-[0.95rem] font-bold text-[#3A2E25] sm:text-[1.15rem]">{item.nudge}</strong>
+                </div>
+              </ScrollReveal>
+            ))}
           </div>
 
-          {/* 오른쪽: 68% — 카운트업 */}
-          <ScrollReveal preset="fade-up" delay={0.2}>
-            <div className="text-center">
-              <p className="text-[1.05rem] text-[#8B7E72]">대충 아는 사람의</p>
-              <p className="font-serif text-[4rem] font-bold leading-none tracking-[-0.05em] text-[#D4835E] sm:text-[7rem] md:text-[9rem]">
-                <CountUp target={68} suffix="%" />
-              </p>
-              <p className="mt-2 text-[1.05rem] text-[#8B7E72]">
-                가 IM2 이하입니다
-              </p>
-              <Link
-                href="/strategy"
-                className="mt-7 inline-flex items-center gap-1.5 rounded-full bg-[#3A2E25] px-8 py-3.5 text-[15px] font-bold text-white transition-all hover:-translate-y-px hover:bg-[#4A3F36]"
-              >
-                정확히 알아보기 <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
+          {/* 68% 카운트업 */}
+          <ScrollReveal preset="fade-up" delay={0.2} className="mt-14 text-center sm:mt-20">
+            <p className="text-[1.05rem] text-[#8B7E72]">대충 아는 사람의</p>
+            <p className="font-serif text-[4rem] font-bold leading-none tracking-[-0.05em] text-[#D4835E] sm:text-[7rem]">
+              <CountUp target={68} suffix="%" />
+            </p>
+            <p className="mt-2 text-[1.05rem] text-[#8B7E72]">
+              가 IM2 이하입니다
+            </p>
+            <Link
+              href="/strategy"
+              className="mt-7 inline-flex items-center gap-1.5 rounded-full bg-[#3A2E25] px-8 py-3.5 text-[15px] font-bold text-white transition-all hover:-translate-y-px hover:bg-[#4A3F36]"
+            >
+              정확히 알아보기 <ArrowRight className="h-4 w-4" />
+            </Link>
           </ScrollReveal>
         </div>
       </section>
