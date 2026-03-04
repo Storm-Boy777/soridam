@@ -125,17 +125,18 @@ function Pill({ children }: { children: React.ReactNode }) {
 export default function HomePage() {
   return (
     <>
-      {/* ━━━ 1. Hero — 따뜻한 크림, 편안한 일상 ━━━ */}
-      <section className="relative flex min-h-[100svh] flex-col items-center overflow-hidden bg-[#FAF6F1] px-5 pb-16 pt-20 sm:pb-20 sm:pt-32">
+      {/* ━━━ 1. Hero — 뷰포트 비례 스케일링 ━━━ */}
+      <section className="relative flex h-[calc(100svh-64px)] flex-col items-center overflow-hidden bg-[#FAF6F1] px-5 pt-[clamp(24px,4vh,48px)]">
         {/* 배경 — 따뜻한 조명 글로우 */}
         <div className="pointer-events-none absolute left-1/2 top-[-100px] h-[600px] w-[600px] -translate-x-1/2 bg-[radial-gradient(circle,rgba(212,131,94,0.08)_0%,transparent_70%)]" />
 
-        <div className="relative mx-auto flex max-w-4xl flex-col items-center text-center">
+        {/* 상단: 뱃지 + 헤드카피 — 고정 영역 */}
+        <div className="relative mx-auto flex shrink-0 max-w-4xl flex-col items-center text-center">
           <motion.span
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#EAE0D5] bg-white/60 px-3 py-1 text-[0.7rem] font-bold tracking-wide text-[#8B7E72] sm:px-[18px] sm:py-2 sm:text-[0.85rem]"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#EAE0D5] bg-white/60 px-3 py-1 text-[0.7rem] font-bold tracking-wide text-[#8B7E72] sm:px-[18px] sm:py-2 sm:text-[clamp(0.75rem,0.9vw,0.85rem)]"
           >
             나만의 이야기로 채우는 OPIc
           </motion.span>
@@ -144,7 +145,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
-            className="mt-8 text-[32px] font-extrabold leading-[1.3] tracking-[-0.04em] text-[#3A2E25] sm:text-[2.8rem] md:text-[3.4rem]"
+            className="mt-[clamp(12px,2vh,24px)] text-[32px] font-extrabold leading-[1.3] tracking-[-0.04em] text-[#3A2E25] sm:text-[clamp(2rem,3.2vw,3.4rem)]"
           >
             화려한 필터는 끄세요.
             <br />
@@ -156,14 +157,14 @@ export default function HomePage() {
           </motion.h1>
         </div>
 
-        {/* 일상 포토카드 갤러리 */}
+        {/* 중앙: 포토카드 갤러리 — 가용 공간에 맞춰 축소 */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
-          className="relative mx-auto mt-8 w-full max-w-[1100px]"
+          className="relative mx-auto mt-[clamp(8px,1.5vh,24px)] flex h-0 w-full max-w-[1100px] flex-grow flex-col justify-center"
         >
-          <p className="mb-6 text-center text-[0.85rem] font-medium text-[#8B7E72] sm:text-[1rem]">
+          <p className="mb-[clamp(6px,1vh,16px)] shrink-0 text-center text-[0.85rem] font-medium text-[#8B7E72] sm:text-[clamp(0.85rem,1vw,1rem)]">
             어떤 일상을 보내셨나요? 있는 그대로의 당신을 들려주세요.
           </p>
           <motion.div
@@ -173,7 +174,7 @@ export default function HomePage() {
             }}
             initial="hidden"
             animate="visible"
-            className="flex gap-3 overflow-x-auto px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-4 md:grid md:grid-cols-5 md:overflow-visible md:px-6"
+            className="flex min-h-0 gap-3 overflow-x-auto px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-[clamp(8px,1vw,16px)] md:grid md:grid-cols-5 md:overflow-visible md:px-6"
           >
             {illustrations.map((ill) => (
               <motion.div
@@ -183,9 +184,9 @@ export default function HomePage() {
                   visible: { opacity: 1, y: 0, scale: 1 },
                 }}
                 transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-                className="w-[36vw] flex-shrink-0 sm:w-[28vw] md:w-auto"
+                className="w-[36vw] flex-shrink-0 sm:w-[28vw] md:flex md:w-auto md:min-h-0 md:flex-col"
               >
-                <div className="overflow-hidden rounded-2xl">
+                <div className="overflow-hidden rounded-2xl md:min-h-0 md:flex-1 md:rounded-[clamp(12px,1vw,16px)]">
                   <Image
                     src={ill.src}
                     alt={ill.caption}
@@ -195,7 +196,7 @@ export default function HomePage() {
                     className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
                   />
                 </div>
-                <p className="mt-2.5 text-center text-[0.8rem] font-medium text-[#8B7E72]">
+                <p className="mt-[clamp(4px,0.5vh,10px)] shrink-0 text-center text-[0.8rem] font-medium text-[#8B7E72] sm:text-[clamp(0.7rem,0.85vw,0.85rem)]">
                   {ill.caption}
                 </p>
               </motion.div>
@@ -203,22 +204,23 @@ export default function HomePage() {
           </motion.div>
         </motion.div>
 
-        <div className="relative mx-auto flex max-w-4xl flex-col items-center text-center">
+        {/* 하단: CTA 버튼 — 고정 영역 */}
+        <div className="relative mx-auto flex shrink-0 max-w-4xl flex-col items-center pb-[clamp(16px,3vh,40px)] text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6, ease: "easeOut" }}
-            className="mt-9 flex flex-col items-center gap-3 sm:flex-row"
+            className="mt-[clamp(8px,1.5vh,24px)] flex flex-col items-center gap-3 sm:flex-row"
           >
             <Link
               href="/signup"
-              className="inline-flex items-center gap-2 rounded-full bg-[#D4835E] px-8 py-[15px] text-[15px] font-bold text-white shadow-[0_4px_20px_rgba(212,131,94,0.25)] transition-all hover:-translate-y-px hover:bg-[#C07350]"
+              className="inline-flex items-center gap-2 rounded-full bg-[#D4835E] px-[clamp(24px,2.5vw,32px)] py-[clamp(10px,1.2vh,15px)] text-[clamp(13px,1vw,15px)] font-bold text-white shadow-[0_4px_20px_rgba(212,131,94,0.25)] transition-all hover:-translate-y-px hover:bg-[#C07350]"
             >
               나만의 첫 이야기 시작하기 <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               href="/pricing"
-              className="inline-flex items-center rounded-full border border-[#EAE0D5] bg-white px-8 py-[15px] text-[15px] font-bold text-[#4A3F36] transition-colors hover:bg-[#F3ECE4]"
+              className="inline-flex items-center rounded-full border border-[#EAE0D5] bg-white px-[clamp(24px,2.5vw,32px)] py-[clamp(10px,1.2vh,15px)] text-[clamp(13px,1vw,15px)] font-bold text-[#4A3F36] transition-colors hover:bg-[#F3ECE4]"
             >
               요금제 보기
             </Link>
