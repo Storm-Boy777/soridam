@@ -86,6 +86,16 @@ export function MockExamSession({
   // ── 훈련 모드 평가 패널 ref ──
   const evalPanelRef = useRef<TrainingEvalPanelRef>(null);
 
+  // ── 훈련 모드 평가 완료 알림 배너 ──
+  const [evalBanner, setEvalBanner] = useState<number | null>(null);
+  const evalBannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleEvalNotify = useCallback((qNum: number) => {
+    setEvalBanner(qNum);
+    if (evalBannerTimerRef.current) clearTimeout(evalBannerTimerRef.current);
+    evalBannerTimerRef.current = setTimeout(() => setEvalBanner(null), 4000);
+  }, []);
+
   // ── 세션 상태 ──
   const [phase, setPhase] = useState<SessionPhase>(
     session.status === "completed" ? "waiting" : "exam"
@@ -487,6 +497,16 @@ export function MockExamSession({
 
       {/* ── 메인 영역 ── */}
       <div className="mx-auto flex w-full max-w-5xl min-h-0 flex-1 flex-col overflow-hidden px-3 py-2 sm:px-6 sm:py-4">
+        {/* 훈련 모드: 평가 완료 알림 배너 */}
+        {isTraining && evalBanner && (
+          <div className="mb-2 flex items-center justify-center gap-2 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs text-emerald-700 animate-slideUp md:mb-3">
+            <CheckCircle2 size={14} className="shrink-0" />
+            <span>
+              <strong>Q{evalBanner}</strong> 평가 완료 — 상단 번호를 눌러 결과를 확인하세요
+            </span>
+          </div>
+        )}
+
         {/* 5단계 진행 가이드 */}
         <div className="mb-2 rounded-xl border border-border bg-surface p-2 md:mb-4 md:p-3">
           <div className="flex items-center justify-between gap-1 md:gap-3">
@@ -1091,6 +1111,7 @@ export function MockExamSession({
           evalStatusMap={evalStatusMap}
           questions={questions}
           questionIds={session.question_ids || []}
+          onEvalNotify={handleEvalNotify}
         />
       )}
     </div>

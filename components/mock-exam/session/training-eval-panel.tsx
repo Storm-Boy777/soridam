@@ -59,6 +59,7 @@ interface TrainingEvalPanelProps {
     audio_url: string | null;
   }>;
   questionIds: string[]; // session.question_ids (Q1~Q15)
+  onEvalNotify?: (questionNumber: number) => void;
 }
 
 // ── 외부에서 호출 가능한 메서드 ──
@@ -67,24 +68,15 @@ export interface TrainingEvalPanelRef {
   openPanel: (questionNumber: number) => void;
 }
 
-// ── 토스트 알림 아이템 ──
-
-interface EvalToast {
-  questionNumber: number;
-  passRate: number | null;
-  skipped: boolean;
-}
 
 // ── 메인 컴포넌트 ──
 
 export const TrainingEvalPanel = forwardRef<
   TrainingEvalPanelRef,
   TrainingEvalPanelProps
->(function TrainingEvalPanel({ sessionId, evalStatusMap, questions, questionIds }, ref) {
+>(function TrainingEvalPanel({ sessionId, evalStatusMap, questions, questionIds, onEvalNotify }, ref) {
   // 이미 알림 표시한 문항
   const notifiedRef = useRef<Set<number>>(new Set());
-  // 토스트 큐
-  const [toasts, setToasts] = useState<EvalToast[]>([]);
   // 패널 열기 (어떤 문항의 상세를 보는지)
   const [panelQNum, setPanelQNum] = useState<number | null>(null);
   // 패널 평가 데이터
@@ -94,7 +86,7 @@ export const TrainingEvalPanel = forwardRef<
   // questions 맵
   const qMap = new Map(questions.map((q) => [q.id, q]));
 
-  // evalStatusMap 변화 감지 → 새로 completed된 문항 토스트
+  // evalStatusMap 변화 감지 → 부모에게 알림 전달
   useEffect(() => {
     for (const [qStr, status] of Object.entries(evalStatusMap)) {
       const qNum = Number(qStr);
@@ -105,39 +97,11 @@ export const TrainingEvalPanel = forwardRef<
         notifiedRef.current.add(qNum);
 
         if (status === "completed") {
-          // 평가 완료 → 토스트 표시
-          setToasts((prev) => [
-            ...prev,
-            { questionNumber: qNum, passRate: null, skipped: false },
-          ]);
-
-          // 평가 데이터 미리 조회 (passRate 업데이트)
-          getEvaluation({ session_id: sessionId, question_number: qNum }).then(
-            (res) => {
-              if (res.data && !res.data.skipped) {
-                setToasts((prev) =>
-                  prev.map((t) =>
-                    t.questionNumber === qNum
-                      ? { ...t, passRate: res.data!.pass_rate }
-                      : t
-                  )
-                );
-              }
-            }
-          );
+          onEvalNotify?.(qNum);
         }
       }
     }
-  }, [evalStatusMap, sessionId]);
-
-  // 토스트 자동 제거 (8초)
-  useEffect(() => {
-    if (toasts.length === 0) return;
-    const timer = setTimeout(() => {
-      setToasts((prev) => prev.slice(1));
-    }, 8000);
-    return () => clearTimeout(timer);
-  }, [toasts]);
+  }, [evalStatusMap, onEvalNotify]);
 
   // 패널 열기
   const openPanel = useCallback(
@@ -153,9 +117,6 @@ export const TrainingEvalPanel = forwardRef<
 
       setPanelData(res.data || null);
       setPanelLoading(false);
-
-      // 토스트에서 해당 문항 제거
-      setToasts((prev) => prev.filter((t) => t.questionNumber !== qNum));
     },
     [sessionId]
   );
@@ -175,42 +136,6 @@ export const TrainingEvalPanel = forwardRef<
 
   return (
     <>
-      {/* ── 토스트 알림 (하단 고정) ── */}
-      {toasts.length > 0 && !panelQNum && (
-        <div className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 space-y-2">
-          {toasts.map((toast) => {
-            const questionId = questionIds[toast.questionNumber - 1];
-            const question = questionId ? qMap.get(questionId) : null;
-
-            return (
-              <button
-                key={toast.questionNumber}
-                onClick={() => openPanel(toast.questionNumber)}
-                className="flex w-full items-center gap-3 rounded-xl border border-green-200 bg-white px-4 py-3 shadow-lg transition-all hover:border-green-300 hover:shadow-xl animate-slideUp"
-              >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-50">
-                  <CheckCircle2 size={16} className="text-green-500" />
-                </div>
-                <div className="min-w-0 flex-1 text-left">
-                  <p className="text-sm font-medium text-foreground">
-                    Q{toast.questionNumber} 평가 완료
-                  </p>
-                  <p className="truncate text-xs text-foreground-secondary">
-                    {question?.topic && `${question.topic} · `}
-                    {toast.passRate != null
-                      ? `통과율 ${(toast.passRate * 100).toFixed(0)}%`
-                      : "결과 로딩 중..."}
-                  </p>
-                </div>
-                <span className="shrink-0 text-xs font-medium text-primary-500">
-                  결과 보기 →
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
       {/* ── 바텀 시트 패널 ── */}
       {panelQNum && (
         <>
