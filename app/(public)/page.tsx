@@ -149,11 +149,11 @@ export default function HomePage() {
           >
             화려한 필터는 끄세요.
             <br />
-            <span className="text-[#D4835E]">
-              지금 보내는 평범한 하루가
+            <span className="text-[36px] text-[#D4835E] sm:text-[clamp(2.4rem,3.8vw,4rem)]">
+              당신의 평범한 하루가
             </span>
             <br />
-            가장 완벽한 대본입니다.
+            가장 완벽한 스토리입니다.
           </motion.h1>
         </div>
 
@@ -165,7 +165,7 @@ export default function HomePage() {
           className="relative mx-auto mt-[clamp(12px,2.5vh,32px)] flex h-0 w-full max-w-[1100px] flex-grow flex-col justify-center"
         >
           <p className="mb-[clamp(6px,1vh,16px)] shrink-0 text-center text-[0.85rem] font-medium text-[#8B7E72] sm:text-[clamp(0.85rem,1vw,1rem)]">
-            어떤 일상을 보내셨나요? 있는 그대로의 당신을 들려주세요.
+            어떤 하루를 보내셨나요? 있는 그대로의 당신을 들려주세요.
           </p>
           <motion.div
             variants={{
@@ -236,7 +236,8 @@ export default function HomePage() {
           <ScrollReveal preset="fade-up" className="text-center">
             <Pill>전략 점검</Pill>
             <h2 className="mt-5 text-[1.8rem] font-extrabold leading-[1.3] tracking-[-0.03em] text-[#3A2E25] sm:text-[2.4rem]">
-              OPIc, 정말 알고 준비하고 계세요?
+              OPIc,<br className="sm:hidden" />
+              {" "}정말 알고 준비하고 계세요?
             </h2>
           </ScrollReveal>
 
@@ -554,8 +555,7 @@ export default function HomePage() {
           </ScrollReveal>
           <ScrollReveal preset="fade-up" delay={0.15}>
             <p className="mt-4 text-[1rem] leading-[1.7] text-[#8B7E72] sm:text-[1.1rem]">
-              버벅거려도 괜찮아요.
-              <br />정답은 이미 당신의 일상 속에 있으니까요.
+              나의 스토리로 쓰는 성공 이야기
             </p>
           </ScrollReveal>
           <ScrollReveal preset="scale-up" delay={0.3}>

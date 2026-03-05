@@ -11,7 +11,7 @@ export function Footer() {
               오픽톡닥
             </span>
             <p className="text-sm">
-              당신의 일상이 대본입니다.
+              당신의 하루가 이미 완벽한 스토리입니다.
             </p>
           </div>
 
