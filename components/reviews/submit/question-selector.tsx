@@ -33,6 +33,9 @@ interface QuestionSelectorProps {
   onRemove: (index: number) => void;
   isCustomMode?: boolean;
   isNotRememberedMode?: boolean;
+  // 스크립트 위저드 전용: 이미 생성된 스크립트의 question_id → script_id 매핑
+  existingScriptIds?: Map<string, string>;
+  onViewExistingScript?: (scriptId: string) => void;
 }
 
 export function QuestionSelector({
@@ -44,6 +47,8 @@ export function QuestionSelector({
   onRemove,
   isCustomMode = false,
   isNotRememberedMode = false,
+  existingScriptIds,
+  onViewExistingScript,
 }: QuestionSelectorProps) {
   const [customText, setCustomText] = useState("");
 
@@ -190,11 +195,18 @@ export function QuestionSelector({
               </p>
               {questions.map((q) => {
                 const isSelected = selectedIds.has(q.id);
+                const existingScriptId = existingScriptIds?.get(q.id);
+                const hasExistingScript = !!existingScriptId;
                 return (
                   <button
                     key={q.id}
                     onClick={() => {
                       if (isSelected || isComplete) return;
+                      // 이미 생성된 스크립트 → 기존 스크립트 보기
+                      if (hasExistingScript && onViewExistingScript) {
+                        onViewExistingScript(existingScriptId);
+                        return;
+                      }
                       onSelect({
                         question_id: q.id,
                         custom_question_text: null,
@@ -208,7 +220,9 @@ export function QuestionSelector({
                     className={`w-full rounded-[var(--radius-md)] border p-3 text-left transition-all ${
                       isSelected
                         ? "border-primary-300 bg-primary-50/50 opacity-50"
-                        : "border-border bg-surface hover:border-primary-300"
+                        : hasExistingScript
+                          ? "border-green-200 bg-green-50/30 hover:border-green-300"
+                          : "border-border bg-surface hover:border-primary-300"
                     }`}
                   >
                     <div className="flex items-start gap-2">
@@ -219,6 +233,11 @@ export function QuestionSelector({
                           }`}
                         >
                           {QUESTION_TYPE_LABELS[q.question_type_eng] || q.question_type_eng}
+                        </span>
+                      )}
+                      {hasExistingScript && (
+                        <span className="ml-auto shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700">
+                          생성됨
                         </span>
                       )}
                       {isSelected && (

@@ -92,7 +92,7 @@ const scriptGenerationSchema = {
   },
 };
 
-// ── Pass 2 JSON Schema (단순 리스트 추출) ──
+// ── Pass 2 JSON Schema (7가지 학습 분석 콘텐츠) ──
 
 const analysisListSchema = {
   name: "analysis_lists",
@@ -100,9 +100,56 @@ const analysisListSchema = {
   schema: {
     type: "object",
     properties: {
+      structure_summary: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            tag: { type: "string" },
+            description: { type: "string" },
+          },
+          required: ["tag", "description"],
+          additionalProperties: false,
+        },
+      },
+      key_sentences: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            english: { type: "string" },
+            reason: { type: "string" },
+          },
+          required: ["english", "reason"],
+          additionalProperties: false,
+        },
+      },
       key_expressions: {
         type: "array",
-        items: { type: "string" },
+        items: {
+          type: "object",
+          properties: {
+            en: { type: "string" },
+            ko: { type: "string" },
+            tip: { type: "string" },
+          },
+          required: ["en", "ko", "tip"],
+          additionalProperties: false,
+        },
+      },
+      discourse_markers: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            en: { type: "string" },
+            ko: { type: "string" },
+            function: { type: "string" },
+            usage: { type: "string" },
+          },
+          required: ["en", "ko", "function", "usage"],
+          additionalProperties: false,
+        },
       },
       reusable_patterns: {
         type: "array",
@@ -117,16 +164,28 @@ const analysisListSchema = {
           additionalProperties: false,
         },
       },
-      connectors: {
+      similar_questions: {
         type: "array",
-        items: { type: "string" },
+        items: {
+          type: "object",
+          properties: {
+            question: { type: "string" },
+            reuse_hint: { type: "string" },
+          },
+          required: ["question", "reuse_hint"],
+          additionalProperties: false,
+        },
       },
-      fillers: {
+      expansion_ideas: {
         type: "array",
         items: { type: "string" },
       },
     },
-    required: ["key_expressions", "reusable_patterns", "connectors", "fillers"],
+    required: [
+      "structure_summary", "key_sentences", "key_expressions",
+      "discourse_markers", "reusable_patterns", "similar_questions",
+      "expansion_ideas",
+    ],
     additionalProperties: false,
   },
 };
@@ -212,10 +271,13 @@ async function handleGenerate(supabase: any, body: any) {
   );
 
   // 분석 결과를 pass1Result에 병합
+  pass1Result.structure_summary = analysisLists.structure_summary;
+  pass1Result.key_sentences = analysisLists.key_sentences;
   pass1Result.key_expressions = analysisLists.key_expressions;
+  pass1Result.discourse_markers = analysisLists.discourse_markers;
   pass1Result.reusable_patterns = analysisLists.reusable_patterns;
-  pass1Result.connectors = analysisLists.connectors;
-  pass1Result.fillers = analysisLists.fillers;
+  pass1Result.similar_questions = analysisLists.similar_questions;
+  pass1Result.expansion_ideas = analysisLists.expansion_ideas;
 
   // DB 업데이트
   const generationTime = Math.round((Date.now() - startTime) / 1000);
@@ -228,7 +290,7 @@ async function handleGenerate(supabase: any, body: any) {
       paragraphs: pass1Result,
       word_count: pass1Result.word_count,
       total_slots: countSlots(pass1Result),
-      key_expressions: analysisLists.key_expressions,
+      key_expressions: analysisLists.key_expressions.map((e: { en: string }) => e.en),
       generation_time: generationTime,
       ai_model: "gpt-4.1",
       updated_at: new Date().toISOString(),
@@ -288,10 +350,13 @@ async function handleCorrect(supabase: any, body: any) {
     script.question_english
   );
 
+  pass1Result.structure_summary = analysisLists.structure_summary;
+  pass1Result.key_sentences = analysisLists.key_sentences;
   pass1Result.key_expressions = analysisLists.key_expressions;
+  pass1Result.discourse_markers = analysisLists.discourse_markers;
   pass1Result.reusable_patterns = analysisLists.reusable_patterns;
-  pass1Result.connectors = analysisLists.connectors;
-  pass1Result.fillers = analysisLists.fillers;
+  pass1Result.similar_questions = analysisLists.similar_questions;
+  pass1Result.expansion_ideas = analysisLists.expansion_ideas;
 
   const generationTime = Math.round((Date.now() - startTime) / 1000);
 
@@ -303,7 +368,7 @@ async function handleCorrect(supabase: any, body: any) {
       paragraphs: pass1Result,
       word_count: pass1Result.word_count,
       total_slots: countSlots(pass1Result),
-      key_expressions: analysisLists.key_expressions,
+      key_expressions: analysisLists.key_expressions.map((e: { en: string }) => e.en),
       generation_time: generationTime,
       ai_model: "gpt-4.1",
       updated_at: new Date().toISOString(),
@@ -391,10 +456,13 @@ ${user_prompt || "전체적으로 더 자연스럽게 개선해주세요."}
     script.question_english
   );
 
+  pass1Result.structure_summary = analysisLists.structure_summary;
+  pass1Result.key_sentences = analysisLists.key_sentences;
   pass1Result.key_expressions = analysisLists.key_expressions;
+  pass1Result.discourse_markers = analysisLists.discourse_markers;
   pass1Result.reusable_patterns = analysisLists.reusable_patterns;
-  pass1Result.connectors = analysisLists.connectors;
-  pass1Result.fillers = analysisLists.fillers;
+  pass1Result.similar_questions = analysisLists.similar_questions;
+  pass1Result.expansion_ideas = analysisLists.expansion_ideas;
 
   const generationTime = Math.round((Date.now() - startTime) / 1000);
 
@@ -406,7 +474,7 @@ ${user_prompt || "전체적으로 더 자연스럽게 개선해주세요."}
       paragraphs: pass1Result,
       word_count: pass1Result.word_count,
       total_slots: countSlots(pass1Result),
-      key_expressions: analysisLists.key_expressions,
+      key_expressions: analysisLists.key_expressions.map((e: { en: string }) => e.en),
       generation_time: generationTime,
       updated_at: new Date().toISOString(),
     })
@@ -514,17 +582,23 @@ following all constraints above. Return JSON only.`;
 // ── Pass 2: 학습 리스트 추출 ──
 
 interface AnalysisLists {
-  key_expressions: string[];
+  structure_summary: { tag: string; description: string }[];
+  key_sentences: { english: string; reason: string }[];
+  key_expressions: { en: string; ko: string; tip: string }[];
+  discourse_markers: { en: string; ko: string; function: string; usage: string }[];
   reusable_patterns: { template: string; description_ko: string; example: string }[];
-  connectors: string[];
-  fillers: string[];
+  similar_questions: { question: string; reuse_hint: string }[];
+  expansion_ideas: string[];
 }
 
 const EMPTY_LISTS: AnalysisLists = {
+  structure_summary: [],
+  key_sentences: [],
   key_expressions: [],
+  discourse_markers: [],
   reusable_patterns: [],
-  connectors: [],
-  fillers: [],
+  similar_questions: [],
+  expansion_ideas: [],
 };
 
 async function runPass2Analysis(
@@ -555,21 +629,24 @@ Question: ${questionEnglish}
 Script:
 ${fullEnglishText}
 
-Extract key learning elements from this script as simple lists.`;
+Extract 7 categories of learning content from this script following the density guidelines for ${targetLevel} level.`;
 
     const result = await callGPT(
       template.system_prompt,
       userPrompt,
       analysisListSchema,
       0.3,
-      1500
+      2500
     );
 
     return {
+      structure_summary: result.structure_summary || [],
+      key_sentences: result.key_sentences || [],
       key_expressions: result.key_expressions || [],
+      discourse_markers: result.discourse_markers || [],
       reusable_patterns: result.reusable_patterns || [],
-      connectors: result.connectors || [],
-      fillers: result.fillers || [],
+      similar_questions: result.similar_questions || [],
+      expansion_ideas: result.expansion_ideas || [],
     };
   } catch (err) {
     console.error("Pass 2 분석 실패, 빈 리스트 반환:", err);

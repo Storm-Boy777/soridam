@@ -2,19 +2,29 @@
 
 // 스크립트 렌더러
 // - 본문: 플레인 텍스트 (서론/본론/결론)
-// - 핵심 정리: 인터랙티브 하이라이트 (뱃지 클릭 → 해당 항목만 스크립트에서 강조)
+// - 핵심 정리: 7가지 학습 콘텐츠 + 인터랙티브 하이라이트
 
 import { useState, useMemo } from "react";
 import {
+  Star,
+  ListOrdered,
   Bookmark,
-  ArrowRightLeft,
   MessageCircle,
   Repeat2,
+  HelpCircle,
+  Lightbulb,
   MousePointerClick,
+  ChevronRight,
 } from "lucide-react";
 import type {
   ScriptParagraph,
   ReusablePattern,
+  StructureSummaryItem,
+  KeySentence,
+  KeyExpression,
+  DiscourseMarker,
+  SimilarQuestion,
+  TargetLevel,
 } from "@/lib/types/scripts";
 
 const PARAGRAPH_LABELS: Record<string, { en: string; ko: string }> = {
@@ -25,44 +35,12 @@ const PARAGRAPH_LABELS: Record<string, { en: string; ko: string }> = {
 
 // ── 하이라이트 카테고리 설정 ──
 
-type HighlightCategory = "expression" | "connector" | "filler";
+type HighlightCategory = "key_sentence" | "key_expression" | "discourse_marker";
 
-const CATEGORY_META: Record<
-  HighlightCategory,
-  {
-    label: string;
-    Icon: React.ComponentType<{ size?: number; className?: string }>;
-    iconColor: string;
-    pill: string;
-    pillActive: string;
-    mark: string;
-  }
-> = {
-  expression: {
-    label: "핵심 표현",
-    Icon: Bookmark,
-    iconColor: "text-primary-500",
-    pill: "border-primary-200 bg-primary-50 text-primary-700",
-    pillActive: "border-primary-500 bg-primary-500 text-white shadow-sm",
-    mark: "bg-primary-100 text-primary-900",
-  },
-  connector: {
-    label: "연결어",
-    Icon: ArrowRightLeft,
-    iconColor: "text-emerald-500",
-    pill: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    pillActive: "border-emerald-500 bg-emerald-500 text-white shadow-sm",
-    mark: "bg-emerald-100 text-emerald-900",
-  },
-  filler: {
-    label: "필러",
-    Icon: MessageCircle,
-    iconColor: "text-foreground-muted",
-    pill: "border-border bg-surface-secondary text-foreground-secondary",
-    pillActive:
-      "border-foreground-muted bg-foreground-muted text-white shadow-sm",
-    mark: "bg-amber-100 text-amber-900",
-  },
+const CATEGORY_META: Record<HighlightCategory, { mark: string }> = {
+  key_sentence: { mark: "bg-amber-100 text-amber-900" },
+  key_expression: { mark: "bg-primary-100 text-primary-900" },
+  discourse_marker: { mark: "bg-emerald-100 text-emerald-900" },
 };
 
 // ── 텍스트 하이라이트 유틸리티 ──
@@ -287,46 +265,62 @@ export function ScriptRenderer({
   );
 }
 
-// ── 핵심 정리 뷰 — 인터랙티브 하이라이트 ──
+// ── 핵심 정리 뷰 — 7가지 학습 콘텐츠 + 인터랙티브 하이라이트 ──
 
 export function ScriptSummaryView({
   fullTextEnglish,
   paragraphs,
+  structureSummary,
+  keySentences,
   keyExpressions,
+  discourseMarkers,
   reusablePatterns,
+  similarQuestions,
+  expansionIdeas,
+  targetLevel,
   connectors,
   fillers,
 }: {
   fullTextEnglish?: string;
   paragraphs?: ScriptParagraph[];
-  keyExpressions?: string[];
+  structureSummary?: StructureSummaryItem[];
+  keySentences?: KeySentence[];
+  keyExpressions?: (KeyExpression | string)[];
+  discourseMarkers?: DiscourseMarker[];
   reusablePatterns?: ReusablePattern[];
+  similarQuestions?: SimilarQuestion[];
+  expansionIdeas?: string[];
+  targetLevel?: TargetLevel | null;
   connectors?: string[];
   fillers?: string[];
 }) {
   const [activeItems, setActiveItems] = useState<Set<string>>(new Set());
 
-  // 카테고리 → 아이템 목록
-  const categoryItems = useMemo(() => {
-    const map = new Map<HighlightCategory, string[]>();
-    if (keyExpressions?.length) map.set("expression", keyExpressions);
-    if (connectors?.length) map.set("connector", connectors);
-    if (fillers?.length) map.set("filler", fillers);
-    return map;
-  }, [keyExpressions, connectors, fillers]);
+  // v1 string[] → v2 KeyExpression[] 정규화
+  const normalizedExpressions = useMemo<KeyExpression[]>(() => {
+    if (!keyExpressions?.length) return [];
+    if (typeof keyExpressions[0] === "string") {
+      return (keyExpressions as unknown as string[]).map((e) => ({
+        en: e,
+        ko: "",
+        tip: "",
+      }));
+    }
+    return keyExpressions as KeyExpression[];
+  }, [keyExpressions]);
 
-  // 아이템 → 카테고리 역매핑 (하이라이트 색상 결정용)
+  // 하이라이트 매핑: 텍스트 → 카테고리
   const itemCategoryMap = useMemo(() => {
     const map = new Map<string, HighlightCategory>();
-    for (const [cat, items] of categoryItems) {
-      for (const item of items) {
-        map.set(item, cat);
-      }
-    }
+    keySentences?.forEach((ks) => map.set(ks.english, "key_sentence"));
+    normalizedExpressions.forEach((e) => map.set(e.en, "key_expression"));
+    discourseMarkers?.forEach((dm) => map.set(dm.en, "discourse_marker"));
+    // 하위 호환: 연결어+필러
+    connectors?.forEach((c) => map.set(c, "discourse_marker"));
+    fillers?.forEach((f) => map.set(f, "discourse_marker"));
     return map;
-  }, [categoryItems]);
+  }, [keySentences, normalizedExpressions, discourseMarkers, connectors, fillers]);
 
-  // 개별 아이템 토글
   const toggleItem = (text: string) => {
     setActiveItems((prev) => {
       const next = new Set(prev);
@@ -336,124 +330,360 @@ export function ScriptSummaryView({
     });
   };
 
-  // 카테고리 전체 토글
-  const toggleCategory = (category: HighlightCategory) => {
-    const items = categoryItems.get(category) || [];
-    setActiveItems((prev) => {
-      const next = new Set(prev);
-      const allActive = items.every((i) => next.has(i));
-      if (allActive) {
-        items.forEach((i) => next.delete(i));
-      } else {
-        items.forEach((i) => next.add(i));
-      }
-      return next;
-    });
-  };
-
-  // 하이라이트 세그먼트 생성
-  const segments = useMemo(
-    () =>
-      fullTextEnglish
-        ? buildHighlightedSegments(fullTextEnglish, activeItems, itemCategoryMap)
-        : [],
-    [fullTextEnglish, activeItems, itemCategoryMap]
-  );
-
+  const hasHighlightableItems = itemCategoryMap.size > 0;
   const patterns = reusablePatterns || [];
-  const hasContent = categoryItems.size > 0 || patterns.length > 0;
+  const showExpansion = !!(
+    expansionIdeas?.length &&
+    targetLevel &&
+    ["IM3", "IH", "AL"].includes(targetLevel)
+  );
+  const hasV1Markers =
+    !discourseMarkers?.length &&
+    ((connectors?.length ?? 0) > 0 || (fillers?.length ?? 0) > 0);
+
+  const hasContent =
+    (keySentences?.length ?? 0) > 0 ||
+    (structureSummary?.length ?? 0) > 0 ||
+    normalizedExpressions.length > 0 ||
+    (discourseMarkers?.length ?? 0) > 0 ||
+    patterns.length > 0 ||
+    (similarQuestions?.length ?? 0) > 0 ||
+    showExpansion ||
+    hasV1Markers;
 
   if (!hasContent) return null;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* ── 사용 가이드 ── */}
-      {categoryItems.size > 0 && (
+      {hasHighlightableItems && (
         <div className="flex items-start gap-2.5 rounded-[var(--radius-lg)] border border-primary-100 bg-primary-50/50 px-4 py-3">
           <MousePointerClick size={16} className="mt-0.5 shrink-0 text-primary-500" />
           <p className="text-[13px] leading-relaxed text-foreground-secondary">
-            아래 표현을 <span className="font-semibold text-foreground">클릭</span>하면
-            스크립트에서 해당 위치가 하이라이트됩니다.
-            카테고리 이름을 클릭하면 전체 선택/해제됩니다.
+            표현을 <span className="font-semibold text-foreground">클릭</span>하면
+            아래 스크립트에서 해당 위치가 하이라이트됩니다.
           </p>
         </div>
       )}
 
-      {/* ── 카테고리별 클릭 가능한 뱃지 ── */}
-      {Array.from(categoryItems.entries()).map(([category, items]) => {
-        const meta = CATEGORY_META[category];
-        const { Icon } = meta;
-        const allActive = items.every((i) => activeItems.has(i));
-        const someActive = items.some((i) => activeItems.has(i));
+      {/* ── 1. 핵심 문장 ── */}
+      {keySentences && keySentences.length > 0 && (
+        <SummarySection
+          icon={Star}
+          iconColor="text-amber-500"
+          title="핵심 문장"
+          count={keySentences.length}
+          subtitle="이것만 외워도 절반은 성공"
+        >
+          <div className="space-y-2">
+            {keySentences.map((ks, i) => (
+              <button
+                key={i}
+                onClick={() => toggleItem(ks.english)}
+                className={`w-full rounded-[var(--radius-lg)] border px-4 py-3 text-left transition-all ${
+                  activeItems.has(ks.english)
+                    ? "border-amber-400 bg-amber-50 shadow-sm"
+                    : "border-border bg-surface hover:border-amber-200"
+                }`}
+              >
+                <p className="text-[14px] font-medium leading-relaxed text-foreground">
+                  {ks.english}
+                </p>
+                <p className="mt-1 text-[12px] leading-relaxed text-foreground-secondary">
+                  {ks.reason}
+                </p>
+              </button>
+            ))}
+          </div>
+        </SummarySection>
+      )}
 
-        return (
-          <div key={category}>
-            {/* 카테고리 헤더 (클릭 → 전체 토글) */}
-            <button
-              onClick={() => toggleCategory(category)}
-              className="group mb-2 flex items-center gap-1.5"
+      {/* ── 2. 뼈대 구조 ── */}
+      {structureSummary && structureSummary.length > 0 && (
+        <SummarySection
+          icon={ListOrdered}
+          iconColor="text-blue-500"
+          title="뼈대 구조"
+          subtitle="흐름만 기억해"
+        >
+          <div className="flex flex-col gap-1">
+            {structureSummary.map((item, i) => (
+              <div key={i} className="flex items-start gap-2.5">
+                <div className="flex flex-col items-center pt-1">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-blue-300 bg-blue-50">
+                    <span className="text-[10px] font-bold text-blue-500">
+                      {i + 1}
+                    </span>
+                  </div>
+                  {i < structureSummary.length - 1 && (
+                    <div className="mt-0.5 h-4 w-px bg-blue-200" />
+                  )}
+                </div>
+                <div className="flex-1 pb-1">
+                  <span className="text-[12px] font-semibold text-blue-600">
+                    {item.tag}
+                  </span>
+                  <span className="ml-2 text-[13px] text-foreground-secondary">
+                    {item.description}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </SummarySection>
+      )}
+
+      {/* ── 3. 핵심 표현 ── */}
+      {normalizedExpressions.length > 0 && (
+        <SummarySection
+          icon={Bookmark}
+          iconColor="text-primary-500"
+          title="핵심 표현"
+          count={normalizedExpressions.length}
+          subtitle="알아두면 좋은 표현"
+        >
+          <div className="space-y-2">
+            {normalizedExpressions.map((expr, i) => (
+              <button
+                key={i}
+                onClick={() => toggleItem(expr.en)}
+                className={`w-full rounded-[var(--radius-lg)] border px-4 py-3 text-left transition-all ${
+                  activeItems.has(expr.en)
+                    ? "border-primary-400 bg-primary-50 shadow-sm"
+                    : "border-border bg-surface hover:border-primary-200"
+                }`}
+              >
+                <p className="text-[14px] font-medium text-foreground">
+                  {expr.en}
+                </p>
+                {expr.ko && (
+                  <p className="mt-0.5 text-[12px] text-foreground-secondary">
+                    {expr.ko}
+                  </p>
+                )}
+                {expr.tip && (
+                  <p className="mt-1 text-[11px] italic text-foreground-muted">
+                    {expr.tip}
+                  </p>
+                )}
+              </button>
+            ))}
+          </div>
+        </SummarySection>
+      )}
+
+      {/* ── 4. 담화 장치 ── */}
+      {discourseMarkers && discourseMarkers.length > 0 && (
+        <SummarySection
+          icon={MessageCircle}
+          iconColor="text-emerald-500"
+          title="담화 장치"
+          count={discourseMarkers.length}
+          subtitle="자연스러운 연결과 시간벌기"
+        >
+          <div className="space-y-2">
+            {discourseMarkers.map((dm, i) => (
+              <button
+                key={i}
+                onClick={() => toggleItem(dm.en)}
+                className={`w-full rounded-[var(--radius-lg)] border px-4 py-2.5 text-left transition-all ${
+                  activeItems.has(dm.en)
+                    ? "border-emerald-400 bg-emerald-50 shadow-sm"
+                    : "border-border bg-surface hover:border-emerald-200"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-[14px] font-medium text-foreground">
+                    {dm.en}
+                  </span>
+                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                    {dm.function}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-[12px] text-foreground-secondary">
+                  {dm.ko} · {dm.usage}
+                </p>
+              </button>
+            ))}
+          </div>
+        </SummarySection>
+      )}
+
+      {/* ── 4b. 하위 호환: 연결어+필러 (v1 데이터) ── */}
+      {hasV1Markers && (
+        <>
+          {connectors && connectors.length > 0 && (
+            <SummarySection
+              icon={MessageCircle}
+              iconColor="text-emerald-500"
+              title="연결어"
+              count={connectors.length}
             >
-              <Icon size={15} className={meta.iconColor} />
-              <span className="text-[13px] font-bold text-foreground group-hover:text-primary-600 transition-colors">
-                {meta.label}
-              </span>
-              <span className="text-[11px] text-foreground-muted">
-                ({items.length})
-              </span>
-              {allActive && (
-                <span className="ml-1 rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-medium text-primary-600">
-                  ON
-                </span>
-              )}
-              {someActive && !allActive && (
-                <span className="ml-1 rounded-full bg-surface-secondary px-2 py-0.5 text-[10px] font-medium text-foreground-muted">
-                  일부
-                </span>
-              )}
-            </button>
-
-            {/* 개별 아이템 필 */}
-            <div className="flex flex-wrap gap-1.5">
-              {items.map((item, i) => {
-                const isActive = activeItems.has(item);
-                return (
+              <div className="flex flex-wrap gap-1.5">
+                {connectors.map((c, i) => (
                   <button
                     key={i}
-                    onClick={() => toggleItem(item)}
-                    className={`inline-flex rounded-full border px-3 py-1.5 text-[13px] font-medium transition-all duration-150 ${
-                      isActive ? meta.pillActive : meta.pill
+                    onClick={() => toggleItem(c)}
+                    className={`inline-flex rounded-full border px-3 py-1.5 text-[13px] font-medium transition-all ${
+                      activeItems.has(c)
+                        ? "border-emerald-500 bg-emerald-500 text-white shadow-sm"
+                        : "border-emerald-200 bg-emerald-50 text-emerald-700"
                     }`}
                   >
-                    {item}
+                    {c}
                   </button>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
+                ))}
+              </div>
+            </SummarySection>
+          )}
+          {fillers && fillers.length > 0 && (
+            <SummarySection
+              icon={MessageCircle}
+              iconColor="text-foreground-muted"
+              title="필러"
+              count={fillers.length}
+            >
+              <div className="flex flex-wrap gap-1.5">
+                {fillers.map((f, i) => (
+                  <button
+                    key={i}
+                    onClick={() => toggleItem(f)}
+                    className={`inline-flex rounded-full border px-3 py-1.5 text-[13px] font-medium transition-all ${
+                      activeItems.has(f)
+                        ? "border-foreground-muted bg-foreground-muted text-white shadow-sm"
+                        : "border-border bg-surface-secondary text-foreground-secondary"
+                    }`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+            </SummarySection>
+          )}
+        </>
+      )}
 
-      {/* ── 하이라이트 적용된 스크립트 전문 (단락별 정렬) ── */}
-      {fullTextEnglish && (
+      {/* ── 5. 만능 패턴 ── */}
+      {patterns.length > 0 && (
+        <SummarySection
+          icon={Repeat2}
+          iconColor="text-secondary-500"
+          title="만능 패턴"
+          count={patterns.length}
+          subtitle="다른 주제에서도 바로 써먹는 문장 틀"
+        >
+          <div className="space-y-2">
+            {patterns.map((p, i) => (
+              <div
+                key={i}
+                className="rounded-[var(--radius-lg)] border border-border bg-surface px-4 py-3.5"
+              >
+                <div className="text-[14px] font-semibold leading-relaxed text-secondary-500">
+                  {p.template.split("___").map((seg, si, arr) => (
+                    <span key={si}>
+                      {seg}
+                      {si < arr.length - 1 && (
+                        <span className="mx-0.5 inline-block min-w-[50px] border-b-2 border-dashed border-secondary-300 text-xs font-normal text-foreground-muted">
+                          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        </span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-1.5 text-xs leading-relaxed text-foreground-secondary">
+                  <span className="font-medium text-foreground-muted">KO</span>{" "}
+                  {p.description_ko}
+                </div>
+                {p.example && (
+                  <div className="mt-1 text-xs italic text-foreground-muted">
+                    ex. {p.example}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </SummarySection>
+      )}
+
+      {/* ── 6. 유사 질문 ── */}
+      {similarQuestions && similarQuestions.length > 0 && (
+        <SummarySection
+          icon={HelpCircle}
+          iconColor="text-violet-500"
+          title="유사 질문"
+          count={similarQuestions.length}
+          subtitle="이 구조로 이것도 답할 수 있어"
+        >
+          <div className="space-y-2">
+            {similarQuestions.map((sq, i) => (
+              <div
+                key={i}
+                className="rounded-[var(--radius-lg)] border border-border bg-surface px-4 py-3"
+              >
+                <p className="text-[14px] font-medium text-foreground">
+                  {sq.question}
+                </p>
+                <p className="mt-1 text-[12px] text-foreground-secondary">
+                  {sq.reuse_hint}
+                </p>
+              </div>
+            ))}
+          </div>
+        </SummarySection>
+      )}
+
+      {/* ── 7. 확장 아이디어 (IM3+) ── */}
+      {showExpansion && (
+        <SummarySection
+          icon={Lightbulb}
+          iconColor="text-yellow-500"
+          title="확장 아이디어"
+          subtitle="더 말하고 싶을 때"
+        >
+          <div className="space-y-1.5">
+            {expansionIdeas!.map((idea, i) => (
+              <div key={i} className="flex items-start gap-2 text-[13px]">
+                <ChevronRight
+                  size={14}
+                  className="mt-0.5 shrink-0 text-yellow-500"
+                />
+                <span className="text-foreground-secondary">{idea}</span>
+              </div>
+            ))}
+          </div>
+        </SummarySection>
+      )}
+
+      {/* ── 하이라이트 적용된 스크립트 전문 ── */}
+      {fullTextEnglish && hasHighlightableItems && (
         <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface">
+          <div className="flex items-center gap-2 border-b border-border bg-surface-secondary px-4 py-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-foreground-muted">
+              Script Preview
+            </span>
+            {activeItems.size > 0 && (
+              <span className="text-[10px] font-medium text-primary-500">
+                {activeItems.size}개 하이라이트 중
+              </span>
+            )}
+          </div>
           {paragraphs && paragraphs.length > 0 ? (
             paragraphs.map((para, pi) => {
               const paraLabels = PARAGRAPH_LABELS[para.type] || {
                 en: para.type,
                 ko: para.label || para.type,
               };
-              const showHeader = pi === 0 || paragraphs[pi - 1].type !== para.type;
-              // 이 단락의 전체 텍스트를 슬롯별로 추출
+              const showHeader =
+                pi === 0 || paragraphs[pi - 1].type !== para.type;
               const slotTexts = para.slots.map((slot) =>
                 slot.sentences.map((s) => s.english).join(" ")
               );
 
               return (
                 <div key={`${para.type}-${pi}`}>
-                  {/* 단락 헤더 — 같은 type 연속 시 생략 */}
                   {showHeader && (
-                    <div className="flex items-center gap-2 border-b border-border bg-surface-secondary px-4 py-2">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-primary-600">
+                    <div className="flex items-center gap-2 border-b border-border bg-surface-secondary/50 px-4 py-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-primary-600">
                         {paraLabels.en}
                       </span>
                       <span className="text-[10px] text-foreground-muted">
@@ -461,7 +691,6 @@ export function ScriptSummaryView({
                       </span>
                     </div>
                   )}
-                  {/* 슬롯별 텍스트 + 하이라이트 */}
                   <div className="px-4 py-3 sm:px-5">
                     <div className="space-y-2 text-[15px] leading-[1.9]">
                       {slotTexts.map((slotText, si) => {
@@ -493,9 +722,12 @@ export function ScriptSummaryView({
               );
             })
           ) : (
-            // paragraphs 없으면 fullText 폴백
             <div className="p-5 text-[15px] leading-[2]">
-              {segments.map((seg, i) =>
+              {buildHighlightedSegments(
+                fullTextEnglish,
+                activeItems,
+                itemCategoryMap
+              ).map((seg, i) =>
                 seg.category ? (
                   <mark
                     key={i}
@@ -511,51 +743,42 @@ export function ScriptSummaryView({
           )}
         </div>
       )}
+    </div>
+  );
+}
 
-      {/* ── 만능 패턴 카드 ── */}
-      {patterns.length > 0 && (
-        <div>
-          <div className="mb-3 flex items-center gap-1.5">
-            <Repeat2 size={15} className="text-secondary-500" />
-            <h4 className="text-[13px] font-bold text-foreground">
-              만능 패턴
-              <span className="ml-1.5 text-xs font-normal text-foreground-muted">
-                — 다른 주제에서도 바로 써먹는 문장 틀
-              </span>
-            </h4>
-          </div>
-          <div className="space-y-2">
-            {patterns.map((p, i) => (
-              <div
-                key={i}
-                className="rounded-[var(--radius-lg)] border border-border bg-surface px-4 py-3.5"
-              >
-                <div className="text-[14px] font-semibold leading-relaxed text-secondary-500">
-                  {p.template.split("___").map((seg, si, arr) => (
-                    <span key={si}>
-                      {seg}
-                      {si < arr.length - 1 && (
-                        <span className="mx-0.5 inline-block min-w-[50px] border-b-2 border-dashed border-secondary-300 text-xs font-normal text-foreground-muted">
-                          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                        </span>
-                      )}
-                    </span>
-                  ))}
-                </div>
-                <div className="mt-1.5 text-xs leading-relaxed text-foreground-secondary">
-                  <span className="font-medium text-foreground-muted">KO</span>{" "}
-                  {p.description_ko}
-                </div>
-                {p.example && (
-                  <div className="mt-1 text-xs italic text-foreground-muted">
-                    ex. {p.example}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+// ── 섹션 래퍼 ──
+
+function SummarySection({
+  icon: Icon,
+  iconColor,
+  title,
+  count,
+  subtitle,
+  children,
+}: {
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  iconColor: string;
+  title: string;
+  count?: number;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="mb-2.5 flex items-center gap-1.5">
+        <Icon size={15} className={iconColor} />
+        <h4 className="text-[13px] font-bold text-foreground">{title}</h4>
+        {count !== undefined && (
+          <span className="text-[11px] text-foreground-muted">({count})</span>
+        )}
+        {subtitle && (
+          <span className="ml-1 text-[11px] text-foreground-muted">
+            — {subtitle}
+          </span>
+        )}
+      </div>
+      {children}
     </div>
   );
 }

@@ -88,11 +88,46 @@ export const SHADOWING_STEP_DESCRIPTIONS: Record<ShadowingStep, string> = {
 
 // ── 4계층 JSON 구조 (paragraphs > slots > sentences) ──
 
-// 만능 패턴 메타데이터 (핵심 정리 탭용)
+// ── Pass 2 학습 분석 콘텐츠 타입 ──
+
+// 만능 패턴 메타데이터
 export interface ReusablePattern {
   template: string;        // "What I love most about ___ is that ___."
   description_ko: string;  // "___에서 가장 좋은 점은 ___라는 거예요"
   example: string;         // 다른 주제 활용 예시
+}
+
+// 뼈대 구조
+export interface StructureSummaryItem {
+  tag: string;          // "Opening", "Context", "Q1", "Closing" 등
+  description: string;  // 한국어 설명
+}
+
+// 핵심 문장
+export interface KeySentence {
+  english: string;  // 원문 문장
+  reason: string;   // 왜 중요한지 한국어 설명
+}
+
+// 핵심 표현 (보강)
+export interface KeyExpression {
+  en: string;   // 영어 표현
+  ko: string;   // 한국어 뜻
+  tip: string;  // 학습 팁 한 줄
+}
+
+// 담화 장치 (연결어+필러 통합)
+export interface DiscourseMarker {
+  en: string;       // "Well," / "However,"
+  ko: string;       // "음," / "그런데,"
+  function: string; // "hesitation" / "contrast" 등
+  usage: string;    // 사용 타이밍 한 줄
+}
+
+// 유사 질문
+export interface SimilarQuestion {
+  question: string;     // 영어 질문
+  reuse_hint: string;   // 한국어 재사용 힌트
 }
 
 // 문장
@@ -119,7 +154,7 @@ export interface ScriptParagraph {
   slots: ScriptSlot[];
 }
 
-// GPT 응답 전체 구조 (Pass 1 생성 + Pass 2 리스트 병합)
+// GPT 응답 전체 구조 (Pass 1 생성 + Pass 2 학습 분석 병합)
 export interface ScriptOutput {
   paragraphs: ScriptParagraph[];
   full_text: {
@@ -127,11 +162,17 @@ export interface ScriptOutput {
     korean: string;
   };
   word_count: number;
-  // Pass 2 학습 분석 리스트
-  key_expressions: string[];             // 핵심 표현 (2-5 word chunks)
-  reusable_patterns: ReusablePattern[];  // 만능 패턴 (문장 틀 + 한국어 설명 + 예시)
-  connectors: string[];                  // 연결어 ("Speaking of which, " 등)
-  fillers: string[];                     // 필러 ("Well, " 등)
+  // Pass 2 학습 분석 (v2 — 7가지 콘텐츠)
+  structure_summary?: StructureSummaryItem[];  // 뼈대 구조
+  key_sentences?: KeySentence[];               // 핵심 문장
+  key_expressions?: KeyExpression[];           // 핵심 표현 (보강)
+  discourse_markers?: DiscourseMarker[];       // 담화 장치 (연결어+필러 통합)
+  reusable_patterns?: ReusablePattern[];       // 만능 패턴
+  similar_questions?: SimilarQuestion[];        // 유사 질문
+  expansion_ideas?: string[];                  // 확장 아이디어 (IM3+)
+  // 하위 호환 (v1)
+  connectors?: string[];
+  fillers?: string[];
 }
 
 // 타임스탬프 데이터 (패키지)

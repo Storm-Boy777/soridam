@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -44,6 +44,7 @@ import {
   confirmScript,
   checkScriptCredit,
   getScriptDetail,
+  getMyScripts,
   getOpicTips,
   createPackage,
 } from "@/lib/actions/scripts";
@@ -158,6 +159,35 @@ export function ScriptWizard({
     staleTime: 60 * 1000,
   });
 
+  // ── 내 스크립트 목록 (기존 스크립트 존재 여부 확인용) ──
+  const { data: myScripts } = useQuery({
+    queryKey: ["my-scripts"],
+    queryFn: async () => {
+      const result = await getMyScripts();
+      if (result.error) return [];
+      return result.data ?? [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // question_id → script_id 매핑
+  const existingScriptIds = useMemo(() => {
+    const map = new Map<string, string>();
+    myScripts?.forEach((s) => {
+      if (s.question_id) map.set(s.question_id, s.id);
+    });
+    return map;
+  }, [myScripts]);
+
+  // 기존 스크립트 보기 핸들러
+  const handleViewExistingScript = useCallback(
+    (scriptId: string) => {
+      setGeneratedScriptId(scriptId);
+      setStep(4);
+    },
+    []
+  );
+
   // ── 생성된 스크립트 상세 (Step 3 폴링 + Step 4 표시) ──
   const { data: scriptDetail, isLoading: isLoadingDetail } = useQuery({
     queryKey: ["script-detail", generatedScriptId],
@@ -263,7 +293,7 @@ export function ScriptWizard({
           (efErr) => {
             console.error("EF generate 호출 실패:", efErr);
             setError(
-              "AI 스크립트 생성에 실패했습니다. 새로고침 후 다시 시도해주세요."
+              "스크립트 생성에 실패했습니다. 새로고침 후 다시 시도해주세요."
             );
           }
         );
@@ -391,7 +421,7 @@ export function ScriptWizard({
           (efErr) => {
             console.error("EF generate 호출 실패:", efErr);
             setError(
-              "AI 스크립트 생성에 실패했습니다. 새로고침 후 다시 시도해주세요."
+              "스크립트 생성에 실패했습니다. 새로고침 후 다시 시도해주세요."
             );
           }
         );
@@ -539,6 +569,8 @@ export function ScriptWizard({
             selectedTopic={selectedTopic}
             onSelectTopic={handleTopicSelect}
             onSelectQuestion={handleQuestionSelect}
+            existingScriptIds={existingScriptIds}
+            onViewExistingScript={handleViewExistingScript}
           />
         )}
 
@@ -693,12 +725,16 @@ function Step1Selection({
   selectedTopic,
   onSelectTopic,
   onSelectQuestion,
+  existingScriptIds,
+  onViewExistingScript,
 }: {
   selectedCategory: string | null;
   onSelectCategory: (cat: string) => void;
   selectedTopic: string | null;
   onSelectTopic: (topic: string) => void;
   onSelectQuestion: (sq: SelectedQuestion) => void;
+  existingScriptIds?: Map<string, string>;
+  onViewExistingScript?: (scriptId: string) => void;
 }) {
   return (
     <div className="space-y-6">
@@ -770,6 +806,8 @@ function Step1Selection({
               selectedQuestions={[]}
               onSelect={onSelectQuestion}
               onRemove={() => {}}
+              existingScriptIds={existingScriptIds}
+              onViewExistingScript={onViewExistingScript}
             />
           </div>
         </div>
@@ -881,7 +919,7 @@ function Step2Input({
           ) : (
             <>
               <Sparkles size={16} />
-              AI 스크립트 생성
+              스크립트 생성
             </>
           )}
         </button>
@@ -1293,8 +1331,14 @@ function Step4Result({
         <ScriptSummaryView
           fullTextEnglish={fullTextEnglish}
           paragraphs={paragraphs}
-          keyExpressions={detail.paragraphs?.key_expressions || detail.key_expressions}
+          structureSummary={detail.paragraphs?.structure_summary}
+          keySentences={detail.paragraphs?.key_sentences}
+          keyExpressions={detail.paragraphs?.key_expressions}
+          discourseMarkers={detail.paragraphs?.discourse_markers}
           reusablePatterns={detail.paragraphs?.reusable_patterns}
+          similarQuestions={detail.paragraphs?.similar_questions}
+          expansionIdeas={detail.paragraphs?.expansion_ideas}
+          targetLevel={detail.target_level}
           connectors={detail.paragraphs?.connectors}
           fillers={detail.paragraphs?.fillers}
         />
