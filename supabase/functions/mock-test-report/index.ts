@@ -174,12 +174,27 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  // 내부 전용 함수: 수동 인증 검증 (--no-verify-jwt 배포)
-  // mock-test-eval에서만 호출됨, service role key 필수
+  // 내부 전용 함수: JWT role 클레임 검증 (--no-verify-jwt 배포)
+  // mock-test-eval에서만 호출됨, service_role 권한 필수
   const authHeader = req.headers.get("authorization");
-  if (!authHeader || authHeader !== `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`) {
+  if (!authHeader) {
     return new Response(
-      JSON.stringify({ error: "Unauthorized" }),
+      JSON.stringify({ error: "Authorization header 누락" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+  try {
+    const token = authHeader.replace("Bearer ", "");
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    if (payload.role !== "service_role") {
+      return new Response(
+        JSON.stringify({ error: "service_role 권한 필요" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+  } catch {
+    return new Response(
+      JSON.stringify({ error: "유효하지 않은 토큰" }),
       { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }

@@ -517,7 +517,7 @@ export function MockExamSession({
           questionInfo={(() => {
             const qId = session.question_ids?.[viewingEvalQNum - 1];
             const q = qId ? questionsMap.get(qId) : null;
-            return q ? { question_type_eng: q.question_type_eng, topic: q.topic, category: q.category } : null;
+            return q ? { question_english: q.question_english, question_korean: q.question_korean, question_type_eng: q.question_type_eng, topic: q.topic, category: q.category } : null;
           })()}
           onClose={() => setViewingEvalQNum(null)}
         />
