@@ -365,8 +365,8 @@ Deno.serve(async (req) => {
       "GPT 체크박스 평가",
     );
 
-    // ── 결과 파싱 ──
-    // GPT 응답 구조: { evaluation: { checkboxes, sentences, corrections, deep_analysis }, ... }
+    // ── 결과 파싱 (V2) ──
+    // GPT 응답 구조: { checkboxes, sentences, coaching: { one_line_insight, key_corrections, ... } }
     const evaluation = (gptResult.evaluation || gptResult) as Record<string, unknown>;
     const checkboxes = (evaluation.checkboxes || {}) as Record<string, unknown>;
     const checkboxEntries = Object.entries(checkboxes);
@@ -377,10 +377,11 @@ Deno.serve(async (req) => {
     const failCount = checkboxCount - passCount;
     const passRate = checkboxCount > 0 ? passCount / checkboxCount : 0;
 
-    // 문장별 분석 (있으면)
+    // 문장별 분석
     const sentences = evaluation.sentences || null;
-    const corrections = evaluation.corrections || null;
-    const deepAnalysis = evaluation.deep_analysis || null;
+    // V2: coaching 섹션 전체를 coaching_feedback으로 저장
+    const coachingFeedback = evaluation.coaching || null;
+    // V2: corrections, deep_analysis는 사용하지 않음 (coaching에 통합)
 
     const processingTime = Date.now() - startTime;
 
@@ -398,8 +399,9 @@ Deno.serve(async (req) => {
       fail_count: failCount,
       pass_rate: passRate,
       sentences,
-      corrections,
-      deep_analysis: deepAnalysis,
+      corrections: null,
+      deep_analysis: null,
+      coaching_feedback: coachingFeedback,
       transcript,
       wpm: wpm || 0,
       audio_duration: audio_duration || 0,
@@ -407,7 +409,7 @@ Deno.serve(async (req) => {
       long_pause_count: long_pause_count || 0,
       pronunciation_assessment,
       model,
-      prompt_version: "v1.0",
+      prompt_version: "v2.0",
       tokens_used: tokensUsed,
       processing_time_ms: processingTime,
       skipped: false,

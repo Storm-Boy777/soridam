@@ -50,7 +50,7 @@ function formatCheckboxesForPrompt(
   return `${label} (${entries.length}개):\n${lines.join("\n")}`;
 }
 
-// 문항별 요약 생성
+// 문항별 요약 생성 (V2: coaching_feedback 포함)
 function generateQuestionSummaries(
   evaluations: Array<{
     question_number: number;
@@ -63,13 +63,49 @@ function generateQuestionSummaries(
     wpm: number;
     filler_count: number;
     skipped: boolean;
+    coaching_feedback: Record<string, unknown> | null;
   }>,
 ): string {
   return evaluations
     .map((e) => {
       if (e.skipped) return `Q${e.question_number}: SKIPPED`;
       const rate = ((e.pass_rate || 0) * 100).toFixed(0);
-      return `Q${e.question_number} (${e.question_type}, ${e.checkbox_type}): ${rate}% pass (${e.pass_count}/${e.pass_count + e.fail_count}), WPM=${e.wpm || 0}, filler=${e.filler_count || 0}`;
+      let line = `Q${e.question_number} (${e.question_type}, ${e.checkbox_type}): ${rate}% pass (${e.pass_count}/${e.pass_count + e.fail_count}), WPM=${e.wpm || 0}, filler=${e.filler_count || 0}`;
+
+      // V2: coaching_feedback 데이터 추가
+      if (e.coaching_feedback) {
+        const cf = e.coaching_feedback as Record<string, unknown>;
+        if (cf.one_line_insight) {
+          line += `\n  insight: "${cf.one_line_insight}"`;
+        }
+        // 핵심 교정 요약
+        const corrections = cf.key_corrections as Array<Record<string, unknown>> | undefined;
+        if (corrections && corrections.length > 0) {
+          const corrSummary = corrections
+            .map((c) => `${(c.why as string || "").split(".")[0]}(${c.impact})`)
+            .join(", ");
+          line += `\n  corrections: ${corrSummary}`;
+        }
+        // 구조 평가 요약
+        const structure = cf.structure_evaluation as Record<string, unknown> | undefined;
+        if (structure) {
+          const td = structure.time_distribution as Record<string, number> | undefined;
+          line += `\n  structure: ${structure.structure_score}/5 (${structure.structure_label})`;
+          if (td) {
+            line += `, intro=${td.intro_pct}%, body=${td.body_pct}%, conclusion=${td.conclusion_pct}%`;
+          }
+        }
+        // 영역별 점수 요약
+        const skills = cf.skill_summary as Record<string, Record<string, unknown>> | undefined;
+        if (skills) {
+          const skillStr = Object.entries(skills)
+            .map(([k, v]) => `${k}=${v.score}`)
+            .join(", ");
+          line += `\n  skill: ${skillStr}`;
+        }
+      }
+
+      return line;
     })
     .join("\n");
 }
@@ -185,7 +221,8 @@ Deno.serve(async (req) => {
       .select(
         "question_number, question_type, checkbox_type, checkboxes, " +
         "pass_count, fail_count, pass_rate, transcript, wpm, " +
-        "filler_count, long_pause_count, pronunciation_assessment, skipped",
+        "filler_count, long_pause_count, pronunciation_assessment, skipped, " +
+        "coaching_feedback",
       )
       .eq("session_id", session_id)
       .order("question_number");
@@ -331,6 +368,7 @@ Deno.serve(async (req) => {
             wpm: Number(e.wpm) || 0,
             filler_count: e.filler_count || 0,
             skipped: e.skipped || false,
+            coaching_feedback: (e.coaching_feedback as Record<string, unknown>) || null,
           })),
         );
 
@@ -394,32 +432,38 @@ Deno.serve(async (req) => {
       console.error("GPT 리포트 생성 실패 (규칙엔진 결과는 저장됨):", gptErr);
     }
 
-    // ── reports UPDATE (GPT 리포트 결과) ──
+    // ── reports UPDATE (V2 GPT 리포트 결과) ──
     const updateData: Record<string, unknown> = {
       report_status: "completed",
     };
 
-    if (reportResult.overall_comments_ko) {
+    // V2: coaching_report — GPT 응답 전체를 JSONB로 저장
+    updateData.coaching_report = reportResult;
+
+    // V2: recurring_mistakes — 배열 추출
+    if (reportResult.recurring_mistakes) {
+      updateData.recurring_mistakes = reportResult.recurring_mistakes;
+    }
+
+    // V2: overall_comments_ko — coach_diagnosis에서 추출
+    const coachDiag = reportResult.coach_diagnosis as Record<string, unknown> | undefined;
+    if (coachDiag) {
+      const levelSentence = coachDiag.level_sentence || "";
+      const whyThisLevel = coachDiag.why_this_level || "";
+      updateData.overall_comments_ko = `${levelSentence} ${whyThisLevel}`.trim();
+    } else if (reportResult.overall_comments_ko) {
+      // 폴백: GPT가 직접 overall_comments_ko를 반환한 경우
       updateData.overall_comments_ko = reportResult.overall_comments_ko;
     }
-    if (reportResult.overall_comments_en) {
-      updateData.overall_comments_en = reportResult.overall_comments_en;
-    }
-    if (reportResult.comprehensive_feedback) {
-      updateData.comprehensive_feedback =
-        typeof reportResult.comprehensive_feedback === "string"
-          ? reportResult.comprehensive_feedback
-          : JSON.stringify(reportResult.comprehensive_feedback);
-    }
+
+    // V2: training_recommendations
     if (reportResult.training_recommendations) {
-      updateData.training_recommendations =
-        reportResult.training_recommendations;
+      updateData.training_recommendations = reportResult.training_recommendations;
     }
-    if (reportResult.int_performance) {
-      updateData.int_performance = reportResult.int_performance;
-    }
-    if (reportResult.adv_performance) {
-      updateData.adv_performance = reportResult.adv_performance;
+
+    // V2: comprehensive_feedback — 하위 호환 (V2에서는 coaching_report가 주력)
+    if (reportResult.detailed_analysis) {
+      updateData.comprehensive_feedback = JSON.stringify(reportResult.detailed_analysis);
     }
 
     await supabase

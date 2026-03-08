@@ -100,6 +100,33 @@ export const OPIC_LEVEL_ORDER: Record<OpicLevel, number> = {
   NH: 1, IL: 2, IM1: 3, IM2: 4, IM3: 5, IH: 6, AL: 7,
 };
 
+// V2: 등급별 한줄 설명
+export const OPIC_LEVEL_DESC: Record<OpicLevel, string> = {
+  NH: '단어 중심으로 말합니다',
+  IL: '짧은 문장을 만들 수 있습니다',
+  IM1: '문장을 나열할 수 있습니다',
+  IM2: '문장을 안정적으로 이어갑니다',
+  IM3: '문단 구조가 시작됩니다',
+  IH: '구조적으로 이야기할 수 있습니다',
+  AL: '논리적으로 설명할 수 있습니다',
+};
+
+// V2: 발음 점수 → 이해도 라벨
+export function getPronunciationLabel(score: number): { label: string; color: string } {
+  if (score >= 80) return { label: '매우 좋음', color: 'text-green-600' };
+  if (score >= 60) return { label: '괜찮음', color: 'text-yellow-600' };
+  if (score >= 40) return { label: '가끔 어려움', color: 'text-orange-500' };
+  return { label: '자주 어려움', color: 'text-red-500' };
+}
+
+// V2: FACT 한글 라벨
+export const FACT_LABELS: Record<string, string> = {
+  F: '말하기흐름',
+  A: '문법정확성',
+  C: '내용풍부도',
+  T: '질문수행',
+};
+
 // ── DB 매핑 인터페이스 ──
 
 // mock_test_sessions 테이블
@@ -174,6 +201,7 @@ export interface MockTestEvaluation {
   sentences: SentenceItem[] | null;
   corrections: CorrectionItem[] | null;
   deep_analysis: DeepAnalysis | null;
+  coaching_feedback: CoachingFeedback | null;
   transcript: string | null;
   wpm: number | null;
   audio_duration: number | null;
@@ -209,13 +237,156 @@ export interface CorrectionItem {
   corrected_segment: string;
 }
 
-// 심층 분석 (5섹션)
+// 심층 분석 (V1 — 하위 호환용)
 export interface DeepAnalysis {
   overall_assessment: string;
   linguistic_analysis: string;
   communicative_effectiveness: string;
   proficiency_gap: string;
   recommendation: string;
+}
+
+// ── V2 코칭 타입 ──
+
+// 개별 평가 코칭 피드백 (coaching_feedback JSONB)
+export interface CoachingFeedback {
+  one_line_insight: string;
+  key_corrections: KeyCorrection[];
+  answer_improvement: AnswerImprovement;
+  structure_evaluation: StructureEvaluation;
+  skill_summary: Record<string, SkillScore>;
+  deep_analysis: CoachingDeepAnalysis;
+}
+
+export interface KeyCorrection {
+  sentence_index: number;
+  original: string;
+  corrected: string;
+  better: string;
+  why: string;
+  impact: 'high' | 'medium' | 'low';
+}
+
+export interface AnswerImprovement {
+  student_summary: string;
+  corrected_version: string;
+  better_version: string;
+  what_changed: string[];
+}
+
+export interface StructureEvaluation {
+  has_intro: boolean;
+  has_body: boolean;
+  has_conclusion: boolean;
+  structure_score: number;        // 1-5
+  structure_label: string;
+  time_distribution: {
+    intro_pct: number;
+    body_pct: number;
+    conclusion_pct: number;
+  };
+  story_density: {
+    example_count: number;
+    detail_level: 'low' | 'medium' | 'high';
+  };
+  tip: string;
+}
+
+export interface SkillScore {
+  score: number;                  // 개별: 1-5, 종합: 1-10
+  label: string;
+  brief: string;
+}
+
+export interface CoachingDeepAnalysis {
+  strengths: string[];
+  weaknesses: Array<{
+    point: string;
+    l1_cause: string;
+    level_impact: string;
+  }>;
+  target_gap: {
+    target: string;
+    key_gap: string;
+    example_at_target: string;
+  };
+  practice_suggestion: {
+    focus: string;
+    method: string;
+    example_exercise: string;
+  };
+}
+
+// 종합 평가 코칭 리포트 (coaching_report JSONB)
+export interface CoachingReport {
+  coach_diagnosis: CoachDiagnosis;
+  level_comparison: LevelComparison;
+  skill_radar: Record<string, SkillScore>;
+  recurring_mistakes: RecurringMistake[];
+  question_type_analysis: QuestionTypeAnalysis;
+  action_plan: ActionPlanItem[];
+  detailed_analysis: DetailedAnalysis;
+  training_recommendations: V2TrainingRecommendation[];
+}
+
+export interface CoachDiagnosis {
+  level_sentence: string;
+  level_description: string;
+  why_this_level: string;
+  confidence_band: number;
+  key_strength: string;
+  key_weakness: string;
+  next_level_path: string;
+}
+
+export interface LevelComparison {
+  current_level: string;
+  next_level: string;
+  comparison_question: string;
+  current_level_answer: string;
+  next_level_answer: string;
+  key_differences: string[];
+}
+
+export interface RecurringMistake {
+  pattern_name: string;
+  category: string;
+  severity: string;
+  frequency: number;
+  affected_questions: number[];
+  example_wrong: string;
+  example_correct: string;
+  practice_sentences: string[];
+  tip: string;
+}
+
+export interface QuestionTypeAnalysis {
+  strong_types: Array<{ type: string; label: string; reason: string }>;
+  weak_types: Array<{ type: string; label: string; reason: string; strategy: string }>;
+  priority_focus: { type: string; label: string; reason: string };
+}
+
+export interface ActionPlanItem {
+  priority: number;
+  action: string;
+  why: string;
+  how: string;
+  expected_result: string;
+}
+
+export interface DetailedAnalysis {
+  strengths_detail: string[];
+  weaknesses_detail: string[];
+  int_adv_gap: string;
+}
+
+export interface V2TrainingRecommendation {
+  category: string;
+  target_type: string;
+  target_label: string;
+  reason: string;
+  practice_tip: string;
+  model_sentence: string;
 }
 
 // mock_test_reports 테이블
@@ -256,6 +427,9 @@ export interface MockTestReport {
   adv_performance: Record<string, unknown> | null;
   comprehensive_feedback: string | null;
   training_recommendations: TrainingRecommendation[] | null;
+  // V2 코칭
+  coaching_report: CoachingReport | null;
+  recurring_mistakes: RecurringMistake[] | null;
   // 발음 통계
   avg_accuracy_score: number | null;
   avg_prosody_score: number | null;
