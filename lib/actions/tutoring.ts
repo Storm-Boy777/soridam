@@ -51,6 +51,8 @@ interface DiagnosisResult {
     created_at: string;
   }>;
   skillHistory: TutoringSkillHistory[];
+  // 활성 세션의 처방 목록 (처방 탭 즉시 표시용)
+  activePrescriptions: TutoringPrescriptionRow[];
 }
 
 export async function getDiagnosis(): Promise<ActionResult<DiagnosisResult>> {
@@ -82,11 +84,27 @@ export async function getDiagnosis(): Promise<ActionResult<DiagnosisResult>> {
         .limit(50),
     ]);
 
+    const sessions = (sessionsRes.data || []) as TutoringSession[];
+
+    // 활성 세션이 있으면 처방 목록도 함께 조회 (처방 탭 즉시 표시용)
+    const activeSession = sessions.find((s) => s.status === "active");
+    let activePrescriptions: TutoringPrescriptionRow[] = [];
+    if (activeSession) {
+      const { data: prescData } = await supabase
+        .from("tutoring_prescriptions")
+        .select("*")
+        .eq("session_id", activeSession.id)
+        .eq("user_id", userId)
+        .order("priority");
+      activePrescriptions = (prescData || []) as TutoringPrescriptionRow[];
+    }
+
     return {
       data: {
-        sessions: (sessionsRes.data || []) as TutoringSession[],
+        sessions,
         mockReports: reportsRes.data || [],
         skillHistory: (skillRes.data || []) as TutoringSkillHistory[],
+        activePrescriptions,
       },
     };
   } catch (err) {

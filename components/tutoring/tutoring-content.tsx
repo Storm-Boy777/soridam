@@ -401,6 +401,7 @@ function PrescriptionTab({
       <ActivePrescriptionView
         session={activeSession}
         report={latestReport}
+        initialPrescriptions={diagData?.activePrescriptions}
       />
     );
   }
@@ -497,9 +498,11 @@ function PrescriptionTab({
 function ActivePrescriptionView({
   session,
   report,
+  initialPrescriptions,
 }: {
   session: { id: string; current_level: string | null; target_level: string | null; total_prescriptions: number | null; completed_prescriptions: number };
   report: { final_level: string; target_level: string };
+  initialPrescriptions?: TutoringPrescriptionRow[];
 }) {
   const { data: prescriptions, isLoading } = useQuery({
     queryKey: ["tutoring-prescriptions", session.id],
@@ -510,6 +513,7 @@ function ActivePrescriptionView({
       return result.data;
     },
     staleTime: 2 * 60 * 1000,
+    initialData: initialPrescriptions,
   });
 
   if (isLoading) {
