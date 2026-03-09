@@ -5,13 +5,14 @@ import {
   getActiveSession,
   getExamPool,
   checkMockExamCredit,
+  getSession,
 } from "@/lib/actions/mock-exam";
 
 export const metadata = {
   title: "모의고사 | 오픽톡닥",
 };
 
-// 서버에서 4개 쿼리 병렬 사전 조회 (클라이언트 RTT 제거)
+// 서버에서 5개 쿼리 병렬 사전 조회 (클라이언트 RTT 제거)
 async function MockExamLoader() {
   const [historyResult, activeResult, poolResult, creditResult] =
     await Promise.all([
@@ -21,12 +22,23 @@ async function MockExamLoader() {
       checkMockExamCredit().catch(() => ({ data: undefined })),
     ]);
 
+  // 최근 완료 세션의 상세 데이터 사전 조회 (결과 탭 즉시 표시용)
+  const completedItems = (historyResult?.data || []).filter(
+    (h) => h.status === "completed" && h.final_level
+  );
+  const latestSessionId = completedItems[0]?.session_id;
+  const latestSessionResult = latestSessionId
+    ? await getSession({ session_id: latestSessionId }).catch(() => undefined)
+    : undefined;
+
   return (
     <MockExamContent
       initialHistory={historyResult?.data ?? undefined}
       initialActive={activeResult}
       initialPool={poolResult}
       initialCredit={creditResult}
+      initialLatestSession={latestSessionResult}
+      latestSessionId={latestSessionId}
     />
   );
 }

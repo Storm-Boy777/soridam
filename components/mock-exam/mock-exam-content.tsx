@@ -41,7 +41,7 @@ import {
   OPIC_LEVEL_ORDER,
 } from "@/lib/types/mock-exam";
 
-// 결과 탭 ResultSummary — 동적 로드 (초기 번들 감소)
+// 결과 탭 ResultSummary — 동적 로드 (초기 번들 감소 + 에러 핸들링)
 const ResultSummary = dynamic(
   () =>
     import("./result/result-summary").then((mod) => ({
@@ -53,6 +53,7 @@ const ResultSummary = dynamic(
         <Loader2 size={24} className="animate-spin text-primary-500" />
       </div>
     ),
+    ssr: false,
   }
 );
 
@@ -73,6 +74,8 @@ interface MockExamContentProps {
   initialActive?: Awaited<ReturnType<typeof getActiveSession>>;
   initialPool?: Awaited<ReturnType<typeof getExamPool>>;
   initialCredit?: Awaited<ReturnType<typeof checkMockExamCredit>>;
+  initialLatestSession?: Awaited<ReturnType<typeof getSession>>;
+  latestSessionId?: string;
 }
 
 /* ── 메인 컴포넌트 ── */
@@ -82,6 +85,8 @@ export function MockExamContent({
   initialActive,
   initialPool,
   initialCredit,
+  initialLatestSession,
+  latestSessionId,
 }: MockExamContentProps) {
   const [activeTab, setActiveTab] = useState<TabId>("start");
   // 이력에서 결과 탭으로 이동 시 사용할 session_id
@@ -130,6 +135,9 @@ export function MockExamContent({
         <ResultsTab
           targetSessionId={viewSessionId}
           onClearTarget={() => setViewSessionId(null)}
+          initialHistory={initialHistory}
+          initialLatestSession={initialLatestSession}
+          latestSessionId={latestSessionId}
         />
       )}
       {activeTab === "history" && (
@@ -461,15 +469,22 @@ function StartTab({
 function ResultsTab({
   targetSessionId,
   onClearTarget,
+  initialHistory,
+  initialLatestSession,
+  latestSessionId,
 }: {
   targetSessionId: string | null;
   onClearTarget: () => void;
+  initialHistory?: MockExamHistoryItem[];
+  initialLatestSession?: Awaited<ReturnType<typeof getSession>>;
+  latestSessionId?: string;
 }) {
-  // 이력 조회 (최근 완료 세션 찾기용)
+  // 이력 조회 (서버 사전 조회 initialData 활용)
   const { data: historyResult, isLoading: historyLoading } = useQuery({
     queryKey: ["mock-exam-history"],
     queryFn: () => getHistory(),
     staleTime: 5 * 60 * 1000,
+    initialData: initialHistory ? { data: initialHistory } : undefined,
   });
 
   const completed = (historyResult?.data || []).filter(
@@ -479,12 +494,25 @@ function ResultsTab({
   // 표시할 session_id 결정: 지정된 것 또는 최근
   const sessionId = targetSessionId || completed[0]?.session_id || null;
 
-  // 전체 세션 데이터 조회
+  // 서버 사전 조회 데이터 활용 (최근 세션과 일치할 때만)
+  const sessionInitialData =
+    !targetSessionId && sessionId === latestSessionId && initialLatestSession
+      ? initialLatestSession
+      : undefined;
+
+  // 전체 세션 데이터 조회 (서버 사전 조회 initialData 활용)
   const { data: sessionResult, isLoading: sessionLoading } = useQuery({
     queryKey: ["mock-exam-session-detail", sessionId],
     queryFn: () => getSession({ session_id: sessionId! }),
     enabled: !!sessionId,
     staleTime: 10 * 60 * 1000, // 10분 (결과는 변경 안 됨)
+    initialData: sessionInitialData,
+    // report 미완료 시 10초마다 자동 재조회 (평가 완료 감지)
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (data?.data && !data.data.report) return 10_000;
+      return false;
+    },
   });
 
   // 이전 결과 (비교용)
@@ -539,7 +567,7 @@ function ResultsTab({
               답변을 분석하고 있습니다. 잠시만 기다려주세요.
             </p>
             <p className="mt-1 text-xs text-foreground-muted">
-              보통 2~5분 정도 소요됩니다.
+              보통 2~5분 정도 소요됩니다. 완료되면 자동으로 표시됩니다.
             </p>
           </div>
         </div>
