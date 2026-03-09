@@ -1,22 +1,28 @@
 import { Suspense } from "react";
 import { ScriptsContent } from "@/components/scripts/scripts-content";
-import { getMyScripts, getShadowingHistory } from "@/lib/actions/scripts";
+import {
+  getMyScripts,
+  getShadowingHistory,
+  getShadowableScripts,
+} from "@/lib/actions/scripts";
 
 export const metadata = {
   title: "스크립트 | 오픽톡닥",
 };
 
-// 서버에서 초기 데이터 병렬 조회
+// 서버에서 초기 데이터 병렬 조회 (3개 쿼리)
 async function ScriptsLoader() {
-  const [scriptsResult, shadowingResult] = await Promise.all([
+  const [scriptsResult, shadowingResult, shadowableResult] = await Promise.all([
     getMyScripts(),
     getShadowingHistory(),
+    getShadowableScripts(),
   ]);
 
   return (
     <ScriptsContent
       initialScripts={scriptsResult.data ?? []}
       initialShadowingHistory={shadowingResult.data ?? []}
+      initialShadowableScripts={shadowableResult.data ?? []}
     />
   );
 }

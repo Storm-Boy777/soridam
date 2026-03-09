@@ -60,6 +60,7 @@ type TabId = (typeof tabs)[number]["id"];
 interface ScriptsContentProps {
   initialScripts?: ScriptListItem[];
   initialShadowingHistory?: ShadowingHistoryItem[];
+  initialShadowableScripts?: ScriptListItem[];
 }
 
 /* ── 메인 컴포넌트 ── */
@@ -67,6 +68,7 @@ interface ScriptsContentProps {
 export function ScriptsContent({
   initialScripts,
   initialShadowingHistory,
+  initialShadowableScripts,
 }: ScriptsContentProps) {
   const [activeTab, setActiveTab] = useState<TabId>("create");
 
@@ -99,7 +101,10 @@ export function ScriptsContent({
       {activeTab === "create" && <CreateTab />}
       {activeTab === "my" && <MyScriptsTab initialData={initialScripts} />}
       {activeTab === "shadowing" && (
-        <ShadowingTab initialData={initialShadowingHistory} />
+        <ShadowingTab
+          initialData={initialShadowingHistory}
+          initialShadowable={initialShadowableScripts}
+        />
       )}
     </div>
   );
@@ -695,8 +700,10 @@ function ScriptCard({
 
 function ShadowingTab({
   initialData,
+  initialShadowable,
 }: {
   initialData?: ShadowingHistoryItem[];
+  initialShadowable?: ScriptListItem[];
 }) {
   const [bannerOpen, setBannerOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -724,7 +731,7 @@ function ShadowingTab({
     staleTime: 5 * 60 * 1000,
   });
 
-  // 훈련 가능한 스크립트 목록 (패키지 완료된 것)
+  // 훈련 가능한 스크립트 목록 (패키지 완료된 것, 서버 사전 조회 initialData 활용)
   const { data: shadowableScripts, isLoading: scriptsLoading } = useQuery({
     queryKey: ["shadowable-scripts"],
     queryFn: async () => {
@@ -732,6 +739,7 @@ function ShadowingTab({
       if (result.error) throw new Error(result.error);
       return result.data ?? [];
     },
+    initialData: initialShadowable,
     staleTime: 5 * 60 * 1000,
   });
 
