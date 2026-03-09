@@ -77,13 +77,11 @@ export function TutoringContent({
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // URL ?tab= 파라미터로 탭 상태 유지 (새로고침 시 복원)
+  // URL ?tab= 파라미터가 single source of truth (useState 없이 URL에서 직접 읽기)
   const tabParam = searchParams.get("tab") as TabId | null;
-  const resolvedTab = tabParam && tabs.some((t) => t.id === tabParam) ? tabParam : "diagnosis";
-  const [activeTab, setActiveTabState] = useState<TabId>(resolvedTab);
+  const activeTab: TabId = tabParam && tabs.some((t) => t.id === tabParam) ? tabParam : "diagnosis";
 
   const setActiveTab = useCallback((id: TabId) => {
-    setActiveTabState(id);
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", id);
     router.replace(`?${params.toString()}`, { scroll: false });

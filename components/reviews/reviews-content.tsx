@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { BarChart3, Send, MessageSquare } from "lucide-react";
@@ -34,14 +34,12 @@ export function ReviewsContent({ initialStats, initialFrequency, initialSubmissi
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // URL ?tab= 파라미터로 탭 상태 유지 (새로고침 시 복원)
+  // URL ?tab= 파라미터가 single source of truth (useState 없이 URL에서 직접 읽기)
   const tabParam = searchParams.get("tab") as TabId | null;
   const fromCompleted = searchParams.get("completed") === "true";
-  const resolvedTab = tabParam && tabs.some((t) => t.id === tabParam) ? tabParam : fromCompleted ? "submit" : "frequency";
-  const [activeTab, setActiveTabState] = useState<TabId>(resolvedTab);
+  const activeTab: TabId = tabParam && tabs.some((t) => t.id === tabParam) ? tabParam : fromCompleted ? "submit" : "frequency";
 
   const setActiveTab = useCallback((id: TabId) => {
-    setActiveTabState(id);
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", id);
     params.delete("completed");
