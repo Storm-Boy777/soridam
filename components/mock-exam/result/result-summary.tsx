@@ -94,6 +94,30 @@ const QT_KO: Record<string, string> = {
   social_issue: "사회이슈",
 };
 
+// GPT 유형맵 키 → 한글 (유형별 진단, 집중처방 태그)
+const TYPE_MAP_KO: Record<string, string> = {
+  description_detail: "구체적 묘사",
+  routine_sequence: "일상 순서",
+  comparison_frame: "비교 구조",
+  past_narrative: "과거 경험",
+  roleplay_questions: "질문하기",
+  roleplay_recovery: "대안·회복",
+  opinion_support: "의견 근거",
+  social_perspective: "사회적 관점",
+  detail_expansion: "세부 확장",
+  filler_reduction: "필러 줄이기",
+};
+
+// 반복 오류 카테고리 → 한글
+const CATEGORY_KO: Record<string, string> = {
+  structure: "구조",
+  task_performance: "과제수행",
+  delivery_habit: "전달습관",
+  expression: "표현",
+  grammar: "문법",
+  vocabulary: "어휘",
+};
+
 // 영역별 상태 색상
 function getStatusColor(status: string): string {
   switch (status) {
@@ -612,12 +636,12 @@ function Section5TypeMap({ typeMap }: { typeMap: QuestionTypeMapItem[] }) {
               item.priority ? "border-red-200 bg-red-50/30" : "border-border"
             }`}
           >
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex flex-wrap items-center gap-1 mb-1">
               <span className="text-[11px] font-medium text-foreground">
-                {QT_KO[item.type] || item.type}
+                {TYPE_MAP_KO[item.type] || QT_KO[item.type] || item.type}
               </span>
               <span
-                className={`rounded-full px-1.5 py-0.5 text-[8px] font-bold ${getStatusColor(item.status)}`}
+                className={`rounded-full px-1.5 py-0.5 text-[8px] font-bold shrink-0 ${getStatusColor(item.status)}`}
               >
                 {STATUS_KO[item.status] || item.status}
               </span>
@@ -664,7 +688,7 @@ function Section6Patterns({ patterns }: { patterns: RecurringPattern[] }) {
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-foreground">{p.label}</span>
                   <span className="text-[9px] rounded-full bg-surface-secondary px-1.5 py-0.5 text-foreground-muted">
-                    {p.category}
+                    {CATEGORY_KO[p.category] || p.category}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 mt-0.5 text-[10px] text-foreground-muted">
@@ -834,7 +858,7 @@ function Section9CTA({
                   key={tag}
                   className="rounded-full bg-primary-100 px-2 py-0.5 text-[9px] font-medium text-primary-700"
                 >
-                  {tag}
+                  {TYPE_MAP_KO[tag] || CATEGORY_KO[tag] || tag}
                 </span>
               ))}
             </div>

@@ -351,7 +351,11 @@ function TypeComparisonSection({
               )}
               {/* 현재 */}
               <div
-                className="h-2 rounded-full bg-primary-400 transition-all"
+                className={`h-2 rounded-full transition-all ${
+                  item.current_pass_rate >= 0.9 ? "bg-green-400" :
+                  item.current_pass_rate < 0.7 ? "bg-red-400" :
+                  "bg-primary-400"
+                }`}
                 style={{ width: `${Math.min(item.current_pass_rate * 100, 100)}%` }}
               />
             </div>
