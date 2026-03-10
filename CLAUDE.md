@@ -256,7 +256,8 @@ opictalkdoc/                 # Git 루트 = Next.js 루트 (표준 구조)
 │       ├── scripts-package/index.ts       # Edge Function (TTS 패키지 + 타임스탬프)
 │       ├── mock-test-process/index.ts     # Edge Function Stage A (Whisper STT + Azure 발음)
 │       ├── mock-test-eval/index.ts        # Edge Function Stage B (GPT-4.1 체크박스 평가)
-│       └── mock-test-report/index.ts      # Edge Function Stage C (규칙엔진 + FACT + GPT 리포트)
+│       ├── mock-test-report/index.ts      # Edge Function Stage C (규칙엔진 + FACT + GPT 리포트)
+│       └── tutoring/index.ts              # Edge Function (8 handler: brief/warmup/epp/variation/transformation/timed/repair/complete)
 ├── app/                     # App Router 페이지
 │   └── providers.tsx        # QueryClientProvider 래퍼
 ├── components/
@@ -285,7 +286,10 @@ opictalkdoc/                 # Git 루트 = Next.js 루트 (표준 구조)
 │   │   │   └── question-grid.tsx      # 15문항 상태 그리드
 │   │   ├── result/
 │   │   │   ├── result-summary.tsx     # 결과 요약 (FACT, 영역, 발음, 훈련 권장)
-│   │   │   └── result-detail.tsx      # 문항별 상세 아코디언
+│   │   │   ├── result-detail.tsx      # 문항별 상세 아코디언
+│   │   │   └── growth-report.tsx      # 성장 리포트 7섹션 (비교표, 원인, FACT해석, 병목, CTA)
+│   │   ├── history/
+│   │   │   └── grade-progress-chart.tsx # 등급 추이 그래프 (Recharts, 준비도, FACT, 병목)
 │   │   └── evaluation/
 │   │       └── eval-waiting.tsx       # 평가 대기 + 진행률
 │   ├── tutoring/            # 튜터링 모듈 UI
@@ -487,15 +491,17 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 | 03-03 | Step 3 안정화 | 세션 플로우 버그 수정 (녹음 레이스컨디션, Q1 플로우, 자동재생 제거) + 문서 현행화 |
 | 03-08 | 평가+튜터링 설계 | 모의고사 평가 v2 설계 확정 (개별 6-Layer + 종합 5개 개선) + **튜터링 v3 완전 재설계** (GPT-5.2 전문가 4회 자문 → 세션+5프로토콜) |
 | 03-08 | **평가 v3 확정** | GPT-5.2/5.4 전문가 2회 자문 기반 — 개별평가 5단계 표시순서 + 10 question_type별 체크리스트 + 3축 무응답 감지 + 피드백 분기(무응답/부분/정상) + 구제 메시지 설계 |
-| 03-08 | Step 4 ✅ (UI/SA/DB) | **튜터링** UI+SA+DB 구현 (7테이블 + SA 7개 + 처방엔진 + 3탭 UI + 훈련 세션 Screen 0~6). EF 미구현 |
+| 03-08 | Step 4 ✅ | **튜터링** 전체 구현 (7테이블 + SA 7개 + 처방엔진 + 3탭 UI + 훈련 세션 Screen 0~6 + EF 8 handler 배포) |
 | 03-10 | UX+설계 | 전 모듈 탭 URL 동기화(history.replaceState) + 모의고사 초기 로딩 최적화 + 성장리포트 설계 문서 (GPT-5.4 자문) |
+| 03-10 | 성장리포트 A ✅ | **등급 추이 그래프** Recharts (등급 라인+준비도 바+FACT 미니+병목 감지+커스텀 툴팁) |
+| 03-10 | 성장리포트 B-D ✅ | **성장 리포트** DB 3컬럼 + EF 성장분석 GPT(gpt-4.1-mini) + UI 7섹션 + 튜터링 CTA + 성장패턴 감지 |
 
 <!-- 이후 새 이력은 이 테이블에 행 추가 + memory/개발이력.md에 상세 기록 -->
 
 ## 🔮 현재 상태 & 다음 단계
 
-**현재**: Phase 3 (핵심 모듈 이관) — Step 4 튜터링 UI/SA/DB ✅ + **EF 미구현** + 성장리포트 설계 ✅
-**다음 작업**: 튜터링 EF 구현 (GPT 세션/평가/피드백) + 성장리포트 구현 → 리브랜딩(P-5)
+**현재**: Phase 3 (핵심 모듈 이관) — Step 4 튜터링 ✅ + 성장리포트 전체 ✅ (Phase A-D)
+**다음 작업**: 모의고사 평가 v3 고도화 → 리브랜딩(P-5)
 
 ### 튜터링 모듈 구현 현황
 | 영역 | 상태 | 상세 |
@@ -505,8 +511,8 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 | Type 정의 | ✅ | `lib/types/tutoring.ts` — 6타입 + LEVEL_PARAMS + DRILL_TAG 매핑 |
 | UI (3탭 + 훈련 세션) | ✅ | tutoring-content(진단/처방/훈련) + training-session(Screen 0~6) |
 | 페이지/라우트 | ✅ | `/tutoring` + `/tutoring/training` |
-| **Edge Functions** | ❌ | GPT 세션 Brief, EPP/Variation/Transformation 데이터 생성, Timed 평가, Self-repair 평가 |
-| Zod Validation | ❌ | `lib/validations/tutoring.ts` 미구현 |
+| Edge Functions (8 handler) | ✅ | session-brief, generate-warmup, generate-epp, generate-variation, generate-transformation, evaluate-timed, evaluate-repair, complete-session |
+| Zod Validation | ⏳ | `lib/validations/tutoring.ts` 미구현 (선택사항) |
 
 ### ⏳ 리브랜딩 작업 (P-5: 오픽톡닥 → 하루오픽)
 > Phase 3 전체 완료(Step 4 튜터링까지) 후 진행. 상세는 `docs/의사결정.md` P-5, `docs/실행계획.md` 참조.
@@ -554,7 +560,7 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 - **mock_test_sessions**: 모의고사 세션 (mode, status, 14 question_ids, started_at, 72h/90min)
 - **mock_test_answers**: 답변 기록 (question_number, audio_url, eval_status 7단계)
 - **mock_test_evaluations**: 개별 평가 (STT + 발음 + GPT 체크박스, FK → answers)
-- **mock_test_reports**: 종합 리포트 (FACT 점수, 등급, GPT 총평, FK → sessions)
+- **mock_test_reports**: 종합 리포트 (FACT 점수, 등급, GPT 총평, 성장 리포트 3컬럼, FK → sessions)
 - **mock_test_evaluation_queue**: 평가 큐 (EF fire-and-forget 체인용)
 - **tutoring_sessions**: 튜터링 세션 (status: active/paused/completed)
 - **tutoring_prescriptions**: 처방 과제 (priority 1~N, status: pending/in_progress/completed)
@@ -622,4 +628,4 @@ PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/1
 
 ---
 *최종 업데이트: 2026-03-10*
-*상태: Phase 3 Step 4 튜터링 UI/SA/DB ✅ (EF 미구현). 다음: 튜터링 EF + 성장리포트 구현*
+*상태: Phase 3 Step 4 튜터링 ✅ + 성장리포트 A-D ✅. 다음: 평가 v3 고도화 → 리브랜딩(P-5)*

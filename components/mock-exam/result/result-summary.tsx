@@ -15,7 +15,6 @@ import {
   Zap,
   Map,
   AlertTriangle,
-  CheckCircle2,
   Star,
   Volume2,
 } from "lucide-react";
@@ -841,13 +840,15 @@ function Section9CTA({
             </div>
           )}
 
-          {/* TODO: 튜터링 연결 CTA — 튜터링 구현 후 활성화 */}
-          <div className="rounded-lg bg-surface-secondary/50 p-3 text-center">
-            <p className="text-xs text-foreground-muted flex items-center justify-center gap-1.5">
-              <CheckCircle2 size={12} className="text-primary-400" />
-              맞춤 훈련 기능이 곧 출시됩니다
-            </p>
-          </div>
+          {/* 튜터링 CTA */}
+          <a
+            href="/tutoring?tab=prescription"
+            className="flex items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-600 transition-colors"
+          >
+            <Zap size={14} />
+            맞춤 훈련 시작하기
+            <ArrowRight size={14} />
+          </a>
         </div>
       </div>
     </div>

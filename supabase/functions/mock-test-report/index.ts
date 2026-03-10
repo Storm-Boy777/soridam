@@ -223,6 +223,348 @@ function buildTutoringPrescription(
   };
 }
 
+// ── 성장 리포트 생성 (2회차부터) ──
+// deno-lint-ignore no-explicit-any
+async function generateGrowthReport(
+  supabase: any,
+  sessionId: string,
+  userId: string,
+  finalLevel: string,
+  factScores: { score_f: number; score_a: number; score_c: number; score_t: number; total_score: number },
+  // deno-lint-ignore no-explicit-any
+  evaluations: any[],
+): Promise<void> {
+  // 이전 세션들의 리포트 조회 (현재 세션 제외, 최신순)
+  const { data: prevReports } = await supabase
+    .from("mock_test_reports")
+    .select("session_id, final_level, total_score, score_f, score_a, score_c, score_t")
+    .eq("user_id", userId)
+    .neq("session_id", sessionId)
+    .eq("report_status", "completed")
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (!prevReports || prevReports.length === 0) {
+    // 1회차: 성장 리포트 미생성 (비교 대상 없음)
+    // 단, 1회차용 기본 비교 데이터는 저장 (question_type 분포)
+    const typeComparison = buildTypeComparison(evaluations, null);
+    await supabase
+      .from("mock_test_reports")
+      .update({
+        growth_comparison: {
+          previous_session_id: null,
+          previous_level: null,
+          previous_total_score: null,
+          previous_score_f: null,
+          previous_score_a: null,
+          previous_score_c: null,
+          previous_score_t: null,
+          level_change: null,
+          level_diff: 0,
+          score_diff: 0,
+          score_f_diff: 0,
+          score_a_diff: 0,
+          score_c_diff: 0,
+          score_t_diff: 0,
+          session_count: 1,
+          type_comparison: typeComparison,
+        },
+      })
+      .eq("session_id", sessionId);
+    return;
+  }
+
+  const prev = prevReports[0];
+  const sessionCount = prevReports.length + 1;
+
+  // ② 규칙 기반 변화 데이터 계산
+  const LEVEL_ORDER: Record<string, number> = {
+    NH: 1, IL: 2, IM1: 3, IM2: 4, IM3: 5, IH: 6, AL: 7,
+  };
+  const currOrder = LEVEL_ORDER[finalLevel] || 0;
+  const prevOrder = LEVEL_ORDER[prev.final_level] || 0;
+  const levelChange = currOrder > prevOrder ? "up" : currOrder < prevOrder ? "down" : "same";
+
+  // 이전 세션의 평가 데이터도 조회 (question_type 비교용)
+  const { data: prevEvals } = await supabase
+    .from("mock_test_evaluations")
+    .select("question_type, pass_rate, skipped")
+    .eq("session_id", prev.session_id);
+
+  const typeComparison = buildTypeComparison(evaluations, prevEvals);
+
+  const growthComparison = {
+    previous_session_id: prev.session_id,
+    previous_level: prev.final_level,
+    previous_total_score: Number(prev.total_score) || 0,
+    previous_score_f: Number(prev.score_f) || 0,
+    previous_score_a: Number(prev.score_a) || 0,
+    previous_score_c: Number(prev.score_c) || 0,
+    previous_score_t: Number(prev.score_t) || 0,
+    level_change: levelChange,
+    level_diff: currOrder - prevOrder,
+    score_diff: Math.round((factScores.total_score - (Number(prev.total_score) || 0)) * 10) / 10,
+    score_f_diff: Math.round((factScores.score_f - (Number(prev.score_f) || 0)) * 10) / 10,
+    score_a_diff: Math.round((factScores.score_a - (Number(prev.score_a) || 0)) * 10) / 10,
+    score_c_diff: Math.round((factScores.score_c - (Number(prev.score_c) || 0)) * 10) / 10,
+    score_t_diff: Math.round((factScores.score_t - (Number(prev.score_t) || 0)) * 10) / 10,
+    session_count: sessionCount,
+    type_comparison: typeComparison,
+  };
+
+  // ①③④⑥⑦ GPT 성장 리포트 생성 (gpt-4.1-mini — 비용 절감)
+  const growthPrompt = buildGrowthPrompt(
+    finalLevel,
+    factScores,
+    prev,
+    growthComparison,
+    sessionCount,
+    typeComparison,
+  );
+
+  const gptResp = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4.1-mini",
+      temperature: 0.5,
+      max_tokens: 3000,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content: `당신은 OPIc 시험 전문 분석가입니다. 학습자의 모의고사 성장 데이터를 분석하여 동기부여와 구체적인 처방을 제공합니다.
+반드시 JSON으로 응답하세요. 한국어로 작성하되, FACT/INT/ADV/AL 같은 내부 용어는 사용하지 마세요.
+학습자 눈높이의 친근하고 격려하는 톤으로 작성하세요.`,
+        },
+        { role: "user", content: growthPrompt },
+      ],
+    }),
+  });
+
+  if (!gptResp.ok) {
+    throw new Error(`성장 리포트 GPT 실패: ${gptResp.status}`);
+  }
+
+  const gptJson = await gptResp.json();
+  const content = gptJson.choices?.[0]?.message?.content || "{}";
+  let growthAnalysis: Record<string, unknown>;
+  try {
+    growthAnalysis = JSON.parse(content);
+  } catch {
+    growthAnalysis = {};
+  }
+
+  // 성장 패턴 감지 (Phase D)
+  if (sessionCount >= 3) {
+    const pattern = detectGrowthPattern(factScores, prevReports);
+    if (pattern) {
+      growthAnalysis.growth_pattern = pattern.pattern;
+      growthAnalysis.pattern_message = pattern.message;
+    }
+  }
+
+  // DB 저장
+  await supabase
+    .from("mock_test_reports")
+    .update({
+      growth_summary: growthAnalysis.summary || null,
+      growth_comparison: growthComparison,
+      growth_analysis: growthAnalysis,
+    })
+    .eq("session_id", sessionId);
+}
+
+// question_type별 pass_rate 집계 (현재 vs 이전)
+// deno-lint-ignore no-explicit-any
+function buildTypeComparison(currentEvals: any[], prevEvals: any[] | null) {
+  // 현재 세션 집계
+  const currentMap = new Map<string, { total: number; sumRate: number }>();
+  for (const e of currentEvals) {
+    if (e.skipped) continue;
+    const qt = e.question_type || "unknown";
+    const entry = currentMap.get(qt) || { total: 0, sumRate: 0 };
+    entry.total++;
+    entry.sumRate += Number(e.pass_rate) || 0;
+    currentMap.set(qt, entry);
+  }
+
+  // 이전 세션 집계
+  const prevMap = new Map<string, { total: number; sumRate: number }>();
+  if (prevEvals) {
+    for (const e of prevEvals) {
+      if (e.skipped) continue;
+      const qt = e.question_type || "unknown";
+      const entry = prevMap.get(qt) || { total: 0, sumRate: 0 };
+      entry.total++;
+      entry.sumRate += Number(e.pass_rate) || 0;
+      prevMap.set(qt, entry);
+    }
+  }
+
+  const result: Array<{
+    type: string;
+    current_pass_rate: number;
+    previous_pass_rate: number | null;
+    change: number | null;
+    current_count: number;
+  }> = [];
+
+  for (const [type, data] of currentMap.entries()) {
+    const avgCurr = Math.round((data.sumRate / data.total) * 100) / 100;
+    const prevData = prevMap.get(type);
+    const avgPrev = prevData ? Math.round((prevData.sumRate / prevData.total) * 100) / 100 : null;
+    result.push({
+      type,
+      current_pass_rate: avgCurr,
+      previous_pass_rate: avgPrev,
+      change: avgPrev != null ? Math.round((avgCurr - avgPrev) * 100) / 100 : null,
+      current_count: data.total,
+    });
+  }
+
+  return result.sort((a, b) => a.type.localeCompare(b.type));
+}
+
+// GPT 성장 리포트 프롬프트 생성
+function buildGrowthPrompt(
+  finalLevel: string,
+  factScores: { score_f: number; score_a: number; score_c: number; score_t: number; total_score: number },
+  // deno-lint-ignore no-explicit-any
+  prev: any,
+  // deno-lint-ignore no-explicit-any
+  comparison: any,
+  sessionCount: number,
+  // deno-lint-ignore no-explicit-any
+  typeComparison: any[],
+): string {
+  const typeStr = typeComparison
+    .map((t) => {
+      const change = t.change != null ? ` (변화: ${t.change > 0 ? "+" : ""}${(t.change * 100).toFixed(0)}%p)` : " (첫 응시)";
+      return `  ${t.type}: 달성률 ${(t.current_pass_rate * 100).toFixed(0)}%${change} [${t.current_count}문항]`;
+    })
+    .join("\n");
+
+  // 병목 감지 (가장 낮은 FACT)
+  const facts = [
+    { key: "F", label: "말하기흐름", score: factScores.score_f, diff: comparison.score_f_diff },
+    { key: "A", label: "문법정확성", score: factScores.score_a, diff: comparison.score_a_diff },
+    { key: "C", label: "내용풍부도", score: factScores.score_c, diff: comparison.score_c_diff },
+    { key: "T", label: "질문수행력", score: factScores.score_t, diff: comparison.score_t_diff },
+  ];
+  const bottleneck = facts.reduce((min, f) => f.score < min.score ? f : min);
+
+  return `## 학습자 모의고사 성장 데이터 (${sessionCount}회차)
+
+### 현재 결과
+- 예상 등급: ${finalLevel}
+- 총점: ${factScores.total_score.toFixed(1)}/100
+- 말하기흐름(F): ${factScores.score_f.toFixed(1)} (${comparison.score_f_diff > 0 ? "+" : ""}${comparison.score_f_diff.toFixed(1)})
+- 문법정확성(A): ${factScores.score_a.toFixed(1)} (${comparison.score_a_diff > 0 ? "+" : ""}${comparison.score_a_diff.toFixed(1)})
+- 내용풍부도(C): ${factScores.score_c.toFixed(1)} (${comparison.score_c_diff > 0 ? "+" : ""}${comparison.score_c_diff.toFixed(1)})
+- 질문수행력(T): ${factScores.score_t.toFixed(1)} (${comparison.score_t_diff > 0 ? "+" : ""}${comparison.score_t_diff.toFixed(1)})
+
+### 이전 결과
+- 예상 등급: ${prev.final_level}
+- 총점: ${Number(prev.total_score).toFixed(1)}/100
+- F: ${Number(prev.score_f).toFixed(1)} / A: ${Number(prev.score_a).toFixed(1)} / C: ${Number(prev.score_c).toFixed(1)} / T: ${Number(prev.score_t).toFixed(1)}
+
+### 등급 변화
+- ${comparison.level_change === "up" ? "상승" : comparison.level_change === "down" ? "하락" : "유지"} (${comparison.level_diff > 0 ? "+" : ""}${comparison.level_diff}단계)
+- 점수 변화: ${comparison.score_diff > 0 ? "+" : ""}${comparison.score_diff.toFixed(1)}
+
+### 병목 영역
+- ${bottleneck.label} (${bottleneck.score.toFixed(1)}점, 4영역 중 최저)
+
+### 유형별 달성률
+${typeStr}
+
+---
+
+아래 JSON 형식으로 분석해주세요:
+
+{
+  "summary": "① 한 줄 요약 (30자 내외, 핵심 변화 + 의미)",
+  "level_change_reason": "③ 등급이 왜 올랐는지/유지됐는지/내려갔는지 원인 분석 (2~3문장)",
+  "fact_comments": {
+    "F": "④ 말하기흐름 변화 해석 (숫자가 아닌 의미 설명)",
+    "A": "④ 문법정확성 변화 해석",
+    "C": "④ 내용풍부도 변화 해석",
+    "T": "④ 질문수행력 변화 해석"
+  },
+  "bottleneck": {
+    "primary": "${bottleneck.key}",
+    "reason": "⑥ 왜 이 영역이 다음 등급을 막는 병목인지 설명"
+  },
+  "recommended_actions": [
+    { "priority": 1, "action": "⑦ 이번 주 반드시 할 것 (가장 중요)", "training_type": "epp|forced_variation|timed_practice|self_repair 중 택1" },
+    { "priority": 2, "action": "⑦ 다음 모의고사 전에 할 것", "training_type": "..." },
+    { "priority": 3, "action": "⑦ 시험장에서 주의할 점", "training_type": "..." }
+  ]
+}`;
+}
+
+// Phase D: 성장 패턴 감지 (3회차+)
+function detectGrowthPattern(
+  currentFact: { score_f: number; score_a: number; score_c: number; score_t: number },
+  // deno-lint-ignore no-explicit-any
+  prevReports: any[],
+): { pattern: string; message: string } | null {
+  if (prevReports.length < 2) return null;
+
+  const prev1 = prevReports[0]; // 직전
+  const prev2 = prevReports[1]; // 2회 전
+
+  const fTrend = currentFact.score_f - Number(prev2.score_f || 0);
+  const aTrend = currentFact.score_a - Number(prev2.score_a || 0);
+  const cTrend = currentFact.score_c - Number(prev2.score_c || 0);
+  const tTrend = currentFact.score_t - Number(prev2.score_t || 0);
+
+  // 패턴 1: F 빠른 상승 + C 느린 상승
+  if (fTrend > 3 && cTrend < 1.5 && currentFact.score_c < currentFact.score_f) {
+    return {
+      pattern: "f_fast_c_slow",
+      message: "자연스러운 초기 성장 패턴이에요. 이제부터는 '길게 말하기'보다 '구체적으로 말하기'가 중요합니다.",
+    };
+  }
+
+  // 패턴 2: T 급상승 후 흔들림
+  const tPrev = Number(prev1.score_t || 0);
+  const tPrev2 = Number(prev2.score_t || 0);
+  if (tPrev - tPrev2 > 5 && currentFact.score_t < tPrev) {
+    return {
+      pattern: "t_unstable",
+      message: "질문수행력이 크게 올랐지만 아직 안정화가 필요해요. 압박 환경에서 연습하면 더 견고해집니다.",
+    };
+  }
+
+  // 패턴 3: A plateau (화석화)
+  if (Math.abs(aTrend) < 1 && currentFact.score_a < 7) {
+    return {
+      pattern: "a_plateau",
+      message: "반복되는 문법 패턴이 굳어지고 있어요. 집중 교정 훈련으로 돌파할 수 있습니다.",
+    };
+  }
+
+  // 패턴 4: 등급 정체 + FACT 상승
+  const totalTrend = (fTrend + aTrend + cTrend + tTrend) / 4;
+  if (
+    totalTrend > 2 &&
+    prev1.final_level === currentFact &&
+    prev2.final_level === prev1.final_level
+  ) {
+    return {
+      pattern: "score_up_level_same",
+      message: "등급은 유지됐지만 실력은 확실히 성장했어요. 다음 등급에 충분히 가까워졌습니다.",
+    };
+  }
+
+  return null;
+}
+
 // GPT 종합 리포트 생성
 async function generateGPTReport(
   systemPrompt: string,
@@ -653,6 +995,21 @@ Deno.serve(async (req) => {
       .from("mock_test_reports")
       .update(updateData)
       .eq("session_id", session_id);
+
+    // ── 성장 리포트 생성 (2회차부터) ──
+    try {
+      await generateGrowthReport(
+        supabase,
+        session_id,
+        session.user_id,
+        ruleResult.final_level,
+        ruleResult.fact_scores,
+        evaluations,
+      );
+    } catch (growthErr) {
+      // 성장 리포트 실패는 전체 프로세스를 중단하지 않음
+      console.error("성장 리포트 생성 실패 (무시):", growthErr);
+    }
 
     // ── 세션 상태 업데이트 ──
     await supabase

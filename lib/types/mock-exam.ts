@@ -491,11 +491,71 @@ export interface MockTestReport {
   avg_accuracy_score: number | null;
   avg_prosody_score: number | null;
   avg_fluency_score: number | null;
+  // 성장 리포트
+  growth_summary: string | null;
+  growth_comparison: GrowthComparison | null;
+  growth_analysis: GrowthAnalysis | null;
   // 메타
   target_level: string | null;
   test_date: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// 성장 리포트: 이전 대비 변화 (규칙 기반)
+export interface GrowthComparison {
+  previous_session_id: string;
+  previous_level: OpicLevel;
+  previous_total_score: number;
+  previous_score_f: number;
+  previous_score_a: number;
+  previous_score_c: number;
+  previous_score_t: number;
+  level_change: "up" | "down" | "same";
+  level_diff: number;
+  score_diff: number;
+  score_f_diff: number;
+  score_a_diff: number;
+  score_c_diff: number;
+  score_t_diff: number;
+  session_count: number; // 이 사용자의 총 완료 세션 수
+  // ⑤ question_type 비교 (규칙 기반)
+  type_comparison: TypeComparisonItem[];
+}
+
+export interface TypeComparisonItem {
+  type: string;
+  current_pass_rate: number;
+  previous_pass_rate: number | null;
+  change: number | null; // current - previous
+  current_count: number;
+}
+
+// 성장 리포트: GPT 생성 분석
+export interface GrowthAnalysis {
+  // ③ 등급 변화 원인
+  level_change_reason: string;
+  // ④ FACT별 해석
+  fact_comments: {
+    F: string;
+    A: string;
+    C: string;
+    T: string;
+  };
+  // ⑥ 병목 분석
+  bottleneck: {
+    primary: string; // "F" | "A" | "C" | "T"
+    reason: string;
+  };
+  // ⑦ 추천 행동
+  recommended_actions: Array<{
+    priority: number;
+    action: string;
+    training_type: string; // epp, forced_variation, timed_practice, self_repair 등
+  }>;
+  // 성장 패턴 (Phase D)
+  growth_pattern: string | null;
+  pattern_message: string | null;
 }
 
 // 훈련 권장 항목

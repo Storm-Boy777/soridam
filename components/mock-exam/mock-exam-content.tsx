@@ -20,6 +20,7 @@ import {
 import dynamic from "next/dynamic";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { GradeProgressChart, CurrentStateCard } from "./history/grade-progress-chart";
+import { GrowthReport } from "./result/growth-report";
 import { ExamPoolSelector } from "./start/exam-pool-selector";
 import { ModeSelector, TestModeConfirm } from "./start/mode-selector";
 import {
@@ -608,6 +609,9 @@ function ResultsTab({
         mode={sessionData.session.mode}
         previousResult={previousResult}
       />
+
+      {/* 성장 리포트 (2회차부터 표시) */}
+      <GrowthReport report={sessionData.report} />
     </div>
   );
 }
