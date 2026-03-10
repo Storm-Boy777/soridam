@@ -162,6 +162,8 @@ export async function saveAdminReview(
         status: "complete",
         step_completed: 3,
         source: "admin",
+        exam_approved: "approved",
+        exam_approved_at: new Date().toISOString(),
         submitted_at: new Date().toISOString(),
       })
       .select("id")
