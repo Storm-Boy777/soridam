@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { GradeProgressChart, CurrentStateCard } from "./history/grade-progress-chart";
 import { ExamPoolSelector } from "./start/exam-pool-selector";
 import { ModeSelector, TestModeConfirm } from "./start/mode-selector";
 import {
@@ -33,12 +34,10 @@ import {
 import type {
   MockExamMode,
   MockExamHistoryItem,
-  OpicLevel,
 } from "@/lib/types/mock-exam";
 import {
   MOCK_EXAM_MODE_LABELS,
   SESSION_STATUS_LABELS,
-  OPIC_LEVEL_ORDER,
 } from "@/lib/types/mock-exam";
 
 // 결과 탭 ResultSummary — 동적 로드 (초기 번들 감소 + 에러 핸들링)
@@ -682,10 +681,12 @@ function HistoryTab({
         description="모의고사 응시 기록과 등급 변화 추이를 한눈에 확인할 수 있습니다."
       />
 
-      {/* 등급 추이 미니 차트 (2건 이상일 때만) */}
-      {trendData.length >= 2 && (
-        <LevelTrendMini data={trendData} />
-      )}
+      {/* 등급 추이 그래프 (2건 이상) 또는 현재 상태 카드 (1건) */}
+      {trendData.length >= 2 ? (
+        <GradeProgressChart data={trendData} />
+      ) : trendData.length === 1 ? (
+        <CurrentStateCard data={trendData[0]} />
+      ) : null}
 
       {/* 헤더 + 필터 */}
       <div className="flex items-center justify-between">
@@ -795,65 +796,6 @@ function HistoryTab({
           )}
         </button>
       ))}
-    </div>
-  );
-}
-
-/* ── 등급 추이 미니 차트 ── */
-
-function LevelTrendMini({
-  data,
-}: {
-  data: MockExamHistoryItem[];
-}) {
-  // 최근 10건만
-  const items = data.slice(-10);
-  const maxLevel = 7; // AL
-
-  return (
-    <div className="rounded-xl border border-border bg-surface p-3 sm:p-4">
-      <h4 className="mb-2 text-xs font-medium text-foreground-muted sm:mb-3">등급 추이</h4>
-      <div className="flex items-end gap-1" style={{ height: 80 }}>
-        {items.map((item, i) => {
-          const levelNum = OPIC_LEVEL_ORDER[item.final_level as OpicLevel] ?? 0;
-          const heightPct = maxLevel > 0 ? (levelNum / maxLevel) * 100 : 0;
-          const isLast = i === items.length - 1;
-
-          return (
-            <div key={item.session_id} className="flex flex-1 flex-col items-center gap-1">
-              {/* 등급 레이블 (마지막만) */}
-              {isLast && (
-                <span className="text-[9px] font-bold text-primary-600">
-                  {item.final_level}
-                </span>
-              )}
-              {/* 바 */}
-              <div
-                className={`w-full rounded-t transition-all ${
-                  isLast ? "bg-primary-500" : "bg-primary-200"
-                }`}
-                style={{
-                  height: `${Math.max(heightPct, 8)}%`,
-                  minHeight: 6,
-                }}
-              />
-              {/* 날짜 */}
-              <span className="text-[8px] text-foreground-muted">
-                {new Date(item.started_at).toLocaleDateString("ko-KR", {
-                  month: "numeric",
-                  day: "numeric",
-                })}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-      {/* Y축 레이블 */}
-      <div className="mt-1 flex justify-between text-[8px] text-foreground-muted">
-        <span>NH</span>
-        <span>IM2</span>
-        <span>AL</span>
-      </div>
     </div>
   );
 }

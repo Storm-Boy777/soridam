@@ -244,7 +244,8 @@ opictalkdoc/                 # Git 루트 = Next.js 루트 (표준 구조)
 │   │   ├── 003_submissions.sql
 │   │   ├── 004_scripts.sql
 │   │   ├── 009_questions.sql
-│   │   └── 011_mock_test.sql
+│   │   ├── 011_mock_test.sql
+│   │   └── 014_tutoring.sql
 │   └── functions/
 │       ├── _shared/
 │       │   ├── azure-pronunciation.ts     # Azure Speech SDK 발음 평가 (WebSocket)
@@ -287,6 +288,9 @@ opictalkdoc/                 # Git 루트 = Next.js 루트 (표준 구조)
 │   │   │   └── result-detail.tsx      # 문항별 상세 아코디언
 │   │   └── evaluation/
 │   │       └── eval-waiting.tsx       # 평가 대기 + 진행률
+│   ├── tutoring/            # 튜터링 모듈 UI
+│   │   ├── tutoring-content.tsx       # 3탭 래퍼 (진단/처방/훈련)
+│   │   └── training-session.tsx       # 훈련 세션 (Screen 0~6, 7개 프로토콜)
 │   └── shadowing/           # 쉐도잉 훈련 모듈 UI (9개 컴포넌트)
 │       ├── shadowing-content.tsx      # 메인 래퍼 + 키보드 단축키
 │       ├── shadowing-player.tsx       # 오디오 플레이어 + 문장 하이라이트
@@ -302,13 +306,14 @@ opictalkdoc/                 # Git 루트 = Next.js 루트 (표준 구조)
 │   ├── actions/reviews.ts     # Server Actions (12개)
 │   ├── actions/scripts.ts     # Server Actions (16개)
 │   ├── actions/mock-exam.ts   # Server Actions (10개)
+│   ├── actions/tutoring.ts    # Server Actions (7개 + 처방엔진)
 │   ├── hooks/use-recorder.ts  # 녹음 훅 (볼륨 분석, 무음 감지)
 │   ├── hooks/use-question-player.ts  # 질문 오디오 재생 훅
 │   ├── hooks/use-eval-polling.ts     # 평가 폴링 훅
 │   ├── queries/master-questions.ts
 │   ├── react-query.ts        # QueryClient 팩토리 (서버/브라우저 싱글턴)
 │   ├── stores/shadowing.ts    # Zustand 쉐도잉 상태 (persist)
-│   ├── types/{reviews,scripts,mock-exam}.ts  # 타입 정의
+│   ├── types/{reviews,scripts,mock-exam,tutoring}.ts  # 타입 정의
 │   ├── validations/{reviews,scripts,mock-exam}.ts # Zod 스키마
 │   ├── utils/combo-extractor.ts
 │   ├── auth.ts               # getUser() + getAuthClaims()
@@ -482,13 +487,26 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 | 03-03 | Step 3 안정화 | 세션 플로우 버그 수정 (녹음 레이스컨디션, Q1 플로우, 자동재생 제거) + 문서 현행화 |
 | 03-08 | 평가+튜터링 설계 | 모의고사 평가 v2 설계 확정 (개별 6-Layer + 종합 5개 개선) + **튜터링 v3 완전 재설계** (GPT-5.2 전문가 4회 자문 → 세션+5프로토콜) |
 | 03-08 | **평가 v3 확정** | GPT-5.2/5.4 전문가 2회 자문 기반 — 개별평가 5단계 표시순서 + 10 question_type별 체크리스트 + 3축 무응답 감지 + 피드백 분기(무응답/부분/정상) + 구제 메시지 설계 |
+| 03-08 | Step 4 ✅ (UI/SA/DB) | **튜터링** UI+SA+DB 구현 (7테이블 + SA 7개 + 처방엔진 + 3탭 UI + 훈련 세션 Screen 0~6). EF 미구현 |
+| 03-10 | UX+설계 | 전 모듈 탭 URL 동기화(history.replaceState) + 모의고사 초기 로딩 최적화 + 성장리포트 설계 문서 (GPT-5.4 자문) |
 
 <!-- 이후 새 이력은 이 테이블에 행 추가 + memory/개발이력.md에 상세 기록 -->
 
 ## 🔮 현재 상태 & 다음 단계
 
-**현재**: Phase 3 (핵심 모듈 이관) — Step 3 ✅ + **평가 v3 설계 ✅** + 튜터링 v3 설계 ✅
-**다음 작업**: Step 4 튜터링 구현 (Phase A~D) → 리브랜딩(P-5)
+**현재**: Phase 3 (핵심 모듈 이관) — Step 4 튜터링 UI/SA/DB ✅ + **EF 미구현** + 성장리포트 설계 ✅
+**다음 작업**: 튜터링 EF 구현 (GPT 세션/평가/피드백) + 성장리포트 구현 → 리브랜딩(P-5)
+
+### 튜터링 모듈 구현 현황
+| 영역 | 상태 | 상세 |
+|------|------|------|
+| DB 스키마 (7테이블) | ✅ | `014_tutoring.sql` — sessions, prescriptions, training_sessions, attempts, review_schedule, skill_history + Storage |
+| Server Actions (7함수) | ✅ | getDiagnosis, startTutoringSession(+처방엔진), getPrescriptions, createTrainingSession, saveAttempt, completeTrainingSession, getTrainingHistory |
+| Type 정의 | ✅ | `lib/types/tutoring.ts` — 6타입 + LEVEL_PARAMS + DRILL_TAG 매핑 |
+| UI (3탭 + 훈련 세션) | ✅ | tutoring-content(진단/처방/훈련) + training-session(Screen 0~6) |
+| 페이지/라우트 | ✅ | `/tutoring` + `/tutoring/training` |
+| **Edge Functions** | ❌ | GPT 세션 Brief, EPP/Variation/Transformation 데이터 생성, Timed 평가, Self-repair 평가 |
+| Zod Validation | ❌ | `lib/validations/tutoring.ts` 미구현 |
 
 ### ⏳ 리브랜딩 작업 (P-5: 오픽톡닥 → 하루오픽)
 > Phase 3 전체 완료(Step 4 튜터링까지) 후 진행. 상세는 `docs/의사결정.md` P-5, `docs/실행계획.md` 참조.
@@ -520,7 +538,7 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 - **모의고사** (/mock-exam): 응시 | 결과 | 나의 이력
 - **튜터링** (/tutoring): 진단 | 처방 | 훈련
 
-### DB 현황 (18개 테이블)
+### DB 현황 (24개 테이블)
 - **questions**: 471행 (D-1 전면 교체 — 13컬럼, 새 ID 체계. 원본: `docs/질문 DB/questions_db.xlsx`)
 - **orders**: 결제 기록 테이블 (RLS: 본인 조회만)
 - **user_credits**: 사용자 이용권 테이블 (회원가입 트리거로 자동 생성)
@@ -538,7 +556,13 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 - **mock_test_evaluations**: 개별 평가 (STT + 발음 + GPT 체크박스, FK → answers)
 - **mock_test_reports**: 종합 리포트 (FACT 점수, 등급, GPT 총평, FK → sessions)
 - **mock_test_evaluation_queue**: 평가 큐 (EF fire-and-forget 체인용)
-- **Storage**: audio-recordings + script-packages + mock-test-recordings 버킷
+- **tutoring_sessions**: 튜터링 세션 (status: active/paused/completed)
+- **tutoring_prescriptions**: 처방 과제 (priority 1~N, status: pending/in_progress/completed)
+- **tutoring_training_sessions**: 훈련 세션 (session_type: guided/free/simulation)
+- **tutoring_attempts**: 훈련 시도 (Screen별, protocol별, metrics/pronunciation/evaluation)
+- **tutoring_review_schedule**: SRS 복습 스케줄
+- **tutoring_skill_history**: 성장 추적
+- **Storage**: audio-recordings + script-packages + mock-test-recordings + tutoring-recordings 버킷
 
 ### 결제 시스템 현황
 - **결제 SDK**: 포트원(PortOne) V2 — `@portone/browser-sdk`
@@ -597,5 +621,5 @@ PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/1
 > 의사결정 기록은 `docs/의사결정.md` 참조
 
 ---
-*최종 업데이트: 2026-03-08*
-*상태: Phase 3 Step 3 ✅ + 평가 v2 설계 ✅ + 튜터링 v3 설계 ✅. 다음: Step 4 튜터링 구현*
+*최종 업데이트: 2026-03-10*
+*상태: Phase 3 Step 4 튜터링 UI/SA/DB ✅ (EF 미구현). 다음: 튜터링 EF + 성장리포트 구현*
