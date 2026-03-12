@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -16,6 +17,7 @@ import {
   Microscope,
   Trophy,
   RefreshCw,
+  Stethoscope,
 } from "lucide-react";
 import ScrollReveal from "@/components/motion/ScrollReveal";
 import { motion } from "framer-motion";
@@ -38,94 +40,92 @@ const misconceptions = [
   {
     rough: '"난이도는 5-5가 좋다더라"',
     question: "그런데 왜?",
-    precise: "5-5면 상위등급 확률 2~6.5배 증가",
-    proof: "롤플레이 1회로 감소, 불리한 유형 회피",
+    precise: "5-5면 상위등급 확률이 급상승",
+    proof: "롤플레이 감소, 불리한 유형 회피",
   },
   {
     rough: '"스크립트 외우면 안 된다더라"',
     question: "그런데 대안이 뭔데?",
-    precise: "AI가 내 경험으로 스크립트를 만든다",
+    precise: "내 경험으로 나만의 스크립트를 만든다",
     proof: "남의 스크립트 암기 → 최고 NM등급(ACTFL\u00a0공식)",
   },
 ];
 
-const questionTypes = [
-  { group: "기본", num: "1번", type: "묘사", content: "장소나 종류를 현재시제로 묘사", example: "좋아하는 공원을 묘사해주세요" },
-  { group: "기본", num: "2번", type: "루틴", content: "활동, 루틴, 단계를 묘사", example: "공원에서 보통 뭘 하나요" },
-  { group: "기본", num: "3번", type: "경험", content: "최초 혹은 최근 경험", example: "최근에 공원 간 적 있나요" },
-  { group: "기본", num: "4번", type: "인상", content: "인상적인 경험", example: "공원에서 인상깊은 일이 있나요" },
-  { group: "기본", num: "5번", type: "질문", content: "상대방에게 간단한 질문", example: "상대방에게 공원에 대해 질문하기" },
-  { group: "롤플레이", num: "6번", type: "정보요청", content: "상황 속 정보 요청", example: "영화 티켓 구매에 필요한 정보요청" },
-  { group: "롤플레이", num: "7번", type: "문제해결", content: "문제 상황 대안 제시", example: "영화관에서 생긴 티켓 문제 해결" },
-  { group: "롤플레이", num: "8번", type: "경험연결", content: "유사한 문제 경험", example: "예약이 잘못되었던 경험" },
-  { group: "고급", num: "9번", type: "비교/대조", content: "과거와 현재 비교", example: "10년 전과 지금의 여행 문화 비교" },
-  { group: "고급", num: "10번", type: "사회이슈", content: "사회적 관심사 설명", example: "환경 문제에 대해 예를 들어 설명" },
+const questionTypes: { num: string; combo: string; type: string; fixed: boolean }[] = [
+  { num: "Q1", combo: "소개", type: "소개 (채점 안함)", fixed: true },
+  { num: "Q2", combo: "일반 1", type: "묘사", fixed: true },
+  { num: "Q3", combo: "일반 1", type: "루틴 · 묘사 · 비교 · 경험(어릴적/처음)", fixed: false },
+  { num: "Q4", combo: "일반 1", type: "루틴 · 비교 · 경험(어릴적/처음 · 최근 · 특별한)", fixed: false },
+  { num: "Q5", combo: "일반 2", type: "묘사", fixed: true },
+  { num: "Q6", combo: "일반 2", type: "루틴 · 비교 · 경험(어릴적/처음)", fixed: false },
+  { num: "Q7", combo: "일반 2", type: "경험(최근 · 특별한)", fixed: false },
+  { num: "Q8", combo: "일반 3", type: "묘사", fixed: true },
+  { num: "Q9", combo: "일반 3", type: "루틴 · 비교 · 경험(어릴적/처음)", fixed: false },
+  { num: "Q10", combo: "일반 3", type: "경험(최근 · 특별한)", fixed: false },
+  { num: "Q11", combo: "롤플레이", type: "질문하기", fixed: true },
+  { num: "Q12", combo: "롤플레이", type: "대안제시", fixed: true },
+  { num: "Q13", combo: "롤플레이", type: "경험(특별한)", fixed: true },
+  { num: "Q14", combo: "어드밴스", type: "비교/변화", fixed: true },
+  { num: "Q15", combo: "어드밴스", type: "사회적이슈", fixed: true },
 ];
 
 const surveyCategories = [
-  { cat: "1. 직업", choice: "일 경험 없음", strategy: "출제 차단", color: "text-red-500", bg: "bg-red-50", reason: "직장 콤보가 시험에 안 나옴" },
-  { cat: "2. 학생 여부", choice: "아니오", strategy: "출제 차단", color: "text-red-500", bg: "bg-red-50", reason: "학교/수업 콤보가 시험에 안 나옴" },
-  { cat: "3. 수강", choice: "5년 이상", strategy: "출제 차단", color: "text-red-500", bg: "bg-red-50", reason: "수강 관련 꼬리 질문이 안 나옴" },
+  { cat: "1. 직업", choice: "일 경험 없음", strategy: "출제 차단", color: "text-[#BF5B43]", bg: "bg-[#BF5B43]/10", reason: "직장 콤보가 시험에 안 나옴" },
+  { cat: "2. 학생 여부", choice: "아니오", strategy: "출제 차단", color: "text-[#BF5B43]", bg: "bg-[#BF5B43]/10", reason: "학교/수업 콤보가 시험에 안 나옴" },
+  { cat: "3. 수강", choice: "5년 이상", strategy: "출제 차단", color: "text-[#BF5B43]", bg: "bg-[#BF5B43]/10", reason: "수강 관련 꼬리 질문이 안 나옴" },
   { cat: "4. 거주지", choice: "홀로 거주", strategy: "범위 축소", color: "text-amber-600", bg: "bg-amber-50", reason: "가족 묘사 문제 제거" },
   { cat: "5. 여가 활동", choice: "영화, 쇼핑, TV, 공연, 콘서트", strategy: "핵심 주제", color: "text-primary-600", bg: "bg-primary-50", reason: "항목 수 채우면서 출제 주제 통제" },
   { cat: "6. 취미/관심사", choice: "음악 감상 (단독)", strategy: "핵심 주제", color: "text-primary-600", bg: "bg-primary-50", reason: "하나만 고르면 100% 출제" },
-  { cat: "7. 운동", choice: "조깅, 걷기, 운동안함", strategy: "무해 필러", color: "text-gray-500", bg: "bg-gray-50", reason: "선택해도 시험에 관련 문제 0건" },
+  { cat: "7. 운동", choice: "조깅, 걷기, 운동안함", strategy: "무해 필러", color: "text-[#8B7E72]", bg: "bg-[#F3ECE4]", reason: "선택해도 시험에 관련 문제 0건" },
   { cat: "8. 휴가/여행", choice: "집휴가, 국내여행, 해외여행", strategy: "핵심 주제", color: "text-primary-600", bg: "bg-primary-50", reason: "핵심 학습 주제" },
 ];
 
 const topicFrequency = [
-  { rank: 1, topic: "집", rate: "51.7%", tier: "핵심" },
-  { rank: 2, topic: "음악", rate: "48.7%", tier: "핵심" },
-  { rank: 3, topic: "집에서 보내는 휴가", rate: "20.9%", tier: "핵심" },
-  { rank: 4, topic: "국내여행", rate: "20.0%", tier: "핵심" },
-  { rank: 5, topic: "MP3 Player 구매", rate: "14.3%", tier: "우선" },
-  { rank: 6, topic: "영화", rate: "12.6%", tier: "우선" },
-  { rank: 7, topic: "해외여행", rate: "10.4%", tier: "우선" },
-  { rank: 8, topic: "여행 계획", rate: "10.4%", tier: "우선" },
-  { rank: 9, topic: "쇼핑", rate: "8.3%", tier: "우선" },
-  { rank: 10, topic: "공연 예매", rate: "6.5%", tier: "우선" },
+  { rank: 1, topic: "음악", count: "144건", tier: "핵심" },
+  { rank: 2, topic: "집", count: "123건", tier: "핵심" },
+  { rank: 3, topic: "해외여행", count: "45건", tier: "핵심" },
+  { rank: 4, topic: "집에서 보내는 휴가", count: "45건", tier: "핵심" },
+  { rank: 5, topic: "국내여행", count: "43건", tier: "핵심" },
+  { rank: 6, topic: "영화", count: "29건", tier: "우선" },
+  { rank: 7, topic: "쇼핑", count: "18건", tier: "우선" },
+  { rank: 8, topic: "공연/콘서트", count: "17건", tier: "우선" },
+  { rank: 9, topic: "TV", count: "4건", tier: "우선" },
 ];
 
 const commonTopicFrequency = [
-  { rank: 1, topic: "지형", count: "22건", cumRate: "9.3%", highlight: true },
-  { rank: 2, topic: "미용실", count: "19건", cumRate: "17.4%", highlight: true },
-  { rank: 3, topic: "재활용", count: "19건", cumRate: "25.4%", highlight: true },
-  { rank: 4, topic: "은행", count: "18건", cumRate: "33.1%", highlight: true },
-  { rank: 5, topic: "날씨", count: "16건", cumRate: "39.8%", highlight: true },
-  { rank: 6, topic: "산업", count: "11건", cumRate: "44.5%", highlight: true },
-  { rank: 7, topic: "패션", count: "11건", cumRate: "49.2%", highlight: false },
-  { rank: 8, topic: "호텔", count: "10건", cumRate: "53.4%", highlight: false },
-  { rank: 9, topic: "기술", count: "10건", cumRate: "57.6%", highlight: false },
-  { rank: 10, topic: "음식점", count: "9건", cumRate: "61.4%", highlight: false },
-];
-
-const difficultyComparison = [
-  { grade: "AL", average: "6%", fiveFive: "20%", multiplier: "3.3배 ↑", up: true },
-  { grade: "IH", average: "22%", fiveFive: "41%", multiplier: "1.9배 ↑", up: true },
-  { grade: "IM3", average: "4%", fiveFive: "26%", multiplier: "6.5배 ↑", up: true },
-  { grade: "IM2", average: "29%", fiveFive: "6%", multiplier: "80% ↓", up: false },
-  { grade: "IL", average: "15%", fiveFive: "2%", multiplier: "87% ↓", up: false },
+  { rank: 1, topic: "지형", count: "35건", cumRate: "9.8%", highlight: true },
+  { rank: 2, topic: "재활용", count: "27건", cumRate: "17.4%", highlight: true },
+  { rank: 3, topic: "모임", count: "22건", cumRate: "23.5%", highlight: true },
+  { rank: 4, topic: "은행", count: "22건", cumRate: "29.7%", highlight: true },
+  { rank: 5, topic: "전화기", count: "19건", cumRate: "35.0%", highlight: true },
+  { rank: 6, topic: "산업", count: "19건", cumRate: "40.3%", highlight: true },
+  { rank: 7, topic: "미용실", count: "19건", cumRate: "45.7%", highlight: true },
+  { rank: 8, topic: "건강", count: "18건", cumRate: "50.7%", highlight: true },
+  { rank: 9, topic: "날씨", count: "16건", cumRate: "55.2%", highlight: true },
+  { rank: 10, topic: "호텔", count: "16건", cumRate: "59.7%", highlight: true },
 ];
 
 const gradeStrategies = [
-  { grade: "IL", samsung: "4급", difficulty: "3단계", focus: "묘사, 인상, 정보요청, 문제해결", length: "30~40초", key: "단문 위주, 짧게 답변" },
-  { grade: "IM1/IM2", samsung: "3급", difficulty: "4단계", focus: "경험, 인상, 정보요청, 문제해결", length: "60~70초", key: "자기 생각을 덧붙이기" },
-  { grade: "IM3/IH", samsung: "2급", difficulty: "5-5", focus: "경험, 인상, 문제해결, 경험연결", length: "80~100초", key: "복문 구조, 관계사 활용" },
-  { grade: "AL", samsung: "1급", difficulty: "5-5", focus: "문제해결, 경험연결, 비교/대조, 사회이슈", length: "100~120초", key: "디테일한 묘사, 정확한 문법" },
+  { grade: "IL", pattern: "Simple Info", label: "단순 정보 전달", bg: "bg-stone-400", practice: "기본 문장 3~4개로 단순한 정보를 전달", example: "I live in Seoul. I like my city." },
+  { grade: "IM1", pattern: "Description", label: "짧은 묘사", bg: "bg-amber-400", practice: "형용사와 간단한 이유를 붙여 4~5문장으로 묘사", example: "My room is small but cozy. I like it because it is quiet." },
+  { grade: "IM2", pattern: "Routine", label: "일상 경험 설명", bg: "bg-amber-500", practice: "시간 순서(First → Then → Usually)로 루틴을 6~7문장 설명", example: "Every morning I wake up at 7. First I exercise, then I have breakfast." },
+  { grade: "IM3", pattern: "Experience", label: "경험 확장 + 디테일", bg: "bg-primary-500", practice: "구체적 에피소드와 디테일을 추가하여 7~9문장으로 확장", example: "One time something interesting happened. I was at a café when..." },
+  { grade: "IH", pattern: "Explain", label: "이유 + 스토리 전개", bg: "bg-[#A5603F]", practice: "이유를 설명하고, 경험을 사건→반응 구조로 전개, 변형 질문 대응", example: "I like hiking because it helps me relax. Last weekend..." },
+  { grade: "AL", pattern: "Analyze", label: "분석 + 비교", bg: "bg-[#3A2E25]", practice: "과거↔현재 비교, 변화의 원인 분석, 의견과 관점 제시", example: "In the past... But these days... I think this change happened because..." },
 ];
 
 const flywheelScaleEffects = [
   { scale: "현재", precision: "3:2 비율 확인, 빈출 주제 파악", effect: "핵심 10개 주제 집중", current: true },
-  { scale: "500건", precision: "±3% 수준의 정밀 빈도", effect: "주제별 우선순위 확정", current: false },
-  { scale: "2,000건", precision: "난이도별·시기별 패턴 분석", effect: "시기에 따른 맞춤 전략", current: false },
-  { scale: "10,000건+", precision: "출제 패턴 거의 완벽 예측", effect: "준비한 것이 그대로 시험에 출제", current: false },
+  { scale: "500건", precision: "주제별 빈도 순위 안정화", effect: "학습 우선순위 확정", current: false },
+  { scale: "1,000건", precision: "난이도별·서베이별 교차 분석", effect: "서베이 조합별 맞춤 전략", current: false },
+  { scale: "3,000건+", precision: "시기별·유형별 출제 패턴 분석", effect: "정밀한 출제 예측", current: false },
 ];
 
 const modules = [
-  { icon: BarChart3, name: "데이터랩", desc: "실제 시험 후기를 수집·분석하여 출제 빈도를 파악합니다. 어떤 주제가 자주 나오는지 데이터로 확인할 수 있습니다." },
-  { icon: FileText, name: "AI 훈련소", desc: "빈출 주제를 기반으로 내 경험이 담긴 스크립트를 생성합니다. 남의 답변이 아닌, 나만의 영어 대본을 만들 수 있습니다." },
-  { icon: ClipboardList, name: "모의고사", desc: "실제 OPIc과 동일한 5콤보 15문제로 실전을 재현합니다. 빈출 모드로 출제 경향에 맞춘 연습이 가능합니다." },
-  { icon: Headphones, name: "쉐도잉", desc: "내 스크립트로 발음·억양·유창성을 반복 훈련합니다. 목표 등급에 맞는 발화량을 자연스럽게 채울 수 있습니다." },
+  { icon: BarChart3, name: "시험후기", desc: "시험 후기를 수집·분석하여 출제 빈도를 파악합니다.\n같은 서베이 기준의 데이터가 쌓일수록 전략이 정밀해집니다." },
+  { icon: FileText, name: "스크립트", desc: "빈출 주제별로 내 경험이 담긴 스크립트를 생성하고, 쉐도잉으로 발음·억양까지 훈련합니다." },
+  { icon: ClipboardList, name: "모의고사", desc: "실제 OPIc과 동일한 5콤보 15문제로 실전을 재현합니다. AI가 답변을 평가하고 등급을 예측합니다." },
+  { icon: Stethoscope, name: "튜터링", desc: "모의고사 결과를 기반으로 약점을 진단하고, 맞춤 처방과 레벨별 훈련을 제공합니다." },
 ];
 
 /* ── 섹션 번호 컴포넌트 ── */
@@ -144,6 +144,12 @@ function SectionNum({ num, label }: { num: string; label: string }) {
 
 /* ── 페이지 콘텐츠 ── */
 export default function StrategyContent() {
+  useEffect(() => {
+    const cls = "strategy-no-scrollbar";
+    document.documentElement.classList.add(cls);
+    return () => document.documentElement.classList.remove(cls);
+  }, []);
+
   return (
     <>
       {/* ━━━ Hero ━━━ */}
@@ -172,7 +178,7 @@ export default function StrategyContent() {
             className="mt-6 max-w-[520px] text-[17px] leading-[1.7] text-[#4A3F36] [word-break:keep-all]"
           >
             사람들이 OPIc을 어려워하는 근본 원인은 영어 실력이 아닙니다.
-            <br className="hidden sm:block" />
+            <br />
             <strong>시험 구조 자체를 모르는 것</strong>입니다.
           </motion.p>
 
@@ -264,7 +270,7 @@ export default function StrategyContent() {
               OPIc은 내가 시험 범위를<br />직접 정하는 시험입니다
             </h2>
             <p className="mx-auto mt-4 max-w-[560px] text-center text-base leading-relaxed text-[#8B7E72]">
-              OPIc 문제를 결정하는 변수는 딱 두 가지. 두 변수 모두 수험자 본인이 직접 선택합니다.
+              OPIc 문제를 결정하는 변수는 딱 두 가지.<br className="sm:hidden" /> 두 변수 모두 수험자 본인이 직접 선택합니다.
             </p>
           </ScrollReveal>
 
@@ -296,7 +302,7 @@ export default function StrategyContent() {
           </div>
 
           <ScrollReveal preset="fade-up" delay={0.15}>
-            <div className="mt-10 overflow-x-auto rounded-2xl border border-[#EAE0D5] bg-white">
+            <div className="mt-10 overflow-x-auto max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden rounded-2xl border border-[#EAE0D5] bg-white">
               <table className="w-full text-xs sm:text-sm">
                 <thead>
                   <tr className="border-b border-[#EAE0D5] bg-[#F3ECE4]">
@@ -309,7 +315,7 @@ export default function StrategyContent() {
                     <tr key={exam}>
                       <td className="px-3 py-3 text-[#8B7E72] sm:px-6">{exam}</td>
                       <td className="px-3 py-3 text-center sm:px-6">
-                        <span className="inline-flex items-center gap-1 text-red-400"><X className="h-4 w-4" /> 예측 불가</span>
+                        <span className="inline-flex items-center gap-1 text-[#B5A99D]"><X className="h-4 w-4" /> 예측 불가</span>
                       </td>
                     </tr>
                   ))}
@@ -335,58 +341,52 @@ export default function StrategyContent() {
               15문제는 무작위가 아닙니다<br />5개 콤보로 구성됩니다
             </h2>
             <p className="mx-auto mt-4 max-w-[560px] text-center text-base leading-relaxed text-[#8B7E72]">
-              OPIc의 모든 문제는 10가지 유형 중 하나이며, 한 콤보 안의 3문제는 같은 주제에서 연속으로 출제됩니다.
+              OPIc 기출문제를 분석한 결과, 모든 문제는 10가지 유형 중 하나이며, 한 콤보 안의 3문제는 같은 주제에서 연속으로 출제됩니다.
             </p>
           </ScrollReveal>
 
           <ScrollReveal preset="fade-up" delay={0.1}>
-            <div className="mt-12 overflow-x-auto rounded-2xl border border-[#EAE0D5] bg-white">
+            <p className="mb-3 mt-12 text-center text-sm font-medium text-[#8B7E72]">난이도 5-5 기준 · 15문제 구조</p>
+            <div className="overflow-x-auto max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden rounded-2xl border border-[#EAE0D5] bg-white">
               <table className="w-full text-xs sm:text-sm">
                 <thead>
                   <tr className="border-b border-[#EAE0D5] bg-[#F3ECE4]">
-                    <th className="px-2 py-2.5 text-center font-semibold text-[#3A2E25] sm:px-5 sm:py-3">그룹</th>
-                    <th className="px-2 py-2.5 text-center font-semibold text-[#3A2E25] sm:px-5 sm:py-3">유형</th>
-                    <th className="hidden px-2 py-2.5 text-left font-semibold text-[#3A2E25] sm:table-cell sm:px-5 sm:py-3">내용</th>
-                    <th className="hidden px-2 py-2.5 text-left font-semibold text-[#3A2E25] sm:table-cell sm:px-5 sm:py-3">예시</th>
+                    <th className="whitespace-nowrap px-1.5 py-2 text-center font-semibold text-[#3A2E25] sm:px-5 sm:py-3">콤보</th>
+                    <th className="px-1 py-2 text-center font-semibold text-[#3A2E25] sm:px-5 sm:py-3">문항</th>
+                    <th className="px-1.5 py-2 text-left font-semibold text-[#3A2E25] sm:px-5 sm:py-3">출제 유형</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#EAE0D5]">
-                  {questionTypes.map((qt) => (
-                    <tr key={qt.num} className={qt.group === "롤플레이" ? "bg-amber-50/50" : qt.group === "고급" ? "bg-purple-50/50" : ""}>
-                      <td className="px-2 py-2.5 text-center sm:px-5 sm:py-3">
-                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${qt.group === "기본" ? "bg-primary-50 text-primary-600" : qt.group === "롤플레이" ? "bg-amber-50 text-amber-600" : "bg-purple-50 text-purple-600"}`}>{qt.group}</span>
-                      </td>
-                      <td className="px-2 py-2.5 text-center font-semibold text-[#3A2E25] sm:px-5 sm:py-3">{qt.num} {qt.type}</td>
-                      <td className="hidden px-2 py-2.5 text-[#8B7E72] sm:table-cell sm:px-5 sm:py-3">{qt.content}</td>
-                      <td className="hidden px-2 py-2.5 text-xs text-[#B5A99D] sm:table-cell sm:px-5 sm:py-3 sm:text-sm">&ldquo;{qt.example}&rdquo;</td>
-                    </tr>
-                  ))}
+                  {questionTypes.map((qt, idx) => {
+                    const isFirstInCombo = idx === 0 || questionTypes[idx - 1].combo !== qt.combo;
+                    const span = isFirstInCombo ? questionTypes.filter(q => q.combo === qt.combo).length : 0;
+                    const comboBadge = qt.combo.startsWith("일반") ? "bg-primary-50 text-primary-600" : qt.combo === "롤플레이" ? "bg-amber-50 text-amber-600" : qt.combo === "어드밴스" ? "bg-[#3A2E25]/10 text-[#3A2E25]" : "bg-[#F3ECE4] text-[#8B7E72]";
+                    const rowBg = qt.combo === "롤플레이" ? "bg-amber-50/50" : qt.combo === "어드밴스" ? "bg-[#3A2E25]/5" : "";
+                    return (
+                      <tr key={qt.num} className={rowBg}>
+                        {isFirstInCombo && (
+                          <td rowSpan={span} className="border-r border-[#EAE0D5] px-1.5 py-2 text-center align-middle sm:px-5 sm:py-3">
+                            <span className={`inline-flex whitespace-nowrap rounded-full px-1.5 py-0.5 text-[10px] font-semibold sm:px-2 sm:text-xs ${comboBadge}`}>{qt.combo}</span>
+                          </td>
+                        )}
+                        <td className="whitespace-nowrap px-1 py-2 text-center font-mono text-[10px] font-bold text-[#8B7E72] sm:px-5 sm:py-3 sm:text-xs">{qt.num}</td>
+                        <td className="px-1.5 py-2 sm:px-5 sm:py-3">
+                          {qt.fixed ? (
+                            <span className="font-semibold text-[#3A2E25]">{qt.type}</span>
+                          ) : (
+                            <span className="text-[#8B7E72] italic">{qt.type}</span>
+                          )}
+                          {qt.fixed && qt.num !== "Q1" && (
+                            <span className="ml-1 inline-flex rounded-full bg-emerald-50 px-1 py-0.5 text-[9px] font-medium text-emerald-600 sm:ml-1.5 sm:px-1.5 sm:text-[10px]">고정</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
-          </ScrollReveal>
-
-          <ScrollReveal preset="fade-up" delay={0.15}>
-            <div className="mt-10 rounded-2xl bg-[#3A2E25] p-6 sm:p-8">
-              <p className="text-center text-sm font-medium text-[#B5A99D]">난이도 5-5 기준 · 15문제 구조</p>
-              <div className="mt-6 space-y-3 text-sm">
-                {[
-                  { q: "Q1", label: "자기소개", desc: "채점 안함 / Skip 가능", color: "bg-[#4A3F36]" },
-                  { q: "Q2~Q4", label: "일반콤보 1", desc: "설명/묘사 → 행동습관 → 과거경험", color: "bg-primary-500/80" },
-                  { q: "Q5~Q7", label: "일반콤보 2", desc: "설명/묘사 → 행동습관 → 과거경험", color: "bg-primary-500/80" },
-                  { q: "Q8~Q10", label: "일반콤보 3", desc: "설명/묘사 → 행동습관 → 과거경험", color: "bg-primary-500/80" },
-                  { q: "Q11~Q13", label: "롤플레이", desc: "정보요청 → 대안제시 → 과거경험", color: "bg-amber-500/80" },
-                  { q: "Q14~Q15", label: "어드밴스", desc: "Q14=IH판별(비교) · Q15=AL판별(사회이슈)", color: "bg-purple-500/80" },
-                ].map((row) => (
-                  <div key={row.q} className={`flex flex-col gap-1 rounded-lg ${row.color} px-4 py-3 sm:flex-row sm:items-center sm:gap-4`}>
-                    <span className="min-w-[80px] font-mono text-xs font-bold text-white/70">{row.q}</span>
-                    <span className="font-semibold text-white">{row.label}</span>
-                    <span className="text-xs text-white/60">{row.desc}</span>
-                  </div>
-                ))}
-              </div>
-              <p className="mt-6 text-center text-xs leading-relaxed text-[#8B7E72]">선택형 3개 + 공통형 2개가 위 5개 콤보에 배분됩니다. 위치는 고정되지 않습니다.</p>
-            </div>
+            <p className="mt-3 text-center text-xs leading-relaxed text-[#8B7E72]">선택형 3개 + 공통형 2개가 위 5개 콤보에 배분됩니다. 위치는 고정되지 않습니다.</p>
           </ScrollReveal>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -413,9 +413,19 @@ export default function StrategyContent() {
           <ScrollReveal preset="fade-up">
             <SectionNum num="4" label="서베이 전략" />
             <h2 className="mt-6 text-center font-serif text-[1.55rem] font-semibold italic leading-[1.3] tracking-tight text-[#3A2E25] sm:text-[36px]">서베이를 어떻게 해야 하는가</h2>
-            <p className="mx-auto mt-4 max-w-[560px] text-center text-base leading-relaxed text-[#8B7E72]">
-              3가지 원칙: 불필요한 출제를 <strong>차단</strong>하고, 무해한 항목으로 빈칸을 <strong>채우고</strong>, 핵심 주제에 <strong>집중</strong>합니다.
-            </p>
+            <div className="mx-auto mt-8 grid max-w-xl grid-cols-3 gap-2 sm:gap-3">
+              {[
+                { num: "1", label: "차단", desc: "불필요한 출제를 원천 차단" },
+                { num: "2", label: "채우기", desc: "무해한 항목으로 빈칸 채우기" },
+                { num: "3", label: "집중", desc: "핵심 주제에만 집중 학습" },
+              ].map((item) => (
+                <div key={item.num} className="rounded-xl border border-[#EAE0D5] bg-[#F3ECE4] p-4 text-center">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white">{item.num}</span>
+                  <p className="mt-2 text-sm font-bold text-[#3A2E25]">{item.label}</p>
+                  <p className="mt-1 text-xs text-[#8B7E72]">{item.desc}</p>
+                </div>
+              ))}
+            </div>
           </ScrollReveal>
 
           <div className="mt-12 space-y-3">
@@ -434,20 +444,20 @@ export default function StrategyContent() {
           </div>
 
           <ScrollReveal preset="fade-up" delay={0.1}>
-            <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center sm:gap-6">
-              <div className="w-full max-w-[200px] rounded-xl bg-[#F3ECE4] px-5 py-3 text-center sm:w-auto sm:px-6 sm:py-4">
-                <p className="text-2xl font-black text-[#8B7E72]">16개</p>
-                <p className="mt-1 text-xs text-[#B5A99D]">선택한 항목</p>
+            <div className="mt-10 flex flex-row items-center justify-center gap-1.5 sm:flex-row sm:gap-6">
+              <div className="flex-1 rounded-xl bg-[#F3ECE4] px-2 py-2.5 text-center sm:w-auto sm:flex-none sm:px-6 sm:py-4">
+                <p className="text-lg font-black text-[#8B7E72] sm:text-2xl">16개</p>
+                <p className="mt-0.5 whitespace-nowrap text-[10px] text-[#B5A99D] sm:mt-1 sm:whitespace-normal sm:text-xs">선택한 항목</p>
               </div>
-              <span className="text-xl text-[#D4C4B0]"><span className="sm:hidden">↓</span><span className="hidden sm:inline">→</span></span>
-              <div className="w-full max-w-[200px] rounded-xl bg-[#F3ECE4] px-5 py-3 text-center sm:w-auto sm:px-6 sm:py-4">
-                <p className="text-2xl font-black text-[#8B7E72]">6개</p>
-                <p className="mt-1 text-xs text-[#B5A99D]">필러 (출제 0건)</p>
+              <span className="shrink-0 text-base text-[#D4C4B0] sm:text-xl">→</span>
+              <div className="flex-1 rounded-xl bg-[#F3ECE4] px-2 py-2.5 text-center sm:w-auto sm:flex-none sm:px-6 sm:py-4">
+                <p className="text-lg font-black text-[#8B7E72] sm:text-2xl">6개</p>
+                <p className="mt-0.5 whitespace-nowrap text-[10px] text-[#B5A99D] sm:mt-1 sm:whitespace-normal sm:text-xs">필러 (출제 0건)</p>
               </div>
-              <span className="text-xl text-[#D4C4B0]"><span className="sm:hidden">↓</span><span className="hidden sm:inline">→</span></span>
-              <div className="w-full max-w-[200px] rounded-xl bg-primary-50 px-5 py-3 text-center sm:w-auto sm:px-6 sm:py-4">
-                <p className="text-2xl font-black text-primary-600">10개</p>
-                <p className="mt-1 text-xs text-primary-500">실제 공부할 주제</p>
+              <span className="shrink-0 text-base text-[#D4C4B0] sm:text-xl">→</span>
+              <div className="flex-1 rounded-xl bg-primary-50 px-2 py-2.5 text-center sm:w-auto sm:flex-none sm:px-6 sm:py-4">
+                <p className="text-lg font-black text-primary-600 sm:text-2xl">10개</p>
+                <p className="mt-0.5 whitespace-nowrap text-[10px] text-primary-500 sm:mt-1 sm:whitespace-normal sm:text-xs">실제 공부할 주제</p>
               </div>
             </div>
           </ScrollReveal>
@@ -460,23 +470,25 @@ export default function StrategyContent() {
           <ScrollReveal preset="fade-up">
             <SectionNum num="5" label="선택형 빈도" />
             <h2 className="mt-6 text-center font-serif text-[1.55rem] font-semibold italic leading-[1.3] tracking-tight text-[#3A2E25] sm:text-[36px]">
-              실전 데이터가 증명하는<br />진짜 나오는 주제
+              선택형 3콤보 = 60%는<br />이미 내 것
             </h2>
             <p className="mx-auto mt-4 max-w-[560px] text-center text-base leading-relaxed text-[#8B7E72] [word-break:keep-all]">
-              서베이로 범위를 줄인 뒤, 빈도 분석으로 학습 순서를 결정합니다.
-              <br className="hidden sm:block" />{" "}
-              핵심 주제 4개만 완벽히 하면 선택형 콤보의 절반 이상이 대비됩니다.
+              내가 선택한 주제이므로 <strong className="text-[#3A2E25]">전부 학습</strong>합니다.
+              <br />
+              빈도 데이터가 학습 순서를 결정합니다.
+              <br className="sm:hidden" />
+              높은 주제부터 완성도를 높이세요.
             </p>
           </ScrollReveal>
 
           <ScrollReveal preset="fade-up" delay={0.1}>
-            <div className="mt-12 overflow-x-auto rounded-2xl border border-[#EAE0D5] bg-white">
+            <div className="mt-12 overflow-x-auto max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden rounded-2xl border border-[#EAE0D5] bg-white">
               <table className="w-full text-xs sm:text-sm">
                 <thead>
                   <tr className="border-b border-[#EAE0D5] bg-[#F3ECE4]">
                     <th className="px-2 py-2.5 text-center font-semibold text-[#3A2E25] sm:px-6 sm:py-3">순위</th>
                     <th className="px-2 py-2.5 text-left font-semibold text-[#3A2E25] sm:px-6 sm:py-3">주제</th>
-                    <th className="px-2 py-2.5 text-center font-semibold text-[#3A2E25] sm:px-6 sm:py-3">출현율</th>
+                    <th className="px-2 py-2.5 text-center font-semibold text-[#3A2E25] sm:px-6 sm:py-3">빈도</th>
                     <th className="px-2 py-2.5 text-center font-semibold text-[#3A2E25] sm:px-6 sm:py-3">분류</th>
                   </tr>
                 </thead>
@@ -485,39 +497,18 @@ export default function StrategyContent() {
                     <tr key={item.rank} className={item.tier === "핵심" ? "bg-primary-50/50" : ""}>
                       <td className="px-2 py-2.5 text-center font-bold text-[#B5A99D] sm:px-6 sm:py-3">{item.rank}</td>
                       <td className="px-2 py-2.5 font-semibold text-[#3A2E25] sm:px-6 sm:py-3">{item.topic}</td>
-                      <td className="px-2 py-2.5 text-center font-bold text-[#3A2E25] sm:px-6 sm:py-3">{item.rate}</td>
+                      <td className="px-2 py-2.5 text-center font-bold text-[#3A2E25] sm:px-6 sm:py-3">{item.count}</td>
                       <td className="px-2 py-2.5 text-center sm:px-6 sm:py-3">
-                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${item.tier === "핵심" ? "bg-red-50 text-red-500" : "bg-amber-50 text-amber-600"}`}>{item.tier}</span>
+                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${item.tier === "핵심" ? "bg-primary-50 text-primary-600" : "bg-amber-50 text-amber-600"}`}>{item.tier}</span>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <div className="border-t border-[#EAE0D5] bg-[#F3ECE4] px-6 py-3 text-center text-xs text-[#B5A99D]">실제 OPIc 시험 후기 기반 분석</div>
+              <div className="border-t border-[#EAE0D5] bg-[#F3ECE4] px-6 py-3 text-center text-xs text-[#B5A99D]">230건+ 실전 시험 후기 기반 분석</div>
             </div>
           </ScrollReveal>
 
-          <ScrollReveal preset="scale-up" delay={0.15}>
-            <div className="mt-12 rounded-2xl bg-[#3A2E25] p-8 sm:p-10">
-              <p className="text-center text-sm font-medium text-[#B5A99D]">최종 시험 커버리지</p>
-              <div className="mt-6 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-8">
-                <div className="text-center">
-                  <p className="font-serif text-[32px] font-bold italic text-primary-400 sm:text-[48px]">60%</p>
-                  <p className="mt-1 text-sm text-[#8B7E72]">서베이+난이도로 결정</p>
-                </div>
-                <span className="text-2xl text-[#6E6358]">+</span>
-                <div className="text-center">
-                  <p className="font-serif text-[32px] font-bold italic text-purple-400 sm:text-[48px]">30%</p>
-                  <p className="mt-1 text-sm text-[#8B7E72]">빈도 분석으로 추가 커버</p>
-                </div>
-                <span className="text-2xl text-[#6E6358]">=</span>
-                <div className="text-center">
-                  <p className="font-serif text-[40px] font-bold italic text-white sm:text-[56px]">90%+</p>
-                  <p className="mt-1 text-sm text-[#B5A99D]">시험 범위 커버리지</p>
-                </div>
-              </div>
-            </div>
-          </ScrollReveal>
         </div>
       </section>
 
@@ -527,17 +518,17 @@ export default function StrategyContent() {
           <ScrollReveal preset="fade-up">
             <SectionNum num="6" label="공통형 빈도" />
             <h2 className="mt-6 text-center font-serif text-[1.55rem] font-semibold italic leading-[1.3] tracking-tight text-[#3A2E25] sm:text-[36px]">
-              공통형 2개도<br />데이터로 대비합니다
+              공통형 2콤보<br />상위 10개로 24% 추가
             </h2>
             <p className="mx-auto mt-4 max-w-[560px] text-center text-base leading-relaxed text-[#8B7E72]">
               공통형은 서베이로 범위를 줄일 수 없습니다.
-              <br className="hidden sm:block" />{" "}
+              <br />
               <strong>빈도 분석만으로</strong> 우선순위를 정해야 합니다.
             </p>
           </ScrollReveal>
 
           <ScrollReveal preset="fade-up" delay={0.1}>
-            <div className="mt-12 overflow-x-auto rounded-2xl border border-[#EAE0D5] bg-white">
+            <div className="mt-12 overflow-x-auto max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden rounded-2xl border border-[#EAE0D5] bg-white">
               <table className="w-full text-xs sm:text-sm">
                 <thead>
                   <tr className="border-b border-[#EAE0D5] bg-[#F3ECE4]">
@@ -562,14 +553,14 @@ export default function StrategyContent() {
                   ))}
                 </tbody>
               </table>
-              <div className="border-t border-[#EAE0D5] bg-[#F3ECE4] px-6 py-3 text-center text-xs text-[#B5A99D]">공통형 200건+ 기준 분석</div>
+              <div className="border-t border-[#EAE0D5] bg-[#F3ECE4] px-6 py-3 text-center text-xs text-[#B5A99D]">230건+ 실전 시험 후기 기반 분석</div>
             </div>
           </ScrollReveal>
 
           <div className="mt-10 grid gap-4 sm:grid-cols-2">
             {[
-              { label: "상위 6개 주제만 학습하면", value: "44.5%", sub: "공통형 출현의 거의 절반을 커버" },
-              { label: "상위 10개로 확장하면", value: "61.4%", sub: "38%의 주제로 61%를 커버하는 효율" },
+              { label: "상위 5개 주제만 학습하면", value: "35%", sub: "공통형의 1/3 이상을 커버" },
+              { label: "상위 10개로 확장하면", value: "59.7%", sub: "10개 주제로 공통형의 60%를 커버" },
             ].map((item, i) => (
               <ScrollReveal key={item.label} preset="fade-up" delay={i * 0.1}>
                 <div className="rounded-xl border border-[#EAE0D5] bg-white p-6 text-center">
@@ -583,20 +574,23 @@ export default function StrategyContent() {
 
           <ScrollReveal preset="fade-up" delay={0.15}>
             <div className="mt-10 rounded-2xl bg-[#3A2E25] p-6 sm:p-8">
-              <p className="text-center text-sm font-medium text-[#B5A99D]">선택형 + 공통형 결합 커버리지</p>
+              <p className="text-center text-sm font-medium text-[#B5A99D]">최종 시험 커버리지</p>
               <div className="mt-6 space-y-3">
                 <div className="flex items-center gap-4 rounded-lg bg-primary-500/20 px-4 py-3">
-                  <span className="min-w-[80px] text-sm font-bold text-primary-300">선택형 3개</span>
+                  <span className="min-w-[80px] text-sm font-bold text-primary-300">선택형 3콤보</span>
                   <div className="flex-1"><div className="h-3 rounded-full bg-[#4A3F36]"><div className="h-3 rounded-full bg-primary-400" style={{ width: "100%" }} /></div></div>
-                  <span className="text-sm font-bold text-primary-300">60% 커버</span>
+                  <span className="text-sm font-bold text-primary-300">60%</span>
                 </div>
-                <div className="flex items-center gap-4 rounded-lg bg-purple-500/20 px-4 py-3">
-                  <span className="min-w-[80px] text-sm font-bold text-purple-300">공통형 2개</span>
-                  <div className="flex-1"><div className="h-3 rounded-full bg-[#4A3F36]"><div className="h-3 rounded-full bg-purple-400" style={{ width: "45%" }} /></div></div>
-                  <span className="text-sm font-bold text-purple-300">18% 추가</span>
+                <div className="flex items-center gap-4 rounded-lg bg-[#B8945A]/20 px-4 py-3">
+                  <span className="min-w-[80px] text-sm font-bold text-[#D4B87A]">공통형 2콤보</span>
+                  <div className="flex-1"><div className="h-3 rounded-full bg-[#4A3F36]"><div className="h-3 rounded-full bg-[#B8945A]" style={{ width: "60%" }} /></div></div>
+                  <span className="text-sm font-bold text-[#D4B87A]">+24%</span>
                 </div>
               </div>
-              <p className="mt-6 text-center text-xs text-[#8B7E72]">공통형 40% × 빈출 6개 커버율 45% = 18% 추가 → 총 약 78% 대비</p>
+              <div className="mt-6 flex flex-col items-center gap-2">
+                <p className="font-serif text-[40px] font-bold italic text-white sm:text-[56px]">84%</p>
+                <p className="text-center text-xs text-[#8B7E72]">선택형 60% + 공통형 상위 10개 커버율 59.7% × 40% = 24% 추가</p>
+              </div>
             </div>
           </ScrollReveal>
         </div>
@@ -608,10 +602,13 @@ export default function StrategyContent() {
           <ScrollReveal preset="fade-up">
             <SectionNum num="7" label="5-5 전략" />
             <h2 className="mt-6 text-center font-serif text-[1.55rem] font-semibold italic leading-[1.3] tracking-tight text-[#3A2E25] sm:text-[36px]">
-              난이도 5-5를 선택하면<br />상위등급 확률이 뛴다
+              왜 난이도는 5-5인가
             </h2>
-            <p className="mx-auto mt-4 max-w-[560px] text-center text-base leading-relaxed text-[#8B7E72]">
-              서베이(변수 1)로 &ldquo;무엇이&rdquo; 나오는지를 결정했으면, 난이도(변수 2)로 &ldquo;어떻게&rdquo; 나오는지를 결정합니다.
+            <div className="mx-auto mt-6 max-w-[480px] space-y-2 text-center text-base leading-relaxed text-[#8B7E72] [word-break:keep-all]">
+              <p>3~4 단계는 롤플레이가 <strong className="text-[#BF5B43]">2회</strong> 출제되지만,<br />5-5를 선택하면 <strong className="text-primary-600">1회</strong>로 줄고 어드밴스는 건너뛰어도 IH까지 가능합니다.</p>
+            </div>
+            <p className="mx-auto mt-4 max-w-[560px] text-center text-sm font-semibold text-primary-600">
+              오픽톡닥의 모든 기출문제와 빈도 분석은<br className="sm:hidden" /> 난이도 5-5 기준으로 수집·제공됩니다.
             </p>
           </ScrollReveal>
 
@@ -623,7 +620,7 @@ export default function StrategyContent() {
                   <h3 className="font-bold text-[#8B7E72]">난이도 3~4</h3>
                 </div>
                 <div className="mt-4 space-y-2 text-sm text-[#8B7E72]">
-                  <p>롤플레이(질문) <strong className="text-red-500">2번</strong> 출제</p>
+                  <p>롤플레이(질문) <strong className="text-[#BF5B43]">2번</strong> 출제</p>
                   <p>한국 수험자의 약점 유형에 2회 노출</p>
                   <p>IM 문제: 묘사 + 질문</p>
                 </div>
@@ -644,118 +641,62 @@ export default function StrategyContent() {
             </ScrollReveal>
           </div>
 
-          <ScrollReveal preset="fade-up" delay={0.1}>
-            <div className="mt-10 overflow-x-auto rounded-2xl border border-[#EAE0D5] bg-white">
-              <table className="w-full text-xs sm:text-sm">
-                <thead>
-                  <tr className="border-b border-[#EAE0D5] bg-[#F3ECE4]">
-                    <th className="px-2 py-2.5 text-center font-semibold text-[#3A2E25] sm:px-6 sm:py-3">등급</th>
-                    <th className="px-2 py-2.5 text-center font-semibold text-[#3A2E25] sm:px-6 sm:py-3">전체 평균</th>
-                    <th className="px-2 py-2.5 text-center font-semibold text-[#3A2E25] sm:px-6 sm:py-3">5-5 선택자</th>
-                    <th className="px-2 py-2.5 text-center font-semibold text-[#3A2E25] sm:px-6 sm:py-3">배율</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#EAE0D5]">
-                  {difficultyComparison.map((item) => (
-                    <tr key={item.grade} className={item.up ? "bg-primary-50/50" : ""}>
-                      <td className="px-2 py-2.5 text-center font-bold text-[#3A2E25] sm:px-6 sm:py-3">{item.grade}</td>
-                      <td className="px-2 py-2.5 text-center text-[#8B7E72] sm:px-6 sm:py-3">{item.average}</td>
-                      <td className="px-2 py-2.5 text-center font-bold sm:px-6 sm:py-3">
-                        <span className={item.up ? "text-primary-600" : "text-[#B5A99D]"}>{item.fiveFive}</span>
-                      </td>
-                      <td className="px-2 py-2.5 text-center sm:px-6 sm:py-3">
-                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold ${item.up ? "bg-primary-50 text-primary-600" : "bg-gray-100 text-[#B5A99D]"}`}>{item.multiplier}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </ScrollReveal>
-
-          <ScrollReveal preset="scale-up" delay={0.15}>
-            <div className="mt-10 rounded-2xl bg-[#3A2E25] p-8 text-center sm:p-10">
-              <p className="text-sm font-medium text-[#B5A99D]">5-5 선택자의 상위 3등급 (AL+IH+IM3) 달성률</p>
-              <p className="mt-3 font-serif text-[40px] font-bold italic text-white sm:text-[56px]">87%</p>
-              <p className="mt-2 text-base text-[#8B7E72]">전체 평균 32% 대비 <span className="font-bold text-primary-400">2.7배</span></p>
-              <p className="mt-4 text-sm text-[#B5A99D]">같은 실력이라도 5-5를 선택하는 것만으로 상위등급 확률이 급상승</p>
-            </div>
-          </ScrollReveal>
-
-          <ScrollReveal preset="fade-up" delay={0.1}>
-            <div className="mt-10 rounded-2xl border border-[#EAE0D5] bg-[#F3ECE4] p-6 sm:p-8">
-              <h3 className="text-center text-lg font-bold text-[#3A2E25]">왜 6-6이 아닌 5-5인가?</h3>
-              <div className="mt-6 space-y-3">
-                {[
-                  { label: "비교 문제", five: "1개", six: "2개", risk: "같은 패턴 반복 위험" },
-                  { label: "채점자 인식", five: "다양한 답변", six: "같은 패턴으로만 답변", risk: "감점 요인" },
-                  { label: "Q14~Q15 스킵해도 IH?", five: "가능", six: "불가능", risk: "비교 2개 모두 잘해야" },
-                ].map((row) => (
-                  <div key={row.label} className="flex flex-col gap-2 rounded-lg bg-white p-4 sm:flex-row sm:items-center sm:gap-4">
-                    <span className="text-sm font-semibold text-[#3A2E25] sm:min-w-[140px]">{row.label}</span>
-                    <span className="rounded-md bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-600">5-5: {row.five}</span>
-                    <span className="rounded-md bg-red-50 px-3 py-1 text-xs font-semibold text-red-500">6-6: {row.six}</span>
-                    <span className="text-xs text-[#B5A99D]">→ {row.risk}</span>
-                  </div>
-                ))}
-              </div>
-              <p className="mt-6 text-center text-sm font-semibold text-primary-600">결론: 어떤 등급을 목표로 하든 5-5가 최적입니다.</p>
-            </div>
-          </ScrollReveal>
         </div>
       </section>
 
-      {/* ━━━ Section 8: 등급별 학습 전략 ━━━ */}
+      {/* ━━━ Section 8: 등급별 전략 ━━━ */}
       <section className="border-b border-[#EAE0D5] bg-[#FAF6F1] py-20 sm:py-28">
         <div className="mx-auto max-w-4xl px-4 sm:px-6">
           <ScrollReveal preset="fade-up">
-            <SectionNum num="8" label="등급별 학습" />
+            <SectionNum num="8" label="등급별 전략" />
             <h2 className="mt-6 text-center font-serif text-[1.55rem] font-semibold italic leading-[1.3] tracking-tight text-[#3A2E25] sm:text-[36px]">
-              목표 등급에 따라<br />학습 전략이 달라집니다
+              같은 질문, 다른 등급<br />차이는 &ldquo;말하기 행동&rdquo;에 있습니다
             </h2>
-            <p className="mx-auto mt-4 max-w-[560px] text-center text-base leading-relaxed text-[#8B7E72]">
-              등급이 올라갈수록 난이도, 집중 유형, 답변 길이가 달라집니다.
-              <br className="hidden sm:block" />{" "}
-              공통점: 모든 등급에서 쉐도잉으로 영어다운 톤과 억양 만들기가 기본입니다.
+            <p className="mx-auto mt-4 max-w-[560px] text-center text-base leading-relaxed text-[#8B7E72] [word-break:keep-all]">
+              OPIc은 영어 실력이 아니라, 얼마나 복잡한 <strong className="text-[#3A2E25]">말하기 행동</strong>을 수행할 수 있는지로 등급이 결정됩니다.
+              목표 등급이 요구하는 답변 구조를 정확히 연습해야 합니다.
             </p>
           </ScrollReveal>
 
-          <div className="mt-12 space-y-4">
+          {/* 6등급 progression */}
+          <div className="mt-12 space-y-3">
             {gradeStrategies.map((gs, i) => (
-              <ScrollReveal key={gs.grade} preset="fade-up" delay={i * 0.08}>
-                <div className="flex flex-col gap-4 rounded-2xl border border-[#EAE0D5] bg-white p-5 sm:flex-row sm:items-center sm:gap-6">
-                  <div className="flex items-center gap-3 sm:min-w-[160px]">
-                    <span className={`flex h-12 w-12 items-center justify-center rounded-xl text-sm font-black text-white ${gs.grade === "AL" ? "bg-purple-500" : gs.grade === "IM3/IH" ? "bg-primary-500" : gs.grade === "IM1/IM2" ? "bg-amber-500" : "bg-gray-400"}`}>{gs.grade}</span>
-                    <div>
-                      <p className="text-xs font-semibold text-[#B5A99D]">삼성 {gs.samsung}</p>
-                      <p className="text-sm font-bold text-[#3A2E25]">난이도 {gs.difficulty}</p>
-                    </div>
+              <ScrollReveal key={gs.grade} preset="fade-up" delay={i * 0.06}>
+                <div className="flex items-start gap-3 rounded-2xl border border-[#EAE0D5] bg-white p-4 sm:items-center sm:gap-5 sm:p-5">
+                  {/* 등급 배지 */}
+                  <div className="flex flex-col items-center gap-1 sm:min-w-[72px]">
+                    <span className={`flex h-11 w-11 items-center justify-center rounded-xl text-xs font-black text-white ${gs.bg}`}>
+                      {gs.grade}
+                    </span>
+                    <span className="text-[10px] font-medium text-[#B5A99D]">{gs.pattern}</span>
                   </div>
-                  <div className="flex-1 space-y-1.5">
-                    <div className="flex flex-wrap gap-2">
-                      <span className="rounded-md bg-[#F3ECE4] px-2.5 py-1 text-xs font-medium text-[#8B7E72]">집중: {gs.focus}</span>
-                      <span className="rounded-md bg-[#F3ECE4] px-2.5 py-1 text-xs font-medium text-[#8B7E72]">답변 {gs.length}</span>
-                    </div>
-                    <p className="text-sm font-semibold text-[#3A2E25]">{gs.key}</p>
+                  {/* 내용 */}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-[#3A2E25]">{gs.label}</p>
+                    <p className="mt-1 text-sm text-[#8B7E72]">{gs.practice}</p>
+                    <p className="mt-1.5 text-xs italic text-[#B5A99D]">&ldquo;{gs.example}&rdquo;</p>
                   </div>
                 </div>
               </ScrollReveal>
             ))}
           </div>
 
+          {/* 핵심 요약 */}
           <ScrollReveal preset="fade-up" delay={0.1}>
             <div className="mt-10 rounded-2xl bg-[#3A2E25] p-6 sm:p-8">
-              <p className="text-center text-sm font-medium text-[#B5A99D]">등급이 올라갈수록</p>
-              <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center sm:gap-6">
+              <p className="text-center text-base font-bold leading-relaxed text-white [word-break:keep-all]">
+                등급이 올라갈수록<br className="sm:hidden" /> &ldquo;말하기 행동&rdquo;이 복잡해집니다
+              </p>
+              <div className="mx-auto mt-6 grid max-w-md gap-3 sm:grid-cols-3">
                 {[
-                  { label: "난이도", value: "↑ 높게" },
-                  { label: "롤플레이 비중", value: "↑ 증가" },
-                  { label: "답변 길이", value: "30초 → 120초" },
-                  { label: "문장 구조", value: "단문 → 복문" },
+                  { label: "Intermediate", value: "Describe", sub: "묘사하고 나열한다" },
+                  { label: "Int. High", value: "Explain", sub: "이유를 설명하고 전개한다" },
+                  { label: "Advanced", value: "Analyze", sub: "비교하고 분석한다" },
                 ].map((item) => (
-                  <div key={item.label} className="rounded-lg bg-white/10 px-4 py-2 text-center">
-                    <p className="text-xs text-[#B5A99D]">{item.label}</p>
-                    <p className="mt-0.5 text-sm font-bold text-white">{item.value}</p>
+                  <div key={item.label} className="rounded-xl bg-white/10 px-4 py-3 text-center">
+                    <p className="text-[10px] font-bold tracking-wider text-primary-400 uppercase">{item.label}</p>
+                    <p className="mt-1 text-lg font-black text-white">{item.value}</p>
+                    <p className="mt-1 text-xs text-[#B5A99D]">{item.sub}</p>
                   </div>
                 ))}
               </div>
@@ -770,10 +711,10 @@ export default function StrategyContent() {
           <ScrollReveal preset="fade-up">
             <SectionNum num="9" label="오픽톡닥" />
             <h2 className="mt-6 text-center font-serif text-[1.55rem] font-semibold italic leading-[1.3] tracking-tight text-[#3A2E25] sm:text-[36px]">
-              그래서 오픽톡닥은<br />이렇게 학습시킵니다
+              오픽톡닥은<br />이렇게 도와드립니다
             </h2>
             <p className="mx-auto mt-4 max-w-[560px] text-center text-base leading-relaxed text-[#8B7E72]">
-              데이터가 전략을 만들고, 전략이 학습을 안내하고, 학습이 실전을 시뮬레이션합니다.
+              빈도 분석으로 전략을 세우고, 스크립트로 준비하고,<br />모의고사로 실전을 재현하고, 튜터링으로 약점을 보강합니다.
             </p>
           </ScrollReveal>
 
@@ -783,7 +724,7 @@ export default function StrategyContent() {
                 <div className="rounded-2xl border border-[#EAE0D5] bg-[#F3ECE4] p-6 text-center">
                   <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-[var(--radius-lg)] bg-primary-50 text-primary-500"><m.icon size={22} /></div>
                   <h3 className="mt-3 text-lg font-bold text-[#3A2E25]">{m.name}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-[#8B7E72]">{m.desc}</p>
+                  <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-[#8B7E72]">{m.desc}</p>
                 </div>
               </ScrollReveal>
             ))}
@@ -791,7 +732,7 @@ export default function StrategyContent() {
 
           <ScrollReveal preset="fade-up" delay={0.2}>
             <div className="mt-10 flex items-center justify-center gap-1 text-[11px] sm:gap-3 sm:text-sm">
-              {["데이터 수집", "→", "빈도 분석", "→", "맞춤 학습", "→", "실전 시뮬레이션"].map((item, i) =>
+              {["빈도 분석", "→", "스크립트 생성", "→", "실전 모의고사", "→", "약점 튜터링"].map((item, i) =>
                 item === "→" ? (
                   <span key={i} className="text-[#D4C4B0]">→</span>
                 ) : (
@@ -847,33 +788,45 @@ export default function StrategyContent() {
             </div>
           </ScrollReveal>
 
-          <div className="mt-10 grid gap-4 sm:grid-cols-2">
-            <ScrollReveal preset="fade-left">
-              <div className="rounded-xl border border-red-200 bg-red-50/50 p-5">
-                <p className="text-sm font-bold text-red-600">서베이가 다를 때</p>
-                <ul className="mt-3 space-y-1.5 text-sm text-red-500/80">
-                  <li>수십 가지 조합으로 데이터 분산</li>
-                  <li>조합별 표본 5~10건씩 파편화</li>
-                  <li>통계 신뢰도 낮음</li>
-                  <li>분석 가치 제한적</li>
-                </ul>
+          <ScrollReveal preset="fade-up">
+            <div className="mt-10 overflow-hidden rounded-2xl border border-[#EAE0D5]">
+              <div className="grid sm:grid-cols-2">
+                {/* 서베이가 다를 때 */}
+                <div className="border-b border-[#EAE0D5] bg-[#F3ECE4] p-5 sm:border-b-0 sm:border-r">
+                  <div className="flex items-center gap-2">
+                    <X size={16} className="text-[#B5A99D]" />
+                    <p className="text-sm font-bold text-[#8B7E72]">서베이가 다를 때</p>
+                  </div>
+                  <ul className="mt-3 space-y-2">
+                    {["수십 가지 조합으로 데이터 분산", "조합별 표본 5~10건씩 파편화", "통계 신뢰도 낮음", "분석 가치 제한적"].map((t) => (
+                      <li key={t} className="flex items-start gap-2 text-sm text-[#B5A99D]">
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#D4C4B0]" />
+                        {t}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                {/* 서베이를 고정할 때 */}
+                <div className="bg-white p-5">
+                  <div className="flex items-center gap-2">
+                    <Check size={16} className="text-primary-500" />
+                    <p className="text-sm font-bold text-[#3A2E25]">서베이를 고정할 때</p>
+                  </div>
+                  <ul className="mt-3 space-y-2">
+                    {["데이터가 한 곳에 집중", "전체가 같은 조합 → 대규모 표본", "통계 신뢰도 높음", "정밀한 예측 가능"].map((t) => (
+                      <li key={t} className="flex items-start gap-2 text-sm text-[#3A2E25]">
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary-500" />
+                        {t}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-            </ScrollReveal>
-            <ScrollReveal preset="fade-right" delay={0.1}>
-              <div className="rounded-xl border border-primary-200 bg-primary-50/50 p-5">
-                <p className="text-sm font-bold text-primary-600">서베이를 고정할 때</p>
-                <ul className="mt-3 space-y-1.5 text-sm text-primary-600/80">
-                  <li>데이터가 한 곳에 집중</li>
-                  <li>전체가 같은 조합 → 대규모 표본</li>
-                  <li>통계 신뢰도 높음</li>
-                  <li>정밀한 예측 가능</li>
-                </ul>
-              </div>
-            </ScrollReveal>
-          </div>
+            </div>
+          </ScrollReveal>
 
           <ScrollReveal preset="fade-up" delay={0.15}>
-            <div className="mt-10 overflow-x-auto rounded-2xl border border-[#EAE0D5] bg-white">
+            <div className="mt-10 overflow-x-auto max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden rounded-2xl border border-[#EAE0D5] bg-white">
               <div className="border-b border-[#EAE0D5] bg-[#F3ECE4] px-6 py-3">
                 <p className="text-center text-sm font-semibold text-[#3A2E25]">데이터 규모별 예상 효과</p>
               </div>
@@ -907,7 +860,7 @@ export default function StrategyContent() {
           </ScrollReveal>
           <ScrollReveal preset="fade-up" delay={0.1}>
             <p className="mt-5 text-[17px] leading-relaxed text-[#4A3F36]">
-              데이터 기반 전략으로, 시험의 90% 이상을 대비한 상태로 응시하세요.
+              데이터 기반 전략으로, 시험의 84%를 대비한 상태로 응시하세요.
             </p>
           </ScrollReveal>
           <ScrollReveal preset="scale-up" delay={0.2}>

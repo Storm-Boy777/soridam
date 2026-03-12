@@ -102,6 +102,18 @@ body {
   }
 }
 
+/* 전략 페이지 모바일 스크롤바 숨김 */
+@media (max-width: 767px) {
+  html.strategy-no-scrollbar,
+  html.strategy-no-scrollbar body {
+    scrollbar-width: none;
+  }
+  html.strategy-no-scrollbar::-webkit-scrollbar,
+  html.strategy-no-scrollbar body::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* 섹션 라벨 (FEATURES, HOW IT WORKS 등) */
 .section-label {
   font-size: 0.8125rem;
