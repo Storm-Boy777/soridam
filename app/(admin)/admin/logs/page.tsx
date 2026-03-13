@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getAuditLogs } from "@/lib/actions/admin/logs";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
 import { AuditLogDetail } from "@/components/admin/audit-log-detail";
@@ -12,29 +13,31 @@ const ACTION_OPTIONS = [
   { value: "import_review", label: "기출 입력" },
   { value: "prompt_update", label: "프롬프트 수정" },
   { value: "eval_retrigger", label: "평가 재실행" },
+  { value: "plan_change", label: "플랜 변경" },
+  { value: "refund", label: "환불" },
+  { value: "user_ban", label: "계정 차단" },
 ];
 
 export default function AdminLogsPage() {
-  const [logs, setLogs] = useState<AuditLogEntry[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [action, setAction] = useState("all");
-  const [loading, setLoading] = useState(true);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
-  const fetchLogs = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await getAuditLogs({ page, pageSize: 30, action });
-      setLogs(result.data);
-      setTotal(result.total);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, action]);
-
-  useEffect(() => {
-    fetchLogs();
-  }, [fetchLogs]);
+  const { data: logsData, isLoading } = useQuery({
+    queryKey: ["admin-logs", page, action, dateFrom, dateTo],
+    queryFn: () =>
+      getAuditLogs({
+        page,
+        pageSize: 30,
+        action,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+      }),
+    staleTime: 30 * 1000,
+  });
+  const logs = logsData?.data || [];
+  const total = logsData?.total || 0;
 
   const columns = [
     {
@@ -104,7 +107,42 @@ export default function AdminLogsPage() {
         </div>
       </div>
 
-      {loading ? (
+      {/* 날짜 범위 필터 */}
+      <div className="flex items-center gap-2">
+        <input
+          type="date"
+          value={dateFrom}
+          onChange={(e) => {
+            setDateFrom(e.target.value);
+            setPage(1);
+          }}
+          className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-foreground"
+        />
+        <span className="text-xs text-foreground-muted">~</span>
+        <input
+          type="date"
+          value={dateTo}
+          onChange={(e) => {
+            setDateTo(e.target.value);
+            setPage(1);
+          }}
+          className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-foreground"
+        />
+        {(dateFrom || dateTo) && (
+          <button
+            onClick={() => {
+              setDateFrom("");
+              setDateTo("");
+              setPage(1);
+            }}
+            className="text-xs text-foreground-muted hover:text-foreground"
+          >
+            초기화
+          </button>
+        )}
+      </div>
+
+      {isLoading ? (
         <div className="space-y-2">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-14 animate-pulse rounded-lg border border-border bg-surface-secondary" />

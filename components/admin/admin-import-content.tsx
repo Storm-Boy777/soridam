@@ -203,10 +203,6 @@ export function AdminImportContent() {
           if (orderA !== orderB) return orderA - orderB;
           return (a.question_korean || "").localeCompare(b.question_korean || "", "ko");
         });
-        // 디버그: 정렬 결과 확인 (확인 후 제거)
-        if (topic.includes("TV") || topic.includes("텔레비전")) {
-          console.log(`[정렬 확인] ${cat}/${topic}:`, map[cat][topic].map(q => `${q.question_type_eng}(${QUESTION_TYPE_ORDER[q.question_type_eng || ""] ?? 99}): ${q.question_short}`));
-        }
       }
     }
     return map;

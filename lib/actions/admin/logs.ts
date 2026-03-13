@@ -7,6 +7,8 @@ export async function getAuditLogs(params: {
   page?: number;
   pageSize?: number;
   action?: string;
+  dateFrom?: string;    // ISO date "2026-03-01"
+  dateTo?: string;      // ISO date "2026-03-14"
 }): Promise<PaginatedResult<AuditLogEntry>> {
   const { supabase } = await requireAdmin();
   const page = params.page || 1;
@@ -21,6 +23,13 @@ export async function getAuditLogs(params: {
     query = query.eq("action", params.action);
   }
 
+  if (params.dateFrom) {
+    query = query.gte("created_at", params.dateFrom + "T00:00:00");
+  }
+  if (params.dateTo) {
+    query = query.lte("created_at", params.dateTo + "T23:59:59");
+  }
+
   const { data, count, error } = await query
     .order("created_at", { ascending: false })
     .range(offset, offset + pageSize - 1);
@@ -29,13 +38,15 @@ export async function getAuditLogs(params: {
     return { data: [], total: 0, page, pageSize };
   }
 
-  // admin 이메일 조회
+  // admin 이메일 조회 (병렬)
   const adminIds = [...new Set(data.map((d) => d.admin_id))];
+  const emailResults = await Promise.all(
+    adminIds.map((id) => supabase.auth.admin.getUserById(id))
+  );
   const emailMap = new Map<string, string>();
-  for (const id of adminIds) {
-    const { data: u } = await supabase.auth.admin.getUserById(id);
-    if (u?.user?.email) emailMap.set(id, u.user.email);
-  }
+  emailResults.forEach((res, i) => {
+    if (res.data?.user?.email) emailMap.set(adminIds[i], res.data.user.email);
+  });
 
   const entries: AuditLogEntry[] = data.map((d) => ({
     id: d.id,

@@ -51,10 +51,14 @@ export async function getPromptTemplates() {
 }
 
 export async function updatePromptTemplate(id: string, content: string) {
-  const { supabase, userId } = await requireAdmin();
+  const { supabase, userId, userEmail } = await requireAdmin();
 
-  // id 형식: "{실제id}_{system|user}"
-  const [realId, type] = id.split("_");
+  // id 형식: "{실제id}_{system|user}" — 검증
+  const match = id.match(/^(\d+)_(system|user)$/);
+  if (!match) {
+    return { success: false, error: "유효하지 않은 프롬프트 ID 형식입니다" };
+  }
+  const [, realId, type] = match;
   const column = type === "system" ? "system_prompt" : "user_template";
 
   // 변경 전 값 저장
@@ -74,6 +78,7 @@ export async function updatePromptTemplate(id: string, content: string) {
   // 감사 로그
   await supabase.from("admin_audit_log").insert({
     admin_id: userId,
+    admin_email: userEmail,
     action: "prompt_update",
     target_type: "prompt_template",
     target_id: id,
@@ -109,7 +114,7 @@ export async function getOpicTips(params: {
 }
 
 export async function updateOpicTip(id: string, updates: { title?: string; content?: string }) {
-  const { supabase, userId } = await requireAdmin();
+  const { supabase, userId, userEmail } = await requireAdmin();
 
   const { error } = await supabase
     .from("opic_tips")
@@ -120,6 +125,7 @@ export async function updateOpicTip(id: string, updates: { title?: string; conte
 
   await supabase.from("admin_audit_log").insert({
     admin_id: userId,
+    admin_email: userEmail,
     action: "tip_update",
     target_type: "opic_tip",
     target_id: id,
@@ -146,7 +152,7 @@ export async function getEvalPrompts() {
 }
 
 export async function updateEvalPrompt(id: string, content: string) {
-  const { supabase, userId } = await requireAdmin();
+  const { supabase, userId, userEmail } = await requireAdmin();
 
   const { error } = await supabase
     .from("evaluation_prompts")
@@ -157,6 +163,7 @@ export async function updateEvalPrompt(id: string, content: string) {
 
   await supabase.from("admin_audit_log").insert({
     admin_id: userId,
+    admin_email: userEmail,
     action: "eval_prompt_update",
     target_type: "evaluation_prompt",
     target_id: id,
@@ -199,8 +206,44 @@ export async function getEvalSettings() {
   return data;
 }
 
+// ── 프롬프트 변경 이력 ──
+
+export async function getPromptHistory(promptId: string): Promise<Array<{
+  id: number;
+  admin_email: string;
+  changed_at: string;
+  details: Record<string, unknown>;
+}>> {
+  const { supabase } = await requireAdmin();
+
+  const { data } = await supabase
+    .from("admin_audit_log")
+    .select("id, admin_id, details, created_at")
+    .eq("action", "prompt_update")
+    .eq("target_id", promptId)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (!data || data.length === 0) return [];
+
+  // admin 이메일 조회
+  const adminIds = [...new Set(data.map((d) => d.admin_id))];
+  const emailMap = new Map<string, string>();
+  for (const id of adminIds) {
+    const { data: u } = await supabase.auth.admin.getUserById(id);
+    if (u?.user?.email) emailMap.set(id, u.user.email);
+  }
+
+  return data.map((d) => ({
+    id: d.id,
+    admin_email: emailMap.get(d.admin_id) || d.admin_id.slice(0, 8),
+    changed_at: d.created_at,
+    details: d.details || {},
+  }));
+}
+
 export async function updateEvalSettings(updates: Record<string, unknown>) {
-  const { supabase, userId } = await requireAdmin();
+  const { supabase, userId, userEmail } = await requireAdmin();
 
   const { data: current } = await supabase
     .from("mock_test_eval_settings")
@@ -219,6 +262,7 @@ export async function updateEvalSettings(updates: Record<string, unknown>) {
 
   await supabase.from("admin_audit_log").insert({
     admin_id: userId,
+    admin_email: userEmail,
     action: "eval_settings_update",
     target_type: "eval_settings",
     target_id: current.id,

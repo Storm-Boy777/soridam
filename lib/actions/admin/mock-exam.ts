@@ -2,11 +2,17 @@
 
 import { requireAdmin } from "@/lib/auth";
 import type { AdminMockSession, MockExamStats, PaginatedResult } from "@/lib/types/admin";
+import type {
+  MockTestSession,
+  MockTestAnswer,
+  MockTestEvaluation,
+  MockTestReport,
+} from "@/lib/types/mock-exam";
 
 export async function getMockExamStats(): Promise<MockExamStats> {
   const { supabase } = await requireAdmin();
 
-  const [totalRes, completedRes, pendingRes, failedRes, gradesRes] = await Promise.all([
+  const [totalRes, completedRes, pendingRes, failedRes, gradesRes, sessionsRes] = await Promise.all([
     supabase.from("mock_test_sessions").select("*", { count: "exact", head: true }),
     supabase.from("mock_test_sessions").select("*", { count: "exact", head: true }).eq("status", "completed"),
     supabase
@@ -19,20 +25,31 @@ export async function getMockExamStats(): Promise<MockExamStats> {
       .eq("eval_status", "error"),
     supabase
       .from("mock_test_reports")
-      .select("predicted_grade")
-      .not("predicted_grade", "is", null)
-      .limit(100),
+      .select("final_level")
+      .not("final_level", "is", null)
+      .limit(200),
+    supabase
+      .from("mock_test_sessions")
+      .select("mode, status"),
   ]);
 
-  // 가장 빈번한 등급
-  const gradeCounts = new Map<string, number>();
+  // 등급별 분포 + 가장 빈번한 등급
+  const levelDistribution: Record<string, number> = {};
   for (const r of gradesRes.data || []) {
-    const g = r.predicted_grade;
-    if (g) gradeCounts.set(g, (gradeCounts.get(g) || 0) + 1);
+    const g = r.final_level;
+    if (g) levelDistribution[g] = (levelDistribution[g] || 0) + 1;
   }
-  const avgGrade = gradeCounts.size > 0
-    ? [...gradeCounts.entries()].sort((a, b) => b[1] - a[1])[0][0]
+  const avgGrade = Object.keys(levelDistribution).length > 0
+    ? Object.entries(levelDistribution).sort((a, b) => b[1] - a[1])[0][0]
     : null;
+
+  // 모드별, 상태별 분포
+  const modeDistribution: Record<string, number> = {};
+  const statusDistribution: Record<string, number> = {};
+  for (const s of sessionsRes.data || []) {
+    if (s.mode) modeDistribution[s.mode] = (modeDistribution[s.mode] || 0) + 1;
+    if (s.status) statusDistribution[s.status] = (statusDistribution[s.status] || 0) + 1;
+  }
 
   return {
     totalSessions: totalRes.count || 0,
@@ -40,6 +57,9 @@ export async function getMockExamStats(): Promise<MockExamStats> {
     pendingEvals: pendingRes.count || 0,
     failedEvals: failedRes.count || 0,
     avgGrade,
+    levelDistribution,
+    modeDistribution,
+    statusDistribution,
   };
 }
 
@@ -69,29 +89,26 @@ export async function getMockExamSessions(params: {
 
   // 사용자 이메일 + 리포트 조인
   const userIds = [...new Set(data.map((s) => s.user_id))];
-  const sessionIds = data.map((s) => s.id);
+  const sessionIds = data.map((s) => s.session_id);
 
-  const [emailMap, reportsRes] = await Promise.all([
-    (async () => {
-      const m = new Map<string, string>();
-      for (const uid of userIds) {
-        const { data: u } = await supabase.auth.admin.getUserById(uid);
-        if (u?.user?.email) m.set(uid, u.user.email);
-      }
-      return m;
-    })(),
+  const [emailResults, reportsRes] = await Promise.all([
+    Promise.all(userIds.map((uid) => supabase.auth.admin.getUserById(uid))),
     supabase
       .from("mock_test_reports")
-      .select("session_id, predicted_grade")
+      .select("session_id, final_level")
       .in("session_id", sessionIds),
   ]);
+  const emailMap = new Map<string, string>();
+  emailResults.forEach((res, i) => {
+    if (res.data?.user?.email) emailMap.set(userIds[i], res.data.user.email);
+  });
 
   const gradeMap = new Map(
-    (reportsRes.data || []).map((r) => [r.session_id, r.predicted_grade])
+    (reportsRes.data || []).map((r) => [r.session_id, r.final_level])
   );
 
   const sessions: AdminMockSession[] = data.map((s) => ({
-    id: s.id,
+    id: s.session_id,
     user_id: s.user_id,
     user_email: emailMap.get(s.user_id) || "-",
     mode: s.mode,
@@ -99,7 +116,7 @@ export async function getMockExamSessions(params: {
     started_at: s.started_at,
     completed_at: s.completed_at,
     eval_progress: s.status === "completed" ? "complete" : s.status,
-    predicted_grade: gradeMap.get(s.id) || null,
+    final_level: gradeMap.get(s.session_id) || null,
   }));
 
   return { data: sessions, total: count || 0, page, pageSize };
@@ -109,7 +126,7 @@ export async function retriggerEvaluation(sessionId: string): Promise<{
   success: boolean;
   error?: string;
 }> {
-  const { supabase, userId } = await requireAdmin();
+  const { supabase, userId, userEmail } = await requireAdmin();
 
   // admin-trigger-eval Edge Function 호출
   const { error } = await supabase.functions.invoke("admin-trigger-eval", {
@@ -126,6 +143,7 @@ export async function retriggerEvaluation(sessionId: string): Promise<{
   // 감사 로그
   await supabase.from("admin_audit_log").insert({
     admin_id: userId,
+    admin_email: userEmail,
     action: "eval_retrigger",
     target_type: "mock_session",
     target_id: sessionId,
@@ -133,4 +151,78 @@ export async function retriggerEvaluation(sessionId: string): Promise<{
   });
 
   return { success: true };
+}
+
+// ── 세션 상세 조회 (사용자 화면 재사용용) ──
+
+export async function getAdminSessionDetail(sessionId: string): Promise<{
+  error?: string;
+  data?: {
+    session: MockTestSession;
+    answers: MockTestAnswer[];
+    evaluations: MockTestEvaluation[];
+    report: MockTestReport | null;
+    questions: Array<{
+      id: string;
+      question_english: string;
+      question_korean: string;
+      question_short: string;
+      question_type_eng: string;
+      survey_type: string;
+      topic: string;
+      category: string;
+      audio_url: string | null;
+    }>;
+  };
+}> {
+  const { supabase } = await requireAdmin();
+
+  // 세션 조회 (user_id 필터 없음)
+  const { data: session, error: sessErr } = await supabase
+    .from("mock_test_sessions")
+    .select("*")
+    .eq("session_id", sessionId)
+    .single();
+
+  if (sessErr || !session) {
+    return { error: "세션을 찾을 수 없습니다" };
+  }
+
+  // 답변 + 평가 + 리포트 + 질문 병렬 조회
+  const [
+    { data: answers },
+    { data: evaluations },
+    { data: report },
+    { data: questions },
+  ] = await Promise.all([
+    supabase
+      .from("mock_test_answers")
+      .select("*")
+      .eq("session_id", sessionId)
+      .order("question_number"),
+    supabase
+      .from("mock_test_evaluations")
+      .select("*")
+      .eq("session_id", sessionId)
+      .order("question_number"),
+    supabase
+      .from("mock_test_reports")
+      .select("*")
+      .eq("session_id", sessionId)
+      .maybeSingle(),
+    supabase
+      .from("questions")
+      .select("id, question_english, question_korean, question_short, question_type_eng, survey_type, topic, category, audio_url")
+      .in("id", session.question_ids || []),
+  ]);
+
+  return {
+    data: {
+      session: session as MockTestSession,
+      answers: (answers || []) as MockTestAnswer[],
+      evaluations: (evaluations || []) as MockTestEvaluation[],
+      report: (report as MockTestReport) || null,
+      questions: questions || [],
+    },
+  };
 }

@@ -13,6 +13,11 @@ import {
 import { AdminDataTable } from "@/components/admin/admin-data-table";
 import { PromptEditor } from "@/components/admin/prompt-editor";
 
+// 테이블 행 타입
+interface AdminTableRow {
+  [key: string]: unknown;
+}
+
 type TabKey = "questions" | "prompts" | "eval_prompts" | "tips" | "specs";
 
 const TABS: { key: TabKey; label: string }[] = [
@@ -58,8 +63,7 @@ export default function AdminContentPage() {
 
 // ── 질문 DB 탭 ──
 function QuestionsTab() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<AdminTableRow[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -154,6 +158,7 @@ function EvalPromptsTab() {
           name={p.name}
           initialContent={p.content}
           onSave={updateEvalPrompt}
+          showHistory={false}
         />
       ))}
       {prompts.length === 0 && (
@@ -165,8 +170,7 @@ function EvalPromptsTab() {
 
 // ── 학습 팁 탭 ──
 function TipsTab() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<AdminTableRow[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -212,8 +216,7 @@ function TipsTab() {
 
 // ── 스크립트 규격서 탭 ──
 function SpecsTab() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<AdminTableRow[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);

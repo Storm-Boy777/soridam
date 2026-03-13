@@ -62,8 +62,16 @@ export function AdminDataTable<T extends Record<string, any>>({
               <tr
                 key={i}
                 onClick={() => onRowClick?.(row)}
+                onKeyDown={onRowClick ? (e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onRowClick(row);
+                  }
+                } : undefined}
+                tabIndex={onRowClick ? 0 : undefined}
+                role={onRowClick ? "button" : undefined}
                 className={`border-b border-border last:border-0 ${
-                  onRowClick ? "cursor-pointer hover:bg-surface-secondary" : ""
+                  onRowClick ? "cursor-pointer hover:bg-surface-secondary focus:bg-surface-secondary focus:outline-none" : ""
                 }`}
               >
                 {columns.map((col) => (

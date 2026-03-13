@@ -1,7 +1,8 @@
 import { Suspense } from "react";
-import { Users, CreditCard, GraduationCap, Clock } from "lucide-react";
-import { getAdminDashboardStats, getRecentActivity } from "@/lib/actions/admin/stats";
+import { Users, CreditCard, GraduationCap, Clock, TrendingUp, BarChart3, ClipboardList, FileText, BookOpen } from "lucide-react";
+import { getAdminDashboardStats, getRecentActivity, getConversionMetrics } from "@/lib/actions/admin/stats";
 import { AdminStatCard } from "@/components/admin/admin-stat-card";
+import { AdminTrendCharts } from "@/components/admin/admin-trend-charts";
 
 async function DashboardStats() {
   const stats = await getAdminDashboardStats();
@@ -86,6 +87,86 @@ async function RecentActivityList() {
   );
 }
 
+async function ConversionStats() {
+  const m = await getConversionMetrics();
+
+  return (
+    <div className="space-y-3">
+      <h2 className="text-sm font-semibold text-foreground-secondary">전환율 & 활성도</h2>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <MetricCard
+          icon={<TrendingUp size={16} className="text-primary-500" />}
+          label="가입→결제"
+          value={`${m.conversionRate}%`}
+          sub={`${m.paidUsers}명`}
+        />
+        <MetricCard
+          icon={<CreditCard size={16} className="text-purple-500" />}
+          label="유료 플랜"
+          value={`${m.planRate}%`}
+          sub={`${m.planUsers}명`}
+        />
+        <MetricCard
+          icon={<BarChart3 size={16} className="text-teal-500" />}
+          label="평균 주문액"
+          value={`₩${m.avgOrderValue.toLocaleString()}`}
+        />
+        <MetricCard
+          icon={<Users size={16} className="text-blue-500" />}
+          label="결제 회원"
+          value={`${m.paidUsers}명`}
+          sub={`/ ${m.totalUsers}명`}
+        />
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        <MetricCard
+          icon={<ClipboardList size={16} className="text-sky-500" />}
+          label="모의고사"
+          value={`${m.mockExamRate}%`}
+          sub={`${m.mockExamUsers}명`}
+        />
+        <MetricCard
+          icon={<FileText size={16} className="text-emerald-500" />}
+          label="스크립트"
+          value={`${m.scriptRate}%`}
+          sub={`${m.scriptUsers}명`}
+        />
+        <MetricCard
+          icon={<BookOpen size={16} className="text-violet-500" />}
+          label="튜터링"
+          value={`${m.tutoringRate}%`}
+          sub={`${m.tutoringUsers}명`}
+        />
+      </div>
+    </div>
+  );
+}
+
+function MetricCard({
+  icon,
+  label,
+  value,
+  sub,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  sub?: string;
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-surface px-3.5 py-2.5">
+      <div className="flex items-center gap-1.5">
+        {icon}
+        <span className="text-[11px] text-foreground-muted">{label}</span>
+      </div>
+      <div className="mt-1 flex items-baseline gap-1">
+        <span className="text-lg font-bold tabular-nums text-foreground">{value}</span>
+        {sub && <span className="text-xs text-foreground-muted">{sub}</span>}
+      </div>
+    </div>
+  );
+}
+
 function StatsSkeleton() {
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -104,6 +185,25 @@ export default function AdminDashboardPage() {
       <Suspense fallback={<StatsSkeleton />}>
         <DashboardStats />
       </Suspense>
+
+      {/* 전환율 & 활성도 */}
+      <Suspense
+        fallback={
+          <div className="space-y-3">
+            <div className="h-5 w-32 animate-pulse rounded bg-surface-secondary" />
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-16 animate-pulse rounded-lg border border-border bg-surface-secondary" />
+              ))}
+            </div>
+          </div>
+        }
+      >
+        <ConversionStats />
+      </Suspense>
+
+      {/* 추이 차트 */}
+      <AdminTrendCharts />
 
       <div>
         <h2 className="mb-3 text-sm font-semibold text-foreground-secondary">최근 활동</h2>

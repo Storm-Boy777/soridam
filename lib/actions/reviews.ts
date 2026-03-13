@@ -287,6 +287,7 @@ export async function completeSubmission(
     if (submission.status === "complete") return { error: "이미 완료된 후기입니다" };
 
     // submissions 업데이트 (원자적: status='draft'인 경우에만 + 결과 확인)
+    // exam_approved는 DB 기본값 'pending' 유지 → 콤보 추출 후 자격 확인
     const { data: updated, error: updateError } = await supabase
       .from("submissions")
       .update({
@@ -295,8 +296,6 @@ export async function completeSubmission(
         step_completed: 3,
         status: "complete",
         submitted_at: new Date().toISOString(),
-        exam_approved: "approved",
-        exam_approved_at: new Date().toISOString(),
       })
       .eq("id", submission_id)
       .eq("status", "draft")
@@ -332,8 +331,54 @@ export async function completeSubmission(
           );
         }
       }
+      // 기출풀 자격 확인 (선택3:공통2 → pending 유지, 미충족 → not_applicable)
+      const nonSelfIntro = (questions || []).filter(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (q: any) => q.combo_type !== "self_intro"
+      );
+      const validQIds = nonSelfIntro
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .filter((q: any) => q.question_id && !q.is_not_remembered)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .map((q: any) => q.question_id);
+
+      if (validQIds.length >= 14) {
+        const { data: qDetails } = await supabase
+          .from("questions")
+          .select("id, survey_type")
+          .in("id", validQIds);
+
+        if (qDetails) {
+          const surveyMap = new Map(qDetails.map((q) => [q.id, q.survey_type]));
+          const setTypes = ["general_1", "general_2", "general_3", "roleplay", "advance"];
+          const setSurveys = setTypes.map((st) =>
+            nonSelfIntro
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              .filter((q: any) => q.combo_type === st && q.question_id)
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              .map((q: any) => surveyMap.get(q.question_id))
+              .find((s: string | undefined) => s && s !== "시스템") || null
+          );
+          const sel = setSurveys.filter((s) => s === "선택형").length;
+          const com = setSurveys.filter((s) => s === "공통형").length;
+
+          if (sel !== 3 || com !== 2) {
+            await supabase
+              .from("submissions")
+              .update({ exam_approved: "not_applicable" })
+              .eq("id", submission_id);
+          }
+          // 조건 충족 → 'pending' 유지 (관리자 승인 대기)
+        }
+      } else {
+        // 유효 질문 부족 → 기출풀 대상 아님
+        await supabase
+          .from("submissions")
+          .update({ exam_approved: "not_applicable" })
+          .eq("id", submission_id);
+      }
     } catch (comboErr) {
-      console.error("콤보 추출 실패 (후기는 저장됨):", comboErr);
+      console.error("콤보 추출/기출풀 확인 실패 (후기는 저장됨):", comboErr);
     }
 
     // 크레딧 보상 (25일 룰: 최초 2회 무조건 지급, 3회차부터 마지막 지급일로부터 25일 경과 필요)

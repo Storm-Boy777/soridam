@@ -131,7 +131,7 @@ export async function saveAdminReview(
   confirmedQuestions: ConfirmedQuestion[]
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { userId } = await requireAdmin();
+    const { userId, userEmail } = await requireAdmin();
     const supabase = createServiceClient();
 
     // 자기소개 question_id 조회
@@ -257,6 +257,7 @@ export async function saveAdminReview(
     // 감사 로그
     await supabase.from("admin_audit_log").insert({
       admin_id: userId,
+      admin_email: userEmail,
       action: "import_review",
       target_type: "submission",
       target_id: String(submissionId),

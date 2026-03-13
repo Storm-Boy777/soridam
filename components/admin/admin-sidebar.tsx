@@ -7,8 +7,11 @@ import {
   Users,
   CreditCard,
   FileText,
+  FileCheck,
+  FileCode,
   ClipboardList,
   GraduationCap,
+  BookOpen,
   ScrollText,
   ArrowLeft,
 } from "lucide-react";
@@ -19,7 +22,10 @@ const menuItems = [
   { label: "결제 관리", href: "/admin/payments", icon: CreditCard },
   { label: "콘텐츠 관리", href: "/admin/content", icon: FileText },
   { label: "기출 입력", href: "/admin/import", icon: ClipboardList },
+  { label: "기출 승인", href: "/admin/exam-approval", icon: FileCheck },
+  { label: "스크립트", href: "/admin/scripts", icon: FileCode },
   { label: "모의고사", href: "/admin/mock-exam", icon: GraduationCap },
+  { label: "튜터링", href: "/admin/tutoring", icon: BookOpen },
   { label: "감사 로그", href: "/admin/logs", icon: ScrollText },
 ];
 
