@@ -185,14 +185,14 @@ function TipsTab() {
   useEffect(() => { fetch(); }, [fetch]);
 
   const columns = [
-    { key: "target_level", label: "등급" },
-    { key: "answer_type", label: "답변 유형" },
+    { key: "category", label: "카테고리" },
+    { key: "question_type", label: "질문 유형" },
     { key: "title", label: "제목" },
     {
-      key: "content",
-      label: "내용",
+      key: "expression",
+      label: "표현",
       render: (row: Record<string, unknown>) => (
-        <span className="line-clamp-2 text-xs">{String(row.content || "")}</span>
+        <span className="line-clamp-2 text-xs">{String(row.expression || "")}</span>
       ),
     },
   ];
@@ -234,11 +234,12 @@ function SpecsTab() {
   const columns = [
     { key: "target_level", label: "등급" },
     { key: "question_type", label: "질문 유형" },
+    { key: "total_slots", label: "슬롯" },
     {
-      key: "structure",
+      key: "slot_structure",
       label: "구조",
       render: (row: Record<string, unknown>) => (
-        <span className="line-clamp-1 text-xs">{String(row.structure || "")}</span>
+        <span className="line-clamp-1 text-xs">{String(row.slot_structure || "")}</span>
       ),
     },
   ];

@@ -37,25 +37,37 @@ export async function getPromptTemplates() {
   const { supabase } = await requireAdmin();
   const { data } = await supabase
     .from("ai_prompt_templates")
-    .select("*")
-    .order("name");
-  return data || [];
+    .select("id, template_id, prompt_name, system_prompt, user_template, model, temperature, max_tokens, is_active")
+    .order("id");
+  // PromptEditor에 맞게 변환: system_prompt + user_template를 각각 편집 가능하게
+  return (data || []).flatMap((row) => [
+    ...(row.system_prompt
+      ? [{ id: `${row.id}_system`, name: `${row.prompt_name} — System`, content: row.system_prompt }]
+      : []),
+    ...(row.user_template
+      ? [{ id: `${row.id}_user`, name: `${row.prompt_name} — User Template`, content: row.user_template }]
+      : []),
+  ]);
 }
 
 export async function updatePromptTemplate(id: string, content: string) {
   const { supabase, userId } = await requireAdmin();
 
+  // id 형식: "{실제id}_{system|user}"
+  const [realId, type] = id.split("_");
+  const column = type === "system" ? "system_prompt" : "user_template";
+
   // 변경 전 값 저장
   const { data: before } = await supabase
     .from("ai_prompt_templates")
-    .select("content")
-    .eq("id", id)
+    .select(column)
+    .eq("id", realId)
     .single();
 
   const { error } = await supabase
     .from("ai_prompt_templates")
-    .update({ content, updated_at: new Date().toISOString() })
-    .eq("id", id);
+    .update({ [column]: content, updated_at: new Date().toISOString() })
+    .eq("id", realId);
 
   if (error) return { success: false, error: error.message };
 
@@ -66,7 +78,8 @@ export async function updatePromptTemplate(id: string, content: string) {
     target_type: "prompt_template",
     target_id: id,
     details: {
-      content_length_before: before?.content?.length || 0,
+      column,
+      content_length_before: (before as Record<string, string>)?.[column]?.length || 0,
       content_length_after: content.length,
     },
   });
@@ -88,8 +101,8 @@ export async function getOpicTips(params: {
   const { data, count } = await supabase
     .from("opic_tips")
     .select("*", { count: "exact" })
-    .order("target_level")
-    .order("answer_type")
+    .order("category")
+    .order("question_type")
     .range(offset, offset + pageSize - 1);
 
   return { data: data || [], total: count || 0, page, pageSize };
@@ -122,9 +135,14 @@ export async function getEvalPrompts() {
   const { supabase } = await requireAdmin();
   const { data } = await supabase
     .from("evaluation_prompts")
-    .select("*")
-    .order("name");
-  return data || [];
+    .select("id, key, content, description, is_active")
+    .order("key");
+  // PromptEditor 형식으로 변환
+  return (data || []).map((row) => ({
+    id: row.id,
+    name: row.description || row.key,
+    content: row.content || "",
+  }));
 }
 
 export async function updateEvalPrompt(id: string, content: string) {
