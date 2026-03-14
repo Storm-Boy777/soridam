@@ -94,3 +94,12 @@ export const step3Schema = z.object({
 });
 
 export type Step3Input = z.infer<typeof step3Schema>;
+
+// ── 등급 수정 ──
+
+export const updateGradeSchema = z.object({
+  submissionId: z.number(),
+  achievedLevel: z.enum(ACHIEVED_LEVELS, { message: "유효하지 않은 등급입니다" }),
+});
+
+export type UpdateGradeInput = z.infer<typeof updateGradeSchema>;

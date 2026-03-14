@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
-import { step1Schema, step2Schema, step3Schema } from "@/lib/validations/reviews";
+import { step1Schema, step2Schema, step3Schema, updateGradeSchema } from "@/lib/validations/reviews";
 import { extractCombos } from "@/lib/utils/combo-extractor";
 import {
   QUESTION_TYPE_ORDER,
@@ -15,6 +15,7 @@ import {
   type ComboType,
   type FrequencyCategory,
 } from "@/lib/types/reviews";
+import type { Step1Input } from "@/lib/validations/reviews";
 
 type ActionResult<T = null> = {
   error?: string;
@@ -30,6 +31,33 @@ async function requireUser() {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("로그인이 필요합니다");
   return { supabase, userId: user.id };
+}
+
+// ── 헬퍼: Step 1 폼 데이터 → DB 필드 매핑 ──
+
+function buildStep1Fields(data: Step1Input) {
+  const useRecommended = data.used_recommended_survey;
+  return {
+    exam_date: data.exam_date,
+    exam_difficulty: data.exam_difficulty,
+    pre_exam_level: data.pre_exam_level,
+    achieved_level: data.achieved_level === 'unknown' ? null : data.achieved_level,
+    exam_purpose: data.exam_purpose,
+    study_methods: data.study_methods,
+    prep_duration: data.prep_duration,
+    attempt_count: data.attempt_count,
+    perceived_difficulty: data.perceived_difficulty,
+    actual_duration: data.actual_duration,
+    used_recommended_survey: useRecommended,
+    survey_occupation: useRecommended ? null : data.survey_occupation,
+    survey_student: useRecommended ? null : data.survey_student,
+    survey_course: useRecommended ? null : data.survey_course,
+    survey_housing: useRecommended ? null : data.survey_housing,
+    survey_leisure: useRecommended ? null : data.survey_leisure.join(","),
+    survey_hobbies: useRecommended ? null : data.survey_hobbies.join(","),
+    survey_sports: useRecommended ? null : data.survey_sports.join(","),
+    survey_travel: useRecommended ? null : data.survey_travel.join(","),
+  };
 }
 
 // ============================================================
@@ -59,25 +87,7 @@ export async function createDraft(
       .from("submissions")
       .insert({
         user_id: userId,
-        exam_date: parsed.data.exam_date,
-        exam_difficulty: parsed.data.exam_difficulty,
-        pre_exam_level: parsed.data.pre_exam_level,
-        achieved_level: parsed.data.achieved_level === 'unknown' ? null : parsed.data.achieved_level,
-        exam_purpose: parsed.data.exam_purpose,
-        study_methods: parsed.data.study_methods,
-        prep_duration: parsed.data.prep_duration,
-        attempt_count: parsed.data.attempt_count,
-        perceived_difficulty: parsed.data.perceived_difficulty,
-        actual_duration: parsed.data.actual_duration,
-        used_recommended_survey: parsed.data.used_recommended_survey,
-        survey_occupation: parsed.data.used_recommended_survey ? null : parsed.data.survey_occupation,
-        survey_student: parsed.data.used_recommended_survey ? null : parsed.data.survey_student,
-        survey_course: parsed.data.used_recommended_survey ? null : parsed.data.survey_course,
-        survey_housing: parsed.data.used_recommended_survey ? null : parsed.data.survey_housing,
-        survey_leisure: parsed.data.used_recommended_survey ? null : parsed.data.survey_leisure.join(","),
-        survey_hobbies: parsed.data.used_recommended_survey ? null : parsed.data.survey_hobbies.join(","),
-        survey_sports: parsed.data.used_recommended_survey ? null : parsed.data.survey_sports.join(","),
-        survey_travel: parsed.data.used_recommended_survey ? null : parsed.data.survey_travel.join(","),
+        ...buildStep1Fields(parsed.data),
         status: "draft",
         step_completed: 1,
       })
@@ -139,27 +149,7 @@ export async function updateDraft(
 
     const { error } = await supabase
       .from("submissions")
-      .update({
-        exam_date: parsed.data.exam_date,
-        exam_difficulty: parsed.data.exam_difficulty,
-        pre_exam_level: parsed.data.pre_exam_level,
-        achieved_level: parsed.data.achieved_level === 'unknown' ? null : parsed.data.achieved_level,
-        exam_purpose: parsed.data.exam_purpose,
-        study_methods: parsed.data.study_methods,
-        prep_duration: parsed.data.prep_duration,
-        attempt_count: parsed.data.attempt_count,
-        perceived_difficulty: parsed.data.perceived_difficulty,
-        actual_duration: parsed.data.actual_duration,
-        used_recommended_survey: parsed.data.used_recommended_survey,
-        survey_occupation: parsed.data.used_recommended_survey ? null : parsed.data.survey_occupation,
-        survey_student: parsed.data.used_recommended_survey ? null : parsed.data.survey_student,
-        survey_course: parsed.data.used_recommended_survey ? null : parsed.data.survey_course,
-        survey_housing: parsed.data.used_recommended_survey ? null : parsed.data.survey_housing,
-        survey_leisure: parsed.data.used_recommended_survey ? null : parsed.data.survey_leisure.join(","),
-        survey_hobbies: parsed.data.used_recommended_survey ? null : parsed.data.survey_hobbies.join(","),
-        survey_sports: parsed.data.used_recommended_survey ? null : parsed.data.survey_sports.join(","),
-        survey_travel: parsed.data.used_recommended_survey ? null : parsed.data.survey_travel.join(","),
-      })
+      .update(buildStep1Fields(parsed.data))
       .eq("id", submissionId)
       .eq("user_id", userId);
 
@@ -304,7 +294,7 @@ export async function completeSubmission(
 
     if (updateError || !updated) return { error: "후기 완료에 실패했습니다" };
 
-    // 콤보 추출 (try-catch: 실패해도 후기는 저장됨)
+    // 콤보 추출 + 기출풀 자격 확인 (실패해도 후기는 저장됨)
     try {
       const { data: questions } = await supabase
         .from("submission_questions")
@@ -315,7 +305,6 @@ export async function completeSubmission(
         const combos = extractCombos(questions);
 
         if (combos.length > 0) {
-          // 기존 콤보 삭제 후 재생성
           await supabase
             .from("submission_combos")
             .delete()
@@ -331,114 +320,14 @@ export async function completeSubmission(
           );
         }
       }
-      // 기출풀 자격 확인 (선택3:공통2 → pending 유지, 미충족 → not_applicable)
-      const nonSelfIntro = (questions || []).filter(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (q: any) => q.combo_type !== "self_intro"
-      );
-      const validQIds = nonSelfIntro
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .filter((q: any) => q.question_id && !q.is_not_remembered)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .map((q: any) => q.question_id);
 
-      if (validQIds.length >= 14) {
-        const { data: qDetails } = await supabase
-          .from("questions")
-          .select("id, survey_type")
-          .in("id", validQIds);
-
-        if (qDetails) {
-          const surveyMap = new Map(qDetails.map((q) => [q.id, q.survey_type]));
-          const setTypes = ["general_1", "general_2", "general_3", "roleplay", "advance"];
-          const setSurveys = setTypes.map((st) =>
-            nonSelfIntro
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              .filter((q: any) => q.combo_type === st && q.question_id)
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              .map((q: any) => surveyMap.get(q.question_id))
-              .find((s: string | undefined) => s && s !== "시스템") || null
-          );
-          const sel = setSurveys.filter((s) => s === "선택형").length;
-          const com = setSurveys.filter((s) => s === "공통형").length;
-
-          if (sel !== 3 || com !== 2) {
-            await supabase
-              .from("submissions")
-              .update({ exam_approved: "not_applicable" })
-              .eq("id", submission_id);
-          }
-          // 조건 충족 → 'pending' 유지 (관리자 승인 대기)
-        }
-      } else {
-        // 유효 질문 부족 → 기출풀 대상 아님
-        await supabase
-          .from("submissions")
-          .update({ exam_approved: "not_applicable" })
-          .eq("id", submission_id);
-      }
+      await checkExamApproval(supabase, submission_id, questions || []);
     } catch (comboErr) {
       console.error("콤보 추출/기출풀 확인 실패 (후기는 저장됨):", comboErr);
     }
 
-    // 크레딧 보상 (25일 룰: 최초 2회 무조건 지급, 3회차부터 마지막 지급일로부터 25일 경과 필요)
-    let creditGranted = false;
-    let nextCreditDate: string | null = null;
-    try {
-      // 크레딧이 지급된 이전 완료 건수 + 마지막 지급일 조회
-      // (방금 완료한 건 제외: submitted_at < 현재 시각 직전)
-      const { data: creditHistory } = await supabase
-        .from("submissions")
-        .select("submitted_at")
-        .eq("user_id", userId)
-        .eq("status", "complete")
-        .eq("credit_granted", true)
-        .order("submitted_at", { ascending: false });
-
-      const creditCount = creditHistory?.length ?? 0;
-
-      if (creditCount < 2) {
-        // 최초 2회: 무조건 지급
-        creditGranted = true;
-      } else {
-        // 3회차부터: 마지막 지급일로부터 25일 경과 확인
-        const lastGrantedAt = creditHistory![0].submitted_at;
-        if (lastGrantedAt) {
-          const lastDate = new Date(lastGrantedAt);
-          const daysSince = Math.floor(
-            (Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
-          );
-          if (daysSince >= 25) {
-            creditGranted = true;
-          } else {
-            const next = new Date(lastDate);
-            next.setDate(next.getDate() + 25);
-            nextCreditDate = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`;
-          }
-        }
-      }
-
-      if (creditGranted) {
-        const { error: rpcError } = await supabase.rpc("increment_script_credits", {
-          p_user_id: userId,
-          p_amount: 2,
-        });
-        if (rpcError) {
-          console.error("크레딧 지급 RPC 실패:", rpcError);
-          // RPC 실패 시 credit_granted를 true로 기록하지 않음 (재시도 가능하도록)
-          creditGranted = false;
-        } else {
-          // 크레딧 지급 성공 시에만 기록
-          await supabase
-            .from("submissions")
-            .update({ credit_granted: true })
-            .eq("id", submission_id);
-        }
-      }
-    } catch (creditErr) {
-      console.error("크레딧 지급 처리 실패:", creditErr);
-      // 크레딧 지급 실패해도 후기 자체는 유지
-    }
+    // 크레딧 보상 (25일 룰)
+    const { creditGranted, nextCreditDate } = await processCredits(supabase, userId, submission_id);
 
     revalidatePath("/reviews");
     return { data: { creditGranted, nextCreditDate } };
@@ -448,6 +337,123 @@ export async function completeSubmission(
     }
     return { error: "서버 오류가 발생했습니다" };
   }
+}
+
+// ── 헬퍼: 기출풀 자격 확인 (선택3:공통2 → pending 유지, 미충족 → not_applicable) ──
+
+interface SubmissionQuestionRow {
+  combo_type: string | null;
+  question_id: string | null;
+  is_not_remembered: boolean;
+}
+
+async function checkExamApproval(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  submissionId: number,
+  questions: SubmissionQuestionRow[]
+) {
+  const nonSelfIntro = questions.filter((q) => q.combo_type !== "self_intro");
+  const validQIds = nonSelfIntro
+    .filter((q) => q.question_id && !q.is_not_remembered)
+    .map((q) => q.question_id!);
+
+  if (validQIds.length < 14) {
+    await supabase
+      .from("submissions")
+      .update({ exam_approved: "not_applicable" })
+      .eq("id", submissionId);
+    return;
+  }
+
+  const { data: qDetails } = await supabase
+    .from("questions")
+    .select("id, survey_type")
+    .in("id", validQIds);
+
+  if (!qDetails) return;
+
+  const surveyMap = new Map(qDetails.map((q) => [q.id, q.survey_type]));
+  const setTypes = ["general_1", "general_2", "general_3", "roleplay", "advance"];
+  const setSurveys = setTypes.map((st) =>
+    nonSelfIntro
+      .filter((q) => q.combo_type === st && q.question_id)
+      .map((q) => surveyMap.get(q.question_id!))
+      .find((s) => s && s !== "시스템") || null
+  );
+  const sel = setSurveys.filter((s) => s === "선택형").length;
+  const com = setSurveys.filter((s) => s === "공통형").length;
+
+  if (sel !== 3 || com !== 2) {
+    await supabase
+      .from("submissions")
+      .update({ exam_approved: "not_applicable" })
+      .eq("id", submissionId);
+  }
+  // 조건 충족 → 'pending' 유지 (관리자 승인 대기)
+}
+
+// ── 헬퍼: 크레딧 보상 (25일 룰) ──
+
+async function processCredits(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  userId: string,
+  submissionId: number
+): Promise<{ creditGranted: boolean; nextCreditDate: string | null }> {
+  let creditGranted = false;
+  let nextCreditDate: string | null = null;
+
+  try {
+    const { data: creditHistory } = await supabase
+      .from("submissions")
+      .select("submitted_at")
+      .eq("user_id", userId)
+      .eq("status", "complete")
+      .eq("credit_granted", true)
+      .order("submitted_at", { ascending: false });
+
+    const creditCount = creditHistory?.length ?? 0;
+
+    if (creditCount < 2) {
+      // 최초 2회: 무조건 지급
+      creditGranted = true;
+    } else {
+      // 3회차부터: 마지막 지급일로부터 25일 경과 확인
+      const lastGrantedAt = creditHistory![0].submitted_at;
+      if (lastGrantedAt) {
+        const lastDate = new Date(lastGrantedAt);
+        const daysSince = Math.floor(
+          (Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        if (daysSince >= 25) {
+          creditGranted = true;
+        } else {
+          const next = new Date(lastDate);
+          next.setDate(next.getDate() + 25);
+          nextCreditDate = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`;
+        }
+      }
+    }
+
+    if (creditGranted) {
+      const { error: rpcError } = await supabase.rpc("increment_script_credits", {
+        p_user_id: userId,
+        p_amount: 2,
+      });
+      if (rpcError) {
+        console.error("크레딧 지급 RPC 실패:", rpcError);
+        creditGranted = false;
+      } else {
+        await supabase
+          .from("submissions")
+          .update({ credit_granted: true })
+          .eq("id", submissionId);
+      }
+    }
+  } catch (creditErr) {
+    console.error("크레딧 지급 처리 실패:", creditErr);
+  }
+
+  return { creditGranted, nextCreditDate };
 }
 
 // ============================================================
@@ -624,13 +630,19 @@ export async function updateGrade(
   submissionId: number,
   achievedLevel: string
 ): Promise<ActionResult> {
+  // 입력값 검증 (허용된 등급만)
+  const parsed = updateGradeSchema.safeParse({ submissionId, achievedLevel });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
   try {
     const { supabase, userId } = await requireUser();
 
     const { error } = await supabase
       .from("submissions")
-      .update({ achieved_level: achievedLevel })
-      .eq("id", submissionId)
+      .update({ achieved_level: parsed.data.achievedLevel })
+      .eq("id", parsed.data.submissionId)
       .eq("user_id", userId);
 
     if (error) return { error: "등급 수정에 실패했습니다" };
