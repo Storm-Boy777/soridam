@@ -149,22 +149,14 @@ export default function HomePage() {
           >
             {/* 모바일 축약 */}
             <span className="sm:hidden">
-              <span className="text-[#8B7E72]">
-                남의 영어는 여기까지,
-              </span>
-              <br />
               <span className="text-[#D4835E]">
-                나만의 이야기로
+                나의 일상과 경험으로
               </span>
               <br />
               나다운 오픽을 완성합니다
             </span>
             {/* PC 풀버전 */}
             <span className="hidden sm:inline">
-              <span className="text-[#8B7E72]">
-                남을 흉내 내는 영어는 여기까지,
-              </span>
-              <br />
               <span className="text-[#D4835E]">
                 나의 소소한 일상과 경험으로
               </span>
@@ -172,6 +164,18 @@ export default function HomePage() {
               가장 나다운 오픽을 완성합니다
             </span>
           </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
+            className="mt-[clamp(8px,1.5vh,16px)] text-sm leading-relaxed text-[#8B7E72] sm:text-base"
+          >
+            외운 말은 잊히지만, 당신의 삶은 기록이 됩니다.
+            <br />
+            평범한 하루가 가장 강력한 무기가 되는 경험.
+            <br />
+            이제 오직 당신만의 목소리로 말해보세요.
+          </motion.p>
         </div>
 
         {/* 중앙: 포토카드 갤러리 — 가용 공간에 맞춰 축소 */}
