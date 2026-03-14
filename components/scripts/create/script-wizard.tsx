@@ -1084,7 +1084,7 @@ function Step3Loading({
       <p className="text-sm font-medium text-foreground">
         나만의 스크립트를 만들고 있어요...
       </p>
-      <p className="mt-1 text-xs text-foreground-muted">약 15~30초 소요</p>
+      <p className="mt-1 text-xs text-foreground-muted">약 1~2분 소요</p>
 
       {/* 학습 팁 카드 */}
       {currentTip && (
@@ -1539,7 +1539,7 @@ function Step5Complete({
         <p className="text-sm font-medium text-foreground sm:text-base">
           원어민 음성을 준비하고 있어요...
         </p>
-        <p className="mt-1 text-xs text-foreground-muted sm:mt-1.5">약 30~60초 소요</p>
+        <p className="mt-1 text-xs text-foreground-muted sm:mt-1.5">약 1~2분 소요</p>
 
         {/* 프로그레스 바 */}
         <div className="mt-4 w-full max-w-xs sm:mt-5">

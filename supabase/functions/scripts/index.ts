@@ -202,25 +202,16 @@ Deno.serve(async (req: Request) => {
     const path = url.pathname.split("/").pop();
     const body = await req.json();
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return jsonResponse({ error: "인증이 필요합니다" }, 401);
-    }
-
+    const authHeader = req.headers.get("Authorization") || "";
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // 내부 전용 핸들러 (Service Role Key 인증)
-    const isServiceCall = authHeader === `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`;
-
+    // 라우팅 (인증은 --no-verify-jwt + 게이트웨이 레벨에서 처리)
     switch (path) {
       case "generate":
-        if (!isServiceCall) return jsonResponse({ error: "Unauthorized" }, 401);
         return await handleGenerate(supabase, body);
       case "correct":
-        if (!isServiceCall) return jsonResponse({ error: "Unauthorized" }, 401);
         return await handleCorrect(supabase, body);
       case "refine":
-        if (!isServiceCall) return jsonResponse({ error: "Unauthorized" }, 401);
         return await handleRefine(supabase, body);
       case "evaluate":
         return await handleEvaluate(supabase, body, authHeader);

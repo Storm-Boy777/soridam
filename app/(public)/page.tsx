@@ -33,7 +33,7 @@ const services = [
     num: "02",
     title: "나의 일상이 스크립트로",
     badge: "스크립트",
-    desc: '"퇴근 후 마시는 맥주 한 캔" 같은 당신의 평범한 일상을 가져오세요. AI가 그 진심 어린 경험을 가장 자연스럽고 돋보이는 영어 대사로 다듬어 드립니다.',
+    desc: '"퇴근 후 마시는 맥주 한 캔" 같은 당신의 평범한 일상을 가져오세요. 그 진심 어린 경험을 가장 자연스럽고 돋보이는 영어 대사로 다듬어 드립니다.',
     featured: true,
   },
   {
@@ -147,13 +147,30 @@ export default function HomePage() {
             transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
             className="mt-[clamp(12px,2vh,24px)] text-[30px] font-extrabold leading-[1.3] tracking-[-0.04em] text-[#3A2E25] sm:text-[clamp(1.75rem,2.8vw,2.8rem)]"
           >
-            외운 말이 막혔던 순간,
-            <br />
-            <span className="text-[#D4835E]">
-              당신의 평범한 하루가
+            {/* 모바일 축약 */}
+            <span className="sm:hidden">
+              <span className="text-[#8B7E72]">
+                남의 영어는 여기까지,
+              </span>
+              <br />
+              <span className="text-[#D4835E]">
+                나만의 이야기로
+              </span>
+              <br />
+              나다운 오픽을 완성합니다
             </span>
-            <br />
-            가장 완벽한 대본입니다.
+            {/* PC 풀버전 */}
+            <span className="hidden sm:inline">
+              <span className="text-[#8B7E72]">
+                남을 흉내 내는 영어는 여기까지,
+              </span>
+              <br />
+              <span className="text-[#D4835E]">
+                나의 소소한 일상과 경험으로
+              </span>
+              <br />
+              가장 나다운 오픽을 완성합니다
+            </span>
           </motion.h1>
         </div>
 
