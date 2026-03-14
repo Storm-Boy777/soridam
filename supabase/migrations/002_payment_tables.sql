@@ -35,7 +35,7 @@ CREATE TABLE user_credits (
   current_plan           TEXT NOT NULL DEFAULT 'free',  -- 'free' | 'basic' | 'premium'
   plan_mock_exam_credits INTEGER NOT NULL DEFAULT 0,    -- 플랜 모의고사 크레딧 (만료됨)
   plan_script_credits    INTEGER NOT NULL DEFAULT 0,    -- 플랜 스크립트 크레딧 (만료됨)
-  mock_exam_credits      INTEGER NOT NULL DEFAULT 1,    -- 횟수권 모의고사 크레딧 (영구, 체험 1회)
+  mock_exam_credits      INTEGER NOT NULL DEFAULT 0,    -- 횟수권 모의고사 크레딧 (영구)
   script_credits         INTEGER NOT NULL DEFAULT 0,    -- 횟수권 스크립트 크레딧 (영구)
   plan_expires_at        TIMESTAMPTZ,                   -- 플랜 만료일 (NULL = 무료)
   created_at             TIMESTAMPTZ DEFAULT NOW(),
@@ -76,7 +76,7 @@ BEGIN
     plan_mock_exam_credits, plan_script_credits,
     mock_exam_credits, script_credits
   )
-  VALUES (NEW.id, 'free', 0, 0, 1, 0)
+  VALUES (NEW.id, 'free', 0, 0, 0, 0)
   ON CONFLICT (user_id) DO NOTHING;
   RETURN NEW;
 END;

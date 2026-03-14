@@ -412,12 +412,12 @@ export default function HomePage() {
                   OPIc이 어떤 시험인지 경험해 보세요
                 </p>
                 <div className="my-6 h-px bg-[#EAE0D5]" />
-                <ul className="flex-1 space-y-3">
+                <ul className="flex-1 space-y-3 pl-6 sm:pl-8">
                   {[
-                    "실전 모의고사 1회 (체험)",
-                    "기출 빈도 분석 제공",
-                    "스크립트 패키지 생성 2회 (후기 제출 시)",
-                    "체화 · 쉐도잉 훈련 무제한",
+                    "모의고사 체험판",
+                    "기출 빈도 분석",
+                    "후기 제출 시 스크립트 1회 지급",
+                    "쉐도잉 훈련 무제한",
                   ].map((f) => (
                     <li
                       key={f}
@@ -459,13 +459,12 @@ export default function HomePage() {
                   1개월 이용
                 </span>
                 <div className="my-6 h-px bg-[#4A3F36]" />
-                <ul className="flex-1 space-y-3">
+                <ul className="flex-1 space-y-3 pl-6 sm:pl-8">
                   {[
                     "실전 모의고사 3회",
-                    "스크립트 패키지 생성 30회",
-                    "AI 진단 · 튜터링 무료",
+                    "스크립트 패키지 생성 15회",
+                    "약점 진단 리포트",
                     "체화 · 쉐도잉 훈련 무제한",
-                    "성적 진단 리포트",
                   ].map((f) => (
                     <li
                       key={f}
@@ -504,13 +503,13 @@ export default function HomePage() {
                   2개월 이용
                 </span>
                 <div className="my-6 h-px bg-[#EAE0D5]" />
-                <ul className="flex-1 space-y-3">
+                <ul className="flex-1 space-y-3 pl-6 sm:pl-8">
                   {[
                     "실전 모의고사 10회",
-                    "스크립트 패키지 생성 100회",
-                    "AI 진단 · 튜터링 무료",
+                    "스크립트 패키지 생성 50회",
+                    "튜터링 3회 포함",
+                    "약점 진단 · 성장 리포트",
                     "체화 · 쉐도잉 훈련 무제한",
-                    "성장 데이터 리포트",
                   ].map((f) => (
                     <li
                       key={f}

@@ -157,12 +157,11 @@ export function MockExamSession({
   // ── 커스텀 훅: 녹음 (최소 1초, 소리담 기준. 10초 제한은 UI에서 처리) ──
   const recorder = useRecorder({ maxDuration: 240, minDuration: 1 });
 
-  // 자동 녹음 시작 콜백 (질문 오디오 끝난 후, 체험판에서는 비활성)
+  // 자동 녹음 시작 콜백 (질문 오디오 끝난 후)
   const autoStartRecording = useCallback(() => {
-    if (isTrialMode) return;
     if (recorder.state !== "idle" || uploadState !== "idle") return;
     recorder.startRecording();
-  }, [recorder, uploadState, isTrialMode]);
+  }, [recorder, uploadState]);
 
   // ── 커스텀 훅: 질문 오디오 (자동 녹음 콜백 연결) ──
   const questionPlayer = useQuestionPlayer({
@@ -382,15 +381,9 @@ export function MockExamSession({
       advanceToNext();
       return;
     }
-    // 체험판: 녹음 안 했어도 바로 다음으로 이동 가능
-    if (isTrialMode && uploadState === "idle") {
-      setAnsweredQuestions((prev) => new Set(prev).add(currentQ));
-      advanceToNext();
-      return;
-    }
     // 업로드 진행 중 → 완료 대기 후 자동 이동
     pendingAdvanceRef.current = true;
-  }, [recorder, uploadState, advanceToNext, isTrialMode, currentQ]);
+  }, [recorder, uploadState, advanceToNext]);
 
   // ── 업로드 완료 후 자동 이동 (pendingAdvance 패턴) ──
   useEffect(() => {

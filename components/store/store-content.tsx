@@ -22,13 +22,15 @@ type ProductId =
   | "basic_plan"
   | "premium_plan"
   | "mock_exam_credit"
-  | "script_credit";
+  | "script_credit"
+  | "tutoring_credit";
 
 const PRODUCT_MAP: Record<ProductId, { name: string; price: number }> = {
   basic_plan: { name: "베이직 플랜 (3회권)", price: 19900 },
   premium_plan: { name: "프리미엄 플랜 (10회권)", price: 49900 },
   mock_exam_credit: { name: "모의고사 횟수권 (1회)", price: 7900 },
   script_credit: { name: "스크립트 패키지 횟수권 (10회)", price: 3900 },
+  tutoring_credit: { name: "튜터링 횟수권 (1회)", price: 5900 },
 };
 
 /* ── 크레딧 fetch 함수 ── */
@@ -72,10 +74,10 @@ const plans: {
     description: "OPIc이 어떤 시험인지 경험해 보세요",
     sub: "",
     features: [
-      "실전 모의고사 1회 (체험)",
-      "기출 빈도 분석 제공",
-      "스크립트 패키지 생성 2회 (후기 제출 시)",
-      "체화 · 쉐도잉 훈련 무제한",
+      "모의고사 체험판",
+      "기출 빈도 분석",
+      "후기 제출 시 스크립트 1회 지급",
+      "쉐도잉 훈련 무제한",
     ],
     highlight: false,
   },
@@ -88,10 +90,9 @@ const plans: {
     sub: "1개월 이용",
     features: [
       "실전 모의고사 3회",
-      "스크립트 패키지 생성 30회",
-      "AI 진단 · 튜터링 무료",
+      "스크립트 패키지 생성 15회",
+      "약점 진단 리포트",
       "체화 · 쉐도잉 훈련 무제한",
-      "성적 진단 리포트",
     ],
     highlight: true,
   },
@@ -104,10 +105,10 @@ const plans: {
     sub: "2개월 이용",
     features: [
       "실전 모의고사 10회",
-      "스크립트 패키지 생성 100회",
-      "AI 진단 · 튜터링 무료",
+      "스크립트 패키지 생성 50회",
+      "튜터링 3회 포함",
+      "약점 진단 · 성장 리포트",
       "체화 · 쉐도잉 훈련 무제한",
-      "성장 데이터 리포트",
     ],
     highlight: false,
   },
@@ -123,6 +124,15 @@ const addons: {
   productId: ProductId;
 }[] = [
   {
+    icon: FileText,
+    iconBg: "bg-primary-50 text-primary-500",
+    name: "스크립트 패키지 횟수권",
+    description: "스크립트 패키지 생성 10회 단위로 구매",
+    price: "3,900",
+    unit: "10회",
+    productId: "script_credit",
+  },
+  {
     icon: ClipboardList,
     iconBg: "bg-secondary-50 text-secondary-600",
     name: "모의고사 횟수권",
@@ -132,13 +142,13 @@ const addons: {
     productId: "mock_exam_credit",
   },
   {
-    icon: FileText,
-    iconBg: "bg-primary-50 text-primary-500",
-    name: "스크립트 패키지 횟수권",
-    description: "스크립트 패키지 생성 10회 단위로 구매",
-    price: "3,900",
-    unit: "10회",
-    productId: "script_credit",
+    icon: Zap,
+    iconBg: "bg-accent-50 text-accent-600",
+    name: "튜터링 횟수권",
+    description: "약점 진단 기반 1:1 튜터링 세션",
+    price: "5,900",
+    unit: "1회",
+    productId: "tutoring_credit",
   },
 ];
 
@@ -345,59 +355,35 @@ export function StoreContent({ userId }: { userId: string }) {
       )}
 
       {/* 현재 플랜 + 크레딧 정보 */}
-      <div className="mb-6 rounded-[var(--radius-xl)] border border-primary-200 bg-primary-50/50 p-3 sm:mb-8 sm:p-4">
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-lg)] bg-primary-100 sm:h-10 sm:w-10">
-            <Crown size={20} className="text-primary-600" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm text-foreground-secondary">현재 플랜</p>
-            <p className="font-semibold text-foreground">
-              {currentPlanName}{" "}
-              {credits?.current_plan === "free" && (
-                <span className="text-sm font-normal text-foreground-muted">
-                  무료
-                </span>
-              )}
-            </p>
-          </div>
-        </div>
-        {credits && (
-          <div className="mt-2.5 flex flex-wrap gap-3 border-t border-primary-200/50 pt-2.5 text-xs sm:mt-3 sm:gap-4 sm:pt-3 sm:text-sm">
-            <span className="text-foreground-secondary">
-              모의고사{" "}
-              <span className="font-semibold text-foreground">
-                {credits.plan_mock_exam_credits + credits.mock_exam_credits}회
-              </span>
-              {credits.plan_mock_exam_credits > 0 && credits.mock_exam_credits > 0 && (
-                <span className="text-xs text-foreground-muted ml-1">
-                  (플랜 {credits.plan_mock_exam_credits} + 횟수권 {credits.mock_exam_credits})
-                </span>
-              )}
-            </span>
-            <span className="text-foreground-secondary">
-              스크립트{" "}
-              <span className="font-semibold text-foreground">
-                {credits.plan_script_credits + credits.script_credits}회
-              </span>
-              {credits.plan_script_credits > 0 && credits.script_credits > 0 && (
-                <span className="text-xs text-foreground-muted ml-1">
-                  (플랜 {credits.plan_script_credits} + 횟수권 {credits.script_credits})
-                </span>
-              )}
-            </span>
-            {credits.plan_expires_at && (
-              <span className="text-foreground-secondary">
-                만료{" "}
-                <span className="font-semibold text-foreground">
-                  {new Date(credits.plan_expires_at).toLocaleDateString(
-                    "ko-KR"
-                  )}
-                </span>
-              </span>
+      {/* 모바일: 세로 가운데 / PC: 가로 좌우 균형 */}
+      <div className="mb-6 rounded-[var(--radius-xl)] border border-primary-200 bg-primary-50/50 px-4 py-3 sm:mb-8 sm:px-6">
+        <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
+          <div className="flex items-center gap-2">
+            <Crown size={18} className="text-primary-600" />
+            <span className="text-sm font-semibold text-foreground">{currentPlanName}</span>
+            {credits?.current_plan === "free" && (
+              <span className="text-xs text-foreground-muted">무료</span>
             )}
           </div>
-        )}
+          {credits && (
+            <div className="flex flex-wrap justify-center gap-3 text-sm sm:gap-5">
+              <span className="text-foreground-secondary">
+                모의고사 <span className="font-bold text-foreground">{credits.plan_mock_exam_credits + credits.mock_exam_credits}회</span>
+              </span>
+              <span className="text-foreground-secondary">
+                스크립트 <span className="font-bold text-foreground">{credits.plan_script_credits + credits.script_credits}회</span>
+              </span>
+              <span className="text-foreground-secondary">
+                튜터링 <span className="font-bold text-foreground">0회</span>
+              </span>
+              {credits.plan_expires_at && (
+                <span className="text-foreground-secondary">
+                  만료 <span className="font-bold text-foreground">{new Date(credits.plan_expires_at).toLocaleDateString("ko-KR")}</span>
+                </span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 플랜 카드 */}
@@ -406,7 +392,7 @@ export function StoreContent({ userId }: { userId: string }) {
           <Package size={20} className="text-primary-500" />
           플랜
         </h2>
-        <div className="grid gap-4 lg:grid-cols-3 sm:gap-5">
+        <div className="grid gap-4 md:grid-cols-3 sm:gap-5">
           {plans.map((plan) => {
             const current = isCurrent(plan.productId);
             const loading = loadingProduct === plan.productId;
@@ -427,24 +413,24 @@ export function StoreContent({ userId }: { userId: string }) {
                   </span>
                 )}
 
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col items-center text-center">
                   <h3 className="text-lg font-bold">{plan.name}</h3>
                   {current && (
-                    <span className="rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-semibold text-primary-600">
+                    <span className="mt-1 rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-semibold text-primary-600">
                       이용 중
                     </span>
                   )}
+                  <p className="mt-1 text-sm text-foreground-secondary">
+                    {plan.description}
+                  </p>
+                  {plan.sub && (
+                    <span className="mt-2 inline-flex rounded-full bg-surface-secondary px-2.5 py-0.5 text-xs font-medium text-foreground-secondary">
+                      {plan.sub}
+                    </span>
+                  )}
                 </div>
-                <p className="mt-1 text-sm text-foreground-secondary">
-                  {plan.description}
-                </p>
-                {plan.sub && (
-                  <span className="mt-2 inline-flex w-fit rounded-full bg-surface-secondary px-2.5 py-0.5 text-xs font-medium text-foreground-secondary">
-                    {plan.sub}
-                  </span>
-                )}
 
-                <div className="mt-4 flex items-baseline gap-1">
+                <div className="mt-4 flex items-baseline justify-center gap-1">
                   {plan.price === "0" ? (
                     <span className="text-3xl font-bold">무료</span>
                   ) : (
@@ -460,7 +446,7 @@ export function StoreContent({ userId }: { userId: string }) {
                   )}
                 </div>
 
-                <ul className="mt-4 flex-1 space-y-2">
+                <ul className="mt-4 flex-1 space-y-2 pl-6 sm:pl-8">
                   {plan.features.map((f) => (
                     <li
                       key={f}
@@ -513,7 +499,7 @@ export function StoreContent({ userId }: { userId: string }) {
         <p className="mb-4 text-xs text-foreground-secondary sm:mb-5 sm:text-sm">
           플랜과 별도로 필요한 만큼만 개별 구매할 수 있습니다.
         </p>
-        <div className="grid gap-4 sm:grid-cols-2 sm:gap-5">
+        <div className="grid gap-4 sm:grid-cols-3 sm:gap-5">
           {addons.map((addon) => {
             const loading = loadingProduct === addon.productId;
             return (
@@ -521,7 +507,7 @@ export function StoreContent({ userId }: { userId: string }) {
                 key={addon.name}
                 className="flex flex-col rounded-[var(--radius-xl)] border border-border bg-surface p-4 sm:p-5"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col items-center gap-2 text-center">
                   <div
                     className={`flex h-10 w-10 items-center justify-center rounded-[var(--radius-lg)] ${addon.iconBg}`}
                   >
@@ -534,7 +520,7 @@ export function StoreContent({ userId }: { userId: string }) {
                     </p>
                   </div>
                 </div>
-                <div className="mt-4 flex items-baseline gap-1">
+                <div className="mt-4 flex items-baseline justify-center gap-1">
                   <span className="text-sm text-foreground-secondary">₩</span>
                   <span className="text-2xl font-bold">{addon.price}</span>
                   <span className="text-sm text-foreground-secondary">
@@ -545,7 +531,7 @@ export function StoreContent({ userId }: { userId: string }) {
                 <button
                   onClick={() => handlePayment(addon.productId)}
                   disabled={loading}
-                  className="mt-4 inline-flex h-10 items-center justify-center gap-1.5 rounded-[var(--radius-lg)] border border-border text-sm font-medium text-foreground transition-colors hover:bg-surface-secondary disabled:opacity-50"
+                  className="mt-4 w-full inline-flex h-10 items-center justify-center gap-1.5 rounded-[var(--radius-lg)] border border-border text-sm font-medium text-foreground transition-colors hover:bg-surface-secondary disabled:opacity-50"
                 >
                   {loading ? (
                     <Loader2 size={15} className="animate-spin" />

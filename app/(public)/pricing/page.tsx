@@ -14,10 +14,10 @@ const plans = [
     description: "OPIc이 어떤 시험인지 경험해 보세요",
     sub: "",
     features: [
-      "실전 모의고사 1회 (체험)",
-      "기출 빈도 분석 제공",
-      "스크립트 패키지 생성 2회 (후기 제출 시)",
-      "체화 · 쉐도잉 훈련 무제한",
+      "모의고사 체험판",
+      "기출 빈도 분석",
+      "후기 제출 시 스크립트 1회 지급",
+      "쉐도잉 훈련 무제한",
     ],
     cta: "무료로 시작하기",
     href: "/signup",
@@ -31,10 +31,9 @@ const plans = [
     sub: "1개월 이용",
     features: [
       "실전 모의고사 3회",
-      "스크립트 패키지 생성 30회",
-      "AI 진단 · 튜터링 무료",
+      "스크립트 패키지 생성 15회",
+      "약점 진단 리포트",
       "체화 · 쉐도잉 훈련 무제한",
-      "성적 진단 리포트",
     ],
     cta: "구매하기",
     href: "/store",
@@ -48,10 +47,10 @@ const plans = [
     sub: "2개월 이용",
     features: [
       "실전 모의고사 10회",
-      "스크립트 패키지 생성 100회",
-      "AI 진단 · 튜터링 무료",
+      "스크립트 패키지 생성 50회",
+      "튜터링 3회 포함",
+      "약점 진단 · 성장 리포트",
       "체화 · 쉐도잉 훈련 무제한",
-      "성장 데이터 리포트",
     ],
     cta: "구매하기",
     href: "/store",
@@ -114,7 +113,7 @@ export default function PricingPage() {
             </div>
 
             {/* 기능 목록 */}
-            <ul className="mt-6 flex-1 space-y-2.5">
+            <ul className="mt-6 flex-1 space-y-2.5 pl-6 sm:pl-8">
               {plan.features.map((feature) => (
                 <li
                   key={feature}
@@ -176,15 +175,13 @@ export default function PricingPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {[
-                ["실전 모의고사", "1회 (체험)", "3회", "10회"],
-                ["스크립트 패키지 생성", "2회 (후기 제출 시)", "30회", "100회"],
-                ["체화 훈련", "무제한", "무제한", "무제한"],
-                ["쉐도잉 훈련", "무제한", "무제한", "무제한"],
-                ["AI 진단 · 튜터링", "—", "무료", "무료"],
-                ["성적 진단 리포트", "—", "O", "O"],
-                ["성장 데이터 리포트", "—", "O", "O"],
+                ["실전 모의고사", "체험판", "3회", "10회"],
+                ["스크립트 패키지", "후기 제출 시 1개", "15회", "50회"],
+                ["튜터링", "—", "—", "3회 포함"],
+                ["약점 진단 리포트", "—", "O", "O"],
+                ["성장 리포트", "—", "O", "O"],
+                ["체화 · 쉐도잉 훈련", "무제한", "무제한", "무제한"],
                 ["이용 기간", "무제한", "1개월", "2개월"],
-                ["모의고사 회당 비용", "—", "—", "베이직 대비 25%↓"],
               ].map(([feature, free, basic, premium]) => {
                 const isDiff = basic !== premium;
                 return (
@@ -215,7 +212,22 @@ export default function PricingPage() {
         <p className="mt-3 text-center text-foreground-secondary">
           패키지 외에 필요한 만큼만 개별 구매할 수 있습니다.
         </p>
-        <div className="mt-8 grid gap-6 sm:grid-cols-2">
+        <div className="mt-8 grid gap-6 sm:grid-cols-3">
+          <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-6 text-center">
+            <p className="text-lg font-bold">스크립트 패키지 횟수권</p>
+            <p className="mt-1 text-sm text-foreground-secondary">
+              스크립트 패키지 생성 10회 단위로 구매
+            </p>
+            <p className="mt-4 text-3xl font-bold">
+              ₩3,900<span className="text-sm font-normal text-foreground-secondary"> / 10회</span>
+            </p>
+            <Link
+              href="/store"
+              className="mt-4 inline-flex h-10 items-center justify-center rounded-[var(--radius-lg)] border border-border px-6 text-sm font-medium text-foreground transition-colors hover:bg-surface-secondary"
+            >
+              스토어에서 구매
+            </Link>
+          </div>
           <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-6 text-center">
             <p className="text-lg font-bold">모의고사 횟수권</p>
             <p className="mt-1 text-sm text-foreground-secondary">
@@ -232,12 +244,12 @@ export default function PricingPage() {
             </Link>
           </div>
           <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-6 text-center">
-            <p className="text-lg font-bold">스크립트 패키지 횟수권</p>
+            <p className="text-lg font-bold">튜터링 횟수권</p>
             <p className="mt-1 text-sm text-foreground-secondary">
-              스크립트 패키지 생성 10회 단위로 구매
+              약점 진단 기반 1:1 튜터링 세션
             </p>
             <p className="mt-4 text-3xl font-bold">
-              ₩3,900<span className="text-sm font-normal text-foreground-secondary"> / 10회</span>
+              ₩5,900<span className="text-sm font-normal text-foreground-secondary"> / 1회</span>
             </p>
             <Link
               href="/store"

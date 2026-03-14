@@ -24,8 +24,8 @@ export function MockExamSessionWrapper({
   isTrialMode = false,
 }: MockExamSessionWrapperProps) {
   const router = useRouter();
-  // 체험판이면 서베이 스킵 → 디바이스 테스트부터 시작
-  const [phase, setPhase] = useState<Phase>(isTrialMode ? "device-test" : "loading");
+  // 체험판이면 서베이부터 시작 (설계 문서: 서베이 → 디바이스 테스트 → 세션)
+  const [phase, setPhase] = useState<Phase>(isTrialMode ? "survey" : "loading");
 
   // 세션 데이터 조회 (체험판이면 비활성화)
   const {
@@ -211,8 +211,21 @@ export function MockExamSessionWrapper({
 
   // 세션 진행
   if (phase === "session") {
-    const initialData = isTrialMode ? TRIAL_INITIAL_DATA : sessionResult?.data;
+    let initialData = isTrialMode ? TRIAL_INITIAL_DATA : sessionResult?.data;
     if (!initialData) return null;
+
+    // 체험판: started_at을 현재 시간으로 세팅 (실전 모드 40분 카운트다운 정상 작동)
+    if (isTrialMode) {
+      const now = new Date().toISOString();
+      initialData = {
+        ...initialData,
+        session: {
+          ...initialData.session,
+          started_at: now,
+          expires_at: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
+        },
+      };
+    }
 
     return (
       <MockExamSession

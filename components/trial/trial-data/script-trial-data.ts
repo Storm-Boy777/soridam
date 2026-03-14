@@ -241,4 +241,12 @@ export const TRIAL_SCRIPT_RESULT: ScriptDetail = {
   created_at: "2026-03-14T22:15:25.557Z",
   updated_at: "2026-03-14T22:22:58.830Z",
   package: TRIAL_PACKAGE,
+  question_detail: {
+    id: TRIAL_QUESTION.question_id,
+    question_english: TRIAL_QUESTION.question_english,
+    question_korean: TRIAL_QUESTION.question_korean,
+    topic: TRIAL_QUESTION.topic,
+    category: TRIAL_QUESTION.topic_category,
+    question_type_eng: TRIAL_QUESTION.question_type,
+  },
 };
