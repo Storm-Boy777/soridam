@@ -32,6 +32,7 @@ import {
   BookOpenText,
   Heart,
   GraduationCap,
+  ArrowRight,
 } from "lucide-react";
 import { TopicPagination } from "@/components/reviews/submit/topic-pagination";
 import {
@@ -76,6 +77,14 @@ import {
   TTS_VOICES,
   TTS_VOICE_LABELS,
 } from "@/lib/types/scripts";
+import { useTrialMode } from "@/components/trial/use-trial-mode";
+import { TrialBanner } from "@/components/trial/trial-banner";
+import { TrialComplete } from "@/components/trial/trial-complete";
+import {
+  TRIAL_QUESTION,
+  TRIAL_USER_STORY,
+  TRIAL_SCRIPT_RESULT,
+} from "@/components/trial/trial-data/script-trial-data";
 
 /* ── 타입 ── */
 
@@ -110,6 +119,7 @@ export function ScriptWizard({
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const isTrialMode = useTrialMode();
 
   const viewId = searchParams.get("view");
 
@@ -129,15 +139,16 @@ export function ScriptWizard({
   );
   const [error, setError] = useState<string | null>(null);
 
-  // ── 크레딧 확인 ──
+  // ── 크레딧 확인 (체험판이면 항상 hasCredit) ──
   const { data: creditInfo } = useQuery({
-    queryKey: ["script-credit"],
+    queryKey: isTrialMode ? ["script-credit-trial"] : ["script-credit"],
     queryFn: async () => {
+      if (isTrialMode) return { hasCredit: true, planCredits: 0, permanentCredits: 1, totalCredits: 1 };
       const result = await checkScriptCredit();
       if (result.error) throw new Error(result.error);
       return result.data;
     },
-    staleTime: 60 * 1000,
+    staleTime: isTrialMode ? Infinity : 60 * 1000,
   });
 
   // ── 내 스크립트 목록 (기존 스크립트 존재 여부 확인용) ──
@@ -173,14 +184,16 @@ export function ScriptWizard({
   const { data: scriptDetail, isLoading: isLoadingDetail } = useQuery({
     queryKey: ["script-detail", generatedScriptId],
     queryFn: async () => {
+      if (isTrialMode) return TRIAL_SCRIPT_RESULT;
       if (!generatedScriptId) return null;
       const result = await getScriptDetail(generatedScriptId);
       if (result.error) throw new Error(result.error);
       return result.data;
     },
-    enabled: !!generatedScriptId && step >= 3 && step <= 4,
-    staleTime: 30 * 1000,
+    enabled: (!!generatedScriptId && step >= 3 && step <= 4) || (isTrialMode && !!generatedScriptId),
+    staleTime: isTrialMode ? Infinity : 30 * 1000,
     refetchInterval: (query) => {
+      if (isTrialMode) return false;
       // english_text가 비어있으면 3초마다 폴링 (EF 완료 대기)
       const data = query.state.data;
       if (data && !data.english_text) return 3000;
@@ -188,12 +201,40 @@ export function ScriptWizard({
     },
   });
 
-  // ── Step 3 → Step 4 자동 전환 ──
+  // ── Step 3 → Step 4 자동 전환 (체험판은 타이머로 전환하므로 스킵) ──
   useEffect(() => {
+    if (isTrialMode) return;
     if (step === 3 && scriptDetail && scriptDetail.english_text) {
       setStep(4);
     }
-  }, [step, scriptDetail]);
+  }, [step, scriptDetail, isTrialMode]);
+
+  // ── 체험판: 질문 선택 시 스토리 자동 입력 + Step 2 이동 ──
+  // (handleQuestionSelect는 일반 모드용, 체험판은 handleTrialQuestionSelect로 분기)
+  const handleTrialQuestionSelect = useCallback(() => {
+    if (!isTrialMode) return;
+    setSelectedQuestion({
+      question_id: TRIAL_QUESTION.question_id,
+      question_english: TRIAL_QUESTION.question_english,
+      question_korean: TRIAL_QUESTION.question_korean,
+      topic: TRIAL_QUESTION.topic,
+      topic_category: TRIAL_QUESTION.topic_category,
+      question_type: TRIAL_QUESTION.question_type,
+    });
+    setTargetLevel("IH");
+    setUserInput(TRIAL_USER_STORY);
+    setStep(2);
+  }, [isTrialMode]);
+
+  // ── 체험판 Step 3 → Step 4 자동 전환 (10초 페이크 로딩) ──
+  useEffect(() => {
+    if (!isTrialMode || step !== 3) return;
+    const timer = setTimeout(() => {
+      setIsGenerating(false);
+      setStep(4);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [isTrialMode, step]);
 
   // ── 카테고리 변경 → 주제/질문 리셋 ──
   const handleCategorySelect = useCallback((cat: string) => {
@@ -243,6 +284,14 @@ export function ScriptWizard({
   const handleGenerate = useCallback(async () => {
     if (!selectedQuestion) return;
 
+    // 체험판 분기: API 호출 스킵 → Step 3 표시 후 trialTimerRef로 Step 4 전환
+    if (isTrialMode) {
+      setIsGenerating(true);
+      setStep(3);
+      setGeneratedScriptId("trial-script-001");
+      return;
+    }
+
     setIsGenerating(true);
     setError(null);
 
@@ -275,14 +324,14 @@ export function ScriptWizard({
     } finally {
       setIsGenerating(false);
     }
-  }, [selectedQuestion, targetLevel, userInput]);
+  }, [selectedQuestion, targetLevel, userInput, isTrialMode]);
 
   // ── 수정 요청 (Step 4 → Step 3 → Step 4) ──
   const [refinePrompt, setRefinePrompt] = useState("");
   const [isRefining, setIsRefining] = useState(false);
 
   const handleRefine = useCallback(async () => {
-    if (!generatedScriptId) return;
+    if (!generatedScriptId || isTrialMode) return;
 
     setIsRefining(true);
     setError(null);
@@ -313,7 +362,7 @@ export function ScriptWizard({
     } finally {
       setIsRefining(false);
     }
-  }, [generatedScriptId, refinePrompt, queryClient]);
+  }, [generatedScriptId, refinePrompt, queryClient, isTrialMode]);
 
   // ── 재생성 ──
   const [showRegenerateModal, setShowRegenerateModal] = useState(false);
@@ -328,6 +377,7 @@ export function ScriptWizard({
   }, [scriptDetail?.user_story, userInput]);
 
   const handleRegenerate = useCallback(async () => {
+    if (isTrialMode) return;
     // 재생성에 필요한 질문 정보 (selectedQuestion 또는 scriptDetail에서)
     const question = selectedQuestion || (scriptDetail?.question_detail
       ? {
@@ -391,6 +441,7 @@ export function ScriptWizard({
     targetLevel,
     regenerateStory,
     queryClient,
+    isTrialMode,
   ]);
 
   // ── 확정 → Step 5 ──
@@ -398,6 +449,12 @@ export function ScriptWizard({
 
   const handleConfirm = useCallback(async () => {
     if (!generatedScriptId) return;
+
+    // 체험판 분기: SA 호출 스킵 → 바로 Step 5
+    if (isTrialMode) {
+      setStep(5);
+      return;
+    }
 
     setIsConfirming(true);
     try {
@@ -418,7 +475,7 @@ export function ScriptWizard({
     } finally {
       setIsConfirming(false);
     }
-  }, [generatedScriptId, queryClient]);
+  }, [generatedScriptId, queryClient, isTrialMode]);
 
   // ── 위저드 리셋 (새 스크립트 만들기) ──
   const resetWizard = useCallback(() => {
@@ -488,8 +545,15 @@ export function ScriptWizard({
         </div>
       </div>
 
-      {/* ── 크레딧 표시 ── */}
-      {creditInfo && step <= 2 && (
+      {/* ── 체험판 배너 ── */}
+      {isTrialMode && (
+        <div className="border-b border-border px-4 py-2 sm:px-6">
+          <TrialBanner />
+        </div>
+      )}
+
+      {/* ── 크레딧 표시 (체험판에서는 숨김) ── */}
+      {creditInfo && step <= 2 && !isTrialMode && (
         <div className="border-b border-border bg-surface-secondary/50 px-4 py-2 text-center text-xs text-foreground-muted">
           스크립트 생성권:{" "}
           <span className="font-semibold text-primary-500">
@@ -525,6 +589,8 @@ export function ScriptWizard({
             onSelectQuestion={handleQuestionSelect}
             existingScriptIds={existingScriptIds}
             onViewExistingScript={handleViewExistingScript}
+            isTrialMode={isTrialMode}
+            onTrialQuestionSelect={handleTrialQuestionSelect}
           />
         )}
 
@@ -539,6 +605,7 @@ export function ScriptWizard({
             hasCredit={creditInfo?.hasCredit ?? false}
             onBack={() => setStep(1)}
             onGenerate={handleGenerate}
+            isTrialMode={isTrialMode}
           />
         )}
 
@@ -557,18 +624,25 @@ export function ScriptWizard({
             onRefinePromptChange={setRefinePrompt}
             isRefining={isRefining}
             onRefine={handleRefine}
+            isTrialMode={isTrialMode}
           />
 
         )}
 
         {step === 5 && (
-          <Step5Complete
-            onGoToScripts={() => router.push("/scripts")}
-            onCreateNew={resetWizard}
-            scriptId={generatedScriptId ?? undefined}
-            targetLevel={targetLevel}
-            questionType={questionType}
-          />
+          isTrialMode ? (
+            <TrialStep5
+              onGoToScripts={() => router.push("/scripts")}
+            />
+          ) : (
+            <Step5Complete
+              onGoToScripts={() => router.push("/scripts")}
+              onCreateNew={resetWizard}
+              scriptId={generatedScriptId ?? undefined}
+              targetLevel={targetLevel}
+              questionType={questionType}
+            />
+          )
         )}
       </div>
 
@@ -576,7 +650,21 @@ export function ScriptWizard({
       {step === 4 && scriptDetail && (
         <div className="border-t border-border bg-surface px-4 py-3 sm:px-6 sm:py-4">
           <div className="mx-auto max-w-3xl">
-            {scriptDetail.status !== "confirmed" ? (
+            {isTrialMode ? (
+              /* 체험판: 수정 비활성 + 확정 버튼만 */
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-foreground-muted">
+                  체험판에서는 수정/재생성이 제한됩니다
+                </span>
+                <button
+                  onClick={handleConfirm}
+                  className="inline-flex h-10 items-center gap-2 rounded-[var(--radius-lg)] bg-green-600 px-5 text-sm font-medium text-white transition-colors hover:bg-green-700"
+                >
+                  <CheckCircle2 size={16} />
+                  확인 완료
+                </button>
+              </div>
+            ) : scriptDetail.status !== "confirmed" ? (
               /* 초안: 재생성 + 확정 */
               <div className="flex items-center justify-between gap-3">
                 <button
@@ -681,6 +769,8 @@ function Step1Selection({
   onSelectQuestion,
   existingScriptIds,
   onViewExistingScript,
+  isTrialMode = false,
+  onTrialQuestionSelect,
 }: {
   selectedCategory: string | null;
   onSelectCategory: (cat: string) => void;
@@ -689,23 +779,46 @@ function Step1Selection({
   onSelectQuestion: (sq: SelectedQuestion) => void;
   existingScriptIds?: Map<string, string>;
   onViewExistingScript?: (scriptId: string) => void;
+  isTrialMode?: boolean;
+  onTrialQuestionSelect?: () => void;
 }) {
+  // 체험판에서 허용되는 카테고리/주제
+  const trialCategory = TRIAL_QUESTION.topic_category; // "일반"
+  const trialTopic = TRIAL_QUESTION.topic; // "음악"
+
   return (
     <div className="space-y-6">
+      {/* 체험판 안내 */}
+      {isTrialMode && (
+        <div className="rounded-[var(--radius-lg)] border border-secondary-200 bg-secondary-50/30 px-4 py-3">
+          <p className="text-sm text-foreground-secondary">
+            {!selectedCategory
+              ? "체험판에서는 \"일반\" 카테고리로 진행합니다. 아래에서 선택해주세요."
+              : !selectedTopic
+                ? "\"음악\" 주제를 선택해주세요."
+                : "아래 질문을 선택해주세요."}
+          </p>
+        </div>
+      )}
+
       {/* ① 카테고리 선택 (카드형 UI) */}
       <div>
         <h3 className="text-sm font-semibold text-foreground">카테고리</h3>
         <div className="mt-3 grid grid-cols-3 gap-2.5">
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory === cat.value;
+            const isDisabled = isTrialMode && cat.value !== trialCategory;
             return (
               <button
                 key={cat.value}
-                onClick={() => onSelectCategory(cat.value)}
+                onClick={() => !isDisabled && onSelectCategory(cat.value)}
+                disabled={isDisabled}
                 className={`flex flex-col items-center gap-1 rounded-[var(--radius-lg)] px-3 py-3 transition-all ${
                   isSelected
                     ? "border-2 border-primary-500 bg-primary-50/60 shadow-sm"
-                    : "border border-border bg-surface hover:border-primary-300 hover:bg-primary-50/30"
+                    : isDisabled
+                      ? "cursor-not-allowed border border-border bg-surface-secondary/50 opacity-40"
+                      : "border border-border bg-surface hover:border-primary-300 hover:bg-primary-50/30"
                 }`}
               >
                 <cat.Icon
@@ -741,6 +854,7 @@ function Step1Selection({
               }
               selectedTopic={selectedTopic}
               onSelectTopic={onSelectTopic}
+              trialTopic={isTrialMode ? trialTopic : undefined}
             />
           </div>
         </div>
@@ -758,10 +872,14 @@ function Step1Selection({
               }
               questionCount={1}
               selectedQuestions={[]}
-              onSelect={onSelectQuestion}
+              onSelect={isTrialMode && onTrialQuestionSelect
+                ? () => onTrialQuestionSelect()
+                : onSelectQuestion
+              }
               onRemove={() => {}}
-              existingScriptIds={existingScriptIds}
-              onViewExistingScript={onViewExistingScript}
+              existingScriptIds={isTrialMode ? undefined : existingScriptIds}
+              onViewExistingScript={isTrialMode ? undefined : onViewExistingScript}
+              trialQuestionId={isTrialMode ? TRIAL_QUESTION.question_id : undefined}
             />
           </div>
         </div>
@@ -784,6 +902,7 @@ function Step2Input({
   hasCredit,
   onBack,
   onGenerate,
+  isTrialMode = false,
 }: {
   question: QuestionOption;
   targetLevel: TargetLevel;
@@ -794,6 +913,7 @@ function Step2Input({
   hasCredit: boolean;
   onBack: () => void;
   onGenerate: () => void;
+  isTrialMode?: boolean;
 }) {
   return (
     <div className="space-y-6">
@@ -811,16 +931,24 @@ function Step2Input({
       <div>
         <label className="text-sm font-semibold text-foreground">
           목표 등급
+          {isTrialMode && (
+            <span className="ml-2 text-xs font-normal text-foreground-muted">
+              (체험판: IH 고정)
+            </span>
+          )}
         </label>
         <div className="mt-2 grid grid-cols-6 gap-1.5 sm:gap-2">
           {TARGET_LEVELS.map((level) => (
             <button
               key={level}
-              onClick={() => onTargetLevelChange(level)}
+              onClick={() => !isTrialMode && onTargetLevelChange(level)}
+              disabled={isTrialMode && level !== targetLevel}
               className={`rounded-lg py-1.5 text-xs font-medium transition-colors sm:rounded-full sm:py-1.5 sm:text-sm ${
                 targetLevel === level
                   ? "bg-primary-500 text-white"
-                  : "border border-border bg-surface text-foreground-secondary hover:border-primary-300"
+                  : isTrialMode
+                    ? "border border-border bg-surface-secondary/50 text-foreground-muted opacity-40 cursor-not-allowed"
+                    : "border border-border bg-surface text-foreground-secondary hover:border-primary-300"
               }`}
             >
               {level}
@@ -833,21 +961,33 @@ function Step2Input({
       <div>
         <label className="text-sm font-semibold text-foreground">
           내 경험 (한국어)
+          {isTrialMode && (
+            <span className="ml-2 text-xs font-normal text-foreground-muted">
+              (체험판: 샘플 입력)
+            </span>
+          )}
         </label>
         <p className="mt-1 text-xs text-foreground-muted">
-          키워드나 간단한 경험을 한국어로 입력하세요 (선택사항)
+          {isTrialMode
+            ? "체험판에서는 아래 샘플 경험으로 스크립트를 생성합니다."
+            : "키워드나 간단한 경험을 한국어로 입력하세요 (선택사항)"}
         </p>
         <textarea
           value={userInput}
-          onChange={(e) => onUserInputChange(e.target.value)}
+          onChange={(e) => !isTrialMode && onUserInputChange(e.target.value)}
+          readOnly={isTrialMode}
           placeholder="집 근처 공원에 자주 가요. 주말에 산책하면서 쉬는 걸 좋아해요."
           rows={5}
-          className="mt-2 w-full rounded-[var(--radius-lg)] border border-border bg-surface px-3 py-2.5 text-sm text-foreground placeholder:text-foreground-muted/50 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100"
+          className={`mt-2 w-full rounded-[var(--radius-lg)] border border-border px-3 py-2.5 text-sm text-foreground placeholder:text-foreground-muted/50 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 ${
+            isTrialMode ? "bg-surface-secondary/50" : "bg-surface"
+          }`}
           maxLength={2000}
         />
-        <div className="mt-1 text-right text-xs text-foreground-muted">
-          {userInput.length}/2000자
-        </div>
+        {!isTrialMode && (
+          <div className="mt-1 text-right text-xs text-foreground-muted">
+            {userInput.length}/2000자
+          </div>
+        )}
       </div>
 
       {/* 액션 */}
@@ -879,7 +1019,7 @@ function Step2Input({
         </button>
       </div>
 
-      {!hasCredit && (
+      {!hasCredit && !isTrialMode && (
         <p className="text-center text-xs text-red-500">
           스크립트 생성권이 없습니다. 스토어에서 구매해주세요.
         </p>
@@ -1111,6 +1251,7 @@ function Step4Result({
   onRefinePromptChange,
   isRefining,
   onRefine,
+  isTrialMode = false,
 }: {
   detail?: ScriptDetail | null;
   isLoading: boolean;
@@ -1118,6 +1259,7 @@ function Step4Result({
   onRefinePromptChange: (v: string) => void;
   isRefining: boolean;
   onRefine: () => void;
+  isTrialMode?: boolean;
 }) {
   const [viewTab, setViewTab] = useState<"script" | "expressions">("script");
   const [scriptMode, setScriptMode] = useState<
@@ -1298,8 +1440,8 @@ function Step4Result({
         />
       )}
 
-      {/* 수정 요청 */}
-      {canRefine && (
+      {/* 수정 요청 (체험판에서는 숨김) */}
+      {canRefine && !isTrialMode && (
         <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-5">
           <h3 className="text-sm font-semibold text-foreground">
             수정 요청{" "}
@@ -1650,6 +1792,150 @@ function Step5Complete({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
+   체험판 Step 5: 패키지 생성 → 5초 페이크 로딩 → 완료 CTA
+   ══════════════════════════════════════════════════════════════ */
+
+function TrialStep5({ onGoToScripts }: { onGoToScripts: () => void }) {
+  const [phase, setPhase] = useState<"idle" | "loading" | "done">("idle");
+  const [selectedVoice, setSelectedVoice] = useState<TtsVoice>("Zephyr");
+  const [progress, setProgress] = useState(0);
+
+  // 페이크 프로그레스
+  useEffect(() => {
+    if (phase !== "loading") return;
+    const timer = setInterval(() => {
+      setProgress((p) => (p >= 85 ? p : Math.min(85, p + Math.random() * 6 + 2)));
+    }, 800);
+    return () => clearInterval(timer);
+  }, [phase]);
+
+  // 5초 후 완료
+  useEffect(() => {
+    if (phase !== "loading") return;
+    const timer = setTimeout(() => {
+      setProgress(100);
+      setPhase("done");
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [phase]);
+
+  // idle: 음성 선택 + 패키지 생성 버튼
+  if (phase === "idle") {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 sm:py-12">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100 sm:h-16 sm:w-16">
+          <CheckCircle2 size={28} className="text-green-600 sm:hidden" />
+          <CheckCircle2 size={32} className="hidden text-green-600 sm:block" />
+        </div>
+        <h2 className="mt-3 text-base font-semibold text-foreground sm:mt-4 sm:text-lg">
+          스크립트가 완성되었습니다!
+        </h2>
+        <p className="mt-1.5 text-center text-xs text-foreground-secondary sm:mt-2 sm:text-sm">
+          원어민 음성 패키지를 생성하면 쉐도잉 훈련을 시작할 수 있습니다.
+        </p>
+
+        <div className="mt-5 w-full max-w-xs sm:mt-6">
+          <p className="mb-2 text-center text-xs font-medium text-foreground-secondary">
+            원어민 음성 선택
+          </p>
+          <div className="flex gap-2">
+            {TTS_VOICES.map((voice) => (
+              <button
+                key={voice}
+                onClick={() => setSelectedVoice(voice)}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-lg)] border px-3 py-2 text-xs font-medium transition-colors sm:py-2.5 sm:text-sm ${
+                  selectedVoice === voice
+                    ? "border-primary-400 bg-primary-50 text-primary-600"
+                    : "border-border bg-surface text-foreground-secondary hover:border-primary-200"
+                }`}
+              >
+                <Volume2 size={14} />
+                {TTS_VOICE_LABELS[voice]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button
+          onClick={() => { setPhase("loading"); setProgress(15); }}
+          className="mt-4 flex h-9 w-full max-w-xs items-center justify-center gap-2 rounded-[var(--radius-lg)] bg-primary-500 text-sm font-medium text-white transition-colors hover:bg-primary-600 sm:mt-5 sm:h-10 sm:w-auto sm:px-6"
+        >
+          <Package size={16} />
+          패키지 생성 (음성 + 쉐도잉)
+        </button>
+      </div>
+    );
+  }
+
+  // loading: 프로그레스 바
+  if (phase === "loading") {
+    return (
+      <div className="flex flex-col items-center justify-center py-6 sm:py-8">
+        <div className="relative mb-5 sm:mb-6">
+          <div className="h-14 w-14 animate-spin rounded-full border-4 border-primary-100 border-t-primary-500 sm:h-16 sm:w-16" />
+          <Headphones
+            size={20}
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-primary-500 sm:hidden"
+          />
+          <Headphones
+            size={24}
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-primary-500 max-sm:hidden"
+          />
+        </div>
+        <p className="text-sm font-medium text-foreground sm:text-base">
+          원어민 음성을 준비하고 있어요...
+        </p>
+        <p className="mt-1 text-xs text-foreground-muted">체험판 — 잠시만 기다려주세요</p>
+
+        <div className="mt-4 w-full max-w-xs sm:mt-5">
+          <div className="h-1.5 overflow-hidden rounded-full bg-surface-secondary sm:h-2">
+            <div
+              className="h-full rounded-full bg-primary-500 transition-all duration-1000"
+              style={{ width: `${Math.round(progress)}%` }}
+            />
+          </div>
+          <p className="mt-1.5 text-center text-xs text-foreground-muted">
+            {Math.round(progress)}%
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // done: 패키지 완성 → 쉐도잉 시작 or 완료 CTA
+  return (
+    <div className="flex flex-col items-center justify-center py-8 sm:py-12">
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100 sm:h-16 sm:w-16">
+        <CheckCircle2 size={28} className="text-green-600 sm:hidden" />
+        <CheckCircle2 size={32} className="hidden text-green-600 sm:block" />
+      </div>
+      <h2 className="mt-3 text-base font-semibold text-foreground sm:mt-4 sm:text-lg">
+        패키지가 생성되었습니다!
+      </h2>
+      <p className="mt-1.5 text-center text-xs text-foreground-secondary sm:mt-2 sm:text-sm">
+        이제 쉐도잉 훈련을 체험해보세요.
+      </p>
+
+      <Link
+        href="/scripts/shadowing?mode=trial"
+        className="mt-5 flex h-9 w-full max-w-xs items-center justify-center gap-2 rounded-[var(--radius-lg)] bg-primary-500 text-sm font-medium text-white transition-colors hover:bg-primary-600 sm:mt-6 sm:h-10 sm:w-auto sm:px-6"
+      >
+        <Headphones size={16} />
+        쉐도잉 훈련 체험하기
+      </Link>
+
+      <button
+        onClick={onGoToScripts}
+        className="mt-3 inline-flex items-center gap-1 text-xs text-foreground-muted hover:text-foreground-secondary"
+      >
+        스크립트 페이지로 돌아가기
+        <ArrowRight size={14} />
+      </button>
     </div>
   );
 }

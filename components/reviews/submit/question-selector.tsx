@@ -36,6 +36,8 @@ interface QuestionSelectorProps {
   // 스크립트 위저드 전용: 이미 생성된 스크립트의 question_id → script_id 매핑
   existingScriptIds?: Map<string, string>;
   onViewExistingScript?: (scriptId: string) => void;
+  // 체험판: 이 질문 ID만 선택 가능, 나머지 비활성
+  trialQuestionId?: string;
 }
 
 export function QuestionSelector({
@@ -49,6 +51,7 @@ export function QuestionSelector({
   isNotRememberedMode = false,
   existingScriptIds,
   onViewExistingScript,
+  trialQuestionId,
 }: QuestionSelectorProps) {
   const [customText, setCustomText] = useState("");
 
@@ -197,11 +200,12 @@ export function QuestionSelector({
                 const isSelected = selectedIds.has(q.id);
                 const existingScriptId = existingScriptIds?.get(q.id);
                 const hasExistingScript = !!existingScriptId;
+                const isTrialDisabled = !!trialQuestionId && q.id !== trialQuestionId;
                 return (
                   <button
                     key={q.id}
                     onClick={() => {
-                      if (isSelected || isComplete) return;
+                      if (isSelected || isComplete || isTrialDisabled) return;
                       // 이미 생성된 스크립트 → 기존 스크립트 보기
                       if (hasExistingScript && onViewExistingScript) {
                         onViewExistingScript(existingScriptId);
@@ -216,13 +220,15 @@ export function QuestionSelector({
                         question_title: q.question_short,
                       });
                     }}
-                    disabled={isSelected || isComplete}
+                    disabled={isSelected || isComplete || isTrialDisabled}
                     className={`w-full rounded-[var(--radius-md)] border p-3 text-left transition-all ${
                       isSelected
                         ? "border-primary-300 bg-primary-50/50 opacity-50"
-                        : hasExistingScript
-                          ? "border-green-200 bg-green-50/30 hover:border-green-300"
-                          : "border-border bg-surface hover:border-primary-300"
+                        : isTrialDisabled
+                          ? "cursor-not-allowed border-border bg-surface-secondary/50 opacity-40"
+                          : hasExistingScript
+                            ? "border-green-200 bg-green-50/30 hover:border-green-300"
+                            : "border-border bg-surface hover:border-primary-300"
                     }`}
                   >
                     <div className="flex items-start gap-2">

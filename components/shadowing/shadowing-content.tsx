@@ -7,24 +7,20 @@ import { StepListen } from "./step-listen";
 import { StepShadow } from "./step-shadow";
 import { StepRecite } from "./step-recite";
 import { StepSpeak } from "./step-speak";
+import { TrialBanner } from "@/components/trial/trial-banner";
+import { TrialComplete } from "@/components/trial/trial-complete";
 import type { ShadowingData } from "@/lib/actions/scripts";
 import type { ShadowingStep } from "@/lib/types/scripts";
 import { SHADOWING_STEP_DESCRIPTIONS } from "@/lib/types/scripts";
 
 interface ShadowingContentProps {
   data: ShadowingData;
+  isTrialMode?: boolean;
 }
-
-const STEP_COMPONENTS: Record<ShadowingStep, React.ComponentType> = {
-  listen: StepListen,
-  shadow: StepShadow,
-  recite: StepRecite,
-  speak: StepSpeak,
-};
 
 const STEPS: ShadowingStep[] = ["listen", "shadow", "recite", "speak"];
 
-export function ShadowingContent({ data }: ShadowingContentProps) {
+export function ShadowingContent({ data, isTrialMode = false }: ShadowingContentProps) {
   const { currentStep, setStep, init, packageId } = useShadowingStore();
 
   // 데이터 초기화 (패키지가 다르면 리셋)
@@ -45,7 +41,6 @@ export function ShadowingContent({ data }: ShadowingContentProps) {
   // 키보드 단축키
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      // 입력 필드에서는 무시
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement
@@ -53,7 +48,6 @@ export function ShadowingContent({ data }: ShadowingContentProps) {
         return;
       }
 
-      // 1~4: Step 전환
       const num = parseInt(e.key);
       if (num >= 1 && num <= 4) {
         e.preventDefault();
@@ -66,21 +60,42 @@ export function ShadowingContent({ data }: ShadowingContentProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [setStep]);
 
-  const CurrentStepComponent = STEP_COMPONENTS[currentStep];
+  // Step 4 체험판: 실전 녹음 대신 완료 CTA
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case "listen":
+        return <StepListen />;
+      case "shadow":
+        return <StepShadow />;
+      case "recite":
+        return <StepRecite />;
+      case "speak":
+        return isTrialMode ? <TrialComplete type="script" /> : <StepSpeak />;
+    }
+  };
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6">
+      {/* 체험판 배너 */}
+      {isTrialMode && (
+        <div className="mb-4">
+          <TrialBanner />
+        </div>
+      )}
+
       {/* Step 네비게이션 */}
       <ShadowingStepNav currentStep={currentStep} onStepChange={setStep} />
 
       {/* Step 설명 */}
       <p className="mt-3 text-center text-xs text-foreground-muted">
-        {SHADOWING_STEP_DESCRIPTIONS[currentStep]}
+        {currentStep === "speak" && isTrialMode
+          ? "체험판에서는 AI 평가를 제공하지 않습니다."
+          : SHADOWING_STEP_DESCRIPTIONS[currentStep]}
       </p>
 
       {/* Step 콘텐츠 */}
       <div className="mt-5">
-        <CurrentStepComponent />
+        {renderStepContent()}
       </div>
 
       {/* 키보드 단축키 힌트 */}

@@ -30,6 +30,8 @@ import { AvaAvatar } from "./ava-avatar";
 import { EvalWaiting } from "../evaluation/eval-waiting";
 import { TrainingEvalPanel } from "./training-eval-panel";
 import { submitAnswer, completeSession } from "@/lib/actions/mock-exam";
+import { TrialBanner } from "@/components/trial/trial-banner";
+import { TrialComplete } from "@/components/trial/trial-complete";
 import type {
   MockTestSession,
   MockTestAnswer,
@@ -42,7 +44,7 @@ import type {
 // Q1 자기소개도 questions 테이블에서 조회 (SLF_SYS_SYS_UNK_01)
 
 // ── 세션 페이즈 ──
-type SessionPhase = "exam" | "completing" | "waiting";
+type SessionPhase = "exam" | "completing" | "waiting" | "trial-complete";
 
 // ── 업로드 상태 ──
 type UploadState = "idle" | "uploading" | "retrying" | "submitted" | "failed";
@@ -67,11 +69,13 @@ interface MockExamSessionProps {
       audio_url: string | null;
     }>;
   };
+  isTrialMode?: boolean;
 }
 
 export function MockExamSession({
   sessionId,
   initialData,
+  isTrialMode = false,
 }: MockExamSessionProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -153,11 +157,12 @@ export function MockExamSession({
   // ── 커스텀 훅: 녹음 (최소 1초, 소리담 기준. 10초 제한은 UI에서 처리) ──
   const recorder = useRecorder({ maxDuration: 240, minDuration: 1 });
 
-  // 자동 녹음 시작 콜백 (질문 오디오 끝난 후)
+  // 자동 녹음 시작 콜백 (질문 오디오 끝난 후, 체험판에서는 비활성)
   const autoStartRecording = useCallback(() => {
+    if (isTrialMode) return;
     if (recorder.state !== "idle" || uploadState !== "idle") return;
     recorder.startRecording();
-  }, [recorder, uploadState]);
+  }, [recorder, uploadState, isTrialMode]);
 
   // ── 커스텀 훅: 질문 오디오 (자동 녹음 콜백 연결) ──
   const questionPlayer = useQuestionPlayer({
@@ -165,12 +170,12 @@ export function MockExamSession({
     onPlaybackEnded: autoStartRecording,
   });
 
-  // ── 커스텀 훅: 평가 폴링 ──
+  // ── 커스텀 훅: 평가 폴링 (체험판이면 비활성) ──
   // 훈련 모드: 시험 중에도 폴링 (개별 평가 결과 실시간 표시)
   // 실전 모드: 평가 대기 화면에서만 폴링
   const evalPolling = useEvalPolling({
     sessionId,
-    enabled: phase === "waiting" || (isTraining && phase === "exam"),
+    enabled: !isTrialMode && (phase === "waiting" || (isTraining && phase === "exam")),
     interval: isTraining && phase === "exam" ? 8000 : 5000,
   });
 
@@ -233,6 +238,13 @@ export function MockExamSession({
   // ── 업로드 + 제출 ──
   const handleUploadAndSubmit = useCallback(
     async (blob: Blob) => {
+      // 체험판 분기: 업로드/제출 스킵 → 즉시 submitted 상태
+      if (isTrialMode) {
+        setUploadState("submitted");
+        setAnsweredQuestions((prev) => new Set(prev).add(currentQ));
+        return;
+      }
+
       setUploadState("uploading");
       setError(null);
       uploadRetryRef.current = 0;
@@ -315,7 +327,7 @@ export function MockExamSession({
         }));
       }
     },
-    [sessionId, currentQ, isQ1, currentQuestion, recorder.duration]
+    [sessionId, currentQ, isQ1, currentQuestion, recorder.duration, isTrialMode]
   );
 
   // recorder blob 준비 시 자동 업로드
@@ -330,6 +342,12 @@ export function MockExamSession({
   const advanceToNext = useCallback(() => {
     pendingAdvanceRef.current = false;
     if (currentQ >= 15) {
+      // 체험판: completeSession SA 스킵 → 바로 완료 화면
+      if (isTrialMode) {
+        setPhase("trial-complete");
+        return;
+      }
+
       setPhase("completing");
       completeSession({ session_id: sessionId }).then((res) => {
         if (res.error) {
@@ -349,7 +367,7 @@ export function MockExamSession({
     setUploadState("idle");
     setError(null);
     setShowQuestion("hidden");
-  }, [currentQ, sessionId, queryClient, recorder, questionPlayer]);
+  }, [currentQ, sessionId, queryClient, recorder, questionPlayer, isTrialMode]);
 
   // ── "다음" 버튼 핸들러 (소리담 패턴: 1클릭으로 중지+업로드+이동) ──
   const handleNext = useCallback(() => {
@@ -364,9 +382,15 @@ export function MockExamSession({
       advanceToNext();
       return;
     }
+    // 체험판: 녹음 안 했어도 바로 다음으로 이동 가능
+    if (isTrialMode && uploadState === "idle") {
+      setAnsweredQuestions((prev) => new Set(prev).add(currentQ));
+      advanceToNext();
+      return;
+    }
     // 업로드 진행 중 → 완료 대기 후 자동 이동
     pendingAdvanceRef.current = true;
-  }, [recorder, uploadState, advanceToNext]);
+  }, [recorder, uploadState, advanceToNext, isTrialMode, currentQ]);
 
   // ── 업로드 완료 후 자동 이동 (pendingAdvance 패턴) ──
   useEffect(() => {
@@ -458,6 +482,11 @@ export function MockExamSession({
     );
   }
 
+  // ── 체험판 완료 화면 ──
+  if (phase === "trial-complete") {
+    return <TrialComplete type="mock-exam" />;
+  }
+
   // ── 평가 대기 화면 ──
   if (phase === "waiting") {
     return (
@@ -472,6 +501,13 @@ export function MockExamSession({
   // ── 시험 진행 화면 ──
   return (
     <div className={`flex flex-1 flex-col overflow-hidden ${viewingEvalQNum ? "" : "md:h-auto md:overflow-visible"}`}>
+      {/* 체험판 배너 */}
+      {isTrialMode && (
+        <div className="border-b border-border px-4 py-2 sm:px-6">
+          <TrialBanner />
+        </div>
+      )}
+
       {/* 오프라인 배너 */}
       {!isOnline && (
         <div className="flex items-center gap-2 bg-accent-500 px-4 py-2 text-sm text-white">

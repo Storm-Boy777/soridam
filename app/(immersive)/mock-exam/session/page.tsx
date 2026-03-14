@@ -6,19 +6,23 @@ export const metadata = {
 };
 
 interface Props {
-  searchParams: Promise<{ id?: string }>;
+  searchParams: Promise<{ id?: string; mode?: string }>;
 }
 
 export default async function MockExamSessionPage({ searchParams }: Props) {
   const params = await searchParams;
   const sessionId = params.id;
+  const isTrialMode = params.mode === "trial";
 
   return (
     <>
       <ImmersiveHeader title="모의고사" backHref="/mock-exam" />
       <main className="flex h-0 flex-grow flex-col md:h-auto md:flex-1">
-        {sessionId ? (
-          <MockExamSessionWrapper sessionId={sessionId} />
+        {sessionId || isTrialMode ? (
+          <MockExamSessionWrapper
+            sessionId={isTrialMode ? "trial_mock_session" : sessionId!}
+            isTrialMode={isTrialMode}
+          />
         ) : (
           <div className="flex flex-1 items-center justify-center">
             <div className="text-center">

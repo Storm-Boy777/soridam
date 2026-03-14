@@ -26,6 +26,9 @@ import {
   Clapperboard,
   Lightbulb,
   BookOpen,
+  FlaskConical,
+  Send,
+  CreditCard,
   type LucideIcon,
 } from "lucide-react";
 import { TOPIC_ICONS } from "@/components/reviews/submit/topic-pagination";
@@ -36,6 +39,7 @@ import {
   getShadowableScripts,
   deleteScript,
   createPackage,
+  checkScriptCredit,
 } from "@/lib/actions/scripts";
 import { getTopicsByCategory } from "@/lib/queries/master-questions";
 import type { ScriptListItem, ShadowingHistoryItem } from "@/lib/types/scripts";
@@ -73,9 +77,12 @@ export function ScriptsContent({
 }: ScriptsContentProps) {
   const searchParams = useSearchParams();
 
+  // ?mode=trial 감지 시 자동으로 "생성" 탭 활성
+  const isTrialMode = searchParams.get("mode") === "trial";
+
   // useState로 즉시 탭 전환 + history.replaceState로 URL만 동기화 (Next.js 네비게이션 미발생)
   const tabParam = searchParams.get("tab") as TabId | null;
-  const initialTab: TabId = tabParam && tabs.some((t) => t.id === tabParam) ? tabParam : "create";
+  const initialTab: TabId = isTrialMode ? "create" : (tabParam && tabs.some((t) => t.id === tabParam) ? tabParam : "create");
   const [activeTab, setActiveTabState] = useState<TabId>(initialTab);
 
   const setActiveTab = useCallback((id: TabId) => {
@@ -127,6 +134,17 @@ export function ScriptsContent({
 
 function CreateTab() {
   const [bannerOpen, setBannerOpen] = useState(false);
+
+  // 크레딧 확인
+  const { data: creditInfo } = useQuery({
+    queryKey: ["script-credit"],
+    queryFn: async () => {
+      const result = await checkScriptCredit();
+      if (result.error) return null;
+      return result.data;
+    },
+    staleTime: 60 * 1000,
+  });
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -199,15 +217,65 @@ function CreateTab() {
           ))}
         </div>
 
-        {/* CTA */}
+        {/* CTA — 크레딧 유무에 따라 분기 */}
         <div className="mt-4 border-t border-border pt-3 sm:mt-6 sm:pt-4">
-          <Link
-            href="/scripts/create"
-            className="flex h-9 w-full items-center justify-center gap-2 rounded-[var(--radius-lg)] bg-primary-500 px-4 text-sm font-medium text-white transition-colors hover:bg-primary-600 sm:h-10"
-          >
-            <PenTool size={16} />
-            스크립트 생성 시작하기
-          </Link>
+          {creditInfo && !creditInfo.hasCredit ? (
+            <div className="space-y-2">
+              <p className="text-center text-xs text-foreground-muted">
+                스크립트 생성권이 없습니다
+              </p>
+              {/* PC: 한 줄 3컬럼 / 모바일: 세로 리스트 */}
+              <div className="flex flex-col gap-2 sm:flex-row sm:gap-2.5">
+                <Link
+                  href="/scripts/create?mode=trial"
+                  className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-secondary-200 bg-secondary-50/30 p-3 transition-colors hover:border-secondary-300 hover:bg-secondary-50/60 sm:flex-1 sm:flex-col sm:items-center sm:gap-1.5 sm:p-3.5 sm:text-center"
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary-100 sm:h-9 sm:w-9">
+                    <FlaskConical size={16} className="text-secondary-600" />
+                  </div>
+                  <div className="min-w-0 flex-1 sm:flex-none">
+                    <p className="text-sm font-semibold text-foreground">체험판으로 미리 보기</p>
+                    <p className="text-xs text-foreground-muted">샘플 데이터로 생성 과정을 체험</p>
+                  </div>
+                  <ArrowRight size={14} className="shrink-0 text-foreground-muted sm:hidden" />
+                </Link>
+                <Link
+                  href="/reviews?tab=submit"
+                  className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-border bg-surface p-3 transition-colors hover:border-primary-200 hover:bg-primary-50/30 sm:flex-1 sm:flex-col sm:items-center sm:gap-1.5 sm:p-3.5 sm:text-center"
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-100 sm:h-9 sm:w-9">
+                    <Send size={16} className="text-primary-600" />
+                  </div>
+                  <div className="min-w-0 flex-1 sm:flex-none">
+                    <p className="text-sm font-semibold text-foreground">후기 제출로 크레딧 받기</p>
+                    <p className="text-xs text-foreground-muted">시험 후기 제출 시 크레딧 지급</p>
+                  </div>
+                  <ArrowRight size={14} className="shrink-0 text-foreground-muted sm:hidden" />
+                </Link>
+                <Link
+                  href="/store"
+                  className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-border bg-surface p-3 transition-colors hover:border-primary-200 hover:bg-primary-50/30 sm:flex-1 sm:flex-col sm:items-center sm:gap-1.5 sm:p-3.5 sm:text-center"
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent-100 sm:h-9 sm:w-9">
+                    <CreditCard size={16} className="text-accent-600" />
+                  </div>
+                  <div className="min-w-0 flex-1 sm:flex-none">
+                    <p className="text-sm font-semibold text-foreground">요금제 구매하기</p>
+                    <p className="text-xs text-foreground-muted">크레딧을 구매하여 바로 이용</p>
+                  </div>
+                  <ArrowRight size={14} className="shrink-0 text-foreground-muted sm:hidden" />
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <Link
+              href="/scripts/create"
+              className="flex h-9 w-full items-center justify-center gap-2 rounded-[var(--radius-lg)] bg-primary-500 px-4 text-sm font-medium text-white transition-colors hover:bg-primary-600 sm:h-10"
+            >
+              <PenTool size={16} />
+              스크립트 생성 시작하기
+            </Link>
+          )}
         </div>
       </div>
     </div>
@@ -866,6 +934,13 @@ function ShadowingTab({
             <p className="mt-1 text-xs text-foreground-muted">
               스크립트를 확정한 후 패키지를 생성하면 쉐도잉 훈련을 시작할 수 있습니다
             </p>
+            <Link
+              href="/scripts/shadowing?mode=trial"
+              className="mt-4 inline-flex items-center gap-2 rounded-[var(--radius-lg)] border border-secondary-200 bg-secondary-50/30 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:border-secondary-300 hover:bg-secondary-50/60"
+            >
+              <FlaskConical size={16} className="text-secondary-600" />
+              체험판으로 쉐도잉 체험하기
+            </Link>
           </div>
         ) : (
           <div className="mt-4 space-y-4">

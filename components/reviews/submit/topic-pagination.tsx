@@ -196,6 +196,7 @@ interface TopicPaginationProps {
   onNotRemembered?: () => void;
   onCustomInput?: () => void;
   excludedTopics?: string[];
+  trialTopic?: string; // 체험판: 이 주제만 선택 가능, 나머지 비활성
 }
 
 export function TopicPagination({
@@ -205,6 +206,7 @@ export function TopicPagination({
   onNotRemembered,
   onCustomInput,
   excludedTopics = [],
+  trialTopic,
 }: TopicPaginationProps) {
   const [page, setPage] = useState(0);
 
@@ -260,14 +262,18 @@ export function TopicPagination({
         {currentTopics.map(({ topic, count }) => {
           const Icon = TOPIC_ICONS[topic] || DEFAULT_ICON;
           const isSelected = selectedTopic === topic;
+          const isDisabled = !!trialTopic && topic !== trialTopic;
           return (
             <button
               key={topic}
-              onClick={() => onSelectTopic(topic)}
+              onClick={() => !isDisabled && onSelectTopic(topic)}
+              disabled={isDisabled}
               className={`flex flex-col items-center gap-1 rounded-[var(--radius-lg)] border p-3 text-center transition-all ${
                 isSelected
                   ? "border-primary-500 bg-primary-50 text-primary-700"
-                  : "border-border bg-surface text-foreground hover:border-primary-300 hover:bg-primary-50/30"
+                  : isDisabled
+                    ? "cursor-not-allowed border-border bg-surface-secondary/50 opacity-40"
+                    : "border-border bg-surface text-foreground hover:border-primary-300 hover:bg-primary-50/30"
               }`}
             >
               <Icon

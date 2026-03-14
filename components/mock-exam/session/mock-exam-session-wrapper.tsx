@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { SurveyIntro } from "../start/survey-intro";
@@ -8,19 +9,25 @@ import { DeviceTest } from "../start/device-test";
 import { MockExamSession } from "./mock-exam-session";
 import { getSession } from "@/lib/actions/mock-exam";
 import { MOCK_EXAM_MODE_LABELS, type MockExamMode } from "@/lib/types/mock-exam";
+import { TrialBanner } from "@/components/trial/trial-banner";
+import { TRIAL_INITIAL_DATA } from "@/components/trial/trial-data/mock-exam-trial-data";
 
 type Phase = "loading" | "restoring" | "survey" | "device-test" | "session" | "error";
 
 interface MockExamSessionWrapperProps {
   sessionId: string;
+  isTrialMode?: boolean;
 }
 
 export function MockExamSessionWrapper({
   sessionId,
+  isTrialMode = false,
 }: MockExamSessionWrapperProps) {
-  const [phase, setPhase] = useState<Phase>("loading");
+  const router = useRouter();
+  // 체험판이면 서베이 스킵 → 디바이스 테스트부터 시작
+  const [phase, setPhase] = useState<Phase>(isTrialMode ? "device-test" : "loading");
 
-  // 세션 데이터 조회 (세션 진행 중에는 refetch 비활성화)
+  // 세션 데이터 조회 (체험판이면 비활성화)
   const {
     data: sessionResult,
     isLoading,
@@ -31,10 +38,13 @@ export function MockExamSessionWrapper({
     staleTime: 10 * 1000, // 10초
     refetchOnWindowFocus: phase !== "session",
     refetchOnReconnect: phase !== "session",
+    enabled: !isTrialMode,
   });
 
-  // 로딩 완료 후 phase 결정
+  // 로딩 완료 후 phase 결정 (실전 모드에서만)
   useEffect(() => {
+    if (isTrialMode) return;
+
     if (isLoading) {
       setPhase("loading");
       return;
@@ -79,7 +89,7 @@ export function MockExamSessionWrapper({
         setPhase("survey");
       }
     }
-  }, [isLoading, queryError, sessionResult, sessionId]);
+  }, [isLoading, queryError, sessionResult, sessionId, isTrialMode]);
 
   // 서베이 완료 → 디바이스 테스트
   const handleSurveyComplete = useCallback(() => {
@@ -88,16 +98,20 @@ export function MockExamSessionWrapper({
 
   // 디바이스 테스트 완료 → 세션 시작 + setup 완료 플래그 저장
   const handleDeviceTestComplete = useCallback(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && !isTrialMode) {
       localStorage.setItem(`mock-setup-done-${sessionId}`, "true");
     }
     setPhase("session");
-  }, [sessionId]);
+  }, [sessionId, isTrialMode]);
 
-  // 디바이스 테스트 뒤로가기 → 서베이로 복귀
+  // 디바이스 테스트 뒤로가기 → 서베이로 복귀 (체험판이면 모의고사 페이지로)
   const handleDeviceTestBack = useCallback(() => {
-    setPhase("survey");
-  }, []);
+    if (isTrialMode) {
+      router.push("/mock-exam");
+    } else {
+      setPhase("survey");
+    }
+  }, [isTrialMode, router]);
 
   // 로딩
   if (phase === "loading") {
@@ -167,7 +181,7 @@ export function MockExamSessionWrapper({
     );
   }
 
-  // 서베이
+  // 서베이 (체험판에서는 스킵)
   if (phase === "survey") {
     return (
       <div className="h-0 flex-grow overflow-y-auto max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden">
@@ -179,21 +193,32 @@ export function MockExamSessionWrapper({
   // 디바이스 테스트
   if (phase === "device-test") {
     return (
-      <div className="h-0 flex-grow overflow-y-auto max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden">
-        <DeviceTest
-          onComplete={handleDeviceTestComplete}
-          onBack={handleDeviceTestBack}
-        />
+      <div className="flex h-0 flex-grow flex-col overflow-hidden">
+        {isTrialMode && (
+          <div className="border-b border-border px-4 py-2 sm:px-6">
+            <TrialBanner />
+          </div>
+        )}
+        <div className="h-0 flex-grow overflow-y-auto max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden">
+          <DeviceTest
+            onComplete={handleDeviceTestComplete}
+            onBack={handleDeviceTestBack}
+          />
+        </div>
       </div>
     );
   }
 
   // 세션 진행
-  if (phase === "session" && sessionResult?.data) {
+  if (phase === "session") {
+    const initialData = isTrialMode ? TRIAL_INITIAL_DATA : sessionResult?.data;
+    if (!initialData) return null;
+
     return (
       <MockExamSession
         sessionId={sessionId}
-        initialData={sessionResult.data}
+        initialData={initialData}
+        isTrialMode={isTrialMode}
       />
     );
   }
