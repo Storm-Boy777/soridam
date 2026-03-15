@@ -13,6 +13,7 @@ import type {
   MockTestReport,
   MockExamHistoryItem,
   CoachingReportV3,
+  OpicLevel,
 } from "@/lib/types/mock-exam";
 import { FACT_LABELS } from "@/lib/types/mock-exam";
 import { getLevelDiff, TYPE_MAP_KO, CATEGORY_KO } from "./shared-helpers";
@@ -270,22 +271,38 @@ export function OverviewTab({
             목표 등급 로드맵
           </h4>
 
-          <div className="flex items-center justify-center gap-2 mb-4 text-sm">
-            <span className="rounded-lg bg-surface-secondary px-3 py-1.5 font-bold text-foreground">
-              {report.final_level || "—"}
-            </span>
-            <ArrowRight size={16} className="text-primary-400" />
-            <span className="rounded-lg bg-primary-50 px-3 py-1.5 font-bold text-primary-600 ring-2 ring-primary-200">
-              {roadmap.current_to_next.split("→")[1]?.trim() || report.target_level || "—"}
-            </span>
-            {roadmap.next_to_target && (
-              <>
-                <ArrowRight size={16} className="text-foreground-muted" />
-                <span className="rounded-lg bg-surface-secondary px-3 py-1.5 font-medium text-foreground-secondary">
-                  {report.target_level || roadmap.next_to_target.split("→")[1]?.trim() || "—"}
+          <div className="flex items-center justify-center gap-2 mb-4 text-sm flex-wrap">
+            {(() => {
+              const levels: OpicLevel[] = ["NH", "IL", "IM1", "IM2", "IM3", "IH", "AL"];
+              const current = report.final_level;
+              const target = (report.target_level || roadmap.current_to_next.split("→")[1]?.trim()) as OpicLevel;
+              const currentIdx = current ? levels.indexOf(current) : -1;
+              const targetIdx = target ? levels.indexOf(target) : -1;
+
+              const path: OpicLevel[] = [];
+              if (currentIdx >= 0 && targetIdx > currentIdx) {
+                for (let i = currentIdx; i <= targetIdx; i++) path.push(levels[i]);
+              } else {
+                if (current) path.push(current);
+                const next = roadmap.current_to_next.split("→")[1]?.trim() as OpicLevel;
+                if (next && next !== current) path.push(next);
+              }
+
+              return path.map((level, i) => (
+                <span key={level} className="flex items-center gap-2">
+                  {i > 0 && <ArrowRight size={16} className={i === path.length - 1 ? "text-foreground-muted" : "text-primary-400"} />}
+                  <span className={`rounded-lg px-3 py-1.5 font-bold ${
+                    i === 0
+                      ? "bg-surface-secondary text-foreground"
+                      : i === path.length - 1
+                        ? "bg-primary-50 text-primary-600 ring-2 ring-primary-200"
+                        : "bg-surface-secondary text-foreground-secondary"
+                  }`}>
+                    {level}
+                  </span>
                 </span>
-              </>
-            )}
+              ));
+            })()}
           </div>
 
           {roadmap.personal_blockers && roadmap.personal_blockers.length > 0 && (
