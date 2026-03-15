@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useQuery } from "@tanstack/react-query";
 import {
   User,
   Mail,
@@ -16,14 +17,50 @@ import {
   KeyRound,
   Camera,
   ClipboardList,
-  TrendingUp,
-  BarChart3,
   Flame,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { updateProfile, updateGoals } from "@/lib/actions/auth";
 import { serverSignOut } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
+
+/* ── 크레딧 조회 ── */
+
+type CreditsData = {
+  current_plan: string;
+  mock_exam_credits: number;
+  script_credits: number;
+  plan_mock_exam_credits: number;
+  plan_script_credits: number;
+  plan_tutoring_credits: number;
+  tutoring_credits: number;
+  plan_expires_at: string | null;
+};
+
+async function fetchUserCredits(userId: string): Promise<CreditsData> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("user_credits")
+    .select("*")
+    .eq("user_id", userId)
+    .single();
+  if (error) throw error;
+  return data as CreditsData;
+}
+
+const PLAN_LABELS: Record<string, string> = {
+  free: "체험",
+  basic: "베이직",
+  premium: "프리미엄",
+};
+
+const PLAN_PRICES: Record<string, string> = {
+  free: "무료",
+  basic: "₩19,900 / 3회권",
+  premium: "₩49,900 / 10회권",
+};
 
 /* ── 타입 ── */
 
@@ -37,7 +74,6 @@ type UserData = {
   currentGrade: string;
   targetGrade: string;
   examDate: string;
-  weeklyGoal: string;
 };
 
 /* ── 상수 ── */
@@ -46,7 +82,6 @@ const tabs = [
   { id: "profile", label: "프로필", icon: User },
   { id: "plan", label: "플랜", icon: CreditCard },
   { id: "goal", label: "목표", icon: Target },
-  { id: "history", label: "학습", icon: BarChart3 },
   { id: "account", label: "계정", icon: Shield },
 ] as const;
 
@@ -74,13 +109,6 @@ const targetGradeOptions = [
   { value: "AL", label: "AL (Advanced Low)" },
 ];
 
-const weeklyGoals = [
-  { value: "", label: "선택해 주세요" },
-  { value: "2", label: "주 2회" },
-  { value: "3", label: "주 3회" },
-  { value: "5", label: "주 5회" },
-  { value: "7", label: "매일" },
-];
 
 /* ── 유틸 ── */
 
@@ -110,6 +138,13 @@ function providerLabel(provider: string) {
 export function MyPageContent({ user }: { user: UserData }) {
   const [activeTab, setActiveTab] = useState<TabId>("profile");
 
+  const { data: credits } = useQuery({
+    queryKey: ["user-credits", user.id],
+    queryFn: () => fetchUserCredits(user.id),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!user.id,
+  });
+
   return (
     <div>
       {/* 탭 네비게이션 */}
@@ -138,9 +173,8 @@ export function MyPageContent({ user }: { user: UserData }) {
       {/* 탭 콘텐츠 */}
       <div className="mx-auto max-w-2xl">
         {activeTab === "profile" && <ProfileTab user={user} />}
-        {activeTab === "plan" && <PlanTab user={user} />}
+        {activeTab === "plan" && <PlanTab user={user} credits={credits} />}
         {activeTab === "goal" && <GoalTab user={user} />}
-        {activeTab === "history" && <HistoryTab />}
         {activeTab === "account" && <AccountTab user={user} />}
       </div>
     </div>
@@ -309,7 +343,21 @@ function ProfileTab({ user }: { user: UserData }) {
 
 /* ── 플랜 탭 ── */
 
-function PlanTab({ user }: { user: UserData }) {
+function PlanTab({ user, credits }: { user: UserData; credits?: CreditsData }) {
+  const planKey = credits?.current_plan || "free";
+  const planName = PLAN_LABELS[planKey] || "체험";
+  const planPrice = PLAN_PRICES[planKey] || "무료";
+
+  const mockCredits = credits
+    ? credits.plan_mock_exam_credits + credits.mock_exam_credits
+    : 0;
+  const scriptCredits = credits
+    ? credits.plan_script_credits + credits.script_credits
+    : 0;
+  const tutoringCredits = credits
+    ? (credits.plan_tutoring_credits ?? 0) + (credits.tutoring_credits ?? 0)
+    : 0;
+
   return (
     <div className="space-y-6">
       {/* 현재 플랜 */}
@@ -317,63 +365,83 @@ function PlanTab({ user }: { user: UserData }) {
         <h3 className="mb-4 font-semibold text-foreground">현재 요금제</h3>
         <div className="flex items-center gap-3">
           <span className="rounded-full bg-primary-50 px-4 py-1.5 text-sm font-bold text-primary-600">
-            체험
+            {planName}
           </span>
-          <span className="text-sm text-foreground-muted">무료</span>
+          <span className="text-sm text-foreground-muted">{planPrice}</span>
         </div>
-        <p className="mt-3 text-sm text-foreground-secondary">
-          가입일: {formatDate(user.createdAt)}
-        </p>
+        <div className="mt-3 space-y-1">
+          <p className="text-sm text-foreground-secondary">
+            가입일: {formatDate(user.createdAt)}
+          </p>
+          {credits?.plan_expires_at && (
+            <p className="text-sm text-foreground-secondary">
+              플랜 만료일:{" "}
+              <span className="font-medium text-foreground">
+                {new Date(credits.plan_expires_at).toLocaleDateString("ko-KR")}
+              </span>
+            </p>
+          )}
+        </div>
       </div>
 
       {/* 남은 사용량 */}
       <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-6">
         <h3 className="mb-4 font-semibold text-foreground">남은 사용량</h3>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-3">
+          {/* 모의고사 */}
           <div className="rounded-[var(--radius-lg)] bg-surface-secondary p-4">
             <div className="flex items-center gap-2">
               <ClipboardList size={18} className="text-secondary-600" />
               <p className="text-sm text-foreground-secondary">모의고사</p>
             </div>
             <p className="mt-2 text-xl font-bold text-foreground">
-              1<span className="text-sm font-normal text-foreground-muted">회 남음</span>
+              {mockCredits}
+              <span className="text-sm font-normal text-foreground-muted">회</span>
             </p>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">
-              <div className="h-full w-full rounded-full bg-secondary-500" />
-            </div>
           </div>
+          {/* 스크립트 */}
           <div className="rounded-[var(--radius-lg)] bg-surface-secondary p-4">
             <div className="flex items-center gap-2">
               <Flame size={18} className="text-primary-500" />
-              <p className="text-sm text-foreground-secondary">스크립트 생성</p>
+              <p className="text-sm text-foreground-secondary">스크립트</p>
             </div>
             <p className="mt-2 text-xl font-bold text-foreground">
-              무제한
-              <span className="text-sm font-normal text-foreground-muted"> 체험판</span>
+              {scriptCredits}
+              <span className="text-sm font-normal text-foreground-muted">회</span>
             </p>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">
-              <div className="h-full w-full rounded-full bg-primary-500" />
+          </div>
+          {/* 튜터링 */}
+          <div className="rounded-[var(--radius-lg)] bg-surface-secondary p-4">
+            <div className="flex items-center gap-2">
+              <Zap size={18} className="text-accent-500" />
+              <p className="text-sm text-foreground-secondary">튜터링</p>
             </div>
+            <p className="mt-2 text-xl font-bold text-foreground">
+              {tutoringCredits}
+              <span className="text-sm font-normal text-foreground-muted">회</span>
+            </p>
           </div>
         </div>
       </div>
 
-      {/* 업그레이드 CTA */}
-      <div className="rounded-[var(--radius-xl)] border border-primary-200 bg-gradient-to-br from-primary-50 to-primary-100/50 p-6">
-        <p className="font-semibold text-primary-700">
-          더 많은 학습이 필요하신가요?
-        </p>
-        <p className="mt-1 text-sm text-primary-600/80">
-          베이직 플랜(₩9,900/월)으로 업그레이드하면 실전 모의고사 3회 +
-          스크립트 15회를 이용할 수 있어요.
-        </p>
-        <Link href="/pricing" className="mt-4 inline-block">
-          <Button size="sm">
-            요금제 보기
-            <ArrowRight size={14} className="ml-1" />
-          </Button>
-        </Link>
-      </div>
+      {/* 업그레이드 CTA — 체험 플랜일 때만 */}
+      {planKey === "free" && (
+        <div className="rounded-[var(--radius-xl)] border border-primary-200 bg-gradient-to-br from-primary-50 to-primary-100/50 p-6">
+          <p className="font-semibold text-primary-700">
+            더 많은 학습이 필요하신가요?
+          </p>
+          <p className="mt-1 text-sm text-primary-600/80">
+            베이직 플랜(₩19,900)으로 업그레이드하면 실전 모의고사 3회 +
+            스크립트 15회를 이용할 수 있어요.
+          </p>
+          <Link href="/store" className="mt-4 inline-block">
+            <Button size="sm">
+              요금제 보기
+              <ArrowRight size={14} className="ml-1" />
+            </Button>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
@@ -384,7 +452,6 @@ function GoalTab({ user }: { user: UserData }) {
   const [currentGrade, setCurrentGrade] = useState(user.currentGrade);
   const [targetGrade, setTargetGrade] = useState(user.targetGrade);
   const [examDate, setExamDate] = useState(user.examDate);
-  const [weeklyGoal, setWeeklyGoal] = useState(user.weeklyGoal);
   const [msg, setMsg] = useState<{
     type: "success" | "error";
     text: string;
@@ -398,7 +465,6 @@ function GoalTab({ user }: { user: UserData }) {
       fd.append("currentGrade", currentGrade);
       fd.append("targetGrade", targetGrade);
       fd.append("examDate", examDate);
-      fd.append("weeklyGoal", weeklyGoal);
       const result = await updateGoals(fd);
       if (result?.error) {
         setMsg({ type: "error", text: result.error });
@@ -413,8 +479,7 @@ function GoalTab({ user }: { user: UserData }) {
   const hasChanges =
     currentGrade !== user.currentGrade ||
     targetGrade !== user.targetGrade ||
-    examDate !== user.examDate ||
-    weeklyGoal !== user.weeklyGoal;
+    examDate !== user.examDate;
 
   return (
     <div className="space-y-6">
@@ -497,27 +562,6 @@ function GoalTab({ user }: { user: UserData }) {
             </div>
           </div>
 
-          {/* 주간 학습 목표 */}
-          <div>
-            <label
-              htmlFor="weekly-goal"
-              className="mb-1.5 block text-sm text-foreground-secondary"
-            >
-              주간 학습 목표
-            </label>
-            <select
-              id="weekly-goal"
-              value={weeklyGoal}
-              onChange={(e) => setWeeklyGoal(e.target.value)}
-              className="flex h-10 w-full max-w-xs rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
-            >
-              {weeklyGoals.map((g) => (
-                <option key={g.value} value={g.value}>
-                  {g.label}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
 
         {/* 저장 */}
@@ -543,7 +587,7 @@ function GoalTab({ user }: { user: UserData }) {
       </div>
 
       {/* 목표 요약 카드 */}
-      {(currentGrade || targetGrade || examDate || weeklyGoal) && (
+      {(currentGrade || targetGrade || examDate) && (
         <div className="rounded-[var(--radius-xl)] border border-primary-200 bg-primary-50/50 p-6">
           <h3 className="mb-3 flex items-center gap-2 font-semibold text-foreground">
             <Target size={18} className="text-primary-500" />
@@ -574,63 +618,9 @@ function GoalTab({ user }: { user: UserData }) {
                 </p>
               </div>
             )}
-            {weeklyGoal && (
-              <div className="rounded-[var(--radius-lg)] bg-white p-3 text-center">
-                <p className="text-xs text-foreground-muted">주간 목표</p>
-                <p className="mt-1 text-lg font-bold text-primary-600">
-                  주 {weeklyGoal}회
-                </p>
-              </div>
-            )}
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-/* ── 학습 기록 탭 ── */
-
-function HistoryTab() {
-  return (
-    <div className="space-y-6">
-      {/* 모의고사 이력 */}
-      <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-6">
-        <h3 className="mb-4 flex items-center gap-2 font-semibold text-foreground">
-          <ClipboardList size={18} className="text-secondary-600" />
-          모의고사 이력
-        </h3>
-        <div className="flex flex-col items-center py-8 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-surface-secondary">
-            <ClipboardList size={24} className="text-foreground-muted" />
-          </div>
-          <p className="mt-3 text-sm font-medium text-foreground-secondary">
-            아직 모의고사 기록이 없습니다
-          </p>
-          <p className="mt-1 text-xs text-foreground-muted">
-            모의고사를 응시하면 여기에 결과가 표시됩니다
-          </p>
-        </div>
-      </div>
-
-      {/* 점수 추이 */}
-      <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-6">
-        <h3 className="mb-4 flex items-center gap-2 font-semibold text-foreground">
-          <TrendingUp size={18} className="text-primary-500" />
-          점수 추이
-        </h3>
-        <div className="flex flex-col items-center py-8 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-surface-secondary">
-            <BarChart3 size={24} className="text-foreground-muted" />
-          </div>
-          <p className="mt-3 text-sm font-medium text-foreground-secondary">
-            학습 데이터가 쌓이면 점수 추이를 확인할 수 있습니다
-          </p>
-          <p className="mt-1 text-xs text-foreground-muted">
-            모의고사 2회 이상 응시 시 그래프가 표시됩니다
-          </p>
-        </div>
-      </div>
     </div>
   );
 }

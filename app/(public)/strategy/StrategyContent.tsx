@@ -295,7 +295,7 @@ export default function StrategyContent() {
                 <p className="mt-3 text-sm leading-relaxed text-[#8B7E72]">난이도를 선택하면 문제 유형이 결정됩니다. 5-5를 선택하면 롤플레이가 1회로 줄고 상위등급 확률이 급상승합니다.</p>
                 <div className="mt-4 rounded-lg bg-amber-50 px-4 py-3">
                   <p className="text-center text-2xl font-black text-amber-600">5-5 추천</p>
-                  <p className="mt-1 text-center text-xs text-amber-500">상위등급 확률 2~6.5배 증가</p>
+                  <p className="mt-1 text-center text-xs text-amber-500">롤플레이 1회, 상위등급 확률 증가</p>
                 </div>
               </div>
             </ScrollReveal>

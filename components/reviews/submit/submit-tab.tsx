@@ -200,7 +200,7 @@ export function SubmitTab({ initialSubmissions }: SubmitTabProps) {
                   key={sub.id}
                   className="rounded-lg border border-border p-2.5 sm:rounded-[var(--radius-lg)] sm:p-3"
                 >
-                  <div className="flex items-center gap-2 sm:items-start sm:gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <div className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-surface-secondary sm:flex">
                       {sub.status === "complete" ? (
                         <FileText size={16} className="text-primary-500" />

@@ -25,7 +25,6 @@ async function MyPageDataLoader() {
     currentGrade: user.user_metadata?.current_grade || "",
     targetGrade: user.user_metadata?.target_grade || "",
     examDate: user.user_metadata?.exam_date || "",
-    weeklyGoal: user.user_metadata?.weekly_goal || "",
   };
 
   return <MyPageContent user={userData} />;
@@ -38,7 +37,7 @@ export default function MyPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground">마이페이지</h1>
         <p className="mt-1 text-foreground-secondary">
-          계정 정보와 학습 설정을 관리하세요.
+          계정과 플랜을 관리하세요.
         </p>
       </div>
       {/* 콘텐츠 — 데이터 로드 후 스트리밍 */}
