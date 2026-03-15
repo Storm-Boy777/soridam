@@ -22,7 +22,9 @@ import {
   getDiagnosis,
   startTutoringSession,
   getPrescriptions,
+  checkTutoringCredit,
 } from "@/lib/actions/tutoring";
+import { NoCreditCard } from "@/components/trial/no-credit-card";
 import type { TutoringPrescriptionRow } from "@/lib/types/tutoring";
 
 /* ── 상수 ── */
@@ -385,6 +387,19 @@ function PrescriptionTab({
   // 활성 튜터링 세션
   const activeSession = sessions.find((s) => s.status === "active");
 
+  // 크레딧 체크
+  const { data: creditData } = useQuery({
+    queryKey: ["tutoring-credit"],
+    queryFn: async () => {
+      const result = await checkTutoringCredit();
+      if (result.error || !result.data) throw new Error(result.error || "크레딧 조회 실패");
+      return result.data;
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const totalCredits = (creditData?.planCredits ?? 0) + (creditData?.credits ?? 0);
+
   const startMutation = useMutation({
     mutationFn: async (mockSessionId: string) => {
       const result = await startTutoringSession({
@@ -395,6 +410,8 @@ function PrescriptionTab({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tutoring-diagnosis"] });
+      queryClient.invalidateQueries({ queryKey: ["tutoring-credit"] });
+      queryClient.invalidateQueries({ queryKey: ["user-credits"] });
     },
   });
 
@@ -483,19 +500,30 @@ function PrescriptionTab({
         )}
       </div>
 
-      {/* 처방 생성 버튼 */}
-      <button
-        onClick={() => startMutation.mutate(latestReport.session_id)}
-        disabled={startMutation.isPending}
-        className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-lg)] bg-primary-500 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-600 disabled:opacity-50"
-      >
-        {startMutation.isPending ? (
-          <Loader2 size={16} className="animate-spin" />
-        ) : (
-          <Zap size={16} />
-        )}
-        맞춤 처방 생성하기
-      </button>
+      {/* 크레딧 부족 시 안내 카드, 있으면 처방 생성 버튼 */}
+      {creditData && !creditData.available ? (
+        <NoCreditCard type="tutoring" credits={totalCredits} />
+      ) : (
+        <>
+          {creditData && (
+            <p className="text-center text-xs text-foreground-muted">
+              튜터링 크레딧: {totalCredits}회 남음
+            </p>
+          )}
+          <button
+            onClick={() => startMutation.mutate(latestReport.session_id)}
+            disabled={startMutation.isPending || !creditData}
+            className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-lg)] bg-primary-500 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-600 disabled:opacity-50"
+          >
+            {startMutation.isPending ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Zap size={16} />
+            )}
+            맞춤 처방 생성하기
+          </button>
+        </>
+      )}
 
       {startMutation.isError && (
         <p className="text-center text-xs text-red-500">

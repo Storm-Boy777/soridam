@@ -11,6 +11,7 @@ const VerifySchema = z.object({
     "premium_plan",
     "mock_exam_credit",
     "script_credit",
+    "tutoring_credit",
   ]),
 });
 
@@ -22,6 +23,7 @@ const PRODUCTS: Record<
     price: number;
     mockExam: number;
     script: number;
+    tutoring: number;
     months: number;
     plan: "basic" | "premium" | "free";
   }
@@ -30,7 +32,8 @@ const PRODUCTS: Record<
     name: "베이직 플랜 (3회권)",
     price: 19900,
     mockExam: 3,
-    script: 30,
+    script: 15,
+    tutoring: 0,
     months: 1,
     plan: "basic",
   },
@@ -38,7 +41,8 @@ const PRODUCTS: Record<
     name: "프리미엄 플랜 (10회권)",
     price: 49900,
     mockExam: 10,
-    script: 100,
+    script: 50,
+    tutoring: 3,
     months: 2,
     plan: "premium",
   },
@@ -47,6 +51,7 @@ const PRODUCTS: Record<
     price: 7900,
     mockExam: 1,
     script: 0,
+    tutoring: 0,
     months: 0,
     plan: "free",
   },
@@ -55,6 +60,16 @@ const PRODUCTS: Record<
     price: 3900,
     mockExam: 0,
     script: 10,
+    tutoring: 0,
+    months: 0,
+    plan: "free",
+  },
+  tutoring_credit: {
+    name: "튜터링 횟수권 (1회)",
+    price: 5900,
+    mockExam: 0,
+    script: 0,
+    tutoring: 1,
     months: 0,
     plan: "free",
   },
@@ -182,6 +197,7 @@ export async function POST(request: NextRequest) {
         p_plan_months: product.months,
         p_mock_exam_credits: product.mockExam,
         p_script_credits: product.script,
+        p_tutoring_credits: product.tutoring,
       }
     );
 

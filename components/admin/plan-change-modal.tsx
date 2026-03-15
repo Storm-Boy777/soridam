@@ -5,9 +5,9 @@ import { X } from "lucide-react";
 import type { PlanChangeParams } from "@/lib/types/admin";
 
 const PLAN_DEFAULTS = {
-  free: { mockExam: 0, script: 0, months: 0 },
-  basic: { mockExam: 3, script: 30, months: 1 },
-  premium: { mockExam: 10, script: 100, months: 2 },
+  free: { mockExam: 0, script: 0, tutoring: 0, months: 0 },
+  basic: { mockExam: 3, script: 15, tutoring: 0, months: 1 },
+  premium: { mockExam: 10, script: 50, tutoring: 3, months: 2 },
 };
 
 interface PlanChangeModalProps {

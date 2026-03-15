@@ -5,12 +5,13 @@ import { createHmac, timingSafeEqual } from "crypto";
 // 상품 정의 (크레딧 차감 계산용)
 const PRODUCTS: Record<
   string,
-  { mockExam: number; script: number; months: number; plan: string }
+  { mockExam: number; script: number; tutoring: number; months: number; plan: string }
 > = {
-  basic_plan: { mockExam: 3, script: 30, months: 1, plan: "basic" },
-  premium_plan: { mockExam: 10, script: 100, months: 2, plan: "premium" },
-  mock_exam_credit: { mockExam: 1, script: 0, months: 0, plan: "free" },
-  script_credit: { mockExam: 0, script: 10, months: 0, plan: "free" },
+  basic_plan: { mockExam: 3, script: 15, tutoring: 0, months: 1, plan: "basic" },
+  premium_plan: { mockExam: 10, script: 50, tutoring: 3, months: 2, plan: "premium" },
+  mock_exam_credit: { mockExam: 1, script: 0, tutoring: 0, months: 0, plan: "free" },
+  script_credit: { mockExam: 0, script: 10, tutoring: 0, months: 0, plan: "free" },
+  tutoring_credit: { mockExam: 0, script: 0, tutoring: 1, months: 0, plan: "free" },
 };
 
 function getServiceClient() {
@@ -205,6 +206,7 @@ export async function POST(request: NextRequest) {
         updates.current_plan = "free";
         updates.plan_mock_exam_credits = 0;
         updates.plan_script_credits = 0;
+        updates.plan_tutoring_credits = 0;
         updates.plan_expires_at = null;
       } else {
         // 횟수권 취소 → 영구 크레딧 차감 (음수 방지)
@@ -215,6 +217,10 @@ export async function POST(request: NextRequest) {
         updates.script_credits = Math.max(
           0,
           credits.script_credits - product.script
+        );
+        updates.tutoring_credits = Math.max(
+          0,
+          (credits.tutoring_credits ?? 0) - product.tutoring
         );
       }
 

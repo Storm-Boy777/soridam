@@ -31,6 +31,45 @@ async function requireUser() {
 }
 
 // ============================================================
+// 0. 튜터링 크레딧 확인 (checkTutoringCredit)
+// ============================================================
+
+export async function checkTutoringCredit(): Promise<
+  ActionResult<{
+    available: boolean;
+    planCredits: number;
+    credits: number;
+  }>
+> {
+  try {
+    const { supabase, userId } = await requireUser();
+
+    const { data, error } = await supabase
+      .from("user_credits")
+      .select("plan_tutoring_credits, tutoring_credits")
+      .eq("user_id", userId)
+      .single();
+
+    if (error || !data) {
+      return { error: "크레딧 정보를 조회할 수 없습니다" };
+    }
+
+    const planCredits = data.plan_tutoring_credits ?? 0;
+    const credits = data.tutoring_credits ?? 0;
+
+    return {
+      data: {
+        available: planCredits + credits > 0,
+        planCredits,
+        credits,
+      },
+    };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "크레딧 조회 실패" };
+  }
+}
+
+// ============================================================
 // 1. 진단 데이터 조회 (getDiagnosis)
 // ============================================================
 
@@ -132,6 +171,19 @@ export async function startTutoringSession(
   try {
     const { supabase, userId } = await requireUser();
 
+    // 0. 크레딧 차감 (플랜 → 횟수권 순서)
+    const { data: creditConsumed, error: creditErr } = await supabase.rpc(
+      "consume_tutoring_credit",
+      { p_user_id: userId }
+    );
+
+    if (creditErr) {
+      return { error: "크레딧 차감 중 오류가 발생했습니다" };
+    }
+    if (!creditConsumed) {
+      return { error: "튜터링 크레딧이 부족합니다" };
+    }
+
     // 1. 모의고사 리포트 조회
     const { data: report, error: reportErr } = await supabase
       .from("mock_test_reports")
@@ -144,10 +196,14 @@ export async function startTutoringSession(
       .maybeSingle();
 
     if (reportErr || !report) {
+      // 리포트 조회 실패 → 크레딧 환불
+      await supabase.rpc("refund_tutoring_credit", { p_user_id: userId });
       return { error: "완료된 모의고사 리포트가 없습니다" };
     }
 
     if (!report.tutoring_prescription) {
+      // 처방 데이터 없음 → 크레딧 환불
+      await supabase.rpc("refund_tutoring_credit", { p_user_id: userId });
       return { error: "처방 데이터가 없습니다. 종합평가가 v3인 모의고사가 필요합니다." };
     }
 
@@ -161,6 +217,9 @@ export async function startTutoringSession(
       .maybeSingle();
 
     if (existing) {
+      // 기존 세션 재사용 → 크레딧 환불
+      await supabase.rpc("refund_tutoring_credit", { p_user_id: userId });
+
       // 기존 세션의 처방 목록 반환
       const { data: prescriptions } = await supabase
         .from("tutoring_prescriptions")
@@ -210,6 +269,8 @@ export async function startTutoringSession(
       .single();
 
     if (sessionErr || !session) {
+      // 세션 생성 실패 → 크레딧 환불
+      await supabase.rpc("refund_tutoring_credit", { p_user_id: userId });
       return { error: sessionErr?.message || "세션 생성 실패" };
     }
 

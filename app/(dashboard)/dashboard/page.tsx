@@ -192,7 +192,7 @@ function SidePanel({ claims }: { claims: { user_metadata?: ClaimsMetadata } | nu
           더 많은 학습이 필요하신가요?
         </p>
         <p className="mt-0.5 text-xs text-primary-600/80 sm:mt-1">
-          베이직 플랜으로 업그레이드하면 실전 모의고사 3회 + 스크립트 30회를
+          베이직 플랜으로 업그레이드하면 실전 모의고사 3회 + 스크립트 15회를
           이용할 수 있어요.
         </p>
         <div className="mt-3 flex gap-3">

@@ -365,7 +365,7 @@ function PlanTab({ user }: { user: UserData }) {
         </p>
         <p className="mt-1 text-sm text-primary-600/80">
           베이직 플랜(₩9,900/월)으로 업그레이드하면 실전 모의고사 3회 +
-          스크립트 30회를 이용할 수 있어요.
+          스크립트 15회를 이용할 수 있어요.
         </p>
         <Link href="/pricing" className="mt-4 inline-block">
           <Button size="sm">

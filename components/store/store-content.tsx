@@ -50,6 +50,8 @@ async function fetchUserCredits(userId: string) {
     script_credits: number;
     plan_mock_exam_credits: number;
     plan_script_credits: number;
+    plan_tutoring_credits: number;
+    tutoring_credits: number;
     plan_expires_at: string | null;
   };
 }
@@ -374,7 +376,7 @@ export function StoreContent({ userId }: { userId: string }) {
                 스크립트 <span className="font-bold text-foreground">{credits.plan_script_credits + credits.script_credits}회</span>
               </span>
               <span className="text-foreground-secondary">
-                튜터링 <span className="font-bold text-foreground">0회</span>
+                튜터링 <span className="font-bold text-foreground">{(credits.plan_tutoring_credits ?? 0) + (credits.tutoring_credits ?? 0)}회</span>
               </span>
               {credits.plan_expires_at && (
                 <span className="text-foreground-secondary">

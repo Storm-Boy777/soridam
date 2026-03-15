@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { ReviewsContent } from "@/components/reviews/reviews-content";
 import { getStatsAndFrequency, getMySubmissions, getPublicReviews, getSubmissionsWithQuestionsBatch } from "@/lib/actions/reviews";
+import { getUser } from "@/lib/auth";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 
 export const metadata = {
   title: "시험후기 | 오픽톡닥",
@@ -8,11 +10,28 @@ export const metadata = {
 
 // 비동기 서버 컴포넌트: 통계 + 내 제출 이력 + 완료 후기 상세를 병렬 조회하여 전달
 async function ReviewsDataLoader() {
-  // 1단계: 목록 데이터 병렬 조회
-  const [{ stats, frequency }, submissionsResult, publicReviewsResult] = await Promise.all([
+  // 1단계: 목록 데이터 + 유료 여부 병렬 조회
+  const [{ stats, frequency }, submissionsResult, publicReviewsResult, isPaidUser] = await Promise.all([
     getStatsAndFrequency(),
     getMySubmissions(),
     getPublicReviews({ page: 1, limit: 10 }),
+    // 유료 플랜 여부 확인 (빈도 분석 서브탭 잠금용)
+    (async () => {
+      try {
+        const user = await getUser();
+        if (!user) return false;
+        const supabase = await createServerSupabaseClient();
+        const { data } = await supabase
+          .from("user_credits")
+          .select("current_plan, plan_expires_at")
+          .eq("user_id", user.id)
+          .single();
+        if (!data || !data.plan_expires_at) return false;
+        return data.current_plan !== "free" && new Date(data.plan_expires_at) > new Date();
+      } catch {
+        return false;
+      }
+    })(),
   ]);
 
   const submissions = submissionsResult.data || [];
@@ -28,6 +47,7 @@ async function ReviewsDataLoader() {
       initialSubmissions={submissions}
       initialPublicReviews={publicReviewsResult.data || { reviews: [], total: 0 }}
       initialSubmissionDetails={submissionDetails}
+      isPaidUser={isPaidUser}
     />
   );
 }
