@@ -121,7 +121,7 @@ function RuleEngineSection({
   useEffect(() => {
     const v: Record<string, number> = {};
     for (const key of Object.keys(RE_DEFAULTS)) {
-      v[key] = safeNumber((settings as Record<string, unknown>)[key], RE_DEFAULTS[key]);
+      v[key] = safeNumber((settings as unknown as Record<string, unknown>)[key], RE_DEFAULTS[key]);
     }
     setValues(v);
   }, [settings]);
@@ -247,7 +247,7 @@ function GptModelSection({
   useEffect(() => {
     const v: Record<string, string | number> = {};
     for (const [key, def] of Object.entries(GPT_DEFAULTS)) {
-      const raw = (settings as Record<string, unknown>)[key];
+      const raw = (settings as unknown as Record<string, unknown>)[key];
       v[key] = raw != null ? (raw as string | number) : def;
     }
     setValues(v);
@@ -374,7 +374,7 @@ function ToggleSection({
       <h3 className="mb-4 text-sm font-bold text-foreground">유형별 활성화 토글</h3>
       <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-4">
         {TOGGLE_KEYS.map(({ key, label }) => {
-          const enabled = (settings as Record<string, unknown>)[key] as boolean ?? true;
+          const enabled = (settings as unknown as Record<string, unknown>)[key] as boolean ?? true;
           const isToggling = togglingKey === key;
           return (
             <button
