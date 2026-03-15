@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, BookOpen, Loader2 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, BookOpen, Loader2, Search, Trash2, X } from "lucide-react";
 import {
   getAdminTutoringStats,
   getAdminTutoringSessions,
   getAdminTutoringDetail,
+  deleteAdminTutoringSession,
 } from "@/lib/actions/admin/tutoring";
-import type { AdminTutoringStats, AdminTutoringDetail } from "@/lib/types/admin";
+import type { AdminTutoringStats, AdminTutoringDetail, AdminTutoringSession } from "@/lib/types/admin";
 
 // ── 상수 ──
 
@@ -18,6 +19,9 @@ const STATUS_OPTIONS = [
   { value: "completed", label: "완료" },
   { value: "paused", label: "일시정지" },
 ];
+
+const LEVEL_OPTIONS = ["all", "AL", "IH", "IM3", "IM2", "IM1", "IL", "NH", "NM", "NL"];
+const LEVEL_LABELS: Record<string, string> = { all: "전체 등급" };
 
 // 등급 색상 (모의고사와 동일)
 const LEVEL_COLORS: Record<string, string> = {
@@ -96,6 +100,54 @@ function GradeBadge({ level }: { level: string | null }) {
     <span className={`inline-flex rounded px-1.5 py-0.5 text-xs font-bold ${color}`}>
       {level}
     </span>
+  );
+}
+
+// ── 삭제 확인 모달 ──
+
+function ConfirmDialog({
+  open,
+  title,
+  message,
+  loading,
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  title: string;
+  message: string;
+  loading?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      onClick={() => { if (!loading) onCancel(); }}
+    >
+      <div className="mx-4 w-full max-w-sm rounded-xl bg-surface p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-base font-semibold text-foreground">{title}</h3>
+        <p className="mt-2 text-sm text-foreground-secondary">{message}</p>
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            onClick={onCancel}
+            disabled={loading}
+            className="rounded-lg px-4 py-2 text-sm font-medium text-foreground-secondary hover:bg-surface-secondary"
+          >
+            취소
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex items-center gap-1.5 rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50"
+          >
+            {loading && <Loader2 size={14} className="animate-spin" />}
+            삭제
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -411,12 +463,21 @@ function TutoringDetailView({
 // ── 메인 페이지 ──
 
 export default function AdminTutoringPage() {
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState("all");
+  const [level, setLevel] = useState("all");
+  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [selectedSession, setSelectedSession] = useState<{
     id: string;
     email: string;
   } | null>(null);
+
+  // 삭제 모달 상태
+  const [deleteTarget, setDeleteTarget] = useState<AdminTutoringSession | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const { data: stats } = useQuery({
     queryKey: ["admin-tutoring-stats"],
@@ -425,14 +486,35 @@ export default function AdminTutoringPage() {
   });
 
   const { data: sessionsResult, isLoading } = useQuery({
-    queryKey: ["admin-tutoring-sessions", page, status],
-    queryFn: () => getAdminTutoringSessions({ page, pageSize: 20, status }),
+    queryKey: ["admin-tutoring-sessions", page, status, level, search],
+    queryFn: () => getAdminTutoringSessions({ page, pageSize: 20, status, level, search }),
     staleTime: 30_000,
   });
 
   const sessions = sessionsResult?.data || [];
   const total = sessionsResult?.total || 0;
   const totalPages = Math.ceil(total / 20);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPage(1);
+    setSearch(searchInput);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setErrorMsg(null);
+    const result = await deleteAdminTutoringSession(deleteTarget.id);
+    setDeleting(false);
+    setDeleteTarget(null);
+    if (result.error) {
+      setErrorMsg(result.error);
+    } else {
+      queryClient.invalidateQueries({ queryKey: ["admin-tutoring-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-tutoring-stats"] });
+    }
+  };
 
   // 상세 뷰
   if (selectedSession) {
@@ -452,34 +534,92 @@ export default function AdminTutoringPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">튜터링 모니터링</h1>
-        {stats && (
-          <span className="text-sm text-foreground-muted">
-            총 <span className="font-semibold text-foreground">{stats.totalSessions}</span>건
-          </span>
-        )}
+        {/* 검색 바 */}
+        <form onSubmit={handleSearch} className="flex gap-2">
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-muted" />
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="사용자 이메일 검색"
+              className="rounded-lg border border-border bg-background py-1.5 pl-8 pr-3 text-sm text-foreground placeholder:text-foreground-muted/60"
+            />
+          </div>
+          <button
+            type="submit"
+            className="rounded-lg bg-primary-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-600"
+          >
+            검색
+          </button>
+          {search && (
+            <button
+              type="button"
+              onClick={() => { setSearchInput(""); setSearch(""); setPage(1); }}
+              className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs text-foreground-secondary hover:bg-surface-secondary"
+            >
+              <X size={12} />
+              초기화
+            </button>
+          )}
+        </form>
       </div>
+
+      {/* 에러 알림 */}
+      {errorMsg && (
+        <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+          <span>{errorMsg}</span>
+          <button onClick={() => setErrorMsg(null)} className="ml-2 text-red-400 hover:text-red-600">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {/* 통계 */}
       {stats && <TutoringStatsView stats={stats} />}
 
       {/* 필터 */}
-      <div className="flex gap-1">
-        {STATUS_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => {
-              setStatus(opt.value);
-              setPage(1);
-            }}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-              status === opt.value
-                ? "bg-primary-500 text-white"
-                : "bg-surface-secondary text-foreground-secondary hover:text-foreground"
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* 상태 필터 */}
+        <div className="flex gap-1">
+          {STATUS_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => {
+                setStatus(opt.value);
+                setPage(1);
+              }}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                status === opt.value
+                  ? "bg-primary-500 text-white"
+                  : "bg-surface-secondary text-foreground-secondary hover:text-foreground"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        <span className="text-border">|</span>
+
+        {/* 등급 필터 */}
+        <select
+          value={level}
+          onChange={(e) => { setLevel(e.target.value); setPage(1); }}
+          className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs text-foreground"
+        >
+          {LEVEL_OPTIONS.map((lv) => (
+            <option key={lv} value={lv}>
+              {LEVEL_LABELS[lv] || lv}
+            </option>
+          ))}
+        </select>
+
+        {stats && (
+          <span className="ml-auto text-sm text-foreground-muted">
+            총 <span className="font-semibold text-foreground">{stats.totalSessions}</span>건
+          </span>
+        )}
       </div>
 
       {/* 세션 목록 */}
@@ -532,15 +672,25 @@ export default function AdminTutoringPage() {
                   </span>
                 </div>
 
-                {/* 오른쪽: 상세 보기 */}
-                <button
-                  onClick={() =>
-                    setSelectedSession({ id: row.id, email: row.user_email })
-                  }
-                  className="shrink-0 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium text-primary-600 transition-colors hover:bg-primary-50"
-                >
-                  상세 보기
-                </button>
+                {/* 오른쪽: 액션 */}
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    onClick={() =>
+                      setSelectedSession({ id: row.id, email: row.user_email })
+                    }
+                    className="whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium text-primary-600 transition-colors hover:bg-primary-50"
+                  >
+                    상세 보기
+                  </button>
+                  {/* 삭제 버튼 */}
+                  <button
+                    onClick={() => setDeleteTarget(row)}
+                    className="rounded-md p-1 text-foreground-muted/50 opacity-0 transition-all hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
+                    title="삭제"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
             );
           })
@@ -569,6 +719,16 @@ export default function AdminTutoringPage() {
           </button>
         </div>
       )}
+
+      {/* 삭제 확인 모달 */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="튜터링 세션 삭제"
+        message={`${deleteTarget?.user_email || ""} 사용자의 세션을 삭제하시겠습니까? 처방, 훈련 기록, 녹음 파일이 모두 삭제됩니다.`}
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

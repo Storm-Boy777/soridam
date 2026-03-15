@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import type { AdminMockSession, MockExamStats, PaginatedResult } from "@/lib/types/admin";
 import type {
@@ -67,6 +68,9 @@ export async function getMockExamSessions(params: {
   page?: number;
   pageSize?: number;
   status?: string;
+  search?: string;
+  level?: string;
+  mode?: string;
 }): Promise<PaginatedResult<AdminMockSession>> {
   const { supabase } = await requireAdmin();
   const page = params.page || 1;
@@ -81,9 +85,20 @@ export async function getMockExamSessions(params: {
     query = query.eq("status", params.status);
   }
 
+  if (params.mode && params.mode !== "all") {
+    query = query.eq("mode", params.mode);
+  }
+
+  // 검색/등급 필터 시 넉넉히 조회 후 클라이언트 필터
+  const isSearching = !!params.search?.trim();
+  const isLevelFiltering = !!params.level && params.level !== "all";
+  const needsClientFilter = isSearching || isLevelFiltering;
+  const fetchSize = needsClientFilter ? 200 : pageSize;
+  const fetchOffset = needsClientFilter ? 0 : offset;
+
   const { data, count } = await query
     .order("started_at", { ascending: false })
-    .range(offset, offset + pageSize - 1);
+    .range(fetchOffset, fetchOffset + fetchSize - 1);
 
   if (!data) return { data: [], total: 0, page, pageSize };
 
@@ -107,7 +122,7 @@ export async function getMockExamSessions(params: {
     (reportsRes.data || []).map((r) => [r.session_id, r.final_level])
   );
 
-  const sessions: AdminMockSession[] = data.map((s) => ({
+  let sessions: AdminMockSession[] = data.map((s) => ({
     id: s.session_id,
     user_id: s.user_id,
     user_email: emailMap.get(s.user_id) || "-",
@@ -119,7 +134,99 @@ export async function getMockExamSessions(params: {
     final_level: gradeMap.get(s.session_id) || null,
   }));
 
+  // 클라이언트 필터: 이메일 검색
+  if (isSearching) {
+    const term = params.search!.trim().toLowerCase();
+    sessions = sessions.filter((s) => s.user_email.toLowerCase().includes(term));
+  }
+
+  // 클라이언트 필터: 등급
+  if (isLevelFiltering) {
+    sessions = sessions.filter((s) => s.final_level === params.level);
+  }
+
+  if (needsClientFilter) {
+    const filteredTotal = sessions.length;
+    const start = (page - 1) * pageSize;
+    sessions = sessions.slice(start, start + pageSize);
+    return { data: sessions, total: filteredTotal, page, pageSize };
+  }
+
   return { data: sessions, total: count || 0, page, pageSize };
+}
+
+// ── 세션 삭제 (관리자) ──
+
+export async function deleteAdminSession(
+  sessionId: string
+): Promise<{ error?: string }> {
+  const { supabase, userId, userEmail } = await requireAdmin();
+
+  // 세션 존재 확인
+  const { data: session } = await supabase
+    .from("mock_test_sessions")
+    .select("session_id, user_id, mode, status")
+    .eq("session_id", sessionId)
+    .single();
+
+  if (!session) {
+    return { error: "세션을 찾을 수 없습니다" };
+  }
+
+  // Storage 파일 삭제: answers에서 audio_url 목록 조회
+  const { data: answers } = await supabase
+    .from("mock_test_answers")
+    .select("audio_url")
+    .eq("session_id", sessionId);
+
+  if (answers?.length) {
+    // audio_url은 full URL → 버킷 내 상대 경로로 변환
+    const bucketSegment = "/mock-test-recordings/";
+    const audioPaths = answers
+      .map((a) => {
+        if (!a.audio_url) return null;
+        const idx = a.audio_url.indexOf(bucketSegment);
+        return idx !== -1 ? a.audio_url.slice(idx + bucketSegment.length) : null;
+      })
+      .filter(Boolean) as string[];
+
+    if (audioPaths.length > 0) {
+      await supabase.storage.from("mock-test-recordings").remove(audioPaths);
+    }
+  }
+
+  // 수동 삭제 (CASCADE 아닌 테이블)
+  await Promise.all([
+    supabase.from("mock_test_evaluations").delete().eq("session_id", sessionId),
+    supabase.from("mock_test_reports").delete().eq("session_id", sessionId),
+  ]);
+
+  // DB 삭제 (answers는 CASCADE로 자동 삭제)
+  const { error } = await supabase
+    .from("mock_test_sessions")
+    .delete()
+    .eq("session_id", sessionId);
+
+  if (error) {
+    return { error: "세션 삭제에 실패했습니다" };
+  }
+
+  // 감사 로그 기록
+  await supabase.from("admin_audit_log").insert({
+    admin_id: userId,
+    admin_email: userEmail,
+    action: "delete_mock_session",
+    target_type: "mock_session",
+    target_id: sessionId,
+    details: {
+      user_id: session.user_id,
+      mode: session.mode,
+      status: session.status,
+    },
+  });
+
+  revalidatePath("/admin/mock-exam");
+  return {};
 }
 
 export async function retriggerEvaluation(sessionId: string): Promise<{
