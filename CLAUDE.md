@@ -65,6 +65,7 @@ docs/
 ├── 디자인시스템.md       ← 아토믹 디자인 원칙, 컴포넌트 설계
 ├── 로고에셋.md          ← 로고 사용 가이드, 에셋 파일 경로
 ├── 설계철학.md          ← 서베이 중요성, 설계 방향
+├── 마케팅-강점분석.md    ← 모듈별 홍보 포인트, 경쟁력 분석
 ├── 오픽시험구조.md       ← OPIc 시험 구조 + DB 현황 + 재설계 논의
 ├── 이현석DB_분석.md      ← 이현석 OPIc DB 분석 (431질문, 198세트, 28토픽, 41RP)
 ├── 가이드_Next.js+Supabase_페이지전환_성능최적화.md ← 성능 최적화 필수 가이드
@@ -160,16 +161,19 @@ docs/
 
 **Immersive 레이아웃(`h-dvh`)에서 스크롤 가능한 콘텐츠 영역을 만들 때:**
 
-1. **`h-0 flex-grow` 패턴** — `flex-1` 대신 사용
-   - `flex-1`(flex-basis: 0%)이 모바일 브라우저에서 definite height로 인식되지 않아 `overflow-y-auto` 스크롤이 작동하지 않는 문제 방지
-   - `h-0`(명시적 height: 0) + `flex-grow`로 브라우저가 확실히 높이를 계산하도록 강제
-   - 적용 대상: `overflow-y-auto`를 사용하는 flex 자식 요소와 그 부모
+1. **`relative` + `absolute inset-0` 스크롤 패턴** — Immersive 스크롤 컨테이너의 표준 방식
+   - `h-0 flex-grow overflow-y-auto`는 모바일 브라우저(Samsung Internet, iOS Safari)에서 자식 요소의 배경/테두리를 제대로 페인팅하지 않는 문제 발생
+   - `relative` 래퍼가 flex 공간을 차지하고, `absolute inset-0` 자식이 그 크기를 명시적으로 상속받아 스크롤
+   - **원인**: flex 높이 계산 ↔ 스크롤 높이 간 순환 의존으로 모바일 페인트 최적화가 오작동
+   - 적용 대상: Immersive 레이아웃(`h-dvh`)에서 `overflow-y-auto` 스크롤 영역
    ```tsx
-   {/* ❌ 모바일에서 스크롤 깨짐 */}
-   <div className="flex-1 overflow-y-auto">...</div>
-
-   {/* ✅ 모바일에서 안정적 스크롤 */}
+   {/* ❌ 모바일에서 카드 배경/테두리 잘림 */}
    <div className="h-0 flex-grow overflow-y-auto">...</div>
+
+   {/* ✅ 모바일에서 안정적 페인팅 + 스크롤 */}
+   <div className="relative h-0 flex-grow">
+     <div className="absolute inset-0 overflow-y-auto">...</div>
+   </div>
    ```
 
 2. **모바일 스크롤바 숨김** — 모바일에서 스크롤바 제거, PC에서는 유지
@@ -511,12 +515,16 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 | 03-10 | 성장리포트 A ✅ | **등급 추이 그래프** Recharts (등급 라인+준비도 바+FACT 미니+병목 감지+커스텀 툴팁) |
 | 03-10 | 성장리포트 B-D ✅ | **성장 리포트** DB 3컬럼 + EF 성장분석 GPT(gpt-4.1-mini) + UI 7섹션 + 튜터링 CTA + 성장패턴 감지 |
 | 03-13 | 관리자 시스템 ✅ | **관리자** Phase 0~2 (app_metadata.role + admin_audit_log + RLS 확장 + 7페이지 + SA 18함수 + 8컴포넌트) |
+| 03-15 | 플랜 리뉴얼 ✅ | 베이직→실전, 프리미엄→올인원 리네이밍 + 카테고리 그룹 플랜 카드 (disabled 흐리게+취소선) + 스토어/랜딩/요금제 3곳 레이아웃 통일 |
+| 03-15 | 결제 개선 ✅ | 카카오페이 연동 (결제 수단 선택 모달) + 스크립트 횟수권 10회→5회 |
+| 03-15 | 마이페이지 개선 ✅ | 플랜 탭 DB 기반 + 학습 탭 제거 + 주간학습목표 제거 |
+| 03-15 | UI/UX 개선 | PC 진행과정 화살표 + 제출이력 수직정렬 + 스크립트 크레딧 2회 통일 + 전략가이드 수치 제거 |
 
 <!-- 이후 새 이력은 이 테이블에 행 추가 + memory/개발이력.md에 상세 기록 -->
 
 ## 🔮 현재 상태 & 다음 단계
 
-**현재**: Phase 3 (핵심 모듈 이관) — Step 4 튜터링 ✅ + 성장리포트 전체 ✅ + 관리자 시스템 ✅
+**현재**: Phase 3 (핵심 모듈 이관) — Step 4 튜터링 ✅ + 성장리포트 ✅ + 관리자 ✅ + 플랜 리뉴얼 ✅ + 카카오페이 ✅
 **다음 작업**: 모의고사 평가 v3 고도화 → 리브랜딩(P-5)
 
 ### 튜터링 모듈 구현 현황
@@ -593,10 +601,10 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 
 ### 결제 시스템 현황
 - **결제 SDK**: 포트원(PortOne) V2 — `@portone/browser-sdk`
-- **PG사**: KG이니시스 (MID: `MOI7638900`) — 신용카드 일시불
-- **결제 플로우**: Store 구매 버튼 → 포트원 결제창 → /api/payment/verify 검증 → DB 기록
+- **PG사**: KG이니시스 (신용카드) + 카카오페이 (간편결제)
+- **결제 플로우**: Store 구매 버튼 → 결제 수단 선택 모달 → 포트원 결제창 → /api/payment/verify 검증 → DB 기록
 - **취소 플로우**: 포트원 콘솔 취소 → 웹훅(`/api/payment/webhook`) → DB 자동 원복
-- **상품**: 베이직(19,900), 프리미엄(49,900), 모의고사 횟수권(7,900), 스크립트 횟수권(3,900)
+- **상품**: 실전(19,900), 올인원(49,900), 모의고사 횟수권(7,900), 스크립트 횟수권(3,900/5회), 튜터링 횟수권(5,900)
 
 ### ⚠️ 크레딧 시스템 (모듈 구현 시 반드시 참고)
 
@@ -648,5 +656,5 @@ PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/1
 > 의사결정 기록은 `docs/의사결정.md` 참조
 
 ---
-*최종 업데이트: 2026-03-13*
-*상태: Phase 3 Step 4 튜터링 ✅ + 성장리포트 A-D ✅ + 관리자 시스템 ✅. 다음: 평가 v3 고도화 → 리브랜딩(P-5)*
+*최종 업데이트: 2026-03-15*
+*상태: Phase 3 전체 ✅ + 플랜 리뉴얼(체험/실전/올인원) ✅ + 카카오페이 ✅. 다음: 평가 v3 고도화 → 리브랜딩(P-5)*
