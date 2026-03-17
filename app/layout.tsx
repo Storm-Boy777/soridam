@@ -56,10 +56,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className={`${pretendard.variable} ${jua.variable} ${fraunces.variable} ${notoSerifKR.variable}`}>
-      <head>
-        {/* 모바일 스크롤바 숨김 — Tailwind CSS 파이프라인 우회하여 raw CSS 직접 주입 */}
-        <style dangerouslySetInnerHTML={{ __html: '@media(max-width:767px){*{scrollbar-width:none!important}*::-webkit-scrollbar{display:none!important}}' }} />
-      </head>
       <body><Providers>{children}</Providers></body>
     </html>
   );
