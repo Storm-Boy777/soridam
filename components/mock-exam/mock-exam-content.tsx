@@ -556,13 +556,13 @@ function HistoryTab({
                 </span>
               </div>
               <div className="flex flex-col items-center py-2">
-                <span className="text-[10px] text-foreground-muted">점수</span>
-                {latest.total_score != null && (
-                  <p className="mt-1 text-2xl font-bold text-foreground sm:text-3xl">
-                    {Number(latest.total_score).toFixed(1)}
-                    <span className="text-sm font-normal text-foreground-muted"> / 100</span>
-                  </p>
-                )}
+                <span className="text-[10px] text-foreground-muted">FACT 영역</span>
+                <div className="mt-1 flex items-center gap-2 text-xs text-foreground-secondary">
+                  <span>F:{latest.score_f ?? "—"}</span>
+                  <span>A:{latest.score_a ?? "—"}</span>
+                  <span>C:{latest.score_c ?? "—"}</span>
+                  <span>T:{latest.score_t ?? "—"}</span>
+                </div>
               </div>
             </div>
             <p className="mt-1.5 text-center text-xs text-foreground-muted">
@@ -684,14 +684,8 @@ function HistoryTab({
               </div>
             </div>
 
-            {/* 점수 + 화살표 */}
-            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-              {item.total_score != null && (
-                <p className="whitespace-nowrap text-right text-base font-bold text-foreground sm:text-lg">
-                  {item.total_score}
-                  <span className="text-[10px] font-normal text-foreground-muted"> / 100</span>
-                </p>
-              )}
+            {/* 화살표 */}
+            <div className="flex shrink-0 items-center">
               {item.status === "completed" && item.final_level && (
                 <ArrowRight size={14} className="hidden text-foreground-muted sm:block" />
               )}

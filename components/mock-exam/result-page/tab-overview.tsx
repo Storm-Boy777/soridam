@@ -41,7 +41,6 @@ export function OverviewTab({
   const ge = coaching?.grade_explanation;
   const roadmap = coaching?.roadmap;
   const recommendation = coaching?.training_recommendation;
-  const score = Number(report.total_score ?? 0);
 
   return (
     <div className="space-y-4">
@@ -75,7 +74,7 @@ export function OverviewTab({
           </div>
         </div>
 
-        {/* 등급 | 점수 — 이력 탭과 동일한 그리드 */}
+        {/* 등급 | FACT 영역 */}
         <div className="grid grid-cols-2">
           <div className="flex flex-col items-center border-r border-border py-4">
             <span className="text-[10px] text-foreground-muted">등급</span>
@@ -83,14 +82,14 @@ export function OverviewTab({
               {report.final_level || "—"}
             </span>
           </div>
-          <div className="flex flex-col items-center py-4">
-            <span className="text-[10px] text-foreground-muted">점수</span>
-            {report.total_score != null && (
-              <p className="mt-1 text-2xl font-bold text-foreground sm:text-3xl">
-                {score.toFixed(1)}
-                <span className="text-sm font-normal text-foreground-muted"> / 100</span>
-              </p>
-            )}
+          <div className="flex flex-col items-center justify-center py-4">
+            <span className="text-[10px] text-foreground-muted">FACT 영역</span>
+            <div className="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+              <span className="text-foreground-secondary">F <span className="font-semibold text-foreground">{report.score_f ?? "—"}</span></span>
+              <span className="text-foreground-secondary">A <span className="font-semibold text-foreground">{report.score_a ?? "—"}</span></span>
+              <span className="text-foreground-secondary">C <span className="font-semibold text-foreground">{report.score_c ?? "—"}</span></span>
+              <span className="text-foreground-secondary">T <span className="font-semibold text-foreground">{report.score_t ?? "—"}</span></span>
+            </div>
           </div>
         </div>
 

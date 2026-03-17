@@ -301,12 +301,14 @@ function Section1Snapshot({
           </div>
         )}
 
-        {/* FACT 총점 */}
-        {report.total_score != null && (
-          <p className="mt-2 text-3xl font-bold text-foreground">
-            {Number(report.total_score ?? 0).toFixed(1)}
-            <span className="text-base font-normal text-foreground-muted"> / 100</span>
-          </p>
+        {/* FACT 영역별 점수 */}
+        {report.score_f != null && (
+          <div className="mt-2 flex items-center gap-3 text-sm">
+            <span className="text-foreground-secondary">F <span className="font-bold text-foreground">{report.score_f}</span></span>
+            <span className="text-foreground-secondary">A <span className="font-bold text-foreground">{report.score_a}</span></span>
+            <span className="text-foreground-secondary">C <span className="font-bold text-foreground">{report.score_c}</span></span>
+            <span className="text-foreground-secondary">T <span className="font-bold text-foreground">{report.score_t}</span></span>
+          </div>
         )}
       </div>
 

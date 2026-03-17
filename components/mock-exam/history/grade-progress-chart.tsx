@@ -71,9 +71,6 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: Array<{
       <p className="mt-1 text-sm font-bold text-primary-600">
         {d.level as string}
       </p>
-      <p className="text-[11px] text-foreground-secondary">
-        점수: {(d.totalScore as number)?.toFixed(1)}
-      </p>
       <div className="mt-1 flex gap-2 text-[10px] text-foreground-muted">
         <span style={{ color: FACT_COLORS.F }}>F:{(d.f as number)?.toFixed(1)}</span>
         <span style={{ color: FACT_COLORS.A }}>A:{(d.a as number)?.toFixed(1)}</span>

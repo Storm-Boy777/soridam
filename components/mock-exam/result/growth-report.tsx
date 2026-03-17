@@ -204,13 +204,6 @@ function ComparisonTable({
       type: "level" as const,
     },
     {
-      label: "총점",
-      prev: comparison.previous_total_score?.toFixed(1),
-      curr: Number(report.total_score ?? 0).toFixed(1),
-      diff: comparison.score_diff,
-      type: "score" as const,
-    },
-    {
       label: FACT_LABELS.F,
       prev: comparison.previous_score_f?.toFixed(1),
       curr: Number(report.score_f ?? 0).toFixed(1),
