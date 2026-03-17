@@ -26,16 +26,6 @@ export const submitAnswerSchema = z.object({
 
 export type SubmitAnswerInput = z.infer<typeof submitAnswerSchema>;
 
-// ── 문항 건너뛰기 (skipQuestion) ──
-
-export const skipQuestionSchema = z.object({
-  session_id: z.string().min(1, "세션 ID가 필요합니다"),
-  question_number: z.number().int().min(2).max(15, "문항 번호는 2~15입니다"),
-  question_id: z.string().nullable(),
-});
-
-export type SkipQuestionInput = z.infer<typeof skipQuestionSchema>;
-
 // ── 세션 조회 (getSession) ──
 
 export const getSessionSchema = z.object({

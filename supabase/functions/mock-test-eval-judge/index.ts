@@ -14,6 +14,8 @@ import {
 import {
   getCheckboxIdsForQuestionType,
   buildCheckboxDefinitionsText,
+  validateCheckboxes,
+  type CheckboxResult,
 } from "../_shared/checkbox-definitions.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -348,15 +350,32 @@ Deno.serve(async (req) => {
     // ── 결과 파싱 ──
     const evaluation = (gptResult.evaluation || gptResult) as Record<string, unknown>;
 
-    // 체크박스 74개
-    const checkboxes = (evaluation.checkboxes || {}) as Record<string, unknown>;
-    const checkboxEntries = Object.entries(checkboxes);
-    const checkboxCount = checkboxEntries.length;
-    const passCount = checkboxEntries.filter(
-      ([, v]) => (v as Record<string, unknown>)?.pass === true,
-    ).length;
-    const failCount = checkboxCount - passCount;
-    const passRate = checkboxCount > 0 ? passCount / checkboxCount : 0;
+    // GPT 체크박스 출력은 기대 ID 집합 기준으로 fail-closed 정규화한다.
+    const rawCheckboxes = (evaluation.checkboxes || {}) as Record<string, unknown>;
+    const normalizedCheckboxes = Object.fromEntries(
+      Object.entries(rawCheckboxes).flatMap(([id, value]) => {
+        if (!value || typeof value !== "object" || Array.isArray(value)) {
+          return [];
+        }
+
+        const rawCheckbox = value as Record<string, unknown>;
+        const checkbox: CheckboxResult = {
+          pass: rawCheckbox.pass === true,
+        };
+
+        if (typeof rawCheckbox.evidence === "string" && rawCheckbox.evidence.trim()) {
+          checkbox.evidence = rawCheckbox.evidence.trim();
+        }
+
+        return [[id, checkbox]];
+      }),
+    ) as Record<string, CheckboxResult>;
+
+    const { validated: checkboxes, passCount, failCount, passRate } = validateCheckboxes(
+      normalizedCheckboxes,
+      questionType,
+    );
+    const checkboxCount = Object.keys(checkboxes).length;
 
     // 과제충족 (v3)
     const taskFulfillment = (evaluation.task_fulfillment || {

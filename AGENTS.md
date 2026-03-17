@@ -257,7 +257,8 @@ opictalkdoc/                 # Git 루트 = Next.js 루트 (표준 구조)
 │       ├── scripts/index.ts               # Edge Function (generate/correct/refine/evaluate)
 │       ├── scripts-package/index.ts       # Edge Function (TTS 패키지 + 타임스탬프)
 │       ├── mock-test-process/index.ts     # Edge Function Stage A (Whisper STT + Azure 발음)
-│       ├── mock-test-eval/index.ts        # Edge Function Stage B (GPT-4.1 체크박스 평가)
+│       ├── mock-test-eval-judge/index.ts  # Edge Function Stage B-1 (GPT-4.1-mini 체크박스+과제충족)
+│       ├── mock-test-eval-coach/index.ts  # Edge Function Stage B-2 (GPT-4.1 코칭 6-Layer)
 │       ├── mock-test-report/index.ts      # Edge Function Stage C (규칙엔진 + FACT + GPT 리포트)
 │       └── tutoring/index.ts              # Edge Function (8 handler: brief/warmup/epp/variation/transformation/timed/repair/complete)
 ├── app/                     # App Router 페이지
@@ -516,13 +517,14 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 | 03-15 | 결제 개선 ✅ | 카카오페이 연동 (결제 수단 선택 모달) + 스크립트 횟수권 10회→5회 |
 | 03-15 | 마이페이지 개선 ✅ | 플랜 탭 DB 기반 + 학습 탭 제거 + 주간학습목표 제거 |
 | 03-15 | UI/UX 개선 | PC 진행과정 화살표 + 제출이력 수직정렬 + 스크립트 크레딧 2회 통일 + 전략가이드 수치 제거 |
+| 03-17 | 평가엔진 보강 ✅ | 모의고사 judge 체크박스 fail-closed 검증 + rule-engine 분모 보강 + `coaching_feedback` 마이그레이션 추가 + 레거시 `skipQuestion` 제거 |
 
 <!-- 이후 새 이력은 이 테이블에 행 추가 + memory/개발이력.md에 상세 기록 -->
 
 ## 🔮 현재 상태 & 다음 단계
 
-**현재**: Phase 3 (핵심 모듈 이관) — Step 4 튜터링 ✅ + 성장리포트 ✅ + 관리자 ✅ + 플랜 리뉴얼 ✅ + 카카오페이 ✅
-**다음 작업**: 모의고사 평가 v3 고도화 → 리브랜딩(P-5)
+**현재**: Phase 3 (핵심 모듈 이관) — Step 4 튜터링 ✅ + 성장리포트 ✅ + 관리자 ✅ + 플랜 리뉴얼 ✅ + 카카오페이 ✅ + 모의고사 평가엔진 보강 ✅
+**다음 작업**: 모의고사 평가 v3 추가 고도화 → 리브랜딩(P-5)
 
 ### 튜터링 모듈 구현 현황
 | 영역 | 상태 | 상세 |

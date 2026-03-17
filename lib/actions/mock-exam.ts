@@ -4,7 +4,6 @@ import { createServerSupabaseClient } from "@/lib/supabase-server";
 import {
   createSessionSchema,
   submitAnswerSchema,
-  skipQuestionSchema,
   getSessionSchema,
   expireSessionSchema,
   completeSessionSchema,
@@ -375,68 +374,7 @@ export async function submitAnswer(
 }
 
 // ============================================================
-// 4. 문항 건너뛰기 (skipQuestion)
-// ============================================================
-
-export async function skipQuestion(
-  input: Record<string, unknown>
-): Promise<ActionResult> {
-  const parsed = skipQuestionSchema.safeParse(input);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
-
-  try {
-    const { supabase, userId } = await requireUser();
-
-    // 세션 소유자 확인
-    const { data: session } = await supabase
-      .from("mock_test_sessions")
-      .select("user_id, status")
-      .eq("session_id", parsed.data.session_id)
-      .single();
-
-    if (!session || session.user_id !== userId) {
-      return { error: "권한이 없습니다" };
-    }
-    if (session.status !== "active") {
-      return { error: "종료된 세션입니다" };
-    }
-
-    // 스킵 답변 UPSERT
-    const { error: ansError } = await supabase
-      .from("mock_test_answers")
-      .upsert(
-        {
-          session_id: parsed.data.session_id,
-          question_number: parsed.data.question_number,
-          question_id: parsed.data.question_id,
-          eval_status: "skipped",
-          skipped: true,
-        },
-        { onConflict: "session_id,question_number" }
-      );
-
-    if (ansError) {
-      return { error: "답변 저장에 실패했습니다" };
-    }
-
-    // 현재 문항 업데이트
-    await supabase
-      .from("mock_test_sessions")
-      .update({
-        current_question: parsed.data.question_number + 1,
-      })
-      .eq("session_id", parsed.data.session_id);
-
-    return {};
-  } catch (err) {
-    return { error: err instanceof Error ? err.message : "건너뛰기 실패" };
-  }
-}
-
-// ============================================================
-// 5. 세션 상세 조회 (getSession)
+// 4. 세션 상세 조회 (getSession)
 // ============================================================
 
 export async function getSession(

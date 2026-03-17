@@ -146,10 +146,13 @@ function aggregateCheckboxes(
           ? advAccum
           : alAccum;
 
-    for (const [id, result] of Object.entries(eval_.checkboxes)) {
+    const { ids: expectedIds } = getCheckboxIdsForQuestionType(eval_.question_type);
+
+    for (const id of expectedIds) {
+      const result = eval_.checkboxes[id];
       if (!accumMap[id]) accumMap[id] = { pass: 0, total: 0 };
       accumMap[id].total++;
-      if (result.pass) accumMap[id].pass++;
+      if (result?.pass) accumMap[id].pass++;
     }
   }
 

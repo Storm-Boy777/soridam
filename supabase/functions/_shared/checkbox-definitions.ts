@@ -257,10 +257,10 @@ export const CHECKBOX_DESCRIPTIONS: Record<
   "ADV-3-V2": { group: "ADV-3: Vocabulary Range", criterion: "Language mixing", passIf: "Avoids inappropriate L1 words" },
   "ADV-3-V3": { group: "ADV-3: Vocabulary Range", criterion: "False cognates", passIf: "Avoids false cognates or uses them correctly" },
   // ADV-4: Complication Response (CORE) — rp_12 전용 — 4
-  "ADV-4-CR1": { group: "ADV-4: Complication Response", criterion: "Struggles but succeeds", passIf: "Successfully addresses the complication despite difficulty" },
-  "ADV-4-CR2": { group: "ADV-4: Complication Response", criterion: "Attempts to address", passIf: "Makes genuine attempts to resolve the situation" },
-  "ADV-4-CR3": { group: "ADV-4: Complication Response", criterion: "Linguistic ability", passIf: "Shows linguistic ability to handle unexpected situations" },
-  "ADV-4-CD1": { group: "ADV-4: Complication Response", criterion: "Communicative devices", passIf: "Uses appropriate strategies (apologize, offer alternatives, request understanding)" },
+  "ADV-4-CR1": { group: "ADV-4: Complication Response", criterion: "Struggles but succeeds", passIf: "Offers 2+ distinct alternatives despite difficulty (e.g., refund/exchange, reschedule/cancel). Count each concrete option separately." },
+  "ADV-4-CR2": { group: "ADV-4: Complication Response", criterion: "Attempts to address", passIf: "Acknowledges the problem AND attempts to explain it AND proposes at least 1 solution. Mere apology without action = fail." },
+  "ADV-4-CR3": { group: "ADV-4: Complication Response", criterion: "Linguistic ability", passIf: "Uses problem-solving language (I'm afraid..., Unfortunately..., What I can do is..., Would it be okay if...). Simple 'sorry' alone = fail." },
+  "ADV-4-CD1": { group: "ADV-4: Complication Response", criterion: "Communicative devices", passIf: "Uses 3-part pattern: (1) situation opener — apology/acknowledgment/request as appropriate (2) reason/explanation (3) alternative options. Missing any part = fail." },
   // ADV-5: Intelligibility (GATE) — 13
   "ADV-5-F1": { group: "ADV-5: Intelligibility - Fluency", criterion: "Rate of speech", passIf: "Speed doesn't hinder understanding" },
   "ADV-5-F2": { group: "ADV-5: Intelligibility - Fluency", criterion: "Fluidity (halting)", passIf: "Speech flows without excessive halting" },
