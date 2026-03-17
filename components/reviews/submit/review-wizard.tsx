@@ -138,7 +138,8 @@ export function ReviewWizard({ resumeSubmissionId }: ReviewWizardProps) {
       </div>
 
       {/* ── 스텝 콘텐츠 — 단일 스크롤 영역 ── */}
-      <div className="mx-auto w-full max-w-3xl h-0 flex-grow overflow-y-auto px-3 py-3 sm:px-6 sm:py-6 md:h-auto md:flex-1 max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden">
+      <div className="relative h-0 flex-grow md:h-auto md:flex-1">
+        <div className="absolute inset-0 overflow-y-auto md:relative md:inset-auto md:h-full mx-auto w-full max-w-3xl px-3 py-3 sm:px-6 sm:py-6 max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden">
         {currentStep === 1 && (
           <WizardStep1
             submissionId={submissionId}
@@ -173,6 +174,7 @@ export function ReviewWizard({ resumeSubmissionId }: ReviewWizardProps) {
           >
             취소하고 돌아가기
           </button>
+        </div>
         </div>
       </div>
     </div>
