@@ -12,7 +12,7 @@
 | 01 | [전체 흐름](01-전체-흐름.md) | "모의고사 처음부터 끝까지 어떻게 돌아가?" |
 | 02 | [시험 진행](02-시험-진행.md) | "기출 선택부터 15문항 녹음 제출까지 어떻게?" |
 | 03 | [평가 파이프라인](03-평가-파이프라인.md) | "답변이 제출되면 뒤에서 뭐가 일어나?" |
-| 04 | [등급 판정](04-등급-판정.md) | "규칙엔진이 뭐고, 등급은 어떻게 결정돼?" |
+| 04 | [등급 판정](04-등급-판정.md) | "평가엔진이 뭐고, 등급은 어떻게 결정돼?" |
 | 05 | [결과 화면](05-결과-화면.md) | "결과 페이지에 뭐가 보이고, 데이터는 어디서 와?" |
 | 06 | [DB 스키마](06-DB-스키마.md) | "테이블이 뭐가 있고, 데이터가 어떻게 흘러?" |
 
@@ -29,7 +29,7 @@
 Stage A: 음성→텍스트 변환(STT) + 발음 평가 + 스킵 판정
 Stage B-1: GPT-4.1-mini가 체크박스 74개 판정 + 과제충족 판정
 Stage B-2: GPT-4.1이 코칭 피드백 생성 (무응답이면 룰 기반 구제)
-Stage C: 규칙엔진이 최종 등급 결정 + FACT 점수 + GPT 종합 리포트
+Stage C: 평가엔진이 최종 등급 결정 + FACT 점수 + GPT 종합 리포트
 
 → 결과 페이지: 4탭 (종합/진단/문항별/성장)
 → 튜터링 연결: 약점 기반 자동 처방
@@ -90,12 +90,12 @@ supabase/functions/
 ├── mock-test-process/index.ts    ← Stage A: STT + 발음 + 스킵
 ├── mock-test-eval-judge/index.ts ← Stage B-1: 체크박스 판정
 ├── mock-test-eval-coach/index.ts ← Stage B-2: 코칭 피드백
-├── mock-test-report/index.ts     ← Stage C: 규칙엔진 + 종합 리포트
+├── mock-test-report/index.ts     ← Stage C: 평가엔진 + 종합 리포트
 ├── admin-trigger-eval/index.ts   ← 테스트용 평가 트리거
 └── _shared/
     ├── skip-detector.ts           ← 3단계 스킵 판정
     ├── checkbox-definitions.ts    ← 74개 체크박스 정의 + FACT 매핑
-    ├── rule-engine.ts             ← V7 규칙엔진 7-Step
+    ├── rule-engine.ts             ← 평가엔진 7-Step
     └── question-type-map.ts       ← 10 타입별 체크리스트 + 구제 메시지
 ```
 

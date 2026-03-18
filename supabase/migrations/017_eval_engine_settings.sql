@@ -5,7 +5,7 @@
 -- 1. mock_test_eval_settings 확장 (25개 컬럼 추가)
 -- ============================================================
 
--- 규칙엔진 threshold 13개 (re_ 접두사)
+-- 평가엔진 threshold 13개 (re_ 접두사)
 ALTER TABLE mock_test_eval_settings
   ADD COLUMN IF NOT EXISTS re_checkbox_pass_threshold NUMERIC(4,2) DEFAULT 0.80,
   ADD COLUMN IF NOT EXISTS re_floor_nh NUMERIC(4,2) DEFAULT 0.45,

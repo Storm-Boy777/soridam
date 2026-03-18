@@ -1,4 +1,4 @@
-// mock-test-eval-coach — Stage B-2 Edge Function (v3)
+// mock-test-eval-coach — Stage B-2 Edge Function
 // GPT-4.1: 코칭 6-Layer + priority_prescription
 // mock-test-eval-judge에서 fire-and-forget으로 호출됨
 // 완료 후 mock-test-report로 fire-and-forget 체인 (세션 완료 조건 충족 시)
@@ -284,7 +284,7 @@ Deno.serve(async (req) => {
         model: coachModel,
         tokens_used: coachTokensUsed,
         processing_time_ms: processingTime,
-        prompt_version: "v3.0-coach",
+        prompt_version: "1.0-coach",
       })
       .eq("session_id", session_id)
       .eq("question_number", question_number);

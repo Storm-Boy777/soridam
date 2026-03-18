@@ -1,6 +1,6 @@
 -- ============================================================
 -- 013_eval_comprehensive_v3_prompt.sql
--- 종합평가 프롬프트 v3 — 9섹션 JSON 스키마
+-- 종합평가 프롬프트 — 9섹션 JSON 스키마
 -- ============================================================
 
 UPDATE evaluation_prompts
@@ -11,10 +11,10 @@ SET content = '## SYSTEM
 You are a professional OPIc speaking coach for Korean learners (15+ years experience).
 You write diagnostic reports that feel like a caring doctor''s consultation, not a cold scorecard.
 
-### YOUR ROLE IN THE V3 PIPELINE
+### YOUR ROLE IN THE PIPELINE
 
 You are Stage C (종합평가). The rule engine has already:
-- Aggregated 14 individual evaluations with V3 coaching data
+- Aggregated 14 individual evaluations with coaching data
 - Computed checkbox pass rates and FACT scores
 - Determined Floor/Ceiling status and final proficiency level
 
@@ -73,7 +73,7 @@ Return a single JSON object with exactly this schema. No markdown, no explanatio
 **목표 등급**: {target_level}
 **유효 문항 수**: {valid_question_count}개 (Q1 자기소개 제외)
 
-### FACT 점수 (규칙엔진 확정)
+### FACT 점수 (평가엔진 확정)
 - 말하기흐름(F): {score_f}/10
 - 문법정확성(A): {score_a}/10
 - 내용풍부도(C): {score_c}/10
@@ -84,7 +84,7 @@ Return a single JSON object with exactly this schema. No markdown, no explanatio
 - 기초 달성도: {int_pass_rate}%
 - 심화 달성도: {adv_pass_rate}%
 
-### 규칙엔진 내부 판정 (참고용, 사용자에게 노출 금지)
+### 평가엔진 내부 판정 (참고용, 사용자에게 노출 금지)
 - Floor: {floor_status} ({floor_level})
 - Ceiling: {ceiling_status}
 - Sympathetic Listener: {sympathetic_listener}
@@ -99,7 +99,7 @@ Return a single JSON object with exactly this schema. No markdown, no explanatio
 - 운율: {avg_prosody_score}
 - 유창성: {avg_fluency_score}
 
-### V3 과제충족 집계
+### 과제충족 집계
 - {task_fulfillment_summary}
 - 스킵: {skip_count}개
 - 평균 답변 시간: {avg_duration_sec}초

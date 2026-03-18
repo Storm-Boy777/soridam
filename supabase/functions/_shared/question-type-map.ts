@@ -2,7 +2,7 @@
 // DB question_type_eng 값 기준 (questions 테이블 실제 값)
 
 // ============================================================
-// 1. question_type → checkbox_type 매핑 (규칙엔진용)
+// 1. question_type → checkbox_type 매핑 (평가엔진용)
 // ============================================================
 
 export type CheckboxType = "INT" | "ADV" | "AL";

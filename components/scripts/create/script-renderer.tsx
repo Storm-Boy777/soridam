@@ -278,48 +278,30 @@ export function ScriptSummaryView({
   similarQuestions,
   expansionIdeas,
   targetLevel,
-  connectors,
-  fillers,
 }: {
   fullTextEnglish?: string;
   paragraphs?: ScriptParagraph[];
   structureSummary?: StructureSummaryItem[];
   keySentences?: KeySentence[];
-  keyExpressions?: (KeyExpression | string)[];
+  keyExpressions?: KeyExpression[];
   discourseMarkers?: DiscourseMarker[];
   reusablePatterns?: ReusablePattern[];
   similarQuestions?: SimilarQuestion[];
   expansionIdeas?: string[];
   targetLevel?: TargetLevel | null;
-  connectors?: string[];
-  fillers?: string[];
 }) {
   const [activeItems, setActiveItems] = useState<Set<string>>(new Set());
 
-  // v1 string[] → v2 KeyExpression[] 정규화
-  const normalizedExpressions = useMemo<KeyExpression[]>(() => {
-    if (!keyExpressions?.length) return [];
-    if (typeof keyExpressions[0] === "string") {
-      return (keyExpressions as unknown as string[]).map((e) => ({
-        en: e,
-        ko: "",
-        tip: "",
-      }));
-    }
-    return keyExpressions as KeyExpression[];
-  }, [keyExpressions]);
+  const expressions = keyExpressions ?? [];
 
   // 하이라이트 매핑: 텍스트 → 카테고리
   const itemCategoryMap = useMemo(() => {
     const map = new Map<string, HighlightCategory>();
     keySentences?.forEach((ks) => map.set(ks.english, "key_sentence"));
-    normalizedExpressions.forEach((e) => map.set(e.en, "key_expression"));
+    expressions.forEach((e) => map.set(e.en, "key_expression"));
     discourseMarkers?.forEach((dm) => map.set(dm.en, "discourse_marker"));
-    // 하위 호환: 연결어+필러
-    connectors?.forEach((c) => map.set(c, "discourse_marker"));
-    fillers?.forEach((f) => map.set(f, "discourse_marker"));
     return map;
-  }, [keySentences, normalizedExpressions, discourseMarkers, connectors, fillers]);
+  }, [keySentences, expressions, discourseMarkers]);
 
   const toggleItem = (text: string) => {
     setActiveItems((prev) => {
@@ -337,19 +319,14 @@ export function ScriptSummaryView({
     targetLevel &&
     ["IM3", "IH", "AL"].includes(targetLevel)
   );
-  const hasV1Markers =
-    !discourseMarkers?.length &&
-    ((connectors?.length ?? 0) > 0 || (fillers?.length ?? 0) > 0);
-
   const hasContent =
     (keySentences?.length ?? 0) > 0 ||
     (structureSummary?.length ?? 0) > 0 ||
-    normalizedExpressions.length > 0 ||
+    expressions.length > 0 ||
     (discourseMarkers?.length ?? 0) > 0 ||
     patterns.length > 0 ||
     (similarQuestions?.length ?? 0) > 0 ||
-    showExpansion ||
-    hasV1Markers;
+    showExpansion;
 
   if (!hasContent) return null;
 
@@ -434,16 +411,16 @@ export function ScriptSummaryView({
       )}
 
       {/* ── 3. 핵심 표현 ── */}
-      {normalizedExpressions.length > 0 && (
+      {expressions.length > 0 && (
         <SummarySection
           icon={Bookmark}
           iconColor="text-primary-500"
           title="핵심 표현"
-          count={normalizedExpressions.length}
+          count={expressions.length}
           subtitle="알아두면 좋은 표현"
         >
           <div className="space-y-2">
-            {normalizedExpressions.map((expr, i) => (
+            {expressions.map((expr, i) => (
               <button
                 key={i}
                 onClick={() => toggleItem(expr.en)}
@@ -507,60 +484,6 @@ export function ScriptSummaryView({
             ))}
           </div>
         </SummarySection>
-      )}
-
-      {/* ── 4b. 하위 호환: 연결어+필러 (v1 데이터) ── */}
-      {hasV1Markers && (
-        <>
-          {connectors && connectors.length > 0 && (
-            <SummarySection
-              icon={MessageCircle}
-              iconColor="text-emerald-500"
-              title="연결어"
-              count={connectors.length}
-            >
-              <div className="flex flex-wrap gap-1.5">
-                {connectors.map((c, i) => (
-                  <button
-                    key={i}
-                    onClick={() => toggleItem(c)}
-                    className={`inline-flex rounded-full border px-3 py-1.5 text-[13px] font-medium transition-all ${
-                      activeItems.has(c)
-                        ? "border-emerald-500 bg-emerald-500 text-white shadow-sm"
-                        : "border-emerald-200 bg-emerald-50 text-emerald-700"
-                    }`}
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
-            </SummarySection>
-          )}
-          {fillers && fillers.length > 0 && (
-            <SummarySection
-              icon={MessageCircle}
-              iconColor="text-foreground-muted"
-              title="필러"
-              count={fillers.length}
-            >
-              <div className="flex flex-wrap gap-1.5">
-                {fillers.map((f, i) => (
-                  <button
-                    key={i}
-                    onClick={() => toggleItem(f)}
-                    className={`inline-flex rounded-full border px-3 py-1.5 text-[13px] font-medium transition-all ${
-                      activeItems.has(f)
-                        ? "border-foreground-muted bg-foreground-muted text-white shadow-sm"
-                        : "border-border bg-surface-secondary text-foreground-secondary"
-                    }`}
-                  >
-                    {f}
-                  </button>
-                ))}
-              </div>
-            </SummarySection>
-          )}
-        </>
       )}
 
       {/* ── 5. 만능 패턴 ── */}

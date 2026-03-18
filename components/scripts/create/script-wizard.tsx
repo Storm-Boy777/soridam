@@ -1435,8 +1435,6 @@ function Step4Result({
           similarQuestions={detail.paragraphs?.similar_questions}
           expansionIdeas={detail.paragraphs?.expansion_ideas}
           targetLevel={detail.target_level}
-          connectors={detail.paragraphs?.connectors}
-          fillers={detail.paragraphs?.fillers}
         />
       )}
 

@@ -1,4 +1,4 @@
-// 체크박스 정의 — OPIc V7 규칙엔진
+// 체크박스 정의 — OPIc 평가엔진
 // INT(20), ADV(42), AL(12) 전체 74개
 // question_type → 체크박스 세트 매핑
 // FACT 점수 매핑 테이블
@@ -91,28 +91,28 @@ export function getCheckboxIdsForQuestionType(questionType: string): {
   type: "INT" | "ADV" | "AL";
 } {
   switch (questionType) {
-    // v3 DB names
+    // DB names
     case "description":
     case "routine":
       return { ids: INT_18_IDS, type: "INT" };
-    case "rp_11":         // v3: 정보 요청 롤플레이
+    case "rp_11":         // 정보 요청 롤플레이
     case "asking_questions": // v2 호환
       return { ids: INT_20_IDS, type: "INT" };
     case "comparison":
-    case "past_childhood":  // v3: 어릴 때 경험
-    case "past_special":    // v3: 기억에 남는 경험
-    case "past_recent":     // v3: 과거 습관
+    case "past_childhood":  // 어릴 때 경험
+    case "past_special":    // 기억에 남는 경험
+    case "past_recent":     // 과거 습관
     case "experience_specific":  // v2 호환
     case "experience_habitual":  // v2 호환
     case "experience_past":      // v2 호환
       return { ids: ADV_38_IDS, type: "ADV" };
-    case "rp_12":            // v3: 상황 대응 롤플레이
+    case "rp_12":            // 상황 대응 롤플레이
     case "suggest_alternatives": // v2 호환
       return { ids: ADV_42_IDS, type: "ADV" };
-    case "adv_14":           // v3: 사회 비교/변화
+    case "adv_14":           // 사회 비교/변화
     case "comparison_change": // v2 호환
       return { ids: AL_14_IDS, type: "AL" };
-    case "adv_15":           // v3: 의견 제시/주장
+    case "adv_15":           // 의견 제시/주장
     case "social_issue":     // v2 호환
       return { ids: AL_15_IDS, type: "AL" };
     default:

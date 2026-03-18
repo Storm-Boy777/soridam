@@ -15,7 +15,7 @@ function safeNumber(value: unknown, fallback: number): number {
   return Number.isNaN(n) ? fallback : n;
 }
 
-// ── 규칙엔진 기본값 ──
+// ── 평가엔진 기본값 ──
 const RE_DEFAULTS: Record<string, number> = {
   re_checkbox_pass_threshold: 0.80,
   re_floor_nh: 0.45,
@@ -105,7 +105,7 @@ export function EvalSettingsTab() {
 }
 
 // ============================================================
-// 섹션 A: 규칙엔진 Threshold
+// 섹션 A: 평가엔진 Threshold
 // ============================================================
 
 function RuleEngineSection({
@@ -131,7 +131,7 @@ function RuleEngineSection({
     try {
       const result = await updateEvalSettings(values);
       if (result.success) {
-        toast.success("규칙엔진 설정 저장 완료");
+        toast.success("평가엔진 설정 저장 완료");
         onSaved();
       } else {
         toast.error(result.error || "저장 실패");
@@ -184,7 +184,7 @@ function RuleEngineSection({
   return (
     <div className="rounded-xl border border-border bg-surface p-5">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-bold text-foreground">규칙엔진 Threshold</h3>
+        <h3 className="text-sm font-bold text-foreground">평가엔진 Threshold</h3>
         <div className="flex gap-2">
           <button
             onClick={handleReset}

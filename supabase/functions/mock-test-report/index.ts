@@ -1,7 +1,7 @@
-// mock-test-report — Stage C Edge Function (v3 종합평가)
-// 규칙엔진 7-Step 실행 + FACT 점수 + GPT 종합 리포트 (~45초)
+// mock-test-report — Stage C Edge Function
+// 평가엔진 7-Step 실행 + FACT 점수 + GPT 종합 리포트 (~45초)
 // mock-test-eval-coach에서 전체 평가 완료 시 fire-and-forget으로 호출
-// v3: 9섹션 JSON + task_fulfillment 집계 + tutoring_prescription 자동 변환
+// 9섹션 JSON + task_fulfillment 집계 + tutoring_prescription 자동 변환
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
@@ -52,7 +52,7 @@ function formatCheckboxesForPrompt(
   return `${label} (${entries.length}개):\n${lines.join("\n")}`;
 }
 
-// v3 문항별 요약 — 설계서 §3-5 question_summaries 포맷
+// 문항별 요약 — 설계서 §3-5 question_summaries 포맷
 interface QuestionSummaryInput {
   question_number: number;
   question_type: string;
@@ -139,7 +139,7 @@ function generateQuestionSummaries(inputs: QuestionSummaryInput[]): string {
     .join("\n\n");
 }
 
-// v3: feedback_branch 집계 (종합 리포트용)
+// feedback_branch 집계 (종합 리포트용)
 function aggregateFeedbackBranches(
   evaluations: Array<{
     feedback_branch: string | null;
@@ -173,7 +173,7 @@ function aggregateFeedbackBranches(
   };
 }
 
-// v3 tutoring_prescription 자동 변환 — 설계서 §3-8a
+// tutoring_prescription 자동 변환 — 설계서 §3-8a
 // GPT 응답(top3_priorities, question_type_map, recurring_patterns)에서 추출
 function buildTutoringPrescription(
   coachingReport: Record<string, unknown>,
@@ -718,7 +718,7 @@ Deno.serve(async (req) => {
       return qId ? (questionsMap.get(qId) || "") : "";
     };
 
-    // ── 규칙엔진 파라미터 로드 (DB → 기본값 폴백) ──
+    // ── 평가엔진 파라미터 로드 (DB → 기본값 폴백) ──
     let ruleParams: RuleEngineParams = DEFAULT_PARAMS;
     // deno-lint-ignore no-explicit-any
     let configRow: any = null;
@@ -731,7 +731,7 @@ Deno.serve(async (req) => {
       configRow = data;
 
       if (configRow) {
-        // DB에서 규칙엔진 파라미터 오버라이드
+        // DB에서 평가엔진 파라미터 오버라이드
         ruleParams = {
           checkbox_pass_threshold: Number(configRow.re_checkbox_pass_threshold) || DEFAULT_PARAMS.checkbox_pass_threshold,
           floor_nh: Number(configRow.re_floor_nh) || DEFAULT_PARAMS.floor_nh,
@@ -752,7 +752,7 @@ Deno.serve(async (req) => {
       // 기본값 사용
     }
 
-    // ── 규칙엔진 입력 변환 ──
+    // ── 평가엔진 입력 변환 ──
     const ruleInputs: EvaluationInput[] = evaluations.map((e) => ({
       question_number: e.question_number,
       question_type: e.question_type || "",
@@ -762,7 +762,7 @@ Deno.serve(async (req) => {
       pronunciation_assessment: e.pronunciation_assessment as EvaluationInput["pronunciation_assessment"],
     }));
 
-    // ── Step 0-7: 규칙엔진 실행 ──
+    // ── Step 0-7: 평가엔진 실행 ──
     const ruleResult = runRuleEngine(ruleInputs, ruleParams);
 
     // ── 발음 평균 계산 ──
@@ -784,7 +784,7 @@ Deno.serve(async (req) => {
     const avgProsody = pronCount > 0 ? Math.round(totalProsody / pronCount * 10) / 10 : 0;
     const avgFluency = pronCount > 0 ? Math.round(totalFluency / pronCount * 10) / 10 : 0;
 
-    // ── v3 신규 변수 계산 (§3-5) ──
+    // ── 추가 변수 계산 (§3-5) ──
     let totalDuration = 0, totalWordCount = 0, totalFiller = 0, totalLongPause = 0;
     let validAnswerCount = 0;
     for (const e of evaluations) {
@@ -810,7 +810,7 @@ Deno.serve(async (req) => {
     const targetLevel =
       userProfile?.user?.user_metadata?.target_grade || "IM2";
 
-    // ── reports INSERT (규칙엔진 결과 + FACT 점수) ──
+    // ── reports INSERT (평가엔진 결과 + FACT 점수) ──
     const { error: reportInsertError } = await supabase
       .from("mock_test_reports")
       .upsert(
@@ -869,7 +869,7 @@ Deno.serve(async (req) => {
         .single();
 
       if (promptRow && promptRow.content !== "{{PLACEHOLDER}}") {
-        // v3 question_summaries 데이터 구성
+        // question_summaries 데이터 구성
         const evalData: QuestionSummaryInput[] = evaluations.map((e) => {
           const ans = answersMap.get(e.question_number);
           return {
@@ -929,7 +929,7 @@ Deno.serve(async (req) => {
           score_c: ruleResult.fact_scores.score_c,
           score_t: ruleResult.fact_scores.score_t,
           total_score: ruleResult.fact_scores.total_score,
-          // v3 신규 변수 (§3-5)
+          // 추가 변수 (§3-5)
           task_fulfillment_summary: `충족 ${branchStats.fulfilled}, 부분충족 ${branchStats.partial}, 실패 ${branchStats.failed}, 스킵 ${branchStats.skipped}`,
           skip_count: branchStats.skipped,
           avg_duration_sec: avgDurationSec,
@@ -968,37 +968,37 @@ Deno.serve(async (req) => {
         reportTokens = gptResponse.tokensUsed;
       }
     } catch (gptErr) {
-      console.error("GPT 리포트 생성 실패 (규칙엔진 결과는 저장됨):", gptErr);
+      console.error("GPT 리포트 생성 실패 (평가엔진 결과는 저장됨):", gptErr);
     }
 
-    // ── reports UPDATE (v3 GPT 리포트 결과) ──
+    // ── reports UPDATE (GPT 리포트 결과) ──
     const updateData: Record<string, unknown> = {
       report_status: "completed",
       coaching_report: reportResult,
     };
 
-    // v3: recurring_patterns → recurring_mistakes 컬럼 (하위 호환)
+    // recurring_patterns → recurring_mistakes 컬럼 (하위 호환)
     if (reportResult.recurring_patterns) {
       updateData.recurring_mistakes = reportResult.recurring_patterns;
     }
 
-    // v3: snapshot.headline → overall_comments_ko
+    // snapshot.headline → overall_comments_ko
     const snapshot = reportResult.snapshot as Record<string, unknown> | undefined;
     if (snapshot?.headline) {
       updateData.overall_comments_ko = snapshot.headline;
     }
 
-    // v3: training_recommendation → training_recommendations
+    // training_recommendation → training_recommendations
     if (reportResult.training_recommendation) {
       updateData.training_recommendations = reportResult.training_recommendation;
     }
 
-    // v3: tutoring_prescription 자동 변환 (§3-8a)
+    // tutoring_prescription 자동 변환 (§3-8a)
     if (reportResult.top3_priorities) {
       updateData.tutoring_prescription = buildTutoringPrescription(reportResult);
     }
 
-    // v3: avg_completion_rate 저장
+    // avg_completion_rate 저장
     const branchStatsForSave = aggregateFeedbackBranches(
       evaluations.map((e) => ({
         feedback_branch: (e.feedback_branch as string) || null,

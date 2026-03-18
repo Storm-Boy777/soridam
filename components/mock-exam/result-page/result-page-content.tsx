@@ -16,7 +16,7 @@ import type {
   MockTestEvaluation,
   MockTestReport,
   MockExamHistoryItem,
-  CoachingReportV3,
+  CoachingReport,
 } from "@/lib/types/mock-exam";
 import { getSession } from "@/lib/actions/mock-exam";
 import { OverviewTab } from "./tab-overview";
@@ -122,7 +122,7 @@ export function ResultPageContent({
   }
 
   const { report, evaluations, answers, questions, session } = sessionData;
-  const coaching = report.coaching_report as CoachingReportV3 | null;
+  const coaching = report.coaching_report as CoachingReport | null;
 
   return (
     <div className="flex h-0 min-h-0 flex-grow flex-col md:h-auto md:flex-1">

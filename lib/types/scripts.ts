@@ -162,7 +162,7 @@ export interface ScriptOutput {
     korean: string;
   };
   word_count: number;
-  // Pass 2 학습 분석 (v2 — 7가지 콘텐츠)
+  // Pass 2 학습 분석 (7가지 콘텐츠)
   structure_summary?: StructureSummaryItem[];  // 뼈대 구조
   key_sentences?: KeySentence[];               // 핵심 문장
   key_expressions?: KeyExpression[];           // 핵심 표현 (보강)
@@ -170,9 +170,6 @@ export interface ScriptOutput {
   reusable_patterns?: ReusablePattern[];       // 만능 패턴
   similar_questions?: SimilarQuestion[];        // 유사 질문
   expansion_ideas?: string[];                  // 확장 아이디어 (IM3+)
-  // 하위 호환 (v1)
-  connectors?: string[];
-  fillers?: string[];
 }
 
 // 타임스탬프 데이터 (패키지)

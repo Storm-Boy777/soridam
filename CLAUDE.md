@@ -72,9 +72,7 @@ docs/
 ├── 설계/               ← 기능별 상세 설계 (DB, API, 데이터 플로우)
 │   ├── 공통기반.md      ← DB 원칙, 백엔드 아키텍처, CORS
 │   ├── 시험후기.md      ← submissions 3테이블, 콤보 생성
-│   ├── 모의고사.md      ← 5테이블, V7 규칙엔진, Realtime
-│   ├── 모의고사-평가-v3.md ← ★ 평가 확정 설계 (개별5단계+10타입+무응답감지)
-│   ├── 모의고사-평가-v2-개선방향.md ← 평가 논의 히스토리 + JSON 스키마
+│   ├── 모의고사.md      ← 5테이블, 평가엔진, Realtime
 │   ├── 스크립트.md      ← scripts 통합 테이블, RCTF 프롬프트
 │   ├── 튜터링.md        ← 6테이블, 4레벨 재설계
 │   ├── 쉐도잉.md        ← 2테이블, 클라이언트 완결
@@ -256,12 +254,12 @@ opictalkdoc/                 # Git 루트 = Next.js 루트 (표준 구조)
 │       │   ├── azure-pronunciation.ts     # Azure Speech SDK 발음 평가 (WebSocket)
 │       │   ├── skip-detector.ts           # 3단계 스킵 판정 (15초/15자/환청)
 │       │   ├── checkbox-definitions.ts    # 체크박스 ID 정의 + FACT 매핑 + 누적 로직
-│       │   └── rule-engine.ts             # V7 규칙엔진 7-Step + FACT 점수 계산
+│       │   └── rule-engine.ts             # 평가엔진 7-Step + FACT 점수 계산
 │       ├── scripts/index.ts               # Edge Function (generate/correct/refine/evaluate)
 │       ├── scripts-package/index.ts       # Edge Function (TTS 패키지 + 타임스탬프)
 │       ├── mock-test-process/index.ts     # Edge Function Stage A (Whisper STT + Azure 발음)
 │       ├── mock-test-eval/index.ts        # Edge Function Stage B (GPT-4.1 체크박스 평가)
-│       ├── mock-test-report/index.ts      # Edge Function Stage C (규칙엔진 + FACT + GPT 리포트)
+│       ├── mock-test-report/index.ts      # Edge Function Stage C (평가엔진 + FACT + GPT 리포트)
 │       └── tutoring/index.ts              # Edge Function (8 handler: brief/warmup/epp/variation/transformation/timed/repair/complete)
 ├── app/                     # App Router 페이지
 │   ├── providers.tsx        # QueryClientProvider 래퍼
@@ -506,10 +504,10 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 | 02-28 | DB 분석 | 이현석 OPIc DB PDF(735p) → 431질문/198세트/28토픽/41RP 구조화 |
 | 03-01 | D-1 ✅ | questions 471행 전면 교체 결정 (새 ID 체계, 14컬럼, 10 question_types) |
 | 03-02 | 구조 표준화 | frontend/ → 루트 (126+ 파일 이동, Next.js 표준 구조) |
-| 03-02 | Step 3 ✅ | **모의고사** Phase A~D (5테이블 + SA 10개 + EF 4개 + V7 규칙엔진 + 결과 UI) |
+| 03-02 | Step 3 ✅ | **모의고사** Phase A~D (5테이블 + SA 10개 + EF 4개 + 평가엔진 + 결과 UI) |
 | 03-03 | Step 3 안정화 | 세션 플로우 버그 수정 (녹음 레이스컨디션, Q1 플로우, 자동재생 제거) + 문서 현행화 |
-| 03-08 | 평가+튜터링 설계 | 모의고사 평가 v2 설계 확정 (개별 6-Layer + 종합 5개 개선) + **튜터링 v3 완전 재설계** (GPT-5.2 전문가 4회 자문 → 세션+5프로토콜) |
-| 03-08 | **평가 v3 확정** | GPT-5.2/5.4 전문가 2회 자문 기반 — 개별평가 5단계 표시순서 + 10 question_type별 체크리스트 + 3축 무응답 감지 + 피드백 분기(무응답/부분/정상) + 구제 메시지 설계 |
+| 03-08 | 평가+튜터링 설계 | 모의고사 평가 설계 확정 (개별 6-Layer + 종합 5개 개선) + **튜터링 완전 재설계** (GPT-5.2 전문가 4회 자문 → 세션+5프로토콜) |
+| 03-08 | **평가 확정** | GPT-5.2/5.4 전문가 2회 자문 기반 — 개별평가 5단계 표시순서 + 10 question_type별 체크리스트 + 3축 무응답 감지 + 피드백 분기(무응답/부분/정상) + 구제 메시지 설계 |
 | 03-08 | Step 4 ✅ | **튜터링** 전체 구현 (7테이블 + SA 7개 + 처방엔진 + 3탭 UI + 훈련 세션 Screen 0~6 + EF 8 handler 배포) |
 | 03-10 | UX+설계 | 전 모듈 탭 URL 동기화(history.replaceState) + 모의고사 초기 로딩 최적화 + 성장리포트 설계 문서 (GPT-5.4 자문) |
 | 03-10 | 성장리포트 A ✅ | **등급 추이 그래프** Recharts (등급 라인+준비도 바+FACT 미니+병목 감지+커스텀 툴팁) |
@@ -525,7 +523,7 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 ## 🔮 현재 상태 & 다음 단계
 
 **현재**: Phase 3 (핵심 모듈 이관) — Step 4 튜터링 ✅ + 성장리포트 ✅ + 관리자 ✅ + 플랜 리뉴얼 ✅ + 카카오페이 ✅
-**다음 작업**: 모의고사 평가 v3 고도화 → 리브랜딩(P-5)
+**다음 작업**: 모의고사 평가 고도화 → 리브랜딩(P-5)
 
 ### 튜터링 모듈 구현 현황
 | 영역 | 상태 | 상세 |
@@ -657,4 +655,4 @@ PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/1
 
 ---
 *최종 업데이트: 2026-03-15*
-*상태: Phase 3 전체 ✅ + 플랜 리뉴얼(체험/실전/올인원) ✅ + 카카오페이 ✅. 다음: 평가 v3 고도화 → 리브랜딩(P-5)*
+*상태: Phase 3 전체 ✅ + 플랜 리뉴얼(체험/실전/올인원) ✅ + 카카오페이 ✅. 다음: 평가 고도화 → 리브랜딩(P-5)*

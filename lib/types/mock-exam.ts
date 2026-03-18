@@ -10,7 +10,7 @@ export type MockExamMode = (typeof MOCK_EXAM_MODES)[number];
 export const SESSION_STATUSES = ['active', 'completed', 'expired'] as const;
 export type SessionStatus = (typeof SESSION_STATUSES)[number];
 
-// 개별 답변 평가 상태 (v3: judge_completed 추가)
+// 개별 답변 평가 상태
 export const EVAL_STATUSES = ['pending', 'processing', 'stt_completed', 'evaluating', 'judge_completed', 'completed', 'failed', 'skipped'] as const;
 export type EvalStatus = (typeof EVAL_STATUSES)[number];
 
@@ -101,7 +101,7 @@ export const OPIC_LEVEL_ORDER: Record<OpicLevel, number> = {
   NH: 1, IL: 2, IM1: 3, IM2: 4, IM3: 5, IH: 6, AL: 7,
 };
 
-// V2: 등급별 한줄 설명
+// 등급별 한줄 설명
 export const OPIC_LEVEL_DESC: Record<OpicLevel, string> = {
   NH: '단어 중심으로 말합니다',
   IL: '짧은 문장을 만들 수 있습니다',
@@ -112,7 +112,7 @@ export const OPIC_LEVEL_DESC: Record<OpicLevel, string> = {
   AL: '논리적으로 설명할 수 있습니다',
 };
 
-// V2: 발음 점수 → 이해도 라벨
+// 발음 점수 → 이해도 라벨
 export function getPronunciationLabel(score: number): { label: string; color: string } {
   if (score >= 80) return { label: '매우 좋음', color: 'text-green-600' };
   if (score >= 60) return { label: '괜찮음', color: 'text-yellow-600' };
@@ -120,7 +120,7 @@ export function getPronunciationLabel(score: number): { label: string; color: st
   return { label: '자주 어려움', color: 'text-red-500' };
 }
 
-// V2: FACT 한글 라벨
+// FACT 한글 라벨
 export const FACT_LABELS: Record<string, string> = {
   F: '말하기흐름',
   A: '문법정확성',
@@ -216,13 +216,13 @@ export interface MockTestEvaluation {
   processing_time_ms: number | null;
   skipped: boolean;
   created_at: string;
-  // v3 필드 (DB 컬럼: task_fulfillment, feedback_branch, priority_prescription)
+  // 과제충족 + 피드백 분기 필드
   task_fulfillment: TaskFulfillment | null;
   feedback_branch: "fulfilled" | "partial" | "failed" | null;
   priority_prescription: PriorityPrescription[] | null;
 }
 
-// v3 과제충족
+// 과제충족
 export interface TaskFulfillment {
   status: "fulfilled" | "partial" | "failed";
   checklist: {
@@ -237,14 +237,14 @@ export interface TaskFulfillment {
   reason: string;
 }
 
-// v3 최우선 처방
+// 최우선 처방
 export interface PriorityPrescription {
   action: string;
   why: string;
   example: string;
 }
 
-// v3 rescue 메시지 (무응답)
+// rescue 메시지 (무응답)
 export interface RescueInfo {
   start_template: string;
   recovery_tip: string;
@@ -271,7 +271,7 @@ export interface CorrectionItem {
   corrected_segment: string;
 }
 
-// 심층 분석 (V1 — 하위 호환용)
+// 심층 분석 (레거시)
 export interface DeepAnalysis {
   overall_assessment: string;
   linguistic_analysis: string;
@@ -280,7 +280,7 @@ export interface DeepAnalysis {
   recommendation: string;
 }
 
-// ── V3 코칭 타입 ──
+// ── 코칭 타입 ──
 
 // 개별 평가 코칭 피드백 (coaching_feedback JSONB)
 export interface CoachingFeedback {
@@ -308,13 +308,13 @@ export interface CoachingDeepAnalysis {
 }
 
 // ============================================================
-// 종합 평가 코칭 리포트 v3 (coaching_report JSONB)
+// 종합 평가 코칭 리포트 (coaching_report JSONB)
 // 9섹션: snapshot, grade_explanation, top3_priorities, roadmap,
 //        question_type_map, recurring_patterns, delivery_interpretation,
 //        strengths, training_recommendation
 // ============================================================
 
-export interface CoachingReportV3 {
+export interface CoachingReport {
   snapshot: ReportSnapshot;
   grade_explanation: GradeExplanation;
   top3_priorities: Top3Priority[];
@@ -323,7 +323,7 @@ export interface CoachingReportV3 {
   recurring_patterns: RecurringPattern[];
   delivery_interpretation: DeliveryInterpretation;
   strengths: ReportStrength[];
-  training_recommendation: TrainingRecommendationV3;
+  training_recommendation: ReportTrainingPlan;
 }
 
 export interface ReportSnapshot {
@@ -398,7 +398,7 @@ export interface ReportStrength {
   detail: string;
 }
 
-export interface TrainingRecommendationV3 {
+export interface ReportTrainingPlan {
   course_title: string;
   focus_areas: string[];
   estimated_daily_minutes: number;
@@ -418,13 +418,12 @@ export interface TutoringPrescription {
   must_fix_for_next_grade: string[];
 }
 
-// v2 하위 호환: UI 재작성 전까지 유연한 타입 유지
-// Phase D (ResultSummary v3) 완료 후 CoachingReportV3로 교체
+// 코칭 리포트 유연 타입 (JSON 파싱 시 추가 필드 허용)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type CoachingReport = CoachingReportV3 & Record<string, any>;
+export type CoachingReportFlex = CoachingReport & Record<string, any>;
 
 export interface RecurringMistake {
-  // v3: RecurringPattern과 동일 구조 (하위 호환 alias)
+  // RecurringPattern과 동일 구조 (하위 호환 alias)
   category: string;
   label: string;
   frequency: number;
@@ -435,7 +434,7 @@ export interface RecurringMistake {
   why_recurring: string;
   fix_principle: string;
   drill_tag: string;
-  // v2 레거시 필드 (옵션)
+  // 레거시 필드 (옵션)
   pattern_name?: string;
   affected_questions?: number[];
   example_wrong?: string;
@@ -449,7 +448,7 @@ export interface MockTestReport {
   id: string;
   session_id: string;
   user_id: string;
-  // 규칙 엔진 결과
+  // 평가엔진 결과
   final_level: OpicLevel | null;
   floor_status: string | null;
   floor_level: string | null;
@@ -482,8 +481,8 @@ export interface MockTestReport {
   adv_performance: Record<string, unknown> | null;
   comprehensive_feedback: string | null;
   training_recommendations: TrainingRecommendation[] | null;
-  // v3 코칭
-  coaching_report: CoachingReportV3 | null;
+  // 코칭
+  coaching_report: CoachingReport | null;
   recurring_mistakes: RecurringPattern[] | null;
   tutoring_prescription: TutoringPrescription | null;
   avg_completion_rate: number | null;
@@ -582,7 +581,7 @@ export interface MockTestEvalSettings {
   enabled_comparison_change: boolean;
   enabled_social_issue: boolean;
   updated_at: string;
-  // 규칙엔진 threshold 13개
+  // 평가엔진 threshold 13개
   re_checkbox_pass_threshold: number;
   re_floor_nh: number;
   re_floor_il: number;

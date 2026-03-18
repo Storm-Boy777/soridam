@@ -198,7 +198,7 @@ CREATE TABLE mock_test_reports (
   id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id        TEXT UNIQUE NOT NULL,
   user_id           UUID NOT NULL REFERENCES auth.users(id),
-  -- 규칙 엔진 결과
+  -- 평가엔진 결과
   final_level       TEXT,                          -- NH|IL|IM1|IM2|IM3|IH|AL
   floor_status      TEXT,
   floor_level       TEXT,

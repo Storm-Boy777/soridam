@@ -72,9 +72,7 @@ docs/
 ├── 설계/               ← 기능별 상세 설계 (DB, API, 데이터 플로우)
 │   ├── 공통기반.md      ← DB 원칙, 백엔드 아키텍처, CORS
 │   ├── 시험후기.md      ← submissions 3테이블, 콤보 생성
-│   ├── 모의고사.md      ← 5테이블, V7 규칙엔진, Realtime
-│   ├── 모의고사-평가-v3.md ← ★ 평가 확정 설계 (개별5단계+10타입+무응답감지)
-│   ├── 모의고사-평가-v2-개선방향.md ← 평가 논의 히스토리 + JSON 스키마
+│   ├── 모의고사.md      ← 5테이블, 평가엔진, 평가 시스템, Realtime
 │   ├── 스크립트.md      ← scripts 통합 테이블, RCTF 프롬프트
 │   ├── 튜터링.md        ← 6테이블, 4레벨 재설계
 │   ├── 쉐도잉.md        ← 2테이블, 클라이언트 완결
@@ -253,13 +251,13 @@ opictalkdoc/                 # Git 루트 = Next.js 루트 (표준 구조)
 │       │   ├── azure-pronunciation.ts     # Azure Speech SDK 발음 평가 (WebSocket)
 │       │   ├── skip-detector.ts           # 3단계 스킵 판정 (15초/15자/환청)
 │       │   ├── checkbox-definitions.ts    # 체크박스 ID 정의 + FACT 매핑 + 누적 로직
-│       │   └── rule-engine.ts             # V7 규칙엔진 7-Step + FACT 점수 계산
+│       │   └── rule-engine.ts             # 평가엔진 7-Step + FACT 점수 계산
 │       ├── scripts/index.ts               # Edge Function (generate/correct/refine/evaluate)
 │       ├── scripts-package/index.ts       # Edge Function (TTS 패키지 + 타임스탬프)
 │       ├── mock-test-process/index.ts     # Edge Function Stage A (Whisper STT + Azure 발음)
 │       ├── mock-test-eval-judge/index.ts  # Edge Function Stage B-1 (GPT-4.1-mini 체크박스+과제충족)
 │       ├── mock-test-eval-coach/index.ts  # Edge Function Stage B-2 (GPT-4.1 코칭 6-Layer)
-│       ├── mock-test-report/index.ts      # Edge Function Stage C (규칙엔진 + FACT + GPT 리포트)
+│       ├── mock-test-report/index.ts      # Edge Function Stage C (평가엔진 + FACT + GPT 리포트)
 │       └── tutoring/index.ts              # Edge Function (8 handler: brief/warmup/epp/variation/transformation/timed/repair/complete)
 ├── app/                     # App Router 페이지
 │   ├── providers.tsx        # QueryClientProvider 래퍼
@@ -504,7 +502,7 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 | 02-28 | DB 분석 | 이현석 OPIc DB PDF(735p) → 431질문/198세트/28토픽/41RP 구조화 |
 | 03-01 | D-1 ✅ | questions 471행 전면 교체 결정 (새 ID 체계, 14컬럼, 10 question_types) |
 | 03-02 | 구조 표준화 | frontend/ → 루트 (126+ 파일 이동, Next.js 표준 구조) |
-| 03-02 | Step 3 ✅ | **모의고사** Phase A~D (5테이블 + SA 10개 + EF 4개 + V7 규칙엔진 + 결과 UI) |
+| 03-02 | Step 3 ✅ | **모의고사** Phase A~D (5테이블 + SA 10개 + EF 4개 + 평가엔진 + 결과 UI) |
 | 03-03 | Step 3 안정화 | 세션 플로우 버그 수정 (녹음 레이스컨디션, Q1 플로우, 자동재생 제거) + 문서 현행화 |
 | 03-08 | 평가+튜터링 설계 | 모의고사 평가 v2 설계 확정 (개별 6-Layer + 종합 5개 개선) + **튜터링 v3 완전 재설계** (GPT-5.2 전문가 4회 자문 → 세션+5프로토콜) |
 | 03-08 | **평가 v3 확정** | GPT-5.2/5.4 전문가 2회 자문 기반 — 개별평가 5단계 표시순서 + 10 question_type별 체크리스트 + 3축 무응답 감지 + 피드백 분기(무응답/부분/정상) + 구제 메시지 설계 |

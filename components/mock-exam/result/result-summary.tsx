@@ -24,7 +24,7 @@ import type {
   MockTestAnswer,
   MockExamHistoryItem,
   OpicLevel,
-  CoachingReportV3,
+  CoachingReport,
   Top3Priority,
   QuestionTypeMapItem,
   RecurringPattern,
@@ -155,7 +155,7 @@ export function ResultSummary({
   const [showDetail, setShowDetail] = useState(false);
 
   // v3 coaching_report (v2 폴백)
-  const coaching = report.coaching_report as CoachingReportV3 | null;
+  const coaching = report.coaching_report as CoachingReport | null;
   const levelDiff = getLevelDiff(
     report.final_level,
     previousResult?.final_level ?? null,
@@ -254,7 +254,7 @@ function Section1Snapshot({
   previousResult,
 }: {
   report: MockTestReport;
-  coaching: CoachingReportV3 | null;
+  coaching: CoachingReport | null;
   levelDiff: ReturnType<typeof getLevelDiff>;
   sessionDate: string;
   mode: string;
@@ -373,7 +373,7 @@ function Section2GradeExplanation({
   coaching,
 }: {
   report: MockTestReport;
-  coaching: CoachingReportV3;
+  coaching: CoachingReport;
 }) {
   const ge = coaching.grade_explanation;
 
@@ -555,7 +555,7 @@ function Section4Roadmap({
   currentLevel,
   targetLevel,
 }: {
-  roadmap: CoachingReportV3["roadmap"];
+  roadmap: CoachingReport["roadmap"];
   currentLevel: OpicLevel | null;
   targetLevel: string | null;
 }) {
@@ -771,7 +771,7 @@ function Section7Delivery({
   coaching,
 }: {
   report: MockTestReport;
-  coaching: CoachingReportV3 | null;
+  coaching: CoachingReport | null;
 }) {
   const di = coaching?.delivery_interpretation;
   const strengths = coaching?.strengths;
@@ -854,7 +854,7 @@ function Section7Delivery({
 function Section9CTA({
   recommendation,
 }: {
-  recommendation: CoachingReportV3["training_recommendation"];
+  recommendation: CoachingReport["training_recommendation"];
 }) {
   return (
     <div className="rounded-xl border-2 border-primary-200 bg-primary-50/30 p-4 sm:p-6">

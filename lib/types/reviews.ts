@@ -71,15 +71,6 @@ export const PRE_EXAM_LEVEL_LABELS: Record<PreExamLevel, string> = {
 
 export const ACHIEVED_LEVEL_OPTION_LABELS = ACHIEVED_LEVEL_LABELS;
 
-export const EXAM_DIFFICULTY_LABELS: Record<ExamDifficulty, string> = {
-  '6-6': '6-6', '6-5': '6-5',
-  '5-6': '5-6', '5-5': '5-5', '5-4': '5-4',
-  '4-5': '4-5', '4-4': '4-4', '4-3': '4-3',
-  '3-4': '3-4', '3-3': '3-3', '3-2': '3-2',
-  '2-3': '2-3', '2-2': '2-2', '2-1': '2-1',
-  '1-2': '1-2', '1-1': '1-1',
-};
-
 export const EXAM_PURPOSE_LABELS: Record<ExamPurpose, string> = {
   employment: '취업',
   promotion: '승진/인사',
@@ -124,14 +115,6 @@ export const ACTUAL_DURATION_LABELS: Record<ActualDuration, string> = {
   '25_30': '25~30분',
   '30_35': '30~35분',
   '35_40': '35~40분',
-};
-
-export const COMBO_TYPE_LABELS: Record<ComboType, string> = {
-  general_1: '일반콤보 1 (2~4번)',
-  general_2: '일반콤보 2 (5~7번)',
-  general_3: '일반콤보 3 (8~10번)',
-  roleplay: '롤플레이 (11~13번)',
-  advance: '어드밴스 (14~15번)',
 };
 
 // ── 서베이 항목 ──
@@ -251,39 +234,6 @@ export interface SubmissionQuestion {
   created_at: string;
 }
 
-export interface SubmissionCombo {
-  id: number;
-  submission_id: number;
-  combo_type: ComboType;
-  topic: string;
-  question_ids: string[];
-  created_at: string;
-}
-
-// ── Step별 폼 데이터 ──
-
-export interface Step1FormData {
-  exam_date: string;
-  exam_difficulty: ExamDifficulty;
-  pre_exam_level: PreExamLevel;
-  achieved_level: AchievedLevelOption | '';
-  exam_purpose: ExamPurpose;
-  study_methods: StudyMethod[];
-  prep_duration: PrepDuration;
-  attempt_count: AttemptCount;
-  perceived_difficulty: PerceivedDifficulty;
-  actual_duration: ActualDuration;
-  used_recommended_survey: boolean;
-  survey_occupation: string | null;
-  survey_student: string | null;
-  survey_course: string | null;
-  survey_housing: string | null;
-  survey_leisure: string[];
-  survey_hobbies: string[];
-  survey_sports: string[];
-  survey_travel: string[];
-}
-
 export interface QuestionItem {
   question_number: number;
   combo_type: ComboType;
@@ -293,14 +243,9 @@ export interface QuestionItem {
   is_not_remembered: boolean;
 }
 
-export interface Step3FormData {
-  one_line_review: string;
-  tips: string;
-}
-
 // ── 콤보 단계 정보 ──
 
-export interface ComboStep {
+interface ComboStep {
   comboType: ComboType;
   label: string;
   questionNumbers: number[];

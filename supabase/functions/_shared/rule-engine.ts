@@ -1,4 +1,4 @@
-// V7 규칙엔진 — OPIc 등급 판정 + FACT 점수 계산
+// 평가엔진 — OPIc 등급 판정 + FACT 점수 계산
 // 소리담 v7RuleEngine.ts 이관 (~1,437줄 → 간결화)
 // 7-Step: 체크박스 집계 → Floor → Ceiling → Sympathetic → Q12 → AL → 최종 등급
 
@@ -533,7 +533,7 @@ export function computeFACTScores(
 }
 
 // ============================================================
-// 메인 함수: 규칙엔진 실행
+// 메인 함수: 평가엔진 실행
 // ============================================================
 
 export function runRuleEngine(

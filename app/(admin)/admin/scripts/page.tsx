@@ -246,8 +246,6 @@ function ScriptDetailView({
           similarQuestions={output.similar_questions as never[]}
           expansionIdeas={output.expansion_ideas}
           targetLevel={script.target_level}
-          connectors={output.connectors}
-          fillers={output.fillers}
         />
       )}
     </div>

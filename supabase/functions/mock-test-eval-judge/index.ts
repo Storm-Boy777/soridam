@@ -1,4 +1,4 @@
-// mock-test-eval-judge — Stage B-1 Edge Function (v3)
+// mock-test-eval-judge — Stage B-1 Edge Function
 // GPT-4.1-mini: 체크박스 74개 + 과제충족 체크리스트(🔴/🟡) + feedback_branch
 // mock-test-process에서 fire-and-forget으로 호출됨
 // 완료 후 mock-test-eval-coach로 fire-and-forget 체인
@@ -251,7 +251,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (!promptRow || promptRow.content === "{{PLACEHOLDER}}") {
-      // 프롬프트 미설정: v2 폴백 → 기존 eval EF로 처리하거나 스킵
+      // 프롬프트 미설정: 폴백 → 기존 eval EF로 처리하거나 스킵
       await updateAnswerStatus(supabase, session_id, question_number, "completed");
 
       await supabase.from("mock_test_evaluations").insert({
@@ -262,7 +262,7 @@ Deno.serve(async (req) => {
         question_type: questionType,
         checkbox_type: checkboxType,
         model: "no_prompt",
-        prompt_version: "v3.0-judge",
+        prompt_version: "1.0-judge",
         skipped: true,
         feedback_branch: "failed",
         task_fulfillment: { status: "failed", reason: `프롬프트 미설정: ${promptKey}` },
@@ -377,7 +377,7 @@ Deno.serve(async (req) => {
     );
     const checkboxCount = Object.keys(checkboxes).length;
 
-    // 과제충족 (v3)
+    // 과제충족
     const taskFulfillment = (evaluation.task_fulfillment || {
       status: "failed",
       checklist: { required: [], advanced: [] },
@@ -409,13 +409,13 @@ Deno.serve(async (req) => {
       filler_count: filler_word_count || 0,
       long_pause_count: long_pause_count || 0,
       pronunciation_assessment,
-      // v3 필드
+      // 평가 필드
       task_fulfillment: taskFulfillment,
       feedback_branch: feedbackBranch,
       judge_model: judgeModel,
       judge_tokens_used: tokensUsed,
       model: judgeModel,
-      prompt_version: "v3.0-judge",
+      prompt_version: "1.0-judge",
       tokens_used: tokensUsed,
       processing_time_ms: processingTime,
       skipped: false,

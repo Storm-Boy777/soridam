@@ -12,7 +12,7 @@ import {
 import type {
   MockTestReport,
   MockExamHistoryItem,
-  CoachingReportV3,
+  CoachingReport,
   OpicLevel,
 } from "@/lib/types/mock-exam";
 import { FACT_LABELS } from "@/lib/types/mock-exam";
@@ -20,7 +20,7 @@ import { getLevelDiff, TYPE_MAP_KO, CATEGORY_KO } from "./shared-helpers";
 
 interface OverviewTabProps {
   report: MockTestReport;
-  coaching: CoachingReportV3 | null;
+  coaching: CoachingReport | null;
   sessionDate: string;
   mode: string;
   previousResult?: MockExamHistoryItem | null;

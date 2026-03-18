@@ -1,7 +1,7 @@
 // mock-test-process — Stage A Edge Function
 // Whisper STT + Azure 발음 평가 (~70초)
 // SA submitAnswer에서 fire-and-forget으로 호출됨
-// 완료 후 mock-test-eval로 fire-and-forget 체인
+// 완료 후 mock-test-eval-judge로 fire-and-forget 체인
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
@@ -116,7 +116,7 @@ async function updateAnswerStatus(
     .eq("question_number", questionNumber);
 }
 
-// fire-and-forget → Stage B-1 (mock-test-eval-judge) — v3 4-Stage
+// fire-and-forget → Stage B-1 (mock-test-eval-judge) — 4-Stage
 function fireAndForgetJudge(payload: Record<string, unknown>) {
   fetch(`${SUPABASE_URL}/functions/v1/mock-test-eval-judge`, {
     method: "POST",
@@ -286,7 +286,7 @@ Deno.serve(async (req) => {
           filler_count: fillerWordCount,
           long_pause_count: longPauseCount,
           model: "skipped",
-          prompt_version: "v3.0",
+          prompt_version: "1.0",
           skipped: true,
           task_fulfillment: {
             status: "failed",

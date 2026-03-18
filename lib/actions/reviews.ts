@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
-import { step1Schema, step2Schema, step3Schema, updateGradeSchema } from "@/lib/validations/reviews";
+import { step1Schema, step2Schema, step3Schema } from "@/lib/validations/reviews";
 import { extractCombos } from "@/lib/utils/combo-extractor";
 import {
   QUESTION_TYPE_ORDER,
@@ -623,41 +623,6 @@ export async function deleteSubmission(
 }
 
 // ============================================================
-// 등급 수정
-// ============================================================
-
-export async function updateGrade(
-  submissionId: number,
-  achievedLevel: string
-): Promise<ActionResult> {
-  // 입력값 검증 (허용된 등급만)
-  const parsed = updateGradeSchema.safeParse({ submissionId, achievedLevel });
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
-
-  try {
-    const { supabase, userId } = await requireUser();
-
-    const { error } = await supabase
-      .from("submissions")
-      .update({ achieved_level: parsed.data.achievedLevel })
-      .eq("id", parsed.data.submissionId)
-      .eq("user_id", userId);
-
-    if (error) return { error: "등급 수정에 실패했습니다" };
-
-    revalidatePath("/reviews");
-    return {};
-  } catch (e) {
-    if (e instanceof Error && e.message === "로그인이 필요합니다") {
-      return { error: e.message };
-    }
-    return { error: "서버 오류가 발생했습니다" };
-  }
-}
-
-// ============================================================
 // 내 후기 목록
 // ============================================================
 
@@ -679,43 +644,6 @@ export async function getMySubmissions(): Promise<ActionResult<Submission[]>> {
     }
     return { error: "서버 오류가 발생했습니다" };
   }
-}
-
-// ============================================================
-// 후기 상세 (submission_questions JOIN questions)
-// ============================================================
-
-export async function getSubmissionDetail(
-  submissionId: number
-): Promise<ActionResult<SubmissionWithQuestions>> {
-  const supabase = await createServerSupabaseClient();
-
-  const { data, error } = await supabase
-    .from("submissions")
-    .select(
-      `*,
-      submission_questions (
-        *,
-        questions (
-          id,
-          question_short,
-          question_english,
-          question_korean,
-          question_type_eng,
-          topic
-        )
-      )`
-    )
-    .eq("id", submissionId)
-    .single();
-
-  if (error || !data) return { error: "후기를 찾을 수 없습니다" };
-  // submission_questions가 없으면 빈 배열로 보정
-  const result = data as unknown as SubmissionWithQuestions;
-  if (!Array.isArray(result.submission_questions)) {
-    result.submission_questions = [];
-  }
-  return { data: result };
 }
 
 // ── 내부 헬퍼: 콤보 + survey_type 조회 (getFrequency, getStatsAndFrequency 공유) ──

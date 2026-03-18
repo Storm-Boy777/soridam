@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import type {
   MockTestReport,
-  CoachingReportV3,
+  CoachingReport,
   Top3Priority,
   QuestionTypeMapItem,
   RecurringPattern,
@@ -36,7 +36,7 @@ import {
 
 interface DiagnosisTabProps {
   report: MockTestReport;
-  coaching: CoachingReportV3 | null;
+  coaching: CoachingReport | null;
 }
 
 export function DiagnosisTab({ report, coaching }: DiagnosisTabProps) {
