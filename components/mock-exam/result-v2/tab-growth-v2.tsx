@@ -164,7 +164,8 @@ function SectionGradeProgress({
             <YAxis
               domain={[yMin, yMax]}
               ticks={Array.from({ length: yMax - yMin + 1 }, (_, i) => yMin + i)}
-              tick={GradeYTick as unknown as React.ComponentType}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              tick={GradeYTick as any}
               axisLine={false}
               tickLine={false}
               interval={0}
