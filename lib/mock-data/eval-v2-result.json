@@ -30,12 +30,18 @@
         "문장 연결 및 단락 구성에서 다양한 연결어 사용을 통한 구조적 전개 강화 필요"
       ],
       "weak_points": [
-        "description_depth",
-        "connector_diversity"
-      ],
-      "recommended_drills": [
-        "description_depth",
-        "connector_diversity"
+        {
+          "code": "WP_C01",
+          "severity": "mild",
+          "reason": "묘사/디테일 깊이 부족",
+          "evidence": "각 공간(bedroom, balcony 등) 언급은 있으나 용도/분위기 등 심화 묘사가 제한적"
+        },
+        {
+          "code": "WP_S03",
+          "severity": "mild",
+          "reason": "연결어 종류가 제한적",
+          "evidence": "\"and\", \"but\", \"because\" 3종 외 다양한 연결어 미사용"
+        }
       ],
       "question_title": "현재 집 구조와 특징 설명",
       "question_type": "description",
@@ -50,7 +56,9 @@
         "word_count": 134,
         "accuracy_score": 84.3,
         "fluency_score": 93,
-        "prosody_score": 83.1
+        "prosody_score": 83.1,
+        "pause_count_3s_plus": 0,
+        "filler_ratio": 0.043
       }
     },
     {
@@ -84,13 +92,24 @@
         "활동 간 순서를 명확히 연결하고, 다양한 연결어와 빈도 표현을 활용할 필요가 있다."
       ],
       "weak_points": [
-        "시제 일관성 부족",
-        "연결어 다양성 부족",
-        "빈도 표현 부족"
-      ],
-      "recommended_drills": [
-        "tense_control",
-        "connector_diversity"
+        {
+          "code": "WP_A02",
+          "severity": "moderate",
+          "reason": "시제 사용이 제한적이거나 일관성 부족",
+          "evidence": "현재 루틴인데 \"would\" 반복 사용 (\"I would wake up\", \"I would be back\") — 시제 혼용"
+        },
+        {
+          "code": "WP_S03",
+          "severity": "mild",
+          "reason": "연결어 종류가 제한적",
+          "evidence": "\"and then\" 반복, 다양한 연결어(however, moreover 등) 미사용"
+        },
+        {
+          "code": "WP_C01",
+          "severity": "mild",
+          "reason": "묘사/디테일 깊이 부족",
+          "evidence": "\"from time to time\" 1회 외 빈도 부사(usually, often, sometimes 등) 부재"
+        }
       ],
       "question_title": "집에서의 평일·주말 일상",
       "question_type": "routine",
@@ -105,7 +124,9 @@
         "word_count": 190,
         "accuracy_score": 81.5,
         "fluency_score": 95.1,
-        "prosody_score": 76.1
+        "prosody_score": 76.1,
+        "pause_count_3s_plus": 3,
+        "filler_ratio": 0.033
       }
     },
     {
@@ -139,14 +160,24 @@
         "사회적 맥락이나 변화의 의미를 구조적으로 설명하는 연습이 필요하다."
       ],
       "weak_points": [
-        "비교 관점 부족",
-        "사회적 맥락 미흡",
-        "설명 구체성 부족"
-      ],
-      "recommended_drills": [
-        "comparison_frame",
-        "detail_expansion",
-        "social_perspective"
+        {
+          "code": "WP_T03",
+          "severity": "moderate",
+          "reason": "비교 관점이 불충분",
+          "evidence": "크기와 위치 2관점만 언급, 시설·교통·생활 등 추가 비교 관점 부재"
+        },
+        {
+          "code": "WP_C04",
+          "severity": "mild",
+          "reason": "관점 뒷받침이 약함",
+          "evidence": "\"huge difference in lifestyle\" 언급만, 구체적 사회적 맥락/배경 설명 없음"
+        },
+        {
+          "code": "WP_C01",
+          "severity": "mild",
+          "reason": "묘사/디테일 깊이 부족",
+          "evidence": "과거 집과 현재 집 각각의 구체적 비교 서술이 부족"
+        }
       ],
       "question_title": "어릴 때 집과 현재 집 비교",
       "question_type": "comparison",
@@ -161,7 +192,9 @@
         "word_count": 105,
         "accuracy_score": null,
         "fluency_score": null,
-        "prosody_score": null
+        "prosody_score": null,
+        "pause_count_3s_plus": 0,
+        "filler_ratio": 0.025
       }
     },
     {
@@ -190,13 +223,18 @@
         "문장 간 연결어의 다양성을 높여 단락 구조를 더욱 명확히 할 필요가 있다."
       ],
       "weak_points": [
-        "detail_expansion",
-        "connector_diversity"
-      ],
-      "recommended_drills": [
-        "description_depth",
-        "detail_expansion",
-        "connector_diversity"
+        {
+          "code": "WP_C01",
+          "severity": "mild",
+          "reason": "묘사/디테일 깊이 부족",
+          "evidence": "제주의 특징(자연, 해변, 화산) 나열은 있으나 각 장소별 심화 묘사(5감, 분위기) 부족"
+        },
+        {
+          "code": "WP_S03",
+          "severity": "mild",
+          "reason": "연결어 종류가 제한적",
+          "evidence": "\"and\", \"but\" 위주, moreover/however/as a result 등 고급 연결어 미사용"
+        }
       ],
       "question_title": "선호 국내 여행지와 이유",
       "question_type": "description",
@@ -211,7 +249,9 @@
         "word_count": 120,
         "accuracy_score": null,
         "fluency_score": null,
-        "prosody_score": null
+        "prosody_score": null,
+        "pause_count_3s_plus": 1,
+        "filler_ratio": 0.01
       }
     },
     {
@@ -245,12 +285,18 @@
         "단락의 마무리에서 경험의 가치나 변화된 점을 구조적으로 드러낼 필요가 있다."
       ],
       "weak_points": [
-        "paragraph_closure",
-        "description_depth"
-      ],
-      "recommended_drills": [
-        "paragraph_closure",
-        "description_depth"
+        {
+          "code": "WP_S06",
+          "severity": "moderate",
+          "reason": "마무리 문장 누락",
+          "evidence": "\"it brings back those warm memories\"로 감정 회상에 그침, 의미/교훈 등 결론적 마무리 없음"
+        },
+        {
+          "code": "WP_C01",
+          "severity": "mild",
+          "reason": "묘사/디테일 깊이 부족",
+          "evidence": "여행지 묘사가 \"old and beautiful\", \"so magical\" 수준, 5감/분위기 등 심화 부족"
+        }
       ],
       "question_title": "어릴 적 국내 여행 경험",
       "question_type": "past_childhood",
@@ -265,7 +311,9 @@
         "word_count": 158,
         "accuracy_score": null,
         "fluency_score": null,
-        "prosody_score": null
+        "prosody_score": null,
+        "pause_count_3s_plus": 2,
+        "filler_ratio": 0.039
       }
     },
     {
@@ -299,14 +347,24 @@
         "감정 표현이나 당시의 심리적 반응을 더 구체적으로 확장할 수 있다."
       ],
       "weak_points": [
-        "connector_diversity",
-        "paragraph_organization",
-        "emotional_expression"
-      ],
-      "recommended_drills": [
-        "connector_diversity",
-        "paragraph_organization",
-        "emotional_expression"
+        {
+          "code": "WP_S03",
+          "severity": "mild",
+          "reason": "연결어 종류가 제한적",
+          "evidence": "\"and\", \"but\", \"so\" 위주, however/moreover/as a result 등 고급 연결어 부재"
+        },
+        {
+          "code": "WP_S09",
+          "severity": "mild",
+          "reason": "문장 간 논리 흐름이 약함",
+          "evidence": "사건 나열은 있으나 문장 간 인과 관계(왜 갔는지→무슨 일이→그래서)가 약함"
+        },
+        {
+          "code": "WP_C05",
+          "severity": "mild",
+          "reason": "감정/감상 표현 부재",
+          "evidence": "\"breathtaking\", \"best thing ever\" 수준, 당시의 심리 변화/복합 감정 부재"
+        }
       ],
       "question_title": "국내 여행 잊지 못할 경험",
       "question_type": "past_special",
@@ -321,7 +379,9 @@
         "word_count": 170,
         "accuracy_score": null,
         "fluency_score": null,
-        "prosody_score": null
+        "prosody_score": null,
+        "pause_count_3s_plus": 2,
+        "filler_ratio": 0.028
       }
     },
     {
@@ -350,12 +410,12 @@
         "묘사적 어휘와 다양한 형용사, 비교 표현의 활용을 통해 내용의 깊이를 높일 필요가 있다."
       ],
       "weak_points": [
-        "detail_expansion",
-        "description_depth"
-      ],
-      "recommended_drills": [
-        "detail_expansion",
-        "description_depth"
+        {
+          "code": "WP_C01",
+          "severity": "mild",
+          "reason": "묘사/디테일 깊이 부족",
+          "evidence": "병원의 전반적 특징 나열은 있으나, 각 시설의 구체적 세부묘사(장면, 느낌) 부족"
+        }
       ],
       "question_title": "한국 병원 환경·분위기",
       "question_type": "description",
@@ -370,7 +430,9 @@
         "word_count": 161,
         "accuracy_score": null,
         "fluency_score": null,
-        "prosody_score": null
+        "prosody_score": null,
+        "pause_count_3s_plus": 2,
+        "filler_ratio": 0.024
       }
     },
     {
@@ -409,12 +471,18 @@
         "경험의 사회적 맥락이나 가족의 반응 등 추가적인 관점 확장이 요구된다."
       ],
       "weak_points": [
-        "connector_diversity",
-        "detail_expansion"
-      ],
-      "recommended_drills": [
-        "connector_diversity",
-        "detail_expansion"
+        {
+          "code": "WP_S03",
+          "severity": "mild",
+          "reason": "연결어 종류가 제한적",
+          "evidence": "\"and\", \"but\", \"when\" 위주의 단순 연결, 복합 연결어 사용 제한적"
+        },
+        {
+          "code": "WP_C01",
+          "severity": "mild",
+          "reason": "묘사/디테일 깊이 부족",
+          "evidence": "치과 경험 감정은 풍부하나, 추가 관점(가족 반응, 사회적 맥락) 확장 부재"
+        }
       ],
       "question_title": "어릴 적 병원 방문 경험",
       "question_type": "past_childhood",
@@ -429,7 +497,9 @@
         "word_count": 229,
         "accuracy_score": null,
         "fluency_score": null,
-        "prosody_score": null
+        "prosody_score": null,
+        "pause_count_3s_plus": 3,
+        "filler_ratio": 0.041
       }
     },
     {
@@ -463,13 +533,18 @@
         "감정 표현의 폭을 넓혀, 당시의 심리적 변화나 세부 반응을 더 구체적으로 드러낼 수 있다."
       ],
       "weak_points": [
-        "connector_diversity",
-        "emotional_expression"
-      ],
-      "recommended_drills": [
-        "connector_diversity",
-        "emotional_expression",
-        "paragraph_organization"
+        {
+          "code": "WP_S03",
+          "severity": "mild",
+          "reason": "연결어 종류가 제한적",
+          "evidence": "\"and\", \"but\", \"so\" 3종 반복, 연결어 다양성 부족"
+        },
+        {
+          "code": "WP_C05",
+          "severity": "mild",
+          "reason": "감정/감상 표현 부재",
+          "evidence": "\"scared\", \"shocked\", \"grateful\" 기본 감정만, 심리적 변화 과정 미흡"
+        }
       ],
       "question_title": "기억에 남는 병원 방문",
       "question_type": "past_special",
@@ -484,7 +559,9 @@
         "word_count": 214,
         "accuracy_score": null,
         "fluency_score": null,
-        "prosody_score": null
+        "prosody_score": null,
+        "pause_count_3s_plus": 1,
+        "filler_ratio": 0.042
       }
     },
     {
@@ -518,13 +595,18 @@
         "일부 질문이 중복적으로 느껴질 수 있으므로, 정보 요청의 우선순위를 명확히 할 필요가 있다."
       ],
       "weak_points": [
-        "질문 연결성",
-        "정보 구조화"
-      ],
-      "recommended_drills": [
-        "roleplay_questions",
-        "connector_diversity",
-        "paragraph_organization"
+        {
+          "code": "WP_S09",
+          "severity": "mild",
+          "reason": "문장 간 논리 흐름이 약함",
+          "evidence": "질문 4개가 나열되었으나 질문 간 논리적 순서/흐름 불명확"
+        },
+        {
+          "code": "WP_S04",
+          "severity": "mild",
+          "reason": "단락 구조가 명확하지 않음",
+          "evidence": "정보 요청이 나열식, 우선순위가 없는 평면적 구조"
+        }
       ],
       "question_title": "렌터카 옵션·요금 문의",
       "question_type": "rp_11",
@@ -539,7 +621,9 @@
         "word_count": 132,
         "accuracy_score": null,
         "fluency_score": null,
-        "prosody_score": null
+        "prosody_score": null,
+        "pause_count_3s_plus": 2,
+        "filler_ratio": 0.057
       }
     },
     {
@@ -573,12 +657,18 @@
         "설득을 위한 논리적 근거나 양보 제안 등 협상적 표현의 사용이 요구된다."
       ],
       "weak_points": [
-        "사과·공감 결여",
-        "협상·설득 표현 부족"
-      ],
-      "recommended_drills": [
-        "negotiation_expressions",
-        "complication_handling"
+        {
+          "code": "WP_T07",
+          "severity": "moderate",
+          "reason": "공감/사과 표현 부재",
+          "evidence": "불편함 표현은 있으나 \"I understand your position\" 등 명시적 공감 표현 부재"
+        },
+        {
+          "code": "WP_T05",
+          "severity": "mild",
+          "reason": "협상/설득 표현 부족",
+          "evidence": "대안 제시는 있으나, 왜 수용해야 하는지 논리적 설득 근거 부족"
+        }
       ],
       "question_title": "국제면허증 인정 설득 방안",
       "question_type": "rp_12",
@@ -593,7 +683,9 @@
         "word_count": 99,
         "accuracy_score": null,
         "fluency_score": null,
-        "prosody_score": null
+        "prosody_score": null,
+        "pause_count_3s_plus": 0,
+        "filler_ratio": 0.036
       }
     },
     {
@@ -627,13 +719,18 @@
         "사건 전개(전-중-후)의 구조적 완결성을 강화할 필요가 있다."
       ],
       "weak_points": [
-        "paragraph_closure",
-        "narrative_structure"
-      ],
-      "recommended_drills": [
-        "paragraph_closure",
-        "narrative_structure",
-        "emotional_expression"
+        {
+          "code": "WP_S06",
+          "severity": "moderate",
+          "reason": "마무리 문장 누락",
+          "evidence": "\"was definitely one of the highlights\" 감상만, 의미/교훈 등 결론적 마무리 부재"
+        },
+        {
+          "code": "WP_S08",
+          "severity": "mild",
+          "reason": "서사 구조(전-중-후) 미흡",
+          "evidence": "전-중 전개는 있으나 사건 이후(후)의 구체적 감정 변화/귀결이 간략"
+        }
       ],
       "question_title": "여행 중 차량 렌트 경험",
       "question_type": "past_special",
@@ -648,7 +745,9 @@
         "word_count": 139,
         "accuracy_score": null,
         "fluency_score": null,
-        "prosody_score": null
+        "prosody_score": null,
+        "pause_count_3s_plus": 0,
+        "filler_ratio": 0.062
       }
     },
     {
@@ -682,13 +781,18 @@
         "사회적 맥락이나 두 곡이 대중문화에 미친 영향 등, 보다 넓은 관점에서의 비교를 추가할 필요가 있다."
       ],
       "weak_points": [
-        "시제 비교 부재",
-        "사회적 맥락 미흡"
-      ],
-      "recommended_drills": [
-        "comparison_frame",
-        "social_perspective",
-        "paragraph_organization"
+        {
+          "code": "WP_A08",
+          "severity": "moderate",
+          "reason": "시제 프레임 유지 실패",
+          "evidence": "70년대 두 곡 비교인데 과거↔현재 time frame 전환 없이 현재형으로만 서술"
+        },
+        {
+          "code": "WP_C04",
+          "severity": "mild",
+          "reason": "관점 뒷받침이 약함",
+          "evidence": "곡 특성 비교에 집중, 사회적/문화적 영향력이나 시대적 맥락 미언급"
+        }
       ],
       "question_title": "음악 장르/작곡가 비교",
       "question_type": "adv_14",
@@ -703,7 +807,9 @@
         "word_count": 236,
         "accuracy_score": null,
         "fluency_score": null,
-        "prosody_score": null
+        "prosody_score": null,
+        "pause_count_3s_plus": 2,
+        "filler_ratio": 0.007
       }
     },
     {
@@ -737,12 +843,18 @@
         "서론-본론-결론 등 단락 구분을 명확히 하여 구조적 전개를 강화할 필요가 있다."
       ],
       "weak_points": [
-        "다관점 부족",
-        "단락 조직력 미흡"
-      ],
-      "recommended_drills": [
-        "social_perspective",
-        "paragraph_organization"
+        {
+          "code": "WP_C04",
+          "severity": "moderate",
+          "reason": "관점 뒷받침이 약함",
+          "evidence": "바이닐 긍정적 측면만, 디지털 선호자/반대 관점 미제시"
+        },
+        {
+          "code": "WP_S04",
+          "severity": "mild",
+          "reason": "단락 구조가 명확하지 않음",
+          "evidence": "서론-본론-결론 구분 없이 이어져 단락 구조 미흡"
+        }
       ],
       "question_title": "음향기기 최신 트렌드",
       "question_type": "adv_15",
@@ -757,7 +869,9 @@
         "word_count": 192,
         "accuracy_score": null,
         "fluency_score": null,
-        "prosody_score": null
+        "prosody_score": null,
+        "pause_count_3s_plus": 1,
+        "filler_ratio": 0.02
       }
     }
   ]

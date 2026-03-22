@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오픽 세부 진단서 - 한국어 버전</title>
+  <style>
+    :root{
+      --bg:#eef2f6;
+      --page:#ffffff;
+      --ink:#161b23;
+      --muted:#5f6976;
+      --line:#d8e0ea;
+      --line-strong:#b7c1cf;
+      --accent:#2449d8;
+      --accent-soft:#e8edff;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:linear-gradient(180deg,#eef2f6 0%,#e8edf4 100%);
+      color:var(--ink);
+      font-family:"Pretendard Variable","Segoe UI","Malgun Gothic",sans-serif;
+    }
+    .wrap{max-width:1040px;margin:0 auto;padding:28px 18px 56px}
+    .notice{
+      margin-bottom:18px;
+      font-size:12px;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+    .page{
+      max-width:920px;
+      margin:0 auto 24px;
+      padding:34px 36px 40px;
+      background:var(--page);
+      border:1px solid var(--line);
+      box-shadow:0 18px 44px rgba(21,29,39,.08);
+    }
+    .frame{border:3px double var(--line-strong);padding:18px 18px 20px}
+    .logo{
+      text-align:center;
+      font-size:42px;
+      font-weight:900;
+      letter-spacing:-.06em;
+    }
+    .logo small{
+      display:block;
+      margin-top:2px;
+      font-size:10px;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      color:var(--muted);
+      font-weight:800;
+    }
+    .title{
+      margin:14px 0 0;
+      text-align:center;
+      font-family:"Georgia","Times New Roman",serif;
+      font-size:40px;
+      line-height:1.04;
+      letter-spacing:-.04em;
+      font-weight:700;
+    }
+    .subtitle{
+      margin:10px 0 0;
+      text-align:center;
+      font-size:13px;
+      line-height:1.6;
+      color:var(--muted);
+    }
+    .hero{
+      display:grid;
+      grid-template-columns:1fr 220px;
+      gap:20px;
+      align-items:end;
+      margin-top:24px;
+    }
+    .hero strong{
+      display:block;
+      font-size:92px;
+      line-height:.88;
+      letter-spacing:-.08em;
+      font-weight:900;
+    }
+    .hero p{
+      margin:10px 0 0;
+      font-size:16px;
+      line-height:1.72;
+      color:var(--muted);
+    }
+    .stamp{
+      border:1px solid var(--line-strong);
+      padding:18px;
+      background:#f7f9fd;
+      text-align:center;
+    }
+    .stamp span{
+      display:block;
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+    .stamp strong{
+      display:block;
+      margin-top:10px;
+      font-size:34px;
+      letter-spacing:-.04em;
+      color:var(--accent);
+    }
+    .section{margin-top:24px;border:1px solid var(--line)}
+    .section-title{
+      padding:12px 14px;
+      border-bottom:1px solid var(--line);
+      font-size:15px;
+      font-weight:800;
+      letter-spacing:.01em;
+    }
+    .section-title::before{
+      content:"• ";
+      color:var(--accent);
+      font-weight:900;
+    }
+    table{width:100%;border-collapse:collapse}
+    .meta td,.profile td{
+      padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top;font-size:14px;line-height:1.58
+    }
+    .meta tr:last-child td,.profile tr:last-child td{border-bottom:0}
+    .meta td:first-child,.profile td:first-child{
+      width:190px;background:#f7f9fc;color:var(--muted);font-weight:700
+    }
+    .meta td:last-child,.profile td:last-child{font-weight:700}
+    .bullets{
+      margin:0;
+      padding:18px 18px 18px 34px;
+      display:grid;
+      gap:10px;
+    }
+    .bullets li{
+      font-size:14px;
+      line-height:1.72;
+      color:#2f3644;
+    }
+    .guideline{
+      padding:18px;
+    }
+    .guideline strong{
+      display:block;
+      margin-bottom:12px;
+      font-size:28px;
+      letter-spacing:-.03em;
+    }
+    .guideline p{
+      margin:0;
+      font-size:14px;
+      line-height:1.86;
+      color:#2f3644;
+    }
+    .comment{
+      padding:20px 20px 0;
+    }
+    .comment p{
+      margin:0;
+      font-size:14px;
+      line-height:1.9;
+      color:#2f3644;
+      text-align:justify;
+    }
+    .diag{
+      width:100%;
+      border-collapse:collapse;
+      table-layout:fixed;
+    }
+    .diag th,.diag td{
+      border:1px solid var(--line);
+      padding:12px;
+      vertical-align:top;
+      font-size:13px;
+      line-height:1.6;
+    }
+    .diag th{
+      background:#f7f9fc;
+      text-align:left;
+      color:var(--muted);
+      font-weight:800;
+    }
+    .diag td strong{
+      display:block;
+      margin-bottom:8px;
+      font-size:15px;
+      letter-spacing:-.02em;
+    }
+    .checks{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px 16px;
+      margin-top:6px;
+    }
+    .check{
+      display:flex;
+      gap:8px;
+      align-items:flex-start;
+    }
+    .box{
+      width:14px;
+      height:14px;
+      margin-top:3px;
+      border:1px solid var(--line-strong);
+      background:#fff;
+      position:relative;
+      flex:0 0 auto;
+    }
+    .box.checked{
+      background:var(--accent-soft);
+      border-color:var(--accent);
+    }
+    .box.checked::after{
+      content:"";
+      position:absolute;
+      left:3px;
+      top:0px;
+      width:5px;
+      height:9px;
+      border:solid var(--accent);
+      border-width:0 2px 2px 0;
+      transform:rotate(45deg);
+    }
+    .check span{
+      font-size:13px;
+      line-height:1.52;
+      color:#2f3644;
+    }
+    .tips{
+      padding:18px;
+      display:grid;
+      gap:12px;
+    }
+    .tip{
+      padding:14px 16px;
+      border:1px solid var(--line);
+      background:#fafcff;
+    }
+    .tip strong{
+      display:block;
+      font-size:15px;
+      letter-spacing:-.02em;
+    }
+    .tip p{
+      margin:7px 0 0;
+      font-size:14px;
+      line-height:1.66;
+      color:var(--muted);
+    }
+    @media (max-width:800px){
+      .hero{grid-template-columns:1fr}
+      .checks{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="notice">한국어 버전 세부 진단서 · 공식 양식 흐름을 참고해 임의 데이터로 재작성한 샘플</div>
+
+    <section class="page">
+      <div class="frame">
+        <div class="logo">OPIc<small>ACTFL Oral Proficiency Interview - Computer</small></div>
+        <h1 class="title">오픽 세부 진단서</h1>
+        <p class="subtitle">한국어 재구성 샘플 / Internal Design Study</p>
+
+        <div class="hero">
+          <div>
+            <strong>IH</strong>
+            <p>
+              본 응시자는 Intermediate High 등급으로 판정되었습니다. Intermediate 수준의 핵심 과제는 안정적으로 수행했으나,
+              Advanced 수준의 사회적 확장과 돌발 대처에서는 아직 완전한 통제에 이르지 못했습니다.
+            </p>
+          </div>
+          <div class="stamp">
+            <span>한국어 변환본</span>
+            <strong>2026</strong>
+          </div>
+        </div>
+
+        <section class="section">
+          <div class="section-title">응시자 정보</div>
+          <table class="meta">
+            <tr><td>응시자명</td><td>박서윤</td></tr>
+            <tr><td>응시 언어</td><td>ENGLISH</td></tr>
+            <tr><td>응시일</td><td>2026년 5월 8일</td></tr>
+            <tr><td>시험 ID</td><td>OTD-DIAG-260508-011</td></tr>
+            <tr><td>오픽 등급</td><td>IH</td></tr>
+            <tr><td>ACTFL 판독</td><td>INTERMEDIATE HIGH</td></tr>
+          </table>
+        </section>
+
+        <section class="section">
+          <div class="section-title">Intermediate High 수행 요약</div>
+          <ul class="bullets">
+            <li>Intermediate 수준의 일상 과제와 사회적 상황은 안정적으로 수행했습니다.</li>
+            <li>과거, 현재, 미래 시제를 활용한 연결 발화가 가능했으나, 단락 수준의 통제는 일관되게 유지되지 않았습니다.</li>
+            <li>Intermediate 수준의 롤플레이는 필요한 질문과 정보를 제시하며 적절히 처리했습니다.</li>
+            <li>Advanced 기능을 시도하는 문항에서는 아이디어는 분명했지만 확장, 정밀도, 담화 구조의 통제는 부분적이었습니다.</li>
+          </ul>
+        </section>
+
+        <section class="section">
+          <div class="section-title">등급별 기능 설명</div>
+          <table class="profile">
+            <tr><td>과제 수행</td><td>Intermediate 수준 과제는 안정적으로 처리하며, Advanced 과제는 부분적으로만 수행합니다.</td></tr>
+            <tr><td>맥락 / 내용</td><td>익숙한 사회적 상황과 일상 주제에 대해 충분한 세부 정보와 의도를 전달할 수 있습니다.</td></tr>
+            <tr><td>담화 유형</td><td>연결 문장과 짧은 단락 수준의 발화는 가능하지만, 추상성이 높아질수록 응집력이 약해집니다.</td></tr>
+            <tr><td>정확성</td><td>대체로 잘 이해되지만, 압박 상황에서는 멈춤, 재구성, 통제 저하가 관찰됩니다.</td></tr>
+          </table>
+        </section>
+      </div>
+    </section>
+
+    <section class="page">
+      <div class="frame">
+        <div class="logo">OPIc<small>ACTFL Oral Proficiency Interview - Computer</small></div>
+        <h1 class="title">오픽 세부 진단 코멘트</h1>
+
+        <section class="section">
+          <table class="meta">
+            <tr><td>시험 ID</td><td>OTD-DIAG-260508-011</td></tr>
+            <tr><td>이름</td><td>박서윤</td></tr>
+            <tr><td>언어</td><td>ENGLISH</td></tr>
+            <tr><td>응시일</td><td>2026년 5월 8일</td></tr>
+            <tr><td>시험 결과</td><td>INTERMEDIATE HIGH</td></tr>
+          </table>
+        </section>
+
+        <section class="section">
+          <div class="section-title">ACTFL 수행 가이드라인 해석</div>
+          <div class="guideline">
+            <strong>INTERMEDIATE HIGH</strong>
+            <p>
+              Intermediate High 화자는 Intermediate 수준의 전 범위 과제를 비교적 자신 있게 수행할 수 있으며, 경우에 따라 Advanced 수준의 기능에도 도달하려는 시도를 보입니다.
+              주요 시제로 서술과 설명을 할 수 있고, 익숙한 상황에서는 연결 발화를 유지합니다. 그러나 사회적 해석, 추상적 비교, 단락 수준의 확장처럼 더 높은 수준의 과제를 요구받을 경우,
+              발화의 폭, 정밀도, 구조적 일관성이 약해질 수 있습니다. 즉, 고급 기능은 분명히 보이지만 아직 안정적으로 유지되지는 않는 단계라고 해석할 수 있습니다.
+            </p>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">종합 소견</div>
+          <div class="comment">
+            <p>
+              본 응시자는 Intermediate High 등급의 핵심 기준을 전반적으로 충족했습니다. 익숙한 주제에서는 충분한 분량과 적절한 세부 정보를 제공했고,
+              Intermediate 수준의 역할극에서도 필요한 질문과 정보를 비교적 정확하게 제시했습니다. 또한 일부 문항에서는 과거와 현재를 비교하거나 자신의 의견을 이유와 함께 제시하는 등,
+              Advanced 수준의 시도가 분명하게 관찰되었습니다. 그러나 이러한 고급 수행은 모든 문항에서 지속되지는 않았습니다. 특히 사회적 의미를 확장하거나 예상치 못한 문제를 구조적으로 해결해야 하는 질문에서는
+              발화의 폭이 좁아지고 조직력이 약해졌습니다. 따라서 본 응시자는 Intermediate High 화자로 판단되며, 아직 Advanced 등급을 안정적으로 유지하는 단계에는 이르지 못한 것으로 보입니다.
+            </p>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="page">
+      <div class="frame">
+        <div class="logo">OPIc<small>ACTFL Oral Proficiency Interview - Computer</small></div>
+        <h1 class="title">세부 진단표</h1>
+
+        <section class="section">
+          <div class="section-title">진단 항목별 체크</div>
+          <table class="diag">
+            <tr>
+              <th style="width:170px">고급 기능 항목</th>
+              <th style="width:140px">판정</th>
+              <th>미완성 요소</th>
+            </tr>
+            <tr>
+              <td>여러 시제로 서술하고 설명할 수 있는가</td>
+              <td>Developing Ability</td>
+              <td>
+                <strong>시제 통제 / 서술 정밀도</strong>
+                <div class="checks">
+                  <div class="check"><div class="box checked"></div><span>과거 시제 설명</span></div>
+                  <div class="check"><div class="box"></div><span>미래 시제 설명</span></div>
+                  <div class="check"><div class="box checked"></div><span>과거 시제 서술</span></div>
+                  <div class="check"><div class="box checked"></div><span>사건 순서 연결</span></div>
+                  <div class="check"><div class="box checked"></div><span>동사 형태</span></div>
+                  <div class="check"><div class="box"></div><span>인칭 표지</span></div>
+                  <div class="check"><div class="box checked"></div><span>세부 묘사</span></div>
+                  <div class="check"><div class="box"></div><span>미래 시제 서술</span></div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>단락 수준의 연결 발화를 지속할 수 있는가</td>
+              <td>Developing Ability</td>
+              <td>
+                <strong>담화 구조</strong>
+                <div class="checks">
+                  <div class="check"><div class="box checked"></div><span>연결 문장</span></div>
+                  <div class="check"><div class="box checked"></div><span>짧은 단락 형성</span></div>
+                  <div class="check"><div class="box"></div><span>문장 나열형 발화</span></div>
+                  <div class="check"><div class="box checked"></div><span>응집 장치 사용 불안정</span></div>
+                  <div class="check"><div class="box"></div><span>완전한 단락 유지</span></div>
+                  <div class="check"><div class="box checked"></div><span>압박 시 어순 흔들림</span></div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>사회적 이슈를 확장해 말할 수 있는가</td>
+              <td>Developing Ability</td>
+              <td>
+                <strong>확장 / 어휘 폭</strong>
+                <div class="checks">
+                  <div class="check"><div class="box checked"></div><span>어휘 폭 부족</span></div>
+                  <div class="check"><div class="box checked"></div><span>개인 관점에서 확장 제한</span></div>
+                  <div class="check"><div class="box"></div><span>오인지 어휘</span></div>
+                  <div class="check"><div class="box"></div><span>타 언어 개입</span></div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>예기치 못한 상황을 효과적으로 해결할 수 있는가</td>
+              <td>Developing Ability</td>
+              <td>
+                <strong>돌발 대처</strong>
+                <div class="checks">
+                  <div class="check"><div class="box checked"></div><span>문제 해결 시도는 있으나 완결되지 않음</span></div>
+                  <div class="check"><div class="box checked"></div><span>회복 전략 부족</span></div>
+                  <div class="check"><div class="box"></div><span>상황 대응 불가</span></div>
+                  <div class="check"><div class="box checked"></div><span>의사소통 장치 보강 필요</span></div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>낯선 청자도 무리 없이 이해할 수 있는가</td>
+              <td>Developing Ability</td>
+              <td>
+                <strong>유창성 / 정확성 / 발음</strong>
+                <div class="checks">
+                  <div class="check"><div class="box checked"></div><span>말속도</span></div>
+                  <div class="check"><div class="box checked"></div><span>연결성</span></div>
+                  <div class="check"><div class="box checked"></div><span>문장 구조</span></div>
+                  <div class="check"><div class="box"></div><span>일치</span></div>
+                  <div class="check"><div class="box checked"></div><span>보완 전략 부족</span></div>
+                  <div class="check"><div class="box checked"></div><span>발음 명료도</span></div>
+                  <div class="check"><div class="box"></div><span>억양</span></div>
+                  <div class="check"><div class="box checked"></div><span>강세</span></div>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </section>
+      </div>
+    </section>
+
+    <section class="page">
+      <div class="frame">
+        <div class="logo">OPIc<small>ACTFL Oral Proficiency Interview - Computer</small></div>
+        <h1 class="title">향상 권고 사항</h1>
+
+        <section class="section">
+          <div class="section-title">개선 가이드</div>
+          <div class="tips">
+            <div class="tip">
+              <strong>1. 단락형 답변 구조를 먼저 세우세요.</strong>
+              <p>의견형 질문에서는 입장 1문장, 이유 2개, 예시 1개 순서로 답변을 설계하세요.</p>
+            </div>
+            <div class="tip">
+              <strong>2. 돌발 롤플레이는 회복 순서를 고정하세요.</strong>
+              <p>사과, 상황 요약, 대안 A, 대안 B, 확인 질문 순서를 반복하면 압박 상황에서도 무너지지 않습니다.</p>
+            </div>
+            <div class="tip">
+              <strong>3. 개인 의견 뒤에 사회적 의미를 한 문장 더 붙이세요.</strong>
+              <p>취향이나 경험을 말한 뒤 “왜 이런 변화가 커졌는지”를 연결하면 고급 기능이 선명해집니다.</p>
+            </div>
+            <div class="tip">
+              <strong>4. 과거/현재/미래 시제 전환 연습을 따로 하세요.</strong>
+              <p>시제 전환이 길어진 답변에서도 유지되면 고급 수행의 안정성이 높아집니다.</p>
+            </div>
+            <div class="tip">
+              <strong>5. 멈춤을 줄이는 연결 표현을 준비하세요.</strong>
+              <p>“가장 큰 변화는…”, “또 다른 이유는…”, “만약 그게 어렵다면…” 같은 연결 문장을 미리 익혀두세요.</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

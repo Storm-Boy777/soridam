@@ -547,33 +547,21 @@ function HistoryTab({
               최근 모의고사{latest.attempt_number > 0 && ` (${latest.attempt_number}회차)`}
             </h3>
 
-            {/* 등급 | 점수 — 가운데 기준 양쪽 균등 */}
-            <div className="grid grid-cols-2">
-              <div className="flex flex-col items-center border-r border-border py-2">
-                <span className="text-[10px] text-foreground-muted">등급</span>
-                <span className="mt-1 text-2xl font-bold text-primary-600 sm:text-3xl">
-                  {latest.final_level || "—"}
-                </span>
-              </div>
-              <div className="flex flex-col items-center py-2">
-                <span className="text-[10px] text-foreground-muted">FACT 영역</span>
-                <div className="mt-1 flex items-center gap-2 text-xs text-foreground-secondary">
-                  <span>F:{latest.score_f ?? "—"}</span>
-                  <span>A:{latest.score_a ?? "—"}</span>
-                  <span>C:{latest.score_c ?? "—"}</span>
-                  <span>T:{latest.score_t ?? "—"}</span>
-                </div>
-              </div>
+            {/* 등급 + 날짜·모드 — 1열 세로 */}
+            <div className="flex flex-col items-center py-2">
+              <span className="text-2xl font-bold text-primary-600 sm:text-3xl">
+                {latest.final_level || "—"}
+              </span>
+              <p className="mt-1.5 text-xs text-foreground-muted">
+                {new Date(latest.started_at).toLocaleDateString("ko-KR")} ·{" "}
+                {MOCK_EXAM_MODE_LABELS[latest.mode as keyof typeof MOCK_EXAM_MODE_LABELS]}
+              </p>
             </div>
-            <p className="mt-1.5 text-center text-xs text-foreground-muted">
-              {new Date(latest.started_at).toLocaleDateString("ko-KR")} ·{" "}
-              {MOCK_EXAM_MODE_LABELS[latest.mode as keyof typeof MOCK_EXAM_MODE_LABELS]}
-            </p>
 
             {/* 코칭 한줄평 */}
             {latest.coaching_headline && (
               <div className="mt-3 rounded-lg bg-surface-secondary/60 px-3 py-2">
-                <p className="text-xs leading-relaxed text-foreground-secondary sm:text-sm">
+                <p className="line-clamp-2 text-xs leading-relaxed text-foreground-secondary sm:text-sm">
                   {latest.coaching_headline}
                 </p>
               </div>
@@ -692,22 +680,12 @@ function HistoryTab({
             </div>
           </div>
 
-          {/* 주제 요약 + FACT 미니 */}
-          {(item.topic_summary || item.score_f != null) && (
-            <div className="mt-1.5 flex items-center justify-between gap-2 border-t border-border/50 pt-1.5 sm:mt-2 sm:pt-2">
-              {item.topic_summary && (
-                <p className="min-w-0 truncate text-[11px] text-foreground-muted sm:text-xs">
-                  {item.topic_summary}
-                </p>
-              )}
-              {item.score_f != null && (
-                <div className="flex shrink-0 gap-1.5 text-[10px] text-foreground-muted sm:gap-2">
-                  <span>F:{item.score_f?.toFixed(1)}</span>
-                  <span>A:{item.score_a?.toFixed(1)}</span>
-                  <span>C:{item.score_c?.toFixed(1)}</span>
-                  <span>T:{item.score_t?.toFixed(1)}</span>
-                </div>
-              )}
+          {/* 주제 요약 */}
+          {item.topic_summary && (
+            <div className="mt-1.5 border-t border-border/50 pt-1.5 sm:mt-2 sm:pt-2">
+              <p className="min-w-0 truncate text-[11px] text-foreground-muted sm:text-xs">
+                {item.topic_summary}
+              </p>
             </div>
           )}
         </button>

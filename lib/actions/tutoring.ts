@@ -109,10 +109,10 @@ export async function getDiagnosis(): Promise<ActionResult<DiagnosisResult>> {
       supabase
         .from("mock_test_reports")
         .select(
-          "session_id, final_level, target_level, score_f, score_a, score_c, score_t, total_score, coaching_report, tutoring_prescription, avg_completion_rate, created_at"
+          "session_id, final_level, overview, growth, status, created_at"
         )
         .eq("user_id", userId)
-        .eq("report_status", "completed")
+        .eq("status", "completed")
         .order("created_at", { ascending: false })
         .limit(10),
       supabase
@@ -141,7 +141,8 @@ export async function getDiagnosis(): Promise<ActionResult<DiagnosisResult>> {
     return {
       data: {
         sessions,
-        mockReports: reportsRes.data || [],
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        mockReports: (reportsRes.data || []) as any[],
         skillHistory: (skillRes.data || []) as TutoringSkillHistory[],
         activePrescriptions,
       },
@@ -184,11 +185,11 @@ export async function startTutoringSession(
       return { error: "튜터링 크레딧이 부족합니다" };
     }
 
-    // 1. 모의고사 리포트 조회
+    // 1. 모의고사 리포트 조회 (V2)
     const { data: report, error: reportErr } = await supabase
       .from("mock_test_reports")
       .select(
-        "session_id, final_level, target_level, coaching_report, tutoring_prescription"
+        "session_id, final_level, overview, growth, status"
       )
       .eq("session_id", input.mock_test_session_id)
       .eq("user_id", userId)
@@ -201,107 +202,10 @@ export async function startTutoringSession(
       return { error: "완료된 모의고사 리포트가 없습니다" };
     }
 
-    if (!report.tutoring_prescription) {
-      // 처방 데이터 없음 → 크레딧 환불
-      await supabase.rpc("refund_tutoring_credit", { p_user_id: userId });
-      return { error: "처방 데이터가 없습니다. 종합평가가 v3인 모의고사가 필요합니다." };
-    }
-
-    // 2. 기존 활성 세션 확인 (같은 모의고사)
-    const { data: existing } = await supabase
-      .from("tutoring_sessions")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("mock_test_session_id", input.mock_test_session_id)
-      .eq("status", "active")
-      .maybeSingle();
-
-    if (existing) {
-      // 기존 세션 재사용 → 크레딧 환불
-      await supabase.rpc("refund_tutoring_credit", { p_user_id: userId });
-
-      // 기존 세션의 처방 목록 반환
-      const { data: prescriptions } = await supabase
-        .from("tutoring_prescriptions")
-        .select("*")
-        .eq("session_id", existing.id)
-        .order("priority");
-
-      const { data: session } = await supabase
-        .from("tutoring_sessions")
-        .select("*")
-        .eq("id", existing.id)
-        .single();
-
-      return {
-        data: {
-          session: session as TutoringSession,
-          prescriptions: (prescriptions || []) as TutoringPrescriptionRow[],
-        },
-      };
-    }
-
-    // 3. 처방 엔진: tutoring_prescription → prescriptions 목록 변환
-    const currentLevel = report.final_level || "IM1";
-    const targetLevel = report.target_level || "IH";
-    const levelRange = getLevelRange(currentLevel, targetLevel);
-    const levelParams = LEVEL_PARAMS[levelRange];
-
-    const prescriptionItems = buildPrescriptions(
-      report.tutoring_prescription as PrescriptionEngineInput["tutoring_prescription"],
-      report.coaching_report as Record<string, unknown> | null,
-      currentLevel,
-      targetLevel,
-      levelParams
-    );
-
-    // 4. 세션 생성
-    const { data: session, error: sessionErr } = await supabase
-      .from("tutoring_sessions")
-      .insert({
-        user_id: userId,
-        mock_test_session_id: input.mock_test_session_id,
-        target_level: targetLevel,
-        current_level: currentLevel,
-        total_prescriptions: prescriptionItems.length,
-      })
-      .select()
-      .single();
-
-    if (sessionErr || !session) {
-      // 세션 생성 실패 → 크레딧 환불
-      await supabase.rpc("refund_tutoring_credit", { p_user_id: userId });
-      return { error: sessionErr?.message || "세션 생성 실패" };
-    }
-
-    // 5. 처방 과제 일괄 생성
-    const prescriptionRows = prescriptionItems.map((item) => ({
-      session_id: session.id,
-      user_id: userId,
-      priority: item.priority,
-      question_type: item.question_type,
-      topic_id: item.topic_id,
-      weakness_tags: item.weakness_tags,
-      source: item.source,
-      source_data: item.source_data,
-      level_params: levelParams,
-    }));
-
-    const { data: prescriptions, error: prescErr } = await supabase
-      .from("tutoring_prescriptions")
-      .insert(prescriptionRows)
-      .select();
-
-    if (prescErr) {
-      return { error: prescErr.message };
-    }
-
-    return {
-      data: {
-        session: session as TutoringSession,
-        prescriptions: (prescriptions || []) as TutoringPrescriptionRow[],
-      },
-    };
+    // TODO: 튜터링 — consults의 weak_points 기반 처방 엔진 구현 필요
+    // 현재는 V2 전환 과도기로, 처방 생성이 일시 중단됨
+    await supabase.rpc("refund_tutoring_credit", { p_user_id: userId });
+    return { error: "튜터링 V2 업데이트 준비 중입니다. 곧 더 나은 튜터링으로 찾아뵙겠습니다." };
   } catch (err) {
     return {
       error: err instanceof Error ? err.message : "튜터링 세션 시작 실패",

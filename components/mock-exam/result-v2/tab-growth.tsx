@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { TrendingUp } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -11,12 +12,28 @@ import {
   ReferenceLine,
   Tooltip,
 } from "recharts";
-import { MOCK_GROWTH_DATA, type GrowthReportV2, type GradeHistoryItem, type TypeChangeStatus } from "@/lib/mock-data/result-v2";
+import { type GrowthReportV2, type GradeHistoryItem, type TypeChangeStatus } from "@/lib/mock-data/result-v2";
 
 // ── 성장리포트 탭 (v2) — 진단서 스타일 ──
 
-export function TabGrowthV2() {
-  const data = MOCK_GROWTH_DATA;
+interface TabGrowthProps {
+  /** 실데이터. 없으면 목 데이터 사용 */
+  data?: GrowthReportV2 | null;
+}
+
+export function TabGrowth({ data: propData }: TabGrowthProps = {}) {
+  if (!propData) {
+    return (
+      <div className="mx-auto max-w-5xl px-3 py-16 sm:py-24">
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-surface px-6 py-12 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-50"><TrendingUp className="h-7 w-7 text-primary-500" /></div>
+          <p className="text-[15px] font-medium text-foreground">성장 분석은 2회차부터 제공됩니다</p>
+          <p className="text-[13px] text-foreground-secondary">다음 모의고사를 응시하면 이전 결과와 비교한 성장 분석이 이 탭에 표시됩니다.</p>
+        </div>
+      </div>
+    );
+  }
+  const data = propData;
 
   return (
     <div className="mx-auto max-w-5xl px-3 py-4 sm:px-6 sm:py-6">

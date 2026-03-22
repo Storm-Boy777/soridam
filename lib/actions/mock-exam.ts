@@ -383,8 +383,6 @@ export async function getSession(
   ActionResult<{
     session: MockTestSession;
     answers: MockTestAnswer[];
-    evaluations: MockTestEvaluation[];
-    report: MockTestReport | null;
     questions: Array<{
       id: string;
       question_english: string;
@@ -418,11 +416,9 @@ export async function getSession(
       return { error: "세션을 찾을 수 없습니다" };
     }
 
-    // 답변 + 평가 + 리포트 + 질문 정보 병렬 조회
+    // 답변 + 질문 정보 병렬 조회
     const [
       { data: answers },
-      { data: evaluations },
-      { data: report },
       { data: questions },
     ] = await Promise.all([
       supabase
@@ -430,16 +426,6 @@ export async function getSession(
         .select("*")
         .eq("session_id", parsed.data.session_id)
         .order("question_number"),
-      supabase
-        .from("mock_test_evaluations")
-        .select("*")
-        .eq("session_id", parsed.data.session_id)
-        .order("question_number"),
-      supabase
-        .from("mock_test_reports")
-        .select("*")
-        .eq("session_id", parsed.data.session_id)
-        .maybeSingle(),
       // 세션의 question_ids로 질문 정보 조회
       supabase
         .from("questions")
@@ -451,8 +437,6 @@ export async function getSession(
       data: {
         session: session as MockTestSession,
         answers: (answers || []) as MockTestAnswer[],
-        evaluations: (evaluations || []) as MockTestEvaluation[],
-        report: (report as MockTestReport) || null,
         questions: questions || [],
       },
     };
@@ -601,15 +585,15 @@ export async function getHistory(): Promise<
       return { data: [] };
     }
 
-    // 리포트 조회
+    // 리포트 조회 (V2 테이블)
     const sessionIds = sessions.map((s) => s.session_id);
     const { data: reports } = await supabase
       .from("mock_test_reports")
-      .select("session_id, final_level, total_score, score_f, score_a, score_c, score_t, coaching_report")
+      .select("session_id, final_level, overview")
       .in("session_id", sessionIds);
 
     const reportMap = new Map(
-      (reports || []).map((r) => [r.session_id, r])
+      (reports || []).map((r: Record<string, unknown>) => [r.session_id, r])
     );
 
     // 주제 요약 (question_ids → topics)
@@ -640,26 +624,21 @@ export async function getHistory(): Promise<
         .filter(Boolean);
       const uniqueTopics = [...new Set(topics)];
 
-      // 코칭 헤드라인 추출
-      const coaching = report?.coaching_report as Record<string, unknown> | null;
-      const snapshot = coaching?.snapshot as Record<string, unknown> | null;
-      const headline = (snapshot?.headline as string) || null;
+      // 종합 소견 헤드라인 추출 (V2: overview.overall_comments 첫 문장)
+      const overview = report?.overview as Record<string, unknown> | null;
+      const overallComments = (overview?.overall_comments as string) || null;
+      const headline = overallComments ? overallComments.split(".")[0] + "." : null;
 
       // 회차 번호 (완료된 세션만 번호 부여)
       const attemptNumber = s.status === "completed" ? completedIdx-- : 0;
 
       return {
         session_id: s.session_id,
-        mode: s.mode,
-        status: s.status,
+        mode: s.mode as "training" | "test",
+        status: s.status as "active" | "completed" | "expired",
         started_at: s.started_at,
         completed_at: s.completed_at,
-        final_level: report?.final_level ?? null,
-        total_score: report?.total_score == null ? null : Number(report.total_score),
-        score_f: report?.score_f == null ? null : Number(report.score_f),
-        score_a: report?.score_a == null ? null : Number(report.score_a),
-        score_c: report?.score_c == null ? null : Number(report.score_c),
-        score_t: report?.score_t == null ? null : Number(report.score_t),
+        final_level: (report?.final_level as string) ?? null,
         topic_summary: uniqueTopics.slice(0, 5).join(", "),
         coaching_headline: headline,
         attempt_number: attemptNumber,
@@ -727,14 +706,14 @@ export async function getActiveSession(): Promise<
 export async function getEvaluation(input: {
   session_id: string;
   question_number: number;
-}): Promise<ActionResult<MockTestEvaluation | null>> {
+}): Promise<ActionResult<Record<string, unknown> | null>> {
   try {
     const { supabase, userId } = await requireUser();
 
-    // 평가 + 답변 오디오 URL 병렬 조회
-    const [evalRes, answerRes] = await Promise.all([
+    // consults + 답변 오디오 URL 병렬 조회
+    const [consultRes, answerRes] = await Promise.all([
       supabase
-        .from("mock_test_evaluations")
+        .from("mock_test_consults")
         .select("*")
         .eq("session_id", input.session_id)
         .eq("question_number", input.question_number)
@@ -748,15 +727,15 @@ export async function getEvaluation(input: {
         .maybeSingle(),
     ]);
 
-    if (evalRes.error) {
+    if (consultRes.error) {
       return { error: "평가 조회 실패" };
     }
 
-    if (!evalRes.data) return { data: null };
+    if (!consultRes.data) return { data: null };
 
     return {
       data: {
-        ...(evalRes.data as MockTestEvaluation),
+        ...(consultRes.data as Record<string, unknown>),
         audio_url: answerRes.data?.audio_url ?? null,
       },
     };

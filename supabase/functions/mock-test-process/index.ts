@@ -1,7 +1,7 @@
 // mock-test-process — Stage A Edge Function
 // Whisper STT + Azure 발음 평가 (~70초)
 // SA submitAnswer에서 fire-and-forget으로 호출됨
-// 완료 후 mock-test-eval-judge로 fire-and-forget 체인
+// 완료 후 mock-test-eval로 fire-and-forget 체인
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
@@ -116,17 +116,17 @@ async function updateAnswerStatus(
     .eq("question_number", questionNumber);
 }
 
-// fire-and-forget → Stage B-1 (mock-test-eval-judge) — 4-Stage
-function fireAndForgetJudge(payload: Record<string, unknown>) {
-  fetch(`${SUPABASE_URL}/functions/v1/mock-test-eval-judge`, {
+// fire-and-forget → Stage B-1 (mock-test-eval: 체크박스 판정)
+function fireAndForgetEval(sessionId: string, questionNumber: number) {
+  fetch(`${SUPABASE_URL}/functions/v1/mock-test-eval`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ session_id: sessionId, question_number: questionNumber }),
   }).catch((err) => {
-    console.error("fire-and-forget eval-judge 호출 실패:", err?.message || err);
+    console.error("fire-and-forget eval 호출 실패:", err?.message || err);
   });
 }
 
@@ -343,20 +343,8 @@ Deno.serve(async (req) => {
       pronunciation_assessment: pronunciationAssessment,
     });
 
-    // ── fire-and-forget → Stage B-1 (eval-judge) ──
-    fireAndForgetJudge({
-      session_id,
-      question_number,
-      question_id,
-      question_type: questionType,
-      transcript,
-      word_count: wordCount,
-      wpm,
-      filler_word_count: fillerWordCount,
-      long_pause_count: longPauseCount,
-      audio_duration: audio_duration || 0,
-      pronunciation_assessment: pronunciationAssessment,
-    });
+    // ── fire-and-forget → Stage B-1 (eval: 체크박스 판정) ──
+    fireAndForgetEval(session_id, question_number);
 
     const processingTime = Date.now() - startTime;
 

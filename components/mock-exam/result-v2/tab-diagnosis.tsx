@@ -1,18 +1,35 @@
 "use client";
 
+import { SearchCheck } from "lucide-react";
 import {
   CHECKBOX_LABELS_KO,
-  MOCK_DIAGNOSIS_DATA,
   PERFORMANCE_LABELS_KO,
   type DiagnosticFunction,
   type DiagnosticSection,
   type PerformanceLevel,
 } from "@/lib/mock-data/result-v2";
+import type { DiagnosisTransformOutput } from "@/lib/mock-exam-v2/diagnosis-transformer";
 
 // ── 세부진단표 탭 (v2) — 공식 DIAGNOSTIC FORM 한글화 ──
 
-export function TabDiagnosisV2() {
-  const { sections, checkboxResults } = MOCK_DIAGNOSIS_DATA;
+interface TabDiagnosisProps {
+  /** 실데이터 (transformer 출력). 없으면 목 데이터 사용 */
+  data?: DiagnosisTransformOutput | null;
+}
+
+export function TabDiagnosis({ data }: TabDiagnosisProps = {}) {
+  if (!data) {
+    return (
+      <div className="mx-auto max-w-5xl px-3 py-16 sm:py-24">
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-surface px-6 py-12 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-50"><SearchCheck className="h-7 w-7 text-primary-500" /></div>
+          <p className="text-[15px] font-medium text-foreground">세부 진단을 준비하고 있습니다</p>
+          <p className="text-[13px] text-foreground-secondary">평가가 완료되면 ACTFL 체크박스 진단 결과가 이 탭에 표시됩니다.</p>
+        </div>
+      </div>
+    );
+  }
+  const { sections, checkboxResults } = data;
 
   return (
     <div className="mx-auto max-w-5xl px-3 py-4 sm:px-6 sm:py-6">

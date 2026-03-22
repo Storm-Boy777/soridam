@@ -11,24 +11,19 @@ import {
   Tooltip,
 } from "recharts";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
-import type { MockExamHistoryItem, OpicLevel } from "@/lib/types/mock-exam";
+import type { MockExamHistoryItem } from "@/lib/types/mock-exam";
 import {
   OPIC_LEVEL_ORDER,
   MOCK_EXAM_MODE_LABELS,
 } from "@/lib/types/mock-exam";
 
-const FACT_COLORS: Record<string, string> = {
-  F: "#3B82F6", // 파랑
-  A: "#10B981", // 초록
-  C: "#F59E0B", // 주황
-  T: "#8B5CF6", // 보라
-};
+type OpicLevel = keyof typeof OPIC_LEVEL_ORDER;
 
 /* ── 유틸 ── */
 
-function levelToY(level: OpicLevel | null): number {
+function levelToY(level: string | null): number {
   if (!level) return 0;
-  return OPIC_LEVEL_ORDER[level] ?? 0;
+  return OPIC_LEVEL_ORDER[level as OpicLevel] ?? 0;
 }
 
 function formatDate(dateStr: string): string {
@@ -71,12 +66,6 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: Array<{
       <p className="mt-1 text-sm font-bold text-primary-600">
         {d.level as string}
       </p>
-      <div className="mt-1 flex gap-2 text-[10px] text-foreground-muted">
-        <span style={{ color: FACT_COLORS.F }}>F:{(d.f as number)?.toFixed(1)}</span>
-        <span style={{ color: FACT_COLORS.A }}>A:{(d.a as number)?.toFixed(1)}</span>
-        <span style={{ color: FACT_COLORS.C }}>C:{(d.c as number)?.toFixed(1)}</span>
-        <span style={{ color: FACT_COLORS.T }}>T:{(d.t as number)?.toFixed(1)}</span>
-      </div>
     </div>
   );
 }
@@ -103,13 +92,8 @@ export function GradeProgressChart({ data }: GradeProgressChartProps) {
         date: formatDate(item.started_at),
         fullDate: new Date(item.started_at).toLocaleDateString("ko-KR"),
         level: item.final_level,
-        levelY: levelToY(item.final_level as OpicLevel),
-        totalScore: item.total_score ?? 0,
+        levelY: levelToY(item.final_level),
         modeLabel: MOCK_EXAM_MODE_LABELS[item.mode],
-        f: item.score_f ?? 0,
-        a: item.score_a ?? 0,
-        c: item.score_c ?? 0,
-        t: item.score_t ?? 0,
       })),
     [items]
   );
@@ -131,11 +115,11 @@ export function GradeProgressChart({ data }: GradeProgressChartProps) {
 
   if (!latest) return null;
 
-  const currentLevel = latest.final_level as OpicLevel;
+  const currentLevel = latest.final_level;
 
   // 등급 변화
   const levelChange = previous
-    ? (OPIC_LEVEL_ORDER[currentLevel] ?? 0) - (OPIC_LEVEL_ORDER[previous.final_level as OpicLevel] ?? 0)
+    ? levelToY(currentLevel) - levelToY(previous.final_level)
     : 0;
 
   return (
@@ -219,46 +203,16 @@ export function GradeProgressChart({ data }: GradeProgressChartProps) {
 /* ── 1회차 현재 상태 카드 ── */
 
 export function CurrentStateCard({ data }: { data: MockExamHistoryItem }) {
-  const level = data.final_level as OpicLevel;
-  const factScores = {
-    F: data.score_f ?? 0,
-    A: data.score_a ?? 0,
-    C: data.score_c ?? 0,
-    T: data.score_t ?? 0,
-  };
-  const maxFact = 10;
+  const level = data.final_level;
 
   return (
     <div className="rounded-xl border border-border bg-surface p-3 sm:p-4">
       <h4 className="text-xs font-semibold text-foreground sm:text-sm">현재 수준</h4>
 
-      <div className="mt-3 flex items-center gap-4 sm:mt-4">
+      <div className="mt-3 flex items-center justify-center sm:mt-4">
         {/* 등급 배지 */}
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary-50 sm:h-20 sm:w-20">
-          <span className="text-lg font-bold text-primary-600 sm:text-xl">{level}</span>
-        </div>
-
-        {/* FACT 바 */}
-        <div className="flex-1 space-y-1.5">
-          {Object.entries(factScores).map(([key, val]) => (
-            <div key={key} className="flex items-center gap-2">
-              <span className="w-3 text-[10px] font-medium" style={{ color: FACT_COLORS[key] }}>
-                {key}
-              </span>
-              <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-secondary">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{
-                    width: `${(val / maxFact) * 100}%`,
-                    backgroundColor: FACT_COLORS[key],
-                  }}
-                />
-              </div>
-              <span className="w-6 text-right text-[10px] text-foreground-muted">
-                {val.toFixed(1)}
-              </span>
-            </div>
-          ))}
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary-50">
+          <span className="text-xl font-bold text-primary-600">{level}</span>
         </div>
       </div>
 

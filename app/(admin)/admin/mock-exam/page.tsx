@@ -13,7 +13,7 @@ import {
 } from "@/lib/actions/admin/mock-exam";
 import { EvalPipelineView } from "@/components/admin/eval-pipeline-view";
 import { EvalSettingsTab } from "@/components/admin/eval-settings-tab";
-import { ResultPageContent } from "@/components/mock-exam/result-page/result-page-content";
+import { ExternalLink } from "lucide-react";
 import type { AdminMockSession } from "@/lib/types/admin";
 
 type PageTab = "monitoring" | "settings";
@@ -181,12 +181,18 @@ function SessionDetailView({
         </div>
       </div>
 
-      {/* 사용자 결과 화면 그대로 렌더링 */}
-      <div className="flex flex-col overflow-hidden rounded-xl border border-border" style={{ height: "calc(100vh - 220px)" }}>
-        <ResultPageContent
-          sessionId={sessionId}
-          initialData={result.data}
-        />
+      {/* 사용자 결과 페이지 링크 */}
+      <div className="flex flex-col items-center justify-center rounded-xl border border-border p-8" style={{ height: "calc(100vh - 220px)" }}>
+        <p className="text-sm text-foreground-secondary mb-4">세션 상세 결과를 확인하세요</p>
+        <a
+          href={`/mock-exam/result/${sessionId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 rounded-lg bg-primary-500 px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-600 transition-colors"
+        >
+          결과 페이지 열기
+          <ExternalLink size={14} />
+        </a>
       </div>
     </div>
   );

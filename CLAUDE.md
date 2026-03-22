@@ -76,7 +76,8 @@ docs/
 │   ├── 스크립트.md      ← scripts 통합 테이블, RCTF 프롬프트
 │   ├── 튜터링.md        ← 6테이블, 4레벨 재설계
 │   ├── 쉐도잉.md        ← 2테이블, 클라이언트 완결
-│   └── 관리자.md        ← 관리자 시스템 전체 (11페이지, 38 SA, 평가설정)
+│   ├── 관리자.md        ← 관리자 시스템 전체 (11페이지, 38 SA, 평가설정)
+│   └── weak-point-tagging-prompt.md ← GPT weak_point 태깅 프롬프트 v2 (36개 코드)
 ├── OPIc 자료/이현석/    ← 이현석 DB 추출 데이터
 │   ├── questions_master.json  ← 고유 질문 431개
 │   ├── sets_master.json       ← 세트/콤보 198개

@@ -1,11 +1,42 @@
 "use client";
 
-import { GRADE_DEFINITIONS, MOCK_OVERVIEW_DATA } from "@/lib/mock-data/result-v2";
+import { ClipboardList } from "lucide-react";
+import { GRADE_DEFINITIONS } from "@/lib/mock-data/result-v2";
+
+// ── 종합 진단 탭 (v2) 데이터 인터페이스 ──
+
+export interface OverviewData {
+  session: {
+    session_id: string;
+    grade: string;
+    mode: "test" | "training";
+    date: string;
+    total_questions: number;
+  };
+  overall_comments: string;
+  performance_summary: string[];
+}
+
+interface TabOverviewProps {
+  /** 실데이터. 없으면 목 데이터 사용 */
+  data?: OverviewData | null;
+}
 
 // ── 종합 진단 탭 (v2) — 공식 진단서 톤 ──
 
-export function TabOverviewV2() {
-  const { session, overall_comments, performance_summary } = MOCK_OVERVIEW_DATA;
+export function TabOverview({ data }: TabOverviewProps = {}) {
+  if (!data) {
+    return (
+      <div className="mx-auto max-w-5xl px-3 py-16 sm:py-24">
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-surface px-6 py-12 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-50"><ClipboardList className="h-7 w-7 text-primary-500" /></div>
+          <p className="text-[15px] font-medium text-foreground">종합 진단을 준비하고 있습니다</p>
+          <p className="text-[13px] text-foreground-secondary">평가가 완료되면 종합 진단 결과가 이 탭에 표시됩니다.</p>
+        </div>
+      </div>
+    );
+  }
+  const { session, overall_comments, performance_summary } = data;
   const gradeDef = GRADE_DEFINITIONS[session.grade];
 
   return (

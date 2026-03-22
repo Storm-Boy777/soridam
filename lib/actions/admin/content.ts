@@ -141,13 +141,13 @@ export async function getEvalPrompts() {
   const { supabase } = await requireAdmin();
   const { data } = await supabase
     .from("evaluation_prompts")
-    .select("id, key, content, description, is_active")
+    .select("id, key, prompt_text, description")
     .order("key");
   // PromptEditor 형식으로 변환
-  return (data || []).map((row) => ({
-    id: row.id,
-    name: row.description || row.key,
-    content: row.content || "",
+  return (data || []).map((row: Record<string, unknown>) => ({
+    id: row.id as string,
+    name: (row.description as string) || (row.key as string),
+    content: (row.prompt_text as string) || "",
   }));
 }
 
@@ -156,7 +156,7 @@ export async function updateEvalPrompt(id: string, content: string) {
 
   const { error } = await supabase
     .from("evaluation_prompts")
-    .update({ content, updated_at: new Date().toISOString() })
+    .update({ prompt_text: content, updated_at: new Date().toISOString() })
     .eq("id", id);
 
   if (error) return { success: false, error: error.message };

@@ -57,8 +57,6 @@ interface MockExamSessionProps {
   initialData: {
     session: MockTestSession;
     answers: MockTestAnswer[];
-    evaluations: MockTestEvaluation[];
-    report: MockTestReport | null;
     questions: Array<{
       id: string;
       question_english: string;

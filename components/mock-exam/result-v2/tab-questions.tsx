@@ -1,13 +1,14 @@
 "use client";
 
+import { FileText } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import {
   FULFILLMENT_LABELS_KO,
   type FulfillmentStatus,
 } from "@/lib/mock-data/result-v2";
 import {
-  REAL_QUESTIONS_DATA,
   type QuestionEvalV2Real,
+  type WeakPointV2,
 } from "@/lib/mock-data/result-v2-questions";
 
 // 질문 유형 한글 매핑
@@ -24,10 +25,34 @@ const QUESTION_TYPE_KO: Record<string, string> = {
   adv_15: "사회적 이슈 (어드밴스)",
 };
 
+// ── 문항별 평가 탭 데이터 인터페이스 ──
+
+export interface QuestionsData {
+  target_grade: string;
+  session_grade: string;
+  evaluations: QuestionEvalV2Real[];
+}
+
+interface TabQuestionsProps {
+  /** 실데이터. 없으면 목 데이터 사용 */
+  data?: QuestionsData | null;
+}
+
 // ── 문항별 평가 탭 (v2) — 실제 데이터 기반 ──
 
-export function TabQuestionsV2() {
-  const { target_grade, session_grade, evaluations } = REAL_QUESTIONS_DATA;
+export function TabQuestions({ data }: TabQuestionsProps = {}) {
+  if (!data) {
+    return (
+      <div className="mx-auto max-w-5xl px-3 py-16 sm:py-24">
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-surface px-6 py-12 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-50"><FileText className="h-7 w-7 text-primary-500" /></div>
+          <p className="text-[15px] font-medium text-foreground">문항별 평가를 준비하고 있습니다</p>
+          <p className="text-[13px] text-foreground-secondary">평가가 완료되면 각 문항의 소견과 개선 방향이 이 탭에 표시됩니다.</p>
+        </div>
+      </div>
+    );
+  }
+  const { target_grade, session_grade, evaluations } = data;
 
   // 충족 현황 집계
   const counts = evaluations.reduce(
@@ -202,6 +227,7 @@ function AudioPlayer({ url }: { url: string }) {
     audio.addEventListener("ended", onEnded);
 
     return () => {
+      audio.pause();
       audio.removeEventListener("timeupdate", onTimeUpdate);
       audio.removeEventListener("loadedmetadata", onLoadedMetadata);
       audio.removeEventListener("ended", onEnded);
@@ -331,20 +357,37 @@ function EvalContent({ data }: { data: QuestionEvalV2Real }) {
         </p>
       </div>
 
-      {/* Part C: 개선 방향 */}
-      {data.directions.length > 0 && (
+      {/* Part C: 개선 방향 + 약점 코드 */}
+      {(data.directions.length > 0 || data.weak_points.length > 0) && (
         <div className="px-5 py-4">
-          <SectionTitle label="방향" sub="개선 방향" />
-          <ul className="mt-2 space-y-2">
-            {data.directions.map((dir, idx) => (
-              <li key={idx} className="flex items-start gap-2">
-                <span className="mt-[5px] h-[5px] w-[5px] flex-shrink-0 rounded-full bg-[#2449d8]" />
-                <span className="text-[13px] leading-[1.8] text-[#3a4553]">
-                  {dir}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {data.directions.length > 0 && (
+            <>
+              <SectionTitle label="방향" sub="개선 방향" />
+              <ul className="mt-2 space-y-2">
+                {data.directions.map((dir, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <span className="mt-[5px] h-[5px] w-[5px] flex-shrink-0 rounded-full bg-[#2449d8]" />
+                    <span className="text-[13px] leading-[1.8] text-[#3a4553]">
+                      {dir}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+
+          {/* 약점 코드 태그 */}
+          {data.weak_points.length > 0 && (
+            <div className={data.directions.length > 0 ? "mt-4" : ""}>
+              <SectionTitle label="약점" sub="병목 분석" />
+              <div className="mt-2.5 space-y-2">
+                {data.weak_points.map((wp, idx) => (
+                  <WeakPointTag key={idx} wp={wp} />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* 튜터링 CTA */}
           {data.weak_points.length > 0 && (
             <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-[#d0d7e2] bg-[#f7f9fc] px-4 py-3 text-[13px] font-bold text-[#2449d8] transition-colors hover:bg-[#eef1f7]">
@@ -496,6 +539,61 @@ function FulfillmentBadge({ status }: { status: FulfillmentStatus }) {
       <span>{c.icon}</span>
       <span>{label}</span>
     </span>
+  );
+}
+
+// ── 약점 코드 태그 (v2) ──
+// 카테고리별 색상: S(구조)=보라, A(정확성)=파랑, C(내용)=초록, T(과제)=남색, D(전달)=갈색
+const WP_CATEGORY: Record<string, { label: string; bg: string; text: string }> = {
+  S: { label: "구조", bg: "bg-[#f3e8ff]", text: "text-[#7c3aed]" },
+  A: { label: "정확성", bg: "bg-[#dbeafe]", text: "text-[#2563eb]" },
+  C: { label: "내용", bg: "bg-[#dcfce7]", text: "text-[#16a34a]" },
+  T: { label: "과제", bg: "bg-[#e0e7ff]", text: "text-[#4338ca]" },
+  D: { label: "전달", bg: "bg-[#fef3c7]", text: "text-[#b45309]" },
+};
+
+const SEVERITY_STYLE: Record<string, { dot: string; label: string }> = {
+  severe: { dot: "bg-[#dc2626]", label: "심각" },
+  moderate: { dot: "bg-[#ea580c]", label: "보통" },
+  mild: { dot: "bg-[#9ca3af]", label: "경미" },
+};
+
+function WeakPointTag({ wp }: { wp: WeakPointV2 }) {
+  // WP_S03 → "S"
+  const categoryKey = wp.code.split("_")[1]?.[0] || "S";
+  const cat = WP_CATEGORY[categoryKey] || WP_CATEGORY.S;
+  const sev = SEVERITY_STYLE[wp.severity] || SEVERITY_STYLE.mild;
+
+  return (
+    <div className="rounded-lg border border-[#e8edf3] bg-[#fafbfd] px-3.5 py-2.5">
+      {/* 상단: 코드 뱃지 + 카테고리 + 심각도 */}
+      <div className="flex items-center gap-2">
+        <span
+          className={`rounded px-1.5 py-0.5 text-[10px] font-extrabold ${cat.bg} ${cat.text}`}
+        >
+          {wp.code}
+        </span>
+        <span className="text-[10px] font-medium text-[#8a93a1]">
+          {cat.label}
+        </span>
+        <span className="flex items-center gap-1">
+          <span className={`inline-block h-[6px] w-[6px] rounded-full ${sev.dot}`} />
+          <span className="text-[10px] text-[#8a93a1]">{sev.label}</span>
+        </span>
+      </div>
+
+      {/* 원인 */}
+      <p className="mt-1.5 text-[12px] leading-[1.6] text-[#3a4553]">
+        {wp.reason}
+      </p>
+
+      {/* 근거 (트랜스크립트 발췌) */}
+      {wp.evidence && (
+        <p className="mt-1 text-[11px] leading-[1.5] text-[#a0a8b4] italic">
+          &ldquo;{wp.evidence}&rdquo;
+        </p>
+      )}
+    </div>
   );
 }
 

@@ -6,6 +6,14 @@
 import evalResult from "./eval-v2-result.json";
 import type { FulfillmentStatus } from "./result-v2";
 
+// v2 weak_point 구조
+export interface WeakPointV2 {
+  code: string;          // "WP_S03" (36개 코드 사전의 코드)
+  severity: "severe" | "moderate" | "mild";
+  reason: string;
+  evidence: string;
+}
+
 export interface QuestionEvalV2Real {
   question_number: number;
   question_title: string;
@@ -17,8 +25,8 @@ export interface QuestionEvalV2Real {
   task_checklist: Array<{ item: string; pass: boolean; evidence?: string }>;
   observation: string;
   directions: string[];
-  weak_points: string[];
-  recommended_drills: string[];
+  weak_points: WeakPointV2[];  // v2: 구조화된 약점 코드
+  // recommended_drills: v2에서 제거 — 드릴 매칭은 튜터링 v2 책임
   audio_url: string;
   transcript: string;
   speech_meta: {
@@ -28,6 +36,7 @@ export interface QuestionEvalV2Real {
     accuracy_score: number | null;
     fluency_score: number | null;
     prosody_score: number | null;
+    pause_count_3s_plus: number;  // v2 추가: 3초 이상 침묵 횟수
   };
 }
 

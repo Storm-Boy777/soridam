@@ -701,14 +701,9 @@ export interface MockExamHistoryItem {
   status: SessionStatus;
   started_at: string;
   completed_at: string | null;
-  final_level: OpicLevel | null;
-  total_score: number | null;
-  score_f: number | null;
-  score_a: number | null;
-  score_c: number | null;
-  score_t: number | null;
+  final_level: string | null;
   topic_summary: string;            // "집, 음악, 재활용, 은행, 기술"
-  coaching_headline: string | null; // 코칭 한줄평 (snapshot.headline)
+  coaching_headline: string | null; // 종합 소견 첫 문장
   attempt_number: number;           // N회차
 }
 

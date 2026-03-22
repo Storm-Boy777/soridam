@@ -198,6 +198,7 @@ export async function deleteAdminSession(
   // 수동 삭제 (CASCADE 아닌 테이블)
   await Promise.all([
     supabase.from("mock_test_evaluations").delete().eq("session_id", sessionId),
+    supabase.from("mock_test_consults").delete().eq("session_id", sessionId),
     supabase.from("mock_test_reports").delete().eq("session_id", sessionId),
   ]);
 
