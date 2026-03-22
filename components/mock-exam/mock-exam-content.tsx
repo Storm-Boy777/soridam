@@ -640,21 +640,21 @@ function HistoryTab({
           }}
           className="mt-2.5 w-full rounded-xl border border-border bg-surface p-3 text-left transition-colors hover:border-primary-200 sm:mt-3 sm:p-4"
         >
-          <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-3 sm:gap-4">
             {/* 등급 배지 */}
             {item.final_level ? (
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-50 sm:h-10 sm:w-10">
-                <span className="text-xs font-bold text-primary-600 sm:text-sm">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-50 sm:h-12 sm:w-12">
+                <span className="text-sm font-bold text-primary-600 sm:text-base">
                   {item.final_level}
                 </span>
               </div>
             ) : (
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-secondary sm:h-10 sm:w-10">
-                <Trophy size={16} className="text-foreground-muted" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-secondary sm:h-12 sm:w-12">
+                <Trophy size={18} className="text-foreground-muted" />
               </div>
             )}
 
-            {/* 모드 + 날짜 */}
+            {/* 회차 + 상태 + 주제 */}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <span className="text-sm font-medium text-foreground">
@@ -670,29 +670,28 @@ function HistoryTab({
                   {SESSION_STATUS_LABELS[item.status]}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 text-[11px] text-foreground-muted sm:text-xs">
-                <Calendar size={10} />
+              {item.topic_summary && (
+                <p className="mt-0.5 min-w-0 truncate text-[11px] text-foreground-muted sm:text-xs">
+                  {item.topic_summary}
+                </p>
+              )}
+            </div>
+
+            {/* 날짜 + 모드 (오른쪽) */}
+            <div className="flex shrink-0 flex-col items-end gap-0.5">
+              <span className="text-[11px] text-foreground-muted sm:text-xs">
                 {new Date(item.started_at).toLocaleDateString("ko-KR")}
-                {item.attempt_number > 0 && ` · ${MOCK_EXAM_MODE_LABELS[item.mode]}`}
-              </div>
+              </span>
+              <span className="text-[10px] text-foreground-muted sm:text-[11px]">
+                {MOCK_EXAM_MODE_LABELS[item.mode]}
+              </span>
             </div>
 
             {/* 화살표 */}
-            <div className="flex shrink-0 items-center">
-              {item.status === "completed" && item.final_level && (
-                <ArrowRight size={14} className="hidden text-foreground-muted sm:block" />
-              )}
-            </div>
+            {item.status === "completed" && item.final_level && (
+              <ChevronRight size={16} className="hidden shrink-0 text-foreground-muted sm:block" />
+            )}
           </div>
-
-          {/* 주제 요약 */}
-          {item.topic_summary && (
-            <div className="mt-1.5 border-t border-border/50 pt-1.5 sm:mt-2 sm:pt-2">
-              <p className="min-w-0 truncate text-[11px] text-foreground-muted sm:text-xs">
-                {item.topic_summary}
-              </p>
-            </div>
-          )}
         </button>
       ))}
       </div>
