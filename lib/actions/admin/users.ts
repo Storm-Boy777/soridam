@@ -141,7 +141,7 @@ export async function getAdminUserDetail(userId: string): Promise<AdminUserDetai
     // 5. 최근 스크립트 5건
     supabase
       .from("scripts")
-      .select("id, question_korean, target_level, question_type, status, created_at", { count: "exact" })
+      .select("id, question_korean, target_grade, question_type, status, created_at", { count: "exact" })
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(5),
@@ -161,7 +161,7 @@ export async function getAdminUserDetail(userId: string): Promise<AdminUserDetai
     // 8. 최근 튜터링 5건
     supabase
       .from("tutoring_sessions")
-      .select("id, target_level, status, total_prescriptions, completed_prescriptions, created_at", { count: "exact" })
+      .select("id, target_grade, status, total_prescriptions, completed_prescriptions, created_at", { count: "exact" })
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(5),
@@ -234,7 +234,7 @@ export async function getAdminUserDetail(userId: string): Promise<AdminUserDetai
     recentScripts: (scriptsResult.data || []).map((s) => ({
       id: s.id,
       question_korean: s.question_korean,
-      target_level: s.target_level,
+      target_grade: s.target_grade,
       question_type: s.question_type,
       status: s.status,
       created_at: s.created_at,
@@ -248,7 +248,7 @@ export async function getAdminUserDetail(userId: string): Promise<AdminUserDetai
     })),
     recentTutoring: (tutoringResult.data || []).map((t) => ({
       id: t.id,
-      target_level: t.target_level,
+      target_grade: t.target_grade,
       status: t.status,
       total_prescriptions: t.total_prescriptions,
       completed_prescriptions: t.completed_prescriptions,

@@ -495,7 +495,7 @@ export interface MockTestReport {
   growth_comparison: GrowthComparison | null;
   growth_analysis: GrowthAnalysis | null;
   // 메타
-  target_level: string | null;
+  target_grade: string | null;
   test_date: string | null;
   created_at: string;
   updated_at: string;

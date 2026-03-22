@@ -221,7 +221,7 @@ export const TRIAL_SCRIPT_RESULT: ScriptDetail = {
   question_english: TRIAL_QUESTION.question_english,
   user_story: TRIAL_USER_STORY,
   user_original_answer: null,
-  target_level: "IH",
+  target_grade: "IH",
   question_type: TRIAL_QUESTION.question_type,
   ai_model: "gpt-4.1",
   word_count: 197,

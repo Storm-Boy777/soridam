@@ -308,7 +308,7 @@ function TutoringDetailView({
         <div className="flex items-center gap-2 text-sm text-foreground-muted">
           <span>{userEmail}</span>
           <span className="text-border">·</span>
-          <GradeBadge level={detail.session.target_level} />
+          <GradeBadge level={detail.session.target_grade} />
           <span className="text-border">·</span>
           <StatusBadge status={detail.session.status} />
           <span className="text-border">·</span>
@@ -665,7 +665,7 @@ export default function AdminTutoringPage() {
 
                 {/* 중앙: 등급+상태+진행률 */}
                 <div className="flex shrink-0 items-center gap-2">
-                  <GradeBadge level={row.target_level} />
+                  <GradeBadge level={row.target_grade} />
                   <StatusBadge status={row.status} />
                   <span className="rounded bg-surface-secondary px-1.5 py-0.5 text-xs tabular-nums text-foreground-secondary">
                     {progress}

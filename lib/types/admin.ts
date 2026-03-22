@@ -142,7 +142,7 @@ export interface AdminTutoringSession {
   user_id: string;
   user_email: string;
   mock_test_session_id: string | null;
-  target_level: string | null;
+  target_grade: string | null;
   current_level: string | null;
   status: string;
   total_prescriptions: number;
@@ -210,7 +210,7 @@ export interface AdminUserDetail {
   recentScripts: Array<{
     id: string;
     question_korean: string | null;
-    target_level: string | null;
+    target_grade: string | null;
     question_type: string | null;
     status: string;
     created_at: string;
@@ -224,7 +224,7 @@ export interface AdminUserDetail {
   }>;
   recentTutoring: Array<{
     id: string;
-    target_level: string | null;
+    target_grade: string | null;
     status: string;
     total_prescriptions: number;
     completed_prescriptions: number;

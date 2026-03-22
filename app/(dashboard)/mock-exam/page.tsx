@@ -5,6 +5,7 @@ import {
   getActiveSession,
   checkMockExamCredit,
 } from "@/lib/actions/mock-exam";
+import { getAuthClaims } from "@/lib/auth";
 
 export const metadata = {
   title: "모의고사 | 오픽톡닥",
@@ -12,18 +13,22 @@ export const metadata = {
 
 // 서버에서 사전 조회 — getExamPool은 무거워(5~6쿼리) 클라이언트 백그라운드 로드
 async function MockExamLoader() {
-  const [historyResult, activeResult, creditResult] =
+  const [historyResult, activeResult, creditResult, claims] =
     await Promise.all([
       getHistory().catch(() => ({ data: undefined })),
       getActiveSession().catch(() => ({ data: undefined })),
       checkMockExamCredit().catch(() => ({ data: undefined })),
+      getAuthClaims(),
     ]);
+
+  const targetGrade = (claims?.user_metadata?.target_grade as string) || "";
 
   return (
     <MockExamContent
       initialHistory={historyResult?.data ?? undefined}
       initialActive={activeResult}
       initialCredit={creditResult}
+      targetGrade={targetGrade}
     />
   );
 }

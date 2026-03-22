@@ -210,7 +210,7 @@ function DiagnosisTab({
               확정 등급: {report.final_level}
             </p>
             <p className="text-xs text-foreground-secondary">
-              목표: {report.target_level} · 총점: {Number(report.total_score)}/100
+              목표: {report.target_grade} · 총점: {Number(report.total_score)}/100
             </p>
           </div>
         </div>
@@ -448,7 +448,7 @@ function PrescriptionTab({
         <div className="flex items-center gap-2">
           <Target size={18} className="text-primary-500" />
           <h3 className="text-sm font-semibold text-foreground sm:text-base">
-            {latestReport.final_level} → {latestReport.target_level} 처방 준비
+            {latestReport.final_level} → {latestReport.target_grade} 처방 준비
           </h3>
         </div>
         <p className="mt-1 text-xs text-foreground-secondary">
@@ -541,8 +541,8 @@ function ActivePrescriptionView({
   report,
   initialPrescriptions,
 }: {
-  session: { id: string; current_level: string | null; target_level: string | null; total_prescriptions: number | null; completed_prescriptions: number };
-  report: { final_level: string; target_level: string };
+  session: { id: string; current_level: string | null; target_grade: string | null; total_prescriptions: number | null; completed_prescriptions: number };
+  report: { final_level: string; target_grade: string };
   initialPrescriptions?: TutoringPrescriptionRow[];
 }) {
   const { data: prescriptions, isLoading } = useQuery({
@@ -575,7 +575,7 @@ function ActivePrescriptionView({
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold text-foreground sm:text-base">
-              {session.current_level} → {session.target_level}
+              {session.current_level} → {session.target_grade}
             </h3>
             <p className="text-xs text-foreground-secondary">
               처방 {completedCount}/{items.length} 완료
@@ -724,7 +724,7 @@ function TrainingTab({
           활성 세션
         </h3>
         <p className="mt-1 text-xs text-foreground-secondary">
-          {activeSession.current_level} → {activeSession.target_level} ·
+          {activeSession.current_level} → {activeSession.target_grade} ·
           처방 {activeSession.completed_prescriptions}/{activeSession.total_prescriptions} 완료
         </p>
       </div>

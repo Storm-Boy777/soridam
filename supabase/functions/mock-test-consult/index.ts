@@ -4,7 +4,8 @@
  * 역할: 1문항 1호출. transcript + criteria(DB)만으로 소견/방향/약점 생성.
  *       체크박스는 사용하지 않음 (diagnose가 별도 처리).
  *
- * 입력: { session_id, question_number, target_grade?, model? }
+ * 입력: { session_id, question_number, model? }
+ * 목표 등급: user_metadata.target_grade에서 직접 조회 (SSOT)
  * 처리: DB에서 프롬프트+기준표 로드 → 변수 치환 → GPT-4.1 호출 → DB 저장
  * API: OpenAI Chat Completions API + response_format (Structured Outputs)
  *
@@ -165,12 +166,10 @@ Deno.serve(async (req: Request) => {
     const {
       session_id,
       question_number,
-      target_grade,
       model = "gpt-4.1",
     } = body as {
       session_id: string;
       question_number: number;
-      target_grade?: string;
       model?: string;
     };
 
@@ -254,20 +253,21 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // 목표 등급 결정
-    const effectiveTargetGrade = target_grade || "IH";
+    // 목표 등급: 사용자 프로필(user_metadata)에서 직접 조회 (SSOT)
+    const { data: authUser } = await supabase.auth.admin.getUserById(session.user_id);
+    const target_grade = (authUser?.user?.user_metadata?.target_grade as string) || "IH";
 
     // 기준표 로드
     const { data: criteriaRow, error: criteriaErr } = await supabase
       .from("evaluation_criteria")
       .select("criteria_text")
-      .eq("target_level", effectiveTargetGrade)
+      .eq("target_grade", target_grade)
       .eq("question_type", questionType)
       .single();
 
     if (criteriaErr || !criteriaRow) {
       throw new Error(
-        `기준표 로드 실패 (${effectiveTargetGrade}+${questionType}): ${criteriaErr?.message}`,
+        `기준표 로드 실패 (${target_grade}+${questionType}): ${criteriaErr?.message}`,
       );
     }
 
@@ -313,7 +313,7 @@ Deno.serve(async (req: Request) => {
           question_number,
           question_id: answer.question_id,
           question_type: questionType,
-          target_grade: effectiveTargetGrade,
+          target_grade: target_grade,
           fulfillment: skippedResult.fulfillment,
           task_checklist: skippedResult.task_checklist,
           observation: skippedResult.observation,
@@ -357,7 +357,7 @@ Deno.serve(async (req: Request) => {
       (pron.fluency_score as number) ||
       0;
     const userPrompt = substituteVariables(promptMap["consult_user"], {
-      target_level: effectiveTargetGrade,
+      target_grade: target_grade,
       question_type: questionType,
       question_text: qMeta?.question_english || answer.question_id,
       criteria: criteriaRow.criteria_text,
@@ -404,7 +404,7 @@ Deno.serve(async (req: Request) => {
           question_number,
           question_id: answer.question_id,
           question_type: questionType,
-          target_grade: effectiveTargetGrade,
+          target_grade: target_grade,
           fulfillment: result.fulfillment,
           task_checklist: result.task_checklist,
           observation: result.observation,
@@ -482,7 +482,7 @@ Deno.serve(async (req: Request) => {
         session_id,
         question_number,
         question_type: questionType,
-        target_grade: effectiveTargetGrade,
+        target_grade: target_grade,
         fulfillment: result.fulfillment,
         weak_point_count: result.weak_points.length,
         tokens_used: tokensUsed,

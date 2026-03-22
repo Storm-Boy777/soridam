@@ -56,6 +56,7 @@ interface MockExamContentProps {
   initialHistory?: MockExamHistoryItem[];
   initialActive?: Awaited<ReturnType<typeof getActiveSession>>;
   initialCredit?: Awaited<ReturnType<typeof checkMockExamCredit>>;
+  targetGrade?: string;
 }
 
 /* ── 메인 컴포넌트 ── */
@@ -64,6 +65,7 @@ export function MockExamContent({
   initialHistory,
   initialActive,
   initialCredit,
+  targetGrade,
 }: MockExamContentProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -121,6 +123,7 @@ export function MockExamContent({
         <HistoryTab
           initialData={initialHistory}
           onViewResult={handleViewResult}
+          targetGrade={targetGrade}
         />
       )}
     </div>
@@ -469,9 +472,11 @@ function StartTab({
 function HistoryTab({
   initialData,
   onViewResult,
+  targetGrade,
 }: {
   initialData?: MockExamHistoryItem[];
   onViewResult: (sessionId: string) => void;
+  targetGrade?: string;
 }) {
   const [modeFilter, setModeFilter] = useState<"all" | MockExamMode>("all");
   const [showExpired, setShowExpired] = useState(false);
@@ -581,7 +586,7 @@ function HistoryTab({
           {trendData.length >= 2 ? (
             <GradeProgressChart data={trendData} />
           ) : trendData.length === 1 ? (
-            <CurrentStateCard data={trendData[0]} />
+            <CurrentStateCard data={trendData[0]} targetGrade={targetGrade} />
           ) : null}
         </div>
       )}

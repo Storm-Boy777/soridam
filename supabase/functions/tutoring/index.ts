@@ -178,7 +178,7 @@ Return JSON only, no markdown.`;
   const userPrompt = `Generate a training session brief for:
 - Question type: ${questionType}
 - Weakness tags: ${weaknessTags.join(", ")}
-- Current level: ${trainingSession.target_level || "IM2"}
+- Current level: ${trainingSession.target_grade || "IM2"}
 - Priority: ${prescription.priority}
 
 Return this JSON:
@@ -216,7 +216,7 @@ Return this JSON:
 async function handleGenerateWarmup(params: {
   training_session_id: string;
   question_type: string;
-  target_level: string;
+  target_grade: string;
   text_policy: "full" | "keywords" | "off";
 }) {
   const supabase = getSupabase();
@@ -238,9 +238,9 @@ async function handleGenerateWarmup(params: {
     ? { id: question.id, english: question.question_english, korean: question.question_korean }
     : { id: "", english: "Tell me about something you do regularly.", korean: "" };
 
-  const levelGuide = params.target_level.startsWith("I")
+  const levelGuide = params.target_grade.startsWith("I")
     ? "IM level (3-5 sentences, simple connectors)"
-    : params.target_level.startsWith("A")
+    : params.target_grade.startsWith("A")
       ? "AL level (5-7 sentences, complex structures)"
       : "IL level (2-3 sentences, basic vocabulary)";
 
@@ -252,7 +252,7 @@ All Korean text in 한국어. Return JSON only.`;
   const userPrompt = `Generate a model answer for warmup shadowing:
 - Question: ${questionData.english}
 - Question type: ${params.question_type}
-- Target level: ${params.target_level}
+- Target level: ${params.target_grade}
 
 Return this JSON:
 {
@@ -282,7 +282,7 @@ Return this JSON:
 async function handleGenerateEPP(params: {
   training_session_id: string;
   question_type: string;
-  target_level: string;
+  target_grade: string;
   weakness_tags: string[];
 }) {
   const supabase = getSupabase();
@@ -311,7 +311,7 @@ Return JSON only, no markdown.`;
 
   const userPrompt = `Generate EPP patterns for:
 - Question type: ${params.question_type}
-- Target level: ${params.target_level}
+- Target level: ${params.target_grade}
 - Question: ${questionData.english}
 - Weakness tags: ${params.weakness_tags.join(", ")}
 - Question data: ${JSON.stringify(questionData)}
@@ -344,7 +344,7 @@ Return this JSON:
 async function handleGenerateVariation(params: {
   training_session_id: string;
   question_type: string;
-  target_level: string;
+  target_grade: string;
   weakness_tags: string[];
   variation_changes: number;
 }) {
@@ -367,7 +367,7 @@ All Korean text in 한국어. Return JSON only.`;
 
   const userPrompt = `Generate ${Math.min(3, params.variation_changes + 1)} Forced Variation cards:
 - Question type: ${params.question_type}
-- Target level: ${params.target_level}
+- Target level: ${params.target_grade}
 - Weakness tags: ${params.weakness_tags.join(", ")}
 - Changes per card: ${params.variation_changes}
 - Available questions: ${JSON.stringify(selectedQs.map(q => ({
@@ -412,20 +412,20 @@ Return this JSON:
 async function handleGenerateTransformation(params: {
   training_session_id: string;
   question_type: string;
-  target_level: string;
+  target_grade: string;
 }) {
   const systemPrompt = `You are an OPIc speaking coach for Korean learners.
 Generate Oral Transformation cards for rapid speaking drill.
 Each card shows a simple sentence and asks the learner to transform it instantly.
 All Korean text in 한국어. Return JSON only.`;
 
-  const cardCount = params.target_level.startsWith("A") ? 10
-    : params.target_level.startsWith("IH") ? 8
+  const cardCount = params.target_grade.startsWith("A") ? 10
+    : params.target_grade.startsWith("IH") ? 8
     : 6;
 
   const userPrompt = `Generate ${cardCount} Oral Transformation cards:
 - Question type: ${params.question_type}
-- Target level: ${params.target_level}
+- Target level: ${params.target_grade}
 
 Transformation types to include (mix them):
 - Tense change: present → past / past → present perfect
@@ -464,7 +464,7 @@ async function handleEvaluateTimed(params: {
   question_type: string;
   user_answer: string;
   audio_duration_seconds: number;
-  target_level: string;
+  target_grade: string;
 }) {
   const systemPrompt = `You are an OPIc speaking coach for Korean learners.
 Evaluate a timed practice response. Focus on structure, content blocks, and time management.
@@ -473,7 +473,7 @@ All feedback in Korean (한국어). Return JSON only.`;
   const userPrompt = `Evaluate this OPIc response:
 - Question: ${params.question_english}
 - Question type: ${params.question_type}
-- Target level: ${params.target_level}
+- Target level: ${params.target_grade}
 - Duration: ${params.audio_duration_seconds}s
 - Response: "${params.user_answer}"
 

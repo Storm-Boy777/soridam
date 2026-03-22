@@ -71,7 +71,7 @@ export interface TutoringSession {
   id: string;
   user_id: string;
   mock_test_session_id: string;
-  target_level: string | null;
+  target_grade: string | null;
   current_level: string | null;
   status: "active" | "paused" | "completed";
   total_prescriptions: number | null;
@@ -115,7 +115,7 @@ export interface TutoringTrainingSession {
   session_type: TrainingSessionType;
   question_type: string;
   topic_id: string | null;
-  target_level: string | null;
+  target_grade: string | null;
   level_params: LevelParams | null;
   session_goal: string | null;
   success_criteria: SuccessCriterion[] | null;
@@ -223,7 +223,7 @@ export interface DiagnosisData {
   mockReport: {
     session_id: string;
     final_level: string;
-    target_level: string;
+    target_grade: string;
     score_f: number;
     score_a: number;
     score_c: number;
@@ -253,7 +253,7 @@ export interface PrescriptionEngineInput {
     must_fix_for_next_grade: string[];
   };
   current_level: string;
-  target_level: string;
+  target_grade: string;
 }
 
 // ── drill_tag → question_type 매핑 ──

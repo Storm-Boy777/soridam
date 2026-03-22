@@ -211,9 +211,9 @@ function ScriptDetailView({
                 {getQuestionTypeLabel(script.question_type)}
               </span>
             )}
-            {script.target_level && (
+            {script.target_grade && (
               <span className="rounded bg-primary-50 px-1.5 py-0.5 font-semibold text-primary-700">
-                {script.target_level}
+                {script.target_grade}
               </span>
             )}
             <span>{script.word_count}단어</span>
@@ -245,7 +245,7 @@ function ScriptDetailView({
           reusablePatterns={output.reusable_patterns as never[]}
           similarQuestions={output.similar_questions as never[]}
           expansionIdeas={output.expansion_ideas}
-          targetLevel={script.target_level}
+          targetLevel={script.target_grade}
         />
       )}
     </div>
@@ -571,9 +571,9 @@ export default function AdminScriptsPage() {
                     {getQuestionTypeLabel(item.question_type)}
                   </span>
                 )}
-                {item.target_level && (
+                {item.target_grade && (
                   <span className="rounded bg-primary-50 px-1.5 py-0.5 text-xs font-semibold text-primary-700">
-                    {item.target_level}
+                    {item.target_grade}
                   </span>
                 )}
                 <span

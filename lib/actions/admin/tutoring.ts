@@ -37,7 +37,7 @@ export async function getAdminTutoringStats(): Promise<AdminTutoringStats> {
     // 전체 훈련 수
     supabase.from("tutoring_training_sessions").select("*", { count: "exact", head: true }),
     // 등급+상태 분포 계산용
-    supabase.from("tutoring_sessions").select("target_level, status"),
+    supabase.from("tutoring_sessions").select("target_grade, status"),
     // 질문 타입 분포 계산용
     supabase.from("tutoring_prescriptions").select("question_type"),
   ]);
@@ -46,8 +46,8 @@ export async function getAdminTutoringStats(): Promise<AdminTutoringStats> {
   const levelDistribution: Record<string, number> = {};
   const statusDistribution: Record<string, number> = {};
   for (const s of sessionsRes.data || []) {
-    if (s.target_level) {
-      levelDistribution[s.target_level] = (levelDistribution[s.target_level] || 0) + 1;
+    if (s.target_grade) {
+      levelDistribution[s.target_grade] = (levelDistribution[s.target_grade] || 0) + 1;
     }
     if (s.status) {
       statusDistribution[s.status] = (statusDistribution[s.status] || 0) + 1;
@@ -99,7 +99,7 @@ export async function getAdminTutoringSessions(params: {
 
   // 등급 필터: sessions 테이블에 직접 존재
   if (params.level && params.level !== "all") {
-    query = query.eq("target_level", params.level);
+    query = query.eq("target_grade", params.level);
   }
 
   // 이메일 검색 시 넉넉히 조회 후 클라이언트 필터
@@ -128,7 +128,7 @@ export async function getAdminTutoringSessions(params: {
     user_id: s.user_id,
     user_email: emailMap.get(s.user_id) || "-",
     mock_test_session_id: s.mock_test_session_id,
-    target_level: s.target_level,
+    target_grade: s.target_grade,
     current_level: s.current_level,
     status: s.status,
     total_prescriptions: s.total_prescriptions ?? 0,
@@ -219,7 +219,7 @@ export async function getAdminTutoringDetail(
     user_id: session.user_id,
     user_email: emailRes.data?.user?.email || "-",
     mock_test_session_id: session.mock_test_session_id,
-    target_level: session.target_level,
+    target_grade: session.target_grade,
     current_level: session.current_level,
     status: session.status,
     total_prescriptions: session.total_prescriptions ?? 0,
@@ -245,7 +245,7 @@ export async function deleteAdminTutoringSession(
   // 1. 세션 존재 확인
   const { data: session } = await supabase
     .from("tutoring_sessions")
-    .select("id, user_id, target_level, status")
+    .select("id, user_id, target_grade, status")
     .eq("id", sessionId)
     .single();
 
@@ -320,7 +320,7 @@ export async function deleteAdminTutoringSession(
     target_id: sessionId,
     details: {
       user_id: session.user_id,
-      target_level: session.target_level,
+      target_grade: session.target_grade,
       status: session.status,
     },
   });

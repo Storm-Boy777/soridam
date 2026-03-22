@@ -589,8 +589,8 @@ function ScriptCard({
       : "bg-gray-100 text-gray-700";
 
   const levelLabel =
-    script.target_level
-      ? TARGET_LEVEL_SHORT_LABELS[script.target_level] || script.target_level
+    script.target_grade
+      ? TARGET_LEVEL_SHORT_LABELS[script.target_grade] || script.target_grade
       : null;
 
   const preview =
@@ -1026,9 +1026,9 @@ function ShadowingTab({
                     </p>
                   )}
                   <div className="mt-1 flex items-center gap-2 text-xs text-foreground-muted">
-                    {script.target_level && (
+                    {script.target_grade && (
                       <span className="rounded bg-primary-50 px-1.5 py-0.5 font-semibold text-primary-600">
-                        {script.target_level}
+                        {script.target_grade}
                       </span>
                     )}
                     {script.word_count && <span>{script.word_count}단어</span>}

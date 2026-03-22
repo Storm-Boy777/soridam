@@ -178,7 +178,7 @@ export function TrainingSession({
   // 처방 정보
   const [prescriptionInfo, setPrescriptionInfo] = useState<{
     question_type: string;
-    target_level: string;
+    target_grade: string;
     weakness_tags: string[];
     timerConfig: { prep: number; main: number; wrap: number };
   } | null>(null);
@@ -213,15 +213,15 @@ export function TrainingSession({
           const lp = presc.level_params as {
             timer?: { prep: number; main: number; wrap: number };
           } | null;
-          // target_level 조회
+          // target_grade 조회
           const { data: tsSession } = await supabase
             .from("tutoring_training_sessions")
-            .select("target_level")
+            .select("target_grade")
             .eq("id", tsId)
             .single();
           setPrescriptionInfo({
             question_type: presc.question_type,
-            target_level: tsSession?.target_level || "IM2",
+            target_grade: tsSession?.target_grade || "IM2",
             weakness_tags: (presc.weakness_tags as string[]) || [],
             timerConfig: lp?.timer || { prep: 15, main: 60, wrap: 15 },
           });
@@ -490,7 +490,7 @@ function Screen1Warmup({
   onNext,
 }: {
   trainingSessionId: string;
-  prescriptionInfo: { question_type: string; target_level: string; weakness_tags: string[]; timerConfig: { prep: number; main: number; wrap: number } };
+  prescriptionInfo: { question_type: string; target_grade: string; weakness_tags: string[]; timerConfig: { prep: number; main: number; wrap: number } };
   warmupData: WarmupData | null;
   setWarmupData: (d: WarmupData) => void;
   onNext: () => void;
@@ -503,7 +503,7 @@ function Screen1Warmup({
 
   // 등급별 텍스트 정책 결정
   const textPolicy = (() => {
-    const level = prescriptionInfo.target_level;
+    const level = prescriptionInfo.target_grade;
     if (["IL", "NL", "NM", "NH", "IM1"].includes(level)) return "full";
     if (["IM2", "IM3", "IH"].includes(level)) return "keywords";
     return "off"; // AL
@@ -519,7 +519,7 @@ function Screen1Warmup({
         const res = await callTutoringEF("generate-warmup", {
           training_session_id: trainingSessionId,
           question_type: prescriptionInfo.question_type,
-          target_level: prescriptionInfo.target_level,
+          target_grade: prescriptionInfo.target_grade,
           text_policy: textPolicy,
         });
         setWarmupData(res.warmup);
@@ -763,7 +763,7 @@ function Screen2EPP({
   onNext,
 }: {
   trainingSessionId: string;
-  prescriptionInfo: { question_type: string; target_level: string; weakness_tags: string[]; timerConfig: { prep: number; main: number; wrap: number } };
+  prescriptionInfo: { question_type: string; target_grade: string; weakness_tags: string[]; timerConfig: { prep: number; main: number; wrap: number } };
   eppData: EPPData | null;
   setEppData: (d: EPPData) => void;
   onNext: () => void;
@@ -984,7 +984,7 @@ function Screen3Variation({
   onNext,
 }: {
   trainingSessionId: string;
-  prescriptionInfo: { question_type: string; target_level: string; weakness_tags: string[]; timerConfig: { prep: number; main: number; wrap: number } };
+  prescriptionInfo: { question_type: string; target_grade: string; weakness_tags: string[]; timerConfig: { prep: number; main: number; wrap: number } };
   variationData: VariationData | null;
   setVariationData: (d: VariationData) => void;
   transformationData: TransformationData | null;
@@ -1012,7 +1012,7 @@ function Screen3Variation({
 
   // 등급별 변경 요소 수 결정
   const variationChanges = (() => {
-    const level = prescriptionInfo.target_level;
+    const level = prescriptionInfo.target_grade;
     if (["IL", "NL", "NM", "NH", "IM1"].includes(level)) return 1;
     if (["IM2", "IM3", "IH"].includes(level)) return 2;
     return 3; // AL
@@ -1028,7 +1028,7 @@ function Screen3Variation({
         const res = await callTutoringEF("generate-variation", {
           training_session_id: trainingSessionId,
           question_type: prescriptionInfo.question_type,
-          target_level: prescriptionInfo.target_level,
+          target_grade: prescriptionInfo.target_grade,
           weakness_tags: prescriptionInfo.weakness_tags,
           variation_changes: variationChanges,
         });
@@ -1051,7 +1051,7 @@ function Screen3Variation({
         const res = await callTutoringEF("generate-transformation", {
           training_session_id: trainingSessionId,
           question_type: prescriptionInfo.question_type,
-          target_level: prescriptionInfo.target_level,
+          target_grade: prescriptionInfo.target_grade,
         });
         setTransformationData(res.transformation);
       } catch {
@@ -1453,7 +1453,7 @@ function Screen4Timed({
   onNext,
 }: {
   trainingSessionId: string;
-  prescriptionInfo: { question_type: string; target_level: string; weakness_tags: string[]; timerConfig: { prep: number; main: number; wrap: number } };
+  prescriptionInfo: { question_type: string; target_grade: string; weakness_tags: string[]; timerConfig: { prep: number; main: number; wrap: number } };
   timedEval: TimedEvaluation | null;
   setTimedEval: (e: TimedEvaluation) => void;
   onNext: () => void;
@@ -1559,7 +1559,7 @@ function Screen4Timed({
           question_type: prescriptionInfo.question_type,
           user_answer: capturedText,
           audio_duration_seconds: capturedDuration,
-          target_level: prescriptionInfo.target_level,
+          target_grade: prescriptionInfo.target_grade,
         });
         setTimedEval(res.evaluation);
 

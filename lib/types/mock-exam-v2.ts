@@ -95,7 +95,7 @@ export interface MockExamResultV2 {
     int_pass_rate: number | null;
     adv_pass_rate: number | null;
     al_pass_rate: number | null;
-    target_level: string | null;
+    target_grade: string | null;
     valid_question_count: number | null;
     avg_accuracy_score: number | null;
     avg_prosody_score: number | null;

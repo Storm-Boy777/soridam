@@ -16,7 +16,7 @@ export interface AdminScriptListItem {
   topic: string | null;
   category: string | null;
   question_korean: string | null;
-  target_level: string | null;
+  target_grade: string | null;
   question_type: string | null;
   word_count: number | null;
   status: string;
@@ -61,7 +61,7 @@ export async function getAdminScriptStats(): Promise<AdminScriptStats> {
       .eq("status", "draft"),
     supabase
       .from("scripts")
-      .select("target_level, question_type, word_count"),
+      .select("target_grade, question_type, word_count"),
   ]);
 
   // 등급별, 타입별 분포 계산
@@ -70,8 +70,8 @@ export async function getAdminScriptStats(): Promise<AdminScriptStats> {
   let totalWords = 0;
   let wordCountN = 0;
   for (const s of distributionRes.data || []) {
-    if (s.target_level) {
-      levelDistribution[s.target_level] = (levelDistribution[s.target_level] || 0) + 1;
+    if (s.target_grade) {
+      levelDistribution[s.target_grade] = (levelDistribution[s.target_grade] || 0) + 1;
     }
     if (s.question_type) {
       typeDistribution[s.question_type] = (typeDistribution[s.question_type] || 0) + 1;
@@ -110,14 +110,14 @@ export async function getAdminScripts(params: {
 
   let query = supabase
     .from("scripts")
-    .select("id, user_id, question_id, source, title, topic, category, question_korean, target_level, question_type, word_count, status, refine_count, created_at", { count: "exact" });
+    .select("id, user_id, question_id, source, title, topic, category, question_korean, target_grade, question_type, word_count, status, refine_count, created_at", { count: "exact" });
 
   if (params.status && params.status !== "all") {
     query = query.eq("status", params.status);
   }
 
   if (params.level && params.level !== "all") {
-    query = query.eq("target_level", params.level);
+    query = query.eq("target_grade", params.level);
   }
 
   if (params.type && params.type !== "all") {
@@ -154,7 +154,7 @@ export async function getAdminScripts(params: {
     topic: s.topic,
     category: s.category,
     question_korean: s.question_korean,
-    target_level: s.target_level,
+    target_grade: s.target_grade,
     question_type: s.question_type,
     word_count: s.word_count,
     status: s.status,

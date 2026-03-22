@@ -249,7 +249,7 @@ async function handleGenerate(supabase: any, body: any) {
   const { system, user } = await assemblePass1Prompt(
     supabase,
     script.question_type,
-    script.target_level,
+    script.target_grade,
     script.question_english,
     script.question_korean,
     script.user_story || "",
@@ -262,7 +262,7 @@ async function handleGenerate(supabase: any, body: any) {
   const analysisLists = await runPass2Analysis(
     supabase,
     pass1Result.full_text.english,
-    script.target_level,
+    script.target_grade,
     script.question_type,
     script.question_english
   );
@@ -329,7 +329,7 @@ async function handleCorrect(supabase: any, body: any) {
   const { system, user } = await assemblePass1Prompt(
     supabase,
     script.question_type,
-    script.target_level,
+    script.target_grade,
     script.question_english,
     script.question_korean,
     script.user_original_answer || "",
@@ -342,7 +342,7 @@ async function handleCorrect(supabase: any, body: any) {
   const analysisLists = await runPass2Analysis(
     supabase,
     pass1Result.full_text.english,
-    script.target_level,
+    script.target_grade,
     script.question_type,
     script.question_english
   );
@@ -410,7 +410,7 @@ async function handleRefine(supabase: any, body: any) {
   const { system, user: baseUser } = await assemblePass1Prompt(
     supabase,
     script.question_type,
-    script.target_level,
+    script.target_grade,
     script.question_english,
     script.question_korean,
     script.source === "correct"
@@ -448,7 +448,7 @@ ${user_prompt || "전체적으로 더 자연스럽게 개선해주세요."}
   const analysisLists = await runPass2Analysis(
     supabase,
     pass1Result.full_text.english,
-    script.target_level,
+    script.target_grade,
     script.question_type,
     script.question_english
   );
@@ -842,7 +842,7 @@ async function handleEvaluate(supabase: any, body: any, authHeader: string) {
     // 스크립트 정보 조회
     const { data: script } = await supabase
       .from("scripts")
-      .select("english_text, key_expressions, question_english, target_level")
+      .select("english_text, key_expressions, question_english, target_grade")
       .eq("id", session.script_id)
       .single();
 
@@ -868,7 +868,7 @@ ${script?.english_text || "(스크립트 없음)"}
 ${(script?.key_expressions || []).join(", ") || "(없음)"}
 
 ## 목표 등급
-${script?.target_level || "IM2"}
+${script?.target_grade || "IM2"}
 
 ## 학생 발화 (STT 결과)
 ${transcript}

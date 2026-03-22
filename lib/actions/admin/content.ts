@@ -187,7 +187,7 @@ export async function getScriptSpecs(params: {
   const { data, count } = await supabase
     .from("script_specs")
     .select("*", { count: "exact" })
-    .order("target_level")
+    .order("target_grade")
     .order("question_type")
     .range(offset, offset + pageSize - 1);
 

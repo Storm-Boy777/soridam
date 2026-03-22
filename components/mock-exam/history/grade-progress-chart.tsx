@@ -10,7 +10,7 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, ChevronRight } from "lucide-react";
 import type { MockExamHistoryItem } from "@/lib/types/mock-exam";
 import {
   OPIC_LEVEL_ORDER,
@@ -200,24 +200,42 @@ export function GradeProgressChart({ data }: GradeProgressChartProps) {
   );
 }
 
-/* ── 1회차 현재 상태 카드 ── */
+/* ── 1회차: 등급 추이 안내 카드 ── */
 
-export function CurrentStateCard({ data }: { data: MockExamHistoryItem }) {
-  const level = data.final_level;
+export function CurrentStateCard({ data, targetGrade }: { data: MockExamHistoryItem; targetGrade?: string }) {
+  const level = data.final_level || "—";
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-3 sm:p-4">
-      <h4 className="text-xs font-semibold text-foreground sm:text-sm">현재 수준</h4>
+    <div className="flex flex-col items-center rounded-xl border border-border bg-surface p-4 sm:p-6">
+      {/* 아이콘 + 제목 */}
+      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-50 sm:h-12 sm:w-12">
+        <TrendingUp size={20} className="text-primary-500" />
+      </div>
+      <h4 className="mt-2.5 text-sm font-semibold text-foreground sm:text-base">등급 추이 그래프</h4>
+      <p className="mt-1 text-center text-xs leading-relaxed text-foreground-muted">
+        한 번 더 응시하면 등급 변화를<br className="sm:hidden" /> 그래프로 비교할 수 있어요
+      </p>
 
-      <div className="mt-3 flex items-center justify-center sm:mt-4">
-        {/* 등급 배지 */}
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary-50">
-          <span className="text-xl font-bold text-primary-600">{level}</span>
+      {/* 미리보기: 현재 → 목표 */}
+      <div className="mt-4 flex items-center gap-3 rounded-lg bg-surface-secondary/60 px-4 py-2.5 sm:gap-4 sm:px-5 sm:py-3">
+        <div className="flex flex-col items-center">
+          <span className="text-[10px] text-foreground-muted">현재</span>
+          <span className="mt-0.5 text-base font-bold text-primary-600 sm:text-lg">{level}</span>
         </div>
+        {targetGrade && (
+          <>
+            <ChevronRight size={16} className="text-foreground-muted" />
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] text-foreground-muted">목표</span>
+              <span className="mt-0.5 text-base font-bold text-foreground-secondary sm:text-lg">{targetGrade}</span>
+            </div>
+          </>
+        )}
       </div>
 
-      <p className="mt-3 text-center text-xs text-foreground-secondary sm:mt-4">
-        다음 응시 후 성장 추이를 확인할 수 있습니다
+      {/* 안내 */}
+      <p className="mt-3 text-center text-[11px] text-foreground-muted sm:mt-4">
+        다음 응시 후 추이 그래프가 표시됩니다
       </p>
     </div>
   );

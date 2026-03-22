@@ -5,7 +5,8 @@
  *       과제충족/소견/방향/WP는 consult가 담당.
  *
  * 호출: 1문항 1호출
- * 입력: { session_id, question_number, target_grade?, model? }
+ * 입력: { session_id, question_number, model? }
+ * 목표 등급: user_metadata.target_grade에서 직접 조회 (SSOT)
  * 처리: DB에서 프롬프트 로드 → 체크박스 정의 동적 주입 → GPT-4.1 호출 → DB 저장
  *       → consult fire-and-forget 체인
  *
@@ -197,7 +198,6 @@ async function callGptDiagnose(
 function fireAndForgetConsult(
   sessionId: string,
   questionNumber: number,
-  targetGrade: string,
 ): void {
   fetch(`${SUPABASE_URL}/functions/v1/mock-test-consult`, {
     method: "POST",
@@ -208,7 +208,6 @@ function fireAndForgetConsult(
     body: JSON.stringify({
       session_id: sessionId,
       question_number: questionNumber,
-      target_grade: targetGrade,
     }),
   }).catch((err) => {
     console.error(
@@ -232,12 +231,10 @@ Deno.serve(async (req: Request) => {
     const {
       session_id,
       question_number,
-      target_grade,
       model = "gpt-4.1",
     } = body as {
       session_id: string;
       question_number: number;
-      target_grade?: string;
       model?: string;
     };
 
@@ -309,7 +306,10 @@ Deno.serve(async (req: Request) => {
       .single();
 
     const questionType = qMeta?.question_type_eng || "description";
-    const effectiveTargetGrade = target_grade || "IH";
+
+    // 목표 등급: 사용자 프로필(user_metadata)에서 직접 조회 (SSOT)
+    const { data: authUser } = await supabase.auth.admin.getUserById(session.user_id);
+    const target_grade = (authUser?.user?.user_metadata?.target_grade as string) || "IH";
 
     // ── 3. 체크박스 세트 조회 ──
 
@@ -342,7 +342,7 @@ Deno.serve(async (req: Request) => {
           question_number,
           question_id: answer.question_id,
           question_type: questionType,
-          target_grade: effectiveTargetGrade,
+          target_grade: target_grade,
           checkboxes: skippedCheckboxes,
           checkbox_type: checkboxType,
           pass_count: 0,
@@ -358,7 +358,7 @@ Deno.serve(async (req: Request) => {
       );
 
       // 무응답이어도 consult 호출 (consult에서도 skipped 처리)
-      fireAndForgetConsult(session_id, question_number, effectiveTargetGrade);
+      fireAndForgetConsult(session_id, question_number);
 
       return new Response(
         JSON.stringify({
@@ -446,7 +446,7 @@ Deno.serve(async (req: Request) => {
           question_number,
           question_id: answer.question_id,
           question_type: questionType,
-          target_grade: effectiveTargetGrade,
+          target_grade: target_grade,
           checkboxes: validated,
           checkbox_type: checkboxType,
           pass_count: passCount,
@@ -470,7 +470,7 @@ Deno.serve(async (req: Request) => {
 
     // ── 8. consult fire-and-forget 체인 ──
 
-    fireAndForgetConsult(session_id, question_number, effectiveTargetGrade);
+    fireAndForgetConsult(session_id, question_number);
 
     // ── 9. 응답 ──
 

@@ -78,7 +78,7 @@ interface DiagnosisResult {
   mockReports: Array<{
     session_id: string;
     final_level: string;
-    target_level: string;
+    target_grade: string;
     score_f: number;
     score_a: number;
     score_c: number;
@@ -277,10 +277,10 @@ export async function createTrainingSession(
       return { data: { training_session_id: existingTs.id } };
     }
 
-    // 세션에서 target_level 조회
+    // 세션에서 target_grade 조회
     const { data: tutoringSession } = await supabase
       .from("tutoring_sessions")
-      .select("target_level")
+      .select("target_grade")
       .eq("id", prescription.session_id)
       .single();
 
@@ -293,7 +293,7 @@ export async function createTrainingSession(
         session_type: input.session_type || "guided",
         question_type: prescription.question_type,
         topic_id: prescription.topic_id,
-        target_level: tutoringSession?.target_level || null,
+        target_grade: tutoringSession?.target_grade || null,
         level_params: prescription.level_params,
       })
       .select("id")

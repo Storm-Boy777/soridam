@@ -572,7 +572,7 @@ function UserDetailView({
                   <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${getQuestionTypeColor(s.question_type)}`}>
                     {getQuestionTypeLabel(s.question_type)}
                   </span>
-                  <GradeBadge level={s.target_level} />
+                  <GradeBadge level={s.target_grade} />
                   <StatusBadge status={s.status} />
                 </div>
               </div>
@@ -613,7 +613,7 @@ function UserDetailView({
               <div key={t.id} className="flex items-center justify-between px-4 py-2.5 text-sm">
                 <div className="flex items-center gap-3">
                   <span className="text-foreground-secondary">{formatDate(t.created_at)}</span>
-                  <GradeBadge level={t.target_level} />
+                  <GradeBadge level={t.target_grade} />
                 </div>
                 <div className="flex items-center gap-3">
                   <StatusBadge status={t.status} />

@@ -14,7 +14,7 @@ export const generateScriptSchema = z.object({
   question_english: z.string().min(1, "영어 질문이 필요합니다"),
   question_korean: z.string().min(1, "한국어 질문이 필요합니다"),
   question_type: z.string().min(1, "답변 유형이 필요합니다"),
-  target_level: z.enum(TARGET_LEVELS, { message: "목표 등급을 선택해주세요" }),
+  target_grade: z.enum(TARGET_LEVELS, { message: "목표 등급을 선택해주세요" }),
   user_story: z
     .string()
     .max(2000, "스토리는 2000자 이내로 입력해주세요")
@@ -33,7 +33,7 @@ export const correctScriptSchema = z.object({
   question_english: z.string().min(1, "영어 질문이 필요합니다"),
   question_korean: z.string().min(1, "한국어 질문이 필요합니다"),
   question_type: z.string().min(1, "답변 유형이 필요합니다"),
-  target_level: z.enum(TARGET_LEVELS, { message: "목표 등급을 선택해주세요" }),
+  target_grade: z.enum(TARGET_LEVELS, { message: "목표 등급을 선택해주세요" }),
   user_original_answer: z
     .string()
     .min(10, "영어 답변을 10자 이상 입력해주세요")

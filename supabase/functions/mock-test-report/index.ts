@@ -327,7 +327,9 @@ Deno.serve(async (req: Request) => {
 
     // ── 4. GPT 입력 데이터 구성 ──
 
-    const targetGrade = consults[0]?.target_grade || "IH";
+    // 목표 등급: 사용자 프로필(user_metadata)에서 직접 조회 (SSOT)
+    const { data: authUser } = await supabase.auth.admin.getUserById(session.user_id);
+    const target_grade = (authUser?.user?.user_metadata?.target_grade as string) || "IH";
 
     // 발화 통계 집계
     let totalDuration = 0, totalWords = 0, totalFillers = 0;
@@ -418,7 +420,7 @@ Deno.serve(async (req: Request) => {
     // ── 5. Overview GPT 호출 ──
 
     const overviewUser = substituteVariables(pm["report_overview_user"], {
-      target_level: targetGrade,
+      target_grade: target_grade,
       final_level: finalLevel,
       total_questions: String(totalEvals),
       fulfillment_summary: fulfillmentSummary,
@@ -441,7 +443,7 @@ Deno.serve(async (req: Request) => {
     // ── 6. Growth GPT 호출 (병렬) ──
 
     const growthUser = substituteVariables(pm["report_growth_user"], {
-      target_level: targetGrade,
+      target_grade: target_grade,
       final_level: finalLevel,
       total_questions: String(totalEvals),
       fulfillment_summary: fulfillmentSummary,
@@ -484,7 +486,7 @@ Deno.serve(async (req: Request) => {
           overview: overviewResult.result,
           growth: growthResult.result,
           final_level: finalLevel,
-          target_level: targetGrade,
+          target_grade: target_grade,
           rule_engine_result: ruleEngineResult || {},
           aggregated_checkboxes: ruleEngineResult
             ? {
@@ -514,7 +516,7 @@ Deno.serve(async (req: Request) => {
         session_id,
         model,
         final_level: finalLevel,
-        target_level: targetGrade,
+        target_grade: target_grade,
         total_tokens: totalTokens,
         total_time_ms: Date.now() - startTime,
       }),

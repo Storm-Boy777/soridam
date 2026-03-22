@@ -150,7 +150,7 @@ export async function getQuestionsData(
         .order("question_number"),
       supabase
         .from("mock_test_reports")
-        .select("final_level, target_level")
+        .select("final_level, target_grade")
         .eq("session_id", sessionId)
         .single(),
     ]);
@@ -227,7 +227,7 @@ export async function getQuestionsData(
 
     return {
       data: {
-        target_grade: reportRes.data?.target_level || consultsRes.data[0]?.target_grade || "IH",
+        target_grade: reportRes.data?.target_grade || consultsRes.data[0]?.target_grade || "IH",
         session_grade: reportRes.data?.final_level || "IM2",
         evaluations,
       },
@@ -417,7 +417,7 @@ export async function getGrowthData(
     // 현재 세션 report
     const { data: report } = await supabase
       .from("mock_test_reports")
-      .select("final_level, target_level, growth")
+      .select("final_level, target_grade, growth")
       .eq("session_id", sessionId)
       .single();
 
@@ -476,7 +476,7 @@ export async function getGrowthData(
         date: session.started_at || "",
         session_count: currentSessionCount,
       },
-      target_grade: report.target_level || "IH",
+      target_grade: report.target_grade || "IH",
       grade_history: gradeHistory,
       grade_change: {
         previous: prevGrade,

@@ -128,7 +128,7 @@ export async function createScript(
           question_english: parsed.data.question_english,
           question_korean: parsed.data.question_korean,
           question_type: parsed.data.question_type,
-          target_level: parsed.data.target_level,
+          target_grade: parsed.data.target_grade,
           user_story: parsed.data.user_story || null,
           status: "draft",
           refine_count: 0,
@@ -227,7 +227,7 @@ export async function createCorrectScript(
           question_english: parsed.data.question_english,
           question_korean: parsed.data.question_korean,
           question_type: parsed.data.question_type,
-          target_level: parsed.data.target_level,
+          target_grade: parsed.data.target_grade,
           user_original_answer: parsed.data.user_original_answer,
           status: "draft",
           refine_count: 0,
@@ -441,7 +441,7 @@ export async function getMyScripts(): Promise<ActionResult<ScriptListItem[]>> {
       .from("scripts")
       .select(`
         id, question_id, source, title, english_text,
-        topic, category, question_korean, question_english, target_level,
+        topic, category, question_korean, question_english, target_grade,
         question_type, word_count, status, refine_count,
         created_at, updated_at,
         script_packages(id, status, progress),
@@ -532,7 +532,7 @@ export async function getScriptSpec(
       .from("script_specs")
       .select("*")
       .eq("question_type", questionType)
-      .eq("target_level", targetLevel)
+      .eq("target_grade", targetLevel)
       .single();
 
     if (error || !data) {
@@ -752,7 +752,7 @@ export async function getShadowingData(
 
     const { data: script, error: scriptError } = await supabase
       .from("scripts")
-      .select("question_english, question_korean, topic, key_expressions, target_level")
+      .select("question_english, question_korean, topic, key_expressions, target_grade")
       .eq("id", pkg.script_id)
       .single();
 
@@ -784,7 +784,7 @@ export async function getShadowingData(
         questionKorean: script.question_korean,
         topic: script.topic,
         keyExpressions: script.key_expressions || [],
-        targetLevel: script.target_level,
+        targetLevel: script.target_grade,
         ttsVoice: pkg.tts_voice,
         packageStatus: pkg.status,
       },
@@ -881,7 +881,7 @@ export async function getShadowableScripts(): Promise<
       .from("scripts")
       .select(`
         id, question_id, source, title, english_text,
-        topic, category, question_korean, question_english, target_level,
+        topic, category, question_korean, question_english, target_grade,
         question_type, word_count, status, refine_count,
         created_at, updated_at,
         script_packages!inner(id, status, progress)

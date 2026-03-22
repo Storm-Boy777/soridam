@@ -101,7 +101,7 @@ export type Database = {
           criteria_text: string
           id: string
           question_type: string
-          target_level: string
+          target_grade: string
           updated_at: string | null
         }
         Insert: {
@@ -109,7 +109,7 @@ export type Database = {
           criteria_text: string
           id?: string
           question_type: string
-          target_level: string
+          target_grade: string
           updated_at?: string | null
         }
         Update: {
@@ -117,7 +117,7 @@ export type Database = {
           criteria_text?: string
           id?: string
           question_type?: string
-          target_level?: string
+          target_grade?: string
           updated_at?: string | null
         }
         Relationships: []
@@ -425,7 +425,7 @@ export type Database = {
           rule_engine_result: Json | null
           session_id: string
           status: string
-          target_level: string | null
+          target_grade: string | null
           tokens_used: number
           user_id: string
         }
@@ -442,7 +442,7 @@ export type Database = {
           rule_engine_result?: Json | null
           session_id: string
           status?: string
-          target_level?: string | null
+          target_grade?: string | null
           tokens_used?: number
           user_id: string
         }
@@ -459,7 +459,7 @@ export type Database = {
           rule_engine_result?: Json | null
           session_id?: string
           status?: string
-          target_level?: string | null
+          target_grade?: string | null
           tokens_used?: number
           user_id?: string
         }
@@ -772,7 +772,7 @@ export type Database = {
           level_constraints: string
           question_type: string
           slot_structure: string
-          target_level: string
+          target_grade: string
           total_slots: number
           updated_at: string | null
         }
@@ -785,7 +785,7 @@ export type Database = {
           level_constraints: string
           question_type: string
           slot_structure: string
-          target_level: string
+          target_grade: string
           total_slots: number
           updated_at?: string | null
         }
@@ -798,7 +798,7 @@ export type Database = {
           level_constraints?: string
           question_type?: string
           slot_structure?: string
-          target_level?: string
+          target_grade?: string
           total_slots?: number
           updated_at?: string | null
         }
@@ -823,7 +823,7 @@ export type Database = {
           refine_count: number
           source: string
           status: string
-          target_level: string | null
+          target_grade: string | null
           title: string | null
           topic: string | null
           total_slots: number | null
@@ -851,7 +851,7 @@ export type Database = {
           refine_count?: number
           source?: string
           status?: string
-          target_level?: string | null
+          target_grade?: string | null
           title?: string | null
           topic?: string | null
           total_slots?: number | null
@@ -879,7 +879,7 @@ export type Database = {
           refine_count?: number
           source?: string
           status?: string
-          target_level?: string | null
+          target_grade?: string | null
           title?: string | null
           topic?: string | null
           total_slots?: number | null
@@ -1441,7 +1441,7 @@ export type Database = {
           mock_test_session_id: string
           started_at: string | null
           status: string | null
-          target_level: string | null
+          target_grade: string | null
           total_prescriptions: number | null
           user_id: string
         }
@@ -1454,7 +1454,7 @@ export type Database = {
           mock_test_session_id: string
           started_at?: string | null
           status?: string | null
-          target_level?: string | null
+          target_grade?: string | null
           total_prescriptions?: number | null
           user_id: string
         }
@@ -1467,7 +1467,7 @@ export type Database = {
           mock_test_session_id?: string
           started_at?: string | null
           status?: string | null
-          target_level?: string | null
+          target_grade?: string | null
           total_prescriptions?: number | null
           user_id?: string
         }
@@ -1540,7 +1540,7 @@ export type Database = {
           session_type: string | null
           started_at: string | null
           success_criteria: Json | null
-          target_level: string | null
+          target_grade: string | null
           topic_id: string | null
           user_id: string
         }
@@ -1559,7 +1559,7 @@ export type Database = {
           session_type?: string | null
           started_at?: string | null
           success_criteria?: Json | null
-          target_level?: string | null
+          target_grade?: string | null
           topic_id?: string | null
           user_id: string
         }
@@ -1578,7 +1578,7 @@ export type Database = {
           session_type?: string | null
           started_at?: string | null
           success_criteria?: Json | null
-          target_level?: string | null
+          target_grade?: string | null
           topic_id?: string | null
           user_id?: string
         }

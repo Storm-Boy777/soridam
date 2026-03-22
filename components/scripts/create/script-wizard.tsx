@@ -303,7 +303,7 @@ export function ScriptWizard({
         question_english: selectedQuestion.question_english,
         question_korean: selectedQuestion.question_korean,
         question_type: selectedQuestion.question_type,
-        target_level: targetLevel,
+        target_grade: targetLevel,
         user_story: userInput,
       };
 
@@ -407,7 +407,7 @@ export function ScriptWizard({
         question_english: question.question_english,
         question_korean: question.question_korean,
         question_type: question.question_type,
-        target_level: scriptDetail?.target_level || targetLevel,
+        target_grade: scriptDetail?.target_grade || targetLevel,
         user_story: regenerateStory,
       };
 
@@ -1312,9 +1312,9 @@ function Step4Result({
     <div className="space-y-4">
       {/* 메타 바 */}
       <div className="flex flex-wrap items-center gap-2">
-        {detail.target_level && (
+        {detail.target_grade && (
           <span className="inline-flex items-center rounded-full bg-primary-500 px-2.5 py-1 text-xs font-semibold text-white">
-            {detail.target_level}
+            {detail.target_grade}
           </span>
         )}
         {detail.question_type && (
@@ -1434,7 +1434,7 @@ function Step4Result({
           reusablePatterns={detail.paragraphs?.reusable_patterns}
           similarQuestions={detail.paragraphs?.similar_questions}
           expansionIdeas={detail.paragraphs?.expansion_ideas}
-          targetLevel={detail.target_level}
+          targetLevel={detail.target_grade}
         />
       )}
 

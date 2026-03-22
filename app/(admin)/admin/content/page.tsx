@@ -235,7 +235,7 @@ function SpecsTab() {
   useEffect(() => { fetch(); }, [fetch]);
 
   const columns = [
-    { key: "target_level", label: "등급" },
+    { key: "target_grade", label: "등급" },
     { key: "question_type", label: "질문 유형" },
     { key: "total_slots", label: "슬롯" },
     {
