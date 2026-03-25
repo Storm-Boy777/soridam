@@ -5,6 +5,7 @@ import {
   getAdminQuestions,
   getPromptTemplates,
   getEvalPrompts,
+  getTutoringPrompts,
   getOpicTips,
   getScriptSpecs,
   updatePromptTemplate,
@@ -18,12 +19,13 @@ interface AdminTableRow {
   [key: string]: unknown;
 }
 
-type TabKey = "questions" | "prompts" | "eval_prompts" | "tips" | "specs";
+type TabKey = "questions" | "prompts" | "eval_prompts" | "tutoring_prompts" | "tips" | "specs";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "questions", label: "질문 DB" },
   { key: "prompts", label: "AI 프롬프트" },
   { key: "eval_prompts", label: "평가 프롬프트" },
+  { key: "tutoring_prompts", label: "튜터링 프롬프트" },
   { key: "tips", label: "학습 팁" },
   { key: "specs", label: "스크립트 규격서" },
 ];
@@ -55,6 +57,7 @@ export default function AdminContentPage() {
       {tab === "questions" && <QuestionsTab />}
       {tab === "prompts" && <PromptsTab />}
       {tab === "eval_prompts" && <EvalPromptsTab />}
+      {tab === "tutoring_prompts" && <TutoringPromptsTab />}
       {tab === "tips" && <TipsTab />}
       {tab === "specs" && <SpecsTab />}
     </div>
@@ -163,6 +166,42 @@ function EvalPromptsTab() {
       ))}
       {prompts.length === 0 && (
         <p className="py-8 text-center text-sm text-foreground-muted">평가 프롬프트가 없습니다</p>
+      )}
+    </div>
+  );
+}
+
+// ── 튜터링 프롬프트 탭 ──
+function TutoringPromptsTab() {
+  const [prompts, setPrompts] = useState<{ id: string; name: string; content: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getTutoringPrompts().then((data) => {
+      setPrompts(data);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return <LoadingSkeleton />;
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-foreground-muted">
+        Prompt C(진단) · D(처방) · E(드릴생성) · F(재발화피드백) — 각각 system / schema / user 3행
+      </p>
+      {prompts.map((p) => (
+        <PromptEditor
+          key={p.id}
+          id={p.id}
+          name={p.name}
+          initialContent={p.content}
+          onSave={updateEvalPrompt}
+          showHistory={false}
+        />
+      ))}
+      {prompts.length === 0 && (
+        <p className="py-8 text-center text-sm text-foreground-muted">튜터링 프롬프트가 없습니다</p>
       )}
     </div>
   );

@@ -142,8 +142,22 @@ export async function getEvalPrompts() {
   const { data } = await supabase
     .from("evaluation_prompts")
     .select("id, key, prompt_text, description")
+    .not("key", "like", "tutoring_%")
     .order("key");
-  // PromptEditor 형식으로 변환
+  return (data || []).map((row: Record<string, unknown>) => ({
+    id: row.id as string,
+    name: (row.description as string) || (row.key as string),
+    content: (row.prompt_text as string) || "",
+  }));
+}
+
+export async function getTutoringPrompts() {
+  const { supabase } = await requireAdmin();
+  const { data } = await supabase
+    .from("evaluation_prompts")
+    .select("id, key, prompt_text, description")
+    .like("key", "tutoring_%")
+    .order("key");
   return (data || []).map((row: Record<string, unknown>) => ({
     id: row.id as string,
     name: (row.description as string) || (row.key as string),

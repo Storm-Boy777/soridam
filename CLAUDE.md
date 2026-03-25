@@ -74,7 +74,8 @@ docs/
 │   ├── 시험후기.md      ← submissions 3테이블, 콤보 생성
 │   ├── 모의고사.md      ← 5테이블, 평가엔진, Realtime
 │   ├── 스크립트.md      ← scripts 통합 테이블, RCTF 프롬프트
-│   ├── 튜터링.md        ← 6테이블, 4레벨 재설계
+│   ├── 튜터링.md        ← **재설계 완료** (전문가 자문, C→D→QSE→E→L1→F 파이프라인)
+│   ├── 튜터링-시뮬레이션-데이터.md  ← 소리담 실데이터 시뮬레이션 근거
 │   ├── 쉐도잉.md        ← 2테이블, 클라이언트 완결
 │   ├── 관리자.md        ← 관리자 시스템 전체 (11페이지, 38 SA, 평가설정)
 │   └── weak-point-tagging-prompt.md ← GPT weak_point 태깅 프롬프트 v2 (36개 코드)
@@ -254,14 +255,17 @@ opictalkdoc/                 # Git 루트 = Next.js 루트 (표준 구조)
 │       ├── _shared/
 │       │   ├── azure-pronunciation.ts     # Azure Speech SDK 발음 평가 (WebSocket)
 │       │   ├── skip-detector.ts           # 3단계 스킵 판정 (15초/15자/환청)
-│       │   ├── checkbox-definitions.ts    # 체크박스 ID 정의 + FACT 매핑 + 누적 로직
+│       │   ├── checkbox-definitions.ts    # 체크박스 74개 ID 정의 + FACT 매핑 + 누적 로직
+│       │   ├── question-type-map.ts       # question_type 매핑 유틸
 │       │   └── rule-engine.ts             # 평가엔진 7-Step + FACT 점수 계산
 │       ├── scripts/index.ts               # Edge Function (generate/correct/refine/evaluate)
 │       ├── scripts-package/index.ts       # Edge Function (TTS 패키지 + 타임스탬프)
-│       ├── mock-test-process/index.ts     # Edge Function Stage A (Whisper STT + Azure 발음)
-│       ├── mock-test-eval/index.ts        # Edge Function Stage B (GPT-4.1 체크박스 평가)
-│       ├── mock-test-report/index.ts      # Edge Function Stage C (평가엔진 + FACT + GPT 리포트)
-│       └── tutoring/index.ts              # Edge Function (8 handler: brief/warmup/epp/variation/transformation/timed/repair/complete)
+│       ├── mock-test-process/index.ts     # Stage A (Whisper STT + Azure 발음) → eval 체인
+│       ├── mock-test-eval/index.ts        # Stage B-1 (GPT-4.1 체크박스 74개 판정) → consult 체인
+│       ├── mock-test-consult/index.ts     # Stage B-2 (GPT-4.1 소견/방향/WP 생성) → report 체인
+│       ├── mock-test-report/index.ts      # Stage C (평가엔진 + overview/growth GPT) → DB 저장
+│       ├── admin-trigger-eval/index.ts    # 관리자용 평가 수동 트리거 (fire-and-forget)
+│       └── (tutoring EF — 삭제됨, 새 설계 기반 재생성 예정)
 ├── app/                     # App Router 페이지
 │   ├── providers.tsx        # QueryClientProvider 래퍼
 │   ├── (admin)/             # 관리자 라우트 그룹 (사이드바 + 역할 검증)
@@ -285,23 +289,27 @@ opictalkdoc/                 # Git 루트 = Next.js 루트 (표준 구조)
 │   │   ├── start/
 │   │   │   ├── mode-selector.tsx      # 모드 선택 (훈련/실전)
 │   │   │   ├── device-test.tsx        # 마이크 테스트
-│   │   │   └── question-pool-selector.tsx # 기출 선택
+│   │   │   ├── exam-pool-selector.tsx # 기출 선택
+│   │   │   └── survey-intro.tsx       # 서베이 인트로
 │   │   ├── session/
 │   │   │   ├── mock-exam-session-wrapper.tsx # 세션 래퍼 + 복원 UX
-│   │   │   ├── mock-exam-session.tsx  # 시험 진행 메인 (520줄)
+│   │   │   ├── mock-exam-session.tsx  # 시험 진행 메인
 │   │   │   ├── session-timer.tsx      # 타이머 (훈련 경과/실전 카운트다운)
-│   │   │   └── question-grid.tsx      # 15문항 상태 그리드
-│   │   ├── result/
-│   │   │   ├── result-summary.tsx     # 결과 요약 (FACT, 영역, 발음, 훈련 권장)
-│   │   │   ├── result-detail.tsx      # 문항별 상세 아코디언
-│   │   │   └── growth-report.tsx      # 성장 리포트 7섹션 (비교표, 원인, FACT해석, 병목, CTA)
+│   │   │   ├── question-grid.tsx      # 15문항 상태 그리드
+│   │   │   ├── ava-avatar.tsx         # AVA 아바타
+│   │   │   └── training-eval-panel.tsx # 훈련 모드 실시간 평가
+│   │   ├── result/                  # 결과 페이지 (4탭)
+│   │   │   ├── result-page.tsx      # 4탭 래퍼 (종합진단/세부진단/문항별/성장)
+│   │   │   ├── tab-overview.tsx     # 종합 진단 (FACT, 코칭)
+│   │   │   ├── tab-diagnosis.tsx    # 세부진단 (체크박스 pass/fail 진단표)
+│   │   │   ├── tab-questions.tsx    # 문항별 상세 (아코디언, 음성, WP 태그)
+│   │   │   └── tab-growth.tsx       # 성장 리포트 (비교표, 병목, CTA)
 │   │   ├── history/
-│   │   │   └── grade-progress-chart.tsx # 등급 추이 그래프 (Recharts, 준비도, FACT, 병목)
+│   │   │   └── grade-progress-chart.tsx # 등급 추이 그래프 (Recharts)
 │   │   └── evaluation/
 │   │       └── eval-waiting.tsx       # 평가 대기 + 진행률
-│   ├── tutoring/            # 튜터링 모듈 UI
-│   │   ├── tutoring-content.tsx       # 3탭 래퍼 (진단/처방/훈련)
-│   │   └── training-session.tsx       # 훈련 세션 (Screen 0~6, 7개 프로토콜)
+│   ├── tutoring/            # 튜터링 V2 모듈 UI
+│   │   └── (삭제됨 — 새 설계 기반 재생성 예정)
 │   ├── admin/               # 관리자 컴포넌트 (8개)
 │   │   ├── admin-sidebar.tsx, admin-stat-card.tsx, admin-data-table.tsx
 │   │   ├── admin-import-content.tsx, credit-adjust-modal.tsx
@@ -320,8 +328,9 @@ opictalkdoc/                 # Git 루트 = Next.js 루트 (표준 구조)
 ├── lib/
 │   ├── actions/reviews.ts     # Server Actions (12개)
 │   ├── actions/scripts.ts     # Server Actions (16개)
-│   ├── actions/mock-exam.ts   # Server Actions (10개)
-│   ├── actions/tutoring.ts    # Server Actions (7개 + 처방엔진)
+│   ├── actions/mock-exam.ts   # Server Actions (10개: 세션CRUD, 이력)
+│   ├── actions/mock-exam-result.ts # Server Actions (6개: 4탭 데이터, 평가/리포트 트리거)
+│   ├── (actions/tutoring — 삭제됨, 새 설계 기반 재생성 예정)
 │   ├── actions/admin-reviews.ts  # 관리자 기출 입력 (requireAdmin 적용)
 │   ├── actions/admin/stats.ts    # 관리자 대시보드 통계 (2함수)
 │   ├── actions/admin/users.ts    # 사용자 관리 (3함수)
@@ -335,7 +344,10 @@ opictalkdoc/                 # Git 루트 = Next.js 루트 (표준 구조)
 │   ├── queries/master-questions.ts
 │   ├── react-query.ts        # QueryClient 팩토리 (서버/브라우저 싱글턴)
 │   ├── stores/shadowing.ts    # Zustand 쉐도잉 상태 (persist)
-│   ├── types/{reviews,scripts,mock-exam,tutoring,admin}.ts  # 타입 정의
+│   ├── types/{reviews,scripts,mock-exam,mock-exam-result,tutoring,admin}.ts  # 타입 정의
+│   ├── mock-data/mock-exam-result.ts           # 결과 고정 데이터 + 타입 (FulfillmentStatus 등)
+│   ├── mock-data/mock-exam-result-questions.ts # 문항별 평가 타입 (QuestionEvalV2Real, WeakPointV2)
+│   ├── mock-exam-result/diagnosis-transformer.ts # 체크박스 → 진단표 변환기
 │   ├── validations/{reviews,scripts,mock-exam}.ts # Zod 스키마
 │   ├── utils/combo-extractor.ts
 │   ├── auth.ts               # getUser() + getAuthClaims() + getAdminUser() + requireAdmin()
@@ -518,24 +530,49 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 | 03-15 | 결제 개선 ✅ | 카카오페이 연동 (결제 수단 선택 모달) + 스크립트 횟수권 10회→5회 |
 | 03-15 | 마이페이지 개선 ✅ | 플랜 탭 DB 기반 + 학습 탭 제거 + 주간학습목표 제거 |
 | 03-15 | UI/UX 개선 | PC 진행과정 화살표 + 제출이력 수직정렬 + 스크립트 크레딧 2회 통일 + 전략가이드 수치 제거 |
+| 03-25 | **튜터링 재설계** | 전문가 자문 기반 새 설계서 완성. 기존 V2 코드/DB 전부 삭제. 파이프라인 C→D→QSE→E→L1→F, 3단 등급, Layer1 규칙엔진, CO-STAR 프롬프트 |
+| 03-26 | **튜터링 구현** | Phase 1 전체 구현 (7테이블 + SA 12개 + EF 3개 + Layer1 엔진 + QSE + 9컴포넌트 + 2페이지) |
 
 <!-- 이후 새 이력은 이 테이블에 행 추가 + memory/개발이력.md에 상세 기록 -->
 
 ## 🔮 현재 상태 & 다음 단계
 
-**현재**: Phase 3 (핵심 모듈 이관) — Step 4 튜터링 ✅ + 성장리포트 ✅ + 관리자 ✅ + 플랜 리뉴얼 ✅ + 카카오페이 ✅
-**다음 작업**: 모의고사 평가 고도화 → 리브랜딩(P-5)
+**현재**: Phase 3 완료 + 튜터링 Phase 1 구현 완료
+**다음 작업**: 튜터링 EF 배포 + 실데이터 테스트 → 리브랜딩(P-5)
 
-### 튜터링 모듈 구현 현황
-| 영역 | 상태 | 상세 |
+### 모의고사 평가 파이프라인 (현행)
+```
+submitAnswer (SA) → fire-and-forget
+  ↓
+Stage A: mock-test-process (Whisper STT + Azure 발음)
+  ↓ fire-and-forget
+Stage B-1: mock-test-eval (GPT-4.1 체크박스 74개 pass/fail)
+  ↓ fire-and-forget
+Stage B-2: mock-test-consult (GPT-4.1 소견/방향/WP 생성)
+  ↓ 전체 완료 시 fire-and-forget
+Stage C: mock-test-report (평가엔진 7-Step + overview/growth GPT)
+```
+- **DB**: evaluations(체크박스) + consults(소견) + reports(종합) + answers(음성/STT)
+- **결과 페이지**: result-v2/ (4탭: 종합진단/세부진단/문항별/성장)
+- **SA V1** (`mock-exam.ts`): 세션 CRUD, 이력 조회 (10함수)
+- **SA V2** (`mock-exam-v2.ts`): 4탭 데이터, 평가/리포트 트리거 (6함수)
+
+### 튜터링 모듈 (Phase 1 구현 완료)
+> **설계서**: `docs/설계/튜터링.md` | **시뮬레이션 근거**: `docs/설계/튜터링-시뮬레이션-데이터.md`
+
+| 항목 | 상태 | 비고 |
 |------|------|------|
-| DB 스키마 (7테이블) | ✅ | `014_tutoring.sql` — sessions, prescriptions, training_sessions, attempts, review_schedule, skill_history + Storage |
-| Server Actions (7함수) | ✅ | getDiagnosis, startTutoringSession(+처방엔진), getPrescriptions, createTrainingSession, saveAttempt, completeTrainingSession, getTrainingHistory |
-| Type 정의 | ✅ | `lib/types/tutoring.ts` — 6타입 + LEVEL_PARAMS + DRILL_TAG 매핑 |
-| UI (3탭 + 훈련 세션) | ✅ | tutoring-content(진단/처방/훈련) + training-session(Screen 0~6) |
-| 페이지/라우트 | ✅ | `/tutoring` + `/tutoring/training` |
-| Edge Functions (8 handler) | ✅ | session-brief, generate-warmup, generate-epp, generate-variation, generate-transformation, evaluate-timed, evaluate-repair, complete-session |
-| Zod Validation | ⏳ | `lib/validations/tutoring.ts` 미구현 (선택사항) |
+| 설계서 | ✅ | 전문가 자문 기반. 파이프라인 C→D→QSE→E→L1→F |
+| DB 스키마 | ✅ | 028_tutoring.sql — 7테이블 + type_templates(10행) + level_modifiers(6행) |
+| 타입 정의 | ✅ | lib/types/tutoring.ts — 20+ 인터페이스 |
+| SA | ✅ | lib/actions/tutoring.ts — 12개 함수 |
+| QSE | ✅ | lib/tutoring/question-selection-engine.ts |
+| Layer 1 | ✅ | lib/tutoring/layer1-engine.ts — 10 type 마커 + 규칙 판정 |
+| EF 3개 | ✅ | tutoring-diagnose (Prompt C+D), tutoring-generate-drills (QSE+Prompt E), tutoring-evaluate (Whisper+L1+Prompt F) |
+| 페이지 2개 | ✅ | /tutoring (3탭), /tutoring/drill (immersive) |
+| 컴포넌트 9개 | ✅ | 진단탭, 훈련탭, 드릴플레이어, 재평가, 이력탭 등 |
+| 진입 조건 | ✅ | 모의고사 3회 이상, 최근 최대 5회, 재진입 시 새 3회 |
+| 다음 | ⏳ | EF 배포 + 실데이터 테스트 + 프롬프트 조정 |
 
 ### ⏳ 리브랜딩 작업 (P-5: 오픽톡닥 → 하루오픽)
 > Phase 3 전체 완료(Step 4 튜터링까지) 후 진행. 상세는 `docs/의사결정.md` P-5, `docs/실행계획.md` 참조.
@@ -565,9 +602,9 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 - **시험후기** (/reviews): 빈도 분석 | 후기 제출 | 시험 후기
 - **스크립트** (/scripts): 스크립트 생성 | 내 스크립트 | 쉐도잉 훈련
 - **모의고사** (/mock-exam): 응시 | 결과 | 나의 이력
-- **튜터링** (/tutoring): 진단 | 처방 | 훈련
+- **튜터링** (/tutoring): 진단 | 훈련 | 나의 튜터링
 
-### DB 현황 (28개 테이블)
+### DB 현황 (31개 테이블 — 튜터링 V1 7개 추가 + 참조 2개)
 - **questions**: 471행 (D-1 전면 교체 — 13컬럼, 새 ID 체계. 원본: `docs/질문 DB/questions_db.xlsx`)
 - **profiles**: 사용자 프로필 (Supabase Auth 연동)
 - **orders**: 결제 기록 테이블 (RLS: 본인 조회만)
@@ -575,7 +612,7 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 - **submissions**: 후기 마스터 (17컬럼 + credit_granted, RLS: 본인 CRUD + complete 전체 SELECT)
 - **submission_questions**: 14개 질문 기록 (FK → submissions, questions)
 - **submission_combos**: 통합 콤보 (인증: 전체 SELECT, 비인증: advance만)
-- **ai_prompt_templates**: 2행 RCTF System+User Prompt (스크립트+튜터링 공유)
+- **ai_prompt_templates**: 2행 RCTF System+User Prompt (스크립트 공유)
 - **script_specs**: 60행 등급별 규격서 (10 question_types × 6 levels, 4컬럼 분할)
 - **scripts**: 스크립트 마스터 (생성+교정 통합, UNIQUE(user_id, question_id))
 - **script_packages**: TTS 패키지 WAV+JSON (FK → scripts, CASCADE)
@@ -583,18 +620,21 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 - **shadowing_evaluations**: 쉐도잉 AI 평가 (5영역 + OPIc 등급)
 - **opic_tips**: 학습 팁 (등급별, 답변 유형별)
 - **mock_test_sessions**: 모의고사 세션 (mode, status, 14 question_ids, started_at, 72h/90min)
-- **mock_test_answers**: 답변 기록 (question_number, audio_url, eval_status 7단계)
-- **mock_test_evaluations**: 개별 평가 (STT + 발음 + GPT 체크박스, FK → answers)
-- **mock_test_reports**: 종합 리포트 (FACT 점수, 등급, GPT 총평, 성장 리포트 3컬럼, FK → sessions)
-- **mock_test_eval_settings**: 모의고사 평가 설정
-- **evaluation_prompts**: 평가 프롬프트 템플릿
+- **mock_test_answers**: 답변 기록 (question_number, audio_url, transcript, pronunciation_assessment)
+- **mock_test_evaluations**: 체크박스 평가 (checkboxes JSONB, checkbox_type, pass_rate)
+- **mock_test_consults**: 소견 평가 (fulfillment, observation, directions, weak_points, task_checklist)
+- **mock_test_reports**: 종합 리포트 (aggregated_checkboxes, overview, growth, final_level, rule_engine_result)
+- **evaluation_prompts**: 평가 프롬프트 템플릿 (CO-STAR, 모의고사+튜터링 공유)
+- **evaluation_criteria**: 60행 평가 기준표 (6등급 × 10유형, consult EF용)
+- **task_fulfillment_checklists**: 과제 충족 체크리스트 (question_type별)
 - **master_questions**: 레거시 질문 DB (사용 안 함, questions로 대체됨)
-- **tutoring_sessions**: 튜터링 세션 (status: active/paused/completed)
-- **tutoring_prescriptions**: 처방 과제 (priority 1~N, status: pending/in_progress/completed)
-- **tutoring_training_sessions**: 훈련 세션 (session_type: guided/free/simulation)
-- **tutoring_attempts**: 훈련 시도 (Screen별, protocol별, metrics/pronunciation/evaluation)
-- **tutoring_review_schedule**: SRS 복습 스케줄
-- **tutoring_skill_history**: 성장 추적
+- **tutoring_sessions**: 세션 마스터 + Prompt C/D 결과 (stable_level, bottlenecks, prescription)
+- **tutoring_focuses**: focus별 처방 (세션당 1~3개, 졸업 추적)
+- **tutoring_drills**: 드릴 문항 (focus당 Q1/Q2/Q3)
+- **tutoring_attempts**: 드릴 시도 기록 (transcript, Layer1/2 결과)
+- **tutoring_retests**: 미니 재평가 (graduated/improving/hold)
+- **type_templates**: 10개 answer_type별 구조 + Layer1 마커 (참조)
+- **level_modifiers**: 6개 등급별 수행 요구 (참조)
 - **admin_audit_log**: 관리자 감사 로그 (action, target_type, target_id, details JSONB, RLS: admin SELECT만)
 - **Storage**: audio-recordings + script-packages + mock-test-recordings + tutoring-recordings 버킷
 
@@ -655,5 +695,5 @@ PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/1
 > 의사결정 기록은 `docs/의사결정.md` 참조
 
 ---
-*최종 업데이트: 2026-03-15*
-*상태: Phase 3 전체 ✅ + 플랜 리뉴얼(체험/실전/올인원) ✅ + 카카오페이 ✅. 다음: 평가 고도화 → 리브랜딩(P-5)*
+*최종 업데이트: 2026-03-26*
+*상태: Phase 3 전체 ✅ + 튜터링 Phase 1 구현 ✅. 다음: EF 배포 + 실데이터 테스트 → 리브랜딩(P-5)*

@@ -106,12 +106,15 @@ export function DashboardStats({
       href: null,
     },
     {
-      label: "연속 학습",
-      value: "0일",
-      sub: "시작해 보세요!",
+      label: "남은 튜터링",
+      value: `${Number(credits?.plan_tutoring_credits || 0) + Number(credits?.tutoring_credits || 0)}회`,
+      sub:
+        Number(credits?.plan_tutoring_credits || 0) + Number(credits?.tutoring_credits || 0) === 0
+          ? "크레딧 없음"
+          : "사용 가능",
       icon: Calendar,
       color: "bg-primary-50 text-primary-500",
-      href: null,
+      href: "/tutoring",
     },
   ];
 

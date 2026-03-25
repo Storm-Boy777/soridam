@@ -1,12 +1,12 @@
 import { ImmersiveHeader } from "@/components/layout/immersive-header";
-import { ResultPage } from "@/components/mock-exam/result-v2/result-page";
-import type { ResultPageData } from "@/components/mock-exam/result-v2/result-page";
+import { ResultPage } from "@/components/mock-exam/result/result-page";
+import type { ResultPageData } from "@/components/mock-exam/result/result-page";
 import {
   getOverviewData,
   getDiagnosisData,
   getQuestionsData,
   getGrowthData,
-} from "@/lib/actions/mock-exam-v2";
+} from "@/lib/actions/mock-exam-result";
 
 export const metadata = {
   title: "나의 모의고사 | 오픽톡닥",
@@ -14,10 +14,17 @@ export const metadata = {
 
 interface Props {
   params: Promise<{ sessionId: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }
 
-export default async function MockExamResultPage({ params }: Props) {
+const VALID_TABS = ["overview", "diagnosis", "questions", "growth"] as const;
+
+export default async function MockExamResultPage({ params, searchParams }: Props) {
   const { sessionId } = await params;
+  const { tab } = await searchParams;
+  const initialTab = VALID_TABS.includes(tab as (typeof VALID_TABS)[number])
+    ? (tab as (typeof VALID_TABS)[number])
+    : "overview";
 
   // 4탭 데이터 병렬 조회
   const [overviewRes, diagnosisRes, questionsRes, growthRes] = await Promise.all([
@@ -38,7 +45,7 @@ export default async function MockExamResultPage({ params }: Props) {
     <>
       <ImmersiveHeader title="나의 모의고사" backHref="/mock-exam?tab=history" />
       <main className="flex h-0 min-h-0 flex-grow flex-col md:h-auto md:flex-1">
-        <ResultPage sessionId={sessionId} data={data} />
+        <ResultPage sessionId={sessionId} data={data} initialTab={initialTab} />
       </main>
     </>
   );
