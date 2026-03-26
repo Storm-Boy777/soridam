@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
   User,
@@ -136,7 +137,17 @@ function providerLabel(provider: string) {
 /* ── 메인 컴포넌트 ── */
 
 export function MyPageContent({ user }: { user: UserData }) {
-  const [activeTab, setActiveTab] = useState<TabId>("profile");
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab") as TabId | null;
+  const initialTab: TabId = tabParam && tabs.some((t) => t.id === tabParam) ? tabParam : "profile";
+  const [activeTab, setActiveTabState] = useState<TabId>(initialTab);
+
+  const setActiveTab = useCallback((id: TabId) => {
+    setActiveTabState(id);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", id);
+    window.history.replaceState(null, "", url.toString());
+  }, []);
 
   const { data: credits } = useQuery({
     queryKey: ["user-credits", user.id],
@@ -147,36 +158,32 @@ export function MyPageContent({ user }: { user: UserData }) {
 
   return (
     <div>
-      {/* 탭 네비게이션 */}
-      <div className="mb-6 overflow-x-auto">
-        <div className="flex min-w-max border-b border-border">
-          {tabs.map((tab) => {
-            const active = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 border-b-2 px-3 py-3 text-sm font-medium transition-colors sm:gap-2 sm:px-4 ${
-                  active
-                    ? "border-primary-500 text-primary-600"
-                    : "border-transparent text-foreground-muted hover:border-border hover:text-foreground-secondary"
-                }`}
-              >
-                <tab.icon size={16} className="hidden sm:block" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
+      {/* 탭 네비게이션 — 카드형 세그먼트 (스크립트/모의고사/시험후기 통일) */}
+      <div className="mb-4 flex gap-1 rounded-xl bg-surface-secondary p-1 sm:mb-6">
+        {tabs.map((tab) => {
+          const active = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-xs font-medium transition-all sm:gap-2 sm:px-3 sm:text-sm ${
+                active
+                  ? "bg-surface text-foreground shadow-sm"
+                  : "text-foreground-secondary hover:text-foreground"
+              }`}
+            >
+              <tab.icon className="h-4 w-4 shrink-0" />
+              <span className="truncate">{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* 탭 콘텐츠 */}
-      <div className="mx-auto max-w-2xl">
-        {activeTab === "profile" && <ProfileTab user={user} />}
-        {activeTab === "plan" && <PlanTab user={user} credits={credits} />}
-        {activeTab === "goal" && <GoalTab user={user} />}
-        {activeTab === "account" && <AccountTab user={user} />}
-      </div>
+      {activeTab === "profile" && <ProfileTab user={user} />}
+      {activeTab === "plan" && <PlanTab user={user} credits={credits} />}
+      {activeTab === "goal" && <GoalTab user={user} />}
+      {activeTab === "account" && <AccountTab user={user} />}
     </div>
   );
 }
@@ -209,22 +216,22 @@ function ProfileTab({ user }: { user: UserData }) {
   const initial = user.name ? user.name[0].toUpperCase() : "U";
 
   return (
-    <div className="space-y-6">
-      {/* 프로필 이미지 */}
-      <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-6">
-        <h3 className="mb-4 font-semibold text-foreground">프로필 사진</h3>
-        <div className="flex items-center gap-5">
-          <div className="relative">
+    <div className="space-y-4 sm:space-y-6">
+      {/* 프로필 + 이름 편집 카드 */}
+      <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-4 sm:p-6">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-6">
+          {/* 아바타 */}
+          <div className="relative shrink-0 self-center sm:self-start">
             {user.avatarUrl ? (
               <Image
                 src={user.avatarUrl}
                 alt="프로필"
-                width={72}
-                height={72}
+                width={80}
+                height={80}
                 className="rounded-full object-cover"
               />
             ) : (
-              <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-primary-100 text-2xl font-bold text-primary-600">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 text-2xl font-bold text-primary-600">
                 {initial}
               </div>
             )}
@@ -236,25 +243,11 @@ function ProfileTab({ user }: { user: UserData }) {
               <Camera size={14} />
             </button>
           </div>
-          <div>
-            <p className="text-sm text-foreground-secondary">
-              {user.avatarUrl
-                ? "소셜 계정 프로필 사진이 표시됩니다."
-                : "프로필 사진 업로드 기능은 곧 지원됩니다."}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* 기본 정보 */}
-      <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-6">
-        <h3 className="mb-4 font-semibold text-foreground">기본 정보</h3>
-        <div className="space-y-5">
-          {/* 이름 */}
-          <div>
+          {/* 이름 편집 */}
+          <div className="min-w-0 flex-1">
             <label
               htmlFor="mypage-name"
-              className="mb-1.5 block text-sm text-foreground-secondary"
+              className="mb-1.5 block text-sm font-medium text-foreground-secondary"
             >
               이름
             </label>
@@ -264,7 +257,7 @@ function ProfileTab({ user }: { user: UserData }) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="이름을 입력하세요"
-                className="max-w-xs"
+                className="w-full"
               />
               <Button
                 onClick={handleSave}
@@ -288,53 +281,51 @@ function ProfileTab({ user }: { user: UserData }) {
               </p>
             )}
           </div>
+        </div>
+      </div>
 
-          {/* 이메일 */}
-          <div>
-            <p className="mb-1 text-sm text-foreground-secondary">이메일</p>
-            <div className="flex items-center gap-2">
-              <Mail size={16} className="text-foreground-muted" />
-              <p className="text-sm text-foreground">{user.email}</p>
-            </div>
+      {/* 기본 정보 — 그리드 */}
+      <div className="grid gap-4 sm:grid-cols-3 sm:gap-4">
+        <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-4 sm:p-5">
+          <div className="flex items-center gap-2">
+            <Mail size={16} className="text-foreground-muted" />
+            <p className="text-xs text-foreground-secondary">이메일</p>
           </div>
-
-          {/* 가입 방법 */}
-          <div>
-            <p className="mb-1 text-sm text-foreground-secondary">가입 방법</p>
-            <div className="flex items-center gap-2">
-              <Shield size={16} className="text-foreground-muted" />
-              <p className="text-sm text-foreground">
-                {providerLabel(user.provider)}
-              </p>
-            </div>
+          <p className="mt-2 truncate text-sm font-medium text-foreground">{user.email}</p>
+        </div>
+        <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-4 sm:p-5">
+          <div className="flex items-center gap-2">
+            <Shield size={16} className="text-foreground-muted" />
+            <p className="text-xs text-foreground-secondary">가입 방법</p>
           </div>
-
-          {/* 가입일 */}
-          <div>
-            <p className="mb-1 text-sm text-foreground-secondary">가입일</p>
-            <div className="flex items-center gap-2">
-              <Calendar size={16} className="text-foreground-muted" />
-              <p className="text-sm text-foreground">
-                {formatDate(user.createdAt)}
-              </p>
-            </div>
+          <p className="mt-2 text-sm font-medium text-foreground">{providerLabel(user.provider)}</p>
+        </div>
+        <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-4 sm:p-5">
+          <div className="flex items-center gap-2">
+            <Calendar size={16} className="text-foreground-muted" />
+            <p className="text-xs text-foreground-secondary">가입일</p>
           </div>
+          <p className="mt-2 text-sm font-medium text-foreground">{formatDate(user.createdAt)}</p>
         </div>
       </div>
 
       {/* 비밀번호 변경 — 이메일 가입자만 */}
       {user.provider !== "google" && user.provider !== "kakao" && (
-        <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-6">
-          <h3 className="mb-4 font-semibold text-foreground">비밀번호</h3>
-          <p className="mb-3 text-sm text-foreground-secondary">
-            비밀번호를 변경하려면 이메일로 재설정 링크를 받으세요.
-          </p>
-          <Link href="/forgot-password">
-            <Button variant="outline" size="sm">
-              <KeyRound size={16} className="mr-1.5" />
-              비밀번호 변경
-            </Button>
-          </Link>
+        <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-4 sm:p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-foreground">비밀번호</h3>
+              <p className="mt-0.5 text-sm text-foreground-secondary">
+                이메일로 재설정 링크를 받아 변경합니다.
+              </p>
+            </div>
+            <Link href="/forgot-password">
+              <Button variant="outline" size="sm">
+                <KeyRound size={16} className="mr-1.5" />
+                변경
+              </Button>
+            </Link>
+          </div>
         </div>
       )}
     </div>
@@ -360,37 +351,38 @@ function PlanTab({ user, credits }: { user: UserData; credits?: CreditsData }) {
 
   return (
     <div className="space-y-6">
-      {/* 현재 플랜 */}
-      <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-6">
+      {/* 현재 플랜 — 브랜드 강조 배경 */}
+      <div className="rounded-[var(--radius-xl)] border border-primary-200 bg-primary-50/50 p-4 sm:p-6">
         <h3 className="mb-4 font-semibold text-foreground">현재 요금제</h3>
-        <div className="flex items-center gap-3">
-          <span className="rounded-full bg-primary-50 px-4 py-1.5 text-sm font-bold text-primary-600">
-            {planName}
-          </span>
-          <span className="text-sm text-foreground-muted">{planPrice}</span>
-        </div>
-        <div className="mt-3 space-y-1">
-          <p className="text-sm text-foreground-secondary">
-            가입일: {formatDate(user.createdAt)}
-          </p>
-          {credits?.plan_expires_at && (
-            <p className="text-sm text-foreground-secondary">
-              플랜 만료일:{" "}
-              <span className="font-medium text-foreground">
-                {new Date(credits.plan_expires_at).toLocaleDateString("ko-KR")}
-              </span>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-[var(--radius-lg)] bg-white p-3 text-center">
+            <p className="text-xs text-foreground-muted">플랜</p>
+            <p className="mt-1 text-lg font-bold text-primary-600">{planName}</p>
+          </div>
+          <div className="rounded-[var(--radius-lg)] bg-white p-3 text-center">
+            <p className="text-xs text-foreground-muted">가격</p>
+            <p className="mt-1 text-sm font-bold text-foreground">{planPrice}</p>
+          </div>
+          <div className="rounded-[var(--radius-lg)] bg-white p-3 text-center">
+            <p className="text-xs text-foreground-muted">
+              {credits?.plan_expires_at ? "만료일" : "가입일"}
             </p>
-          )}
+            <p className="mt-1 text-sm font-bold text-foreground">
+              {credits?.plan_expires_at
+                ? new Date(credits.plan_expires_at).toLocaleDateString("ko-KR")
+                : formatDate(user.createdAt)}
+            </p>
+          </div>
         </div>
       </div>
 
       {/* 남은 사용량 */}
-      <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-6">
+      <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-4 sm:p-6">
         <h3 className="mb-4 font-semibold text-foreground">남은 사용량</h3>
         <div className="grid gap-4 sm:grid-cols-3">
           {/* 모의고사 */}
-          <div className="rounded-[var(--radius-lg)] bg-surface-secondary p-4">
-            <div className="flex items-center gap-2">
+          <div className="rounded-[var(--radius-lg)] bg-surface-secondary p-4 text-center">
+            <div className="flex items-center justify-center gap-2">
               <ClipboardList size={18} className="text-secondary-600" />
               <p className="text-sm text-foreground-secondary">모의고사</p>
             </div>
@@ -398,10 +390,15 @@ function PlanTab({ user, credits }: { user: UserData; credits?: CreditsData }) {
               {mockCredits}
               <span className="text-sm font-normal text-foreground-muted">회</span>
             </p>
+            <div className="mt-2 flex items-center justify-center gap-2 text-[11px] text-foreground-muted">
+              <span>플랜 {credits?.plan_mock_exam_credits ?? 0}</span>
+              <span className="text-border">|</span>
+              <span>횟수권 {credits?.mock_exam_credits ?? 0}</span>
+            </div>
           </div>
           {/* 스크립트 */}
-          <div className="rounded-[var(--radius-lg)] bg-surface-secondary p-4">
-            <div className="flex items-center gap-2">
+          <div className="rounded-[var(--radius-lg)] bg-surface-secondary p-4 text-center">
+            <div className="flex items-center justify-center gap-2">
               <Flame size={18} className="text-primary-500" />
               <p className="text-sm text-foreground-secondary">스크립트</p>
             </div>
@@ -409,10 +406,15 @@ function PlanTab({ user, credits }: { user: UserData; credits?: CreditsData }) {
               {scriptCredits}
               <span className="text-sm font-normal text-foreground-muted">회</span>
             </p>
+            <div className="mt-2 flex items-center justify-center gap-2 text-[11px] text-foreground-muted">
+              <span>플랜 {credits?.plan_script_credits ?? 0}</span>
+              <span className="text-border">|</span>
+              <span>횟수권 {credits?.script_credits ?? 0}</span>
+            </div>
           </div>
           {/* 튜터링 */}
-          <div className="rounded-[var(--radius-lg)] bg-surface-secondary p-4">
-            <div className="flex items-center gap-2">
+          <div className="rounded-[var(--radius-lg)] bg-surface-secondary p-4 text-center">
+            <div className="flex items-center justify-center gap-2">
               <Zap size={18} className="text-accent-500" />
               <p className="text-sm text-foreground-secondary">튜터링</p>
             </div>
@@ -420,6 +422,11 @@ function PlanTab({ user, credits }: { user: UserData; credits?: CreditsData }) {
               {tutoringCredits}
               <span className="text-sm font-normal text-foreground-muted">회</span>
             </p>
+            <div className="mt-2 flex items-center justify-center gap-2 text-[11px] text-foreground-muted">
+              <span>플랜 {credits?.plan_tutoring_credits ?? 0}</span>
+              <span className="text-border">|</span>
+              <span>횟수권 {credits?.tutoring_credits ?? 0}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -434,8 +441,8 @@ function PlanTab({ user, credits }: { user: UserData; credits?: CreditsData }) {
             실전 플랜(₩19,900)으로 업그레이드하면 실전 모의고사 3회 +
             스크립트 15회를 이용할 수 있어요.
           </p>
-          <Link href="/store" className="mt-4 inline-block">
-            <Button size="sm">
+          <Link href="/store" className="mt-4 block">
+            <Button size="sm" className="w-full">
               요금제 보기
               <ArrowRight size={14} className="ml-1" />
             </Button>
@@ -482,10 +489,11 @@ function GoalTab({ user }: { user: UserData }) {
     examDate !== user.examDate;
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-6">
-        <h3 className="mb-5 font-semibold text-foreground">목표 설정</h3>
-        <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-6">
+      {/* 목표 설정 — 3컬럼 그리드 */}
+      <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-4 sm:p-6">
+        <h3 className="mb-4 font-semibold text-foreground sm:mb-5">목표 설정</h3>
+        <div className="grid gap-4 sm:grid-cols-3 sm:gap-5">
           {/* 현재 등급 */}
           <div>
             <label
@@ -498,7 +506,7 @@ function GoalTab({ user }: { user: UserData }) {
               id="current-grade"
               value={currentGrade}
               onChange={(e) => setCurrentGrade(e.target.value)}
-              className="flex h-10 w-full max-w-xs rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+              className="flex h-10 w-full rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
             >
               {currentGradeOptions.map((g) => (
                 <option key={g.value} value={g.value}>
@@ -520,7 +528,7 @@ function GoalTab({ user }: { user: UserData }) {
               id="target-grade"
               value={targetGrade}
               onChange={(e) => setTargetGrade(e.target.value)}
-              className="flex h-10 w-full max-w-xs rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+              className="flex h-10 w-full rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
             >
               {targetGradeOptions.map((g) => (
                 <option key={g.value} value={g.value}>
@@ -538,17 +546,17 @@ function GoalTab({ user }: { user: UserData }) {
             >
               시험 예정일
             </label>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Input
                 id="exam-date"
                 type="date"
                 value={examDate}
                 onChange={(e) => setExamDate(e.target.value)}
-                className="max-w-xs"
+                className="w-full"
               />
               {dDay && (
                 <span
-                  className={`rounded-full px-3 py-1 text-sm font-bold ${
+                  className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${
                     dDay === "D-Day"
                       ? "bg-accent-100 text-accent-600"
                       : dDay.startsWith("D+")
@@ -561,21 +569,21 @@ function GoalTab({ user }: { user: UserData }) {
               )}
             </div>
           </div>
-
         </div>
 
         {/* 저장 */}
-        <div className="mt-6 flex items-center gap-3 border-t border-border pt-4">
+        <div className="mt-5 border-t border-border pt-4">
           <Button
             onClick={handleSave}
             disabled={isPending || !hasChanges}
             size="sm"
+            className="w-full"
           >
             {isPending ? "저장 중..." : "목표 저장"}
           </Button>
           {msg && (
             <p
-              className={`flex items-center gap-1 text-xs ${
+              className={`mt-2 flex items-center justify-center gap-1 text-xs ${
                 msg.type === "success" ? "text-green-600" : "text-accent-500"
               }`}
             >
@@ -588,36 +596,30 @@ function GoalTab({ user }: { user: UserData }) {
 
       {/* 목표 요약 카드 */}
       {(currentGrade || targetGrade || examDate) && (
-        <div className="rounded-[var(--radius-xl)] border border-primary-200 bg-primary-50/50 p-6">
+        <div className="rounded-[var(--radius-xl)] border border-primary-200 bg-primary-50/50 p-4 sm:p-6">
           <h3 className="mb-3 flex items-center gap-2 font-semibold text-foreground">
             <Target size={18} className="text-primary-500" />
             나의 목표 요약
           </h3>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {currentGrade && (
-              <div className="rounded-[var(--radius-lg)] bg-white p-3 text-center">
-                <p className="text-xs text-foreground-muted">현재 등급</p>
-                <p className="mt-1 text-lg font-bold text-foreground">
-                  {currentGrade}
-                </p>
-              </div>
-            )}
-            {targetGrade && (
-              <div className="rounded-[var(--radius-lg)] bg-white p-3 text-center">
-                <p className="text-xs text-foreground-muted">목표 등급</p>
-                <p className="mt-1 text-lg font-bold text-primary-600">
-                  {targetGrade}
-                </p>
-              </div>
-            )}
-            {examDate && (
-              <div className="rounded-[var(--radius-lg)] bg-white p-3 text-center">
-                <p className="text-xs text-foreground-muted">시험까지</p>
-                <p className="mt-1 text-lg font-bold text-primary-600">
-                  {dDay}
-                </p>
-              </div>
-            )}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-[var(--radius-lg)] bg-white p-3 text-center">
+              <p className="text-xs text-foreground-muted">현재 등급</p>
+              <p className="mt-1 text-lg font-bold text-foreground">
+                {currentGrade || "—"}
+              </p>
+            </div>
+            <div className="rounded-[var(--radius-lg)] bg-white p-3 text-center">
+              <p className="text-xs text-foreground-muted">목표 등급</p>
+              <p className="mt-1 text-lg font-bold text-primary-600">
+                {targetGrade || "—"}
+              </p>
+            </div>
+            <div className="rounded-[var(--radius-lg)] bg-white p-3 text-center">
+              <p className="text-xs text-foreground-muted">시험까지</p>
+              <p className="mt-1 text-lg font-bold text-primary-600">
+                {dDay || "—"}
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -659,9 +661,9 @@ function AccountTab({ user }: { user: UserData }) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
       {/* 로그아웃 */}
-      <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-6">
+      <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-4 sm:p-6">
         <h3 className="mb-2 font-semibold text-foreground">로그아웃</h3>
         <p className="mb-4 text-sm text-foreground-secondary">
           현재 기기에서 로그아웃합니다. 학습 데이터는 유지됩니다.
@@ -669,6 +671,7 @@ function AccountTab({ user }: { user: UserData }) {
         <Button
           variant="outline"
           size="sm"
+          className="w-full"
           onClick={() => {
             setIsLoggingOut(true);
             serverSignOut();
@@ -681,17 +684,17 @@ function AccountTab({ user }: { user: UserData }) {
       </div>
 
       {/* 회원 탈퇴 */}
-      <div className="rounded-[var(--radius-xl)] border border-accent-200 bg-accent-50/30 p-6">
+      <div className="rounded-[var(--radius-xl)] border border-accent-200 bg-accent-50/30 p-4 sm:p-6">
         <h3 className="mb-2 font-semibold text-accent-600">회원 탈퇴</h3>
         <p className="mb-4 text-sm text-foreground-secondary">
-          탈퇴 시 모든 학습 기록과 계정 정보가 영구적으로 삭제됩니다. 이 작업은
-          되돌릴 수 없습니다.
+          모든 학습 기록과 계정이 영구 삭제되며 복구할 수 없습니다.
         </p>
 
         {!showDeleteConfirm ? (
           <Button
             variant="danger"
             size="sm"
+            className="w-full"
             onClick={() => setShowDeleteConfirm(true)}
           >
             회원 탈퇴

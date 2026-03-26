@@ -32,19 +32,24 @@ async function MyPageDataLoader() {
 
 export default function MyPage() {
   return (
-    <div className="pb-8 pt-2 lg:pt-0">
-      {/* 페이지 헤더 — 즉시 렌더 */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">마이페이지</h1>
-        <p className="mt-1 text-foreground-secondary">
+    <div className="space-y-6 pb-6 pt-1 sm:space-y-8 sm:pb-8 sm:pt-2 lg:pt-0">
+      {/* 페이지 헤더 — 즉시 렌더 (스크립트/시험후기 통일 패턴) */}
+      <div>
+        <h1 className="text-xl font-bold text-foreground sm:text-2xl">마이페이지</h1>
+        <p className="mt-0.5 text-sm text-foreground-secondary sm:mt-1 sm:text-base">
           계정과 플랜을 관리하세요.
         </p>
       </div>
       {/* 콘텐츠 — 데이터 로드 후 스트리밍 */}
       <Suspense fallback={
         <div className="space-y-4">
-          <div className="h-[200px] rounded-[var(--radius-xl)] border border-border bg-surface" />
-          <div className="h-[300px] rounded-[var(--radius-xl)] border border-border bg-surface" />
+          {/* 탭 세그먼트 스켈레톤 */}
+          <div className="h-[46px] animate-pulse rounded-xl bg-surface-secondary" />
+          {/* 콘텐츠 스켈레톤 */}
+          <div className="space-y-4">
+            <div className="h-[200px] animate-pulse rounded-[var(--radius-xl)] border border-border bg-surface" />
+            <div className="h-[300px] animate-pulse rounded-[var(--radius-xl)] border border-border bg-surface" />
+          </div>
         </div>
       }>
         <MyPageDataLoader />
