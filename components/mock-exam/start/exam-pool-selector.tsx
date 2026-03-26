@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   Loader2,
   RefreshCw,
@@ -67,6 +67,14 @@ export function ExamPoolSelector({
     );
   }
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    onRefresh();
+    // 최소 600ms 스피너 표시 (너무 빨리 사라지면 눌렀는지 모름)
+    setTimeout(() => setIsRefreshing(false), 600);
+  }, [onRefresh]);
+
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
@@ -74,11 +82,12 @@ export function ExamPoolSelector({
           기출 문제를 선택하세요
         </p>
         <button
-          onClick={onRefresh}
-          className="inline-flex items-center gap-1 text-xs text-foreground-muted hover:text-foreground-secondary"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-foreground-muted transition-colors hover:bg-surface-secondary hover:text-foreground-secondary disabled:opacity-50"
         >
-          <RefreshCw size={12} />
-          새로고침
+          <RefreshCw size={12} className={isRefreshing ? "animate-spin" : ""} />
+          {isRefreshing ? "불러오는 중..." : "새로고침"}
         </button>
       </div>
 
@@ -99,8 +108,8 @@ export function ExamPoolSelector({
               onClick={() => onSelect(pool.submission_id)}
               className={`rounded-xl border p-4 text-left transition-all ${
                 isSelected
-                  ? "border-primary-500 bg-primary-50/30 ring-2 ring-primary-100"
-                  : "border-border bg-surface hover:border-primary-200"
+                  ? "border-primary-500 bg-primary-50/30 ring-2 ring-primary-100 shadow-sm"
+                  : "border-border bg-surface hover:-translate-y-0.5 hover:border-primary-300 hover:bg-primary-50/20 hover:shadow-md"
               }`}
             >
               {/* 콤보별 주제 */}
