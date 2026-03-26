@@ -68,7 +68,7 @@ export default function ExamApprovalPage() {
   });
 
   const rejectMutation = useMutation({
-    mutationFn: rejectSubmission,
+    mutationFn: (id: number) => rejectSubmission(id),
     onSuccess: (result) => {
       if (result.success) {
         setExpandedId(null);
