@@ -161,29 +161,39 @@ function FocusDrillCard({ focus }: { focus: TutoringFocus }) {
         <p className="mt-1 text-xs leading-relaxed text-primary-600">{focus.why_now_for_target}</p>
       )}
 
-      {/* 졸업 진행률 — 심플 인라인 */}
-      <div className="mt-3 flex items-center gap-3 text-xs text-foreground-secondary sm:mt-4">
-        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-secondary">
-          <div
-            className={`h-full rounded-full transition-all duration-500 ${isGraduated ? "bg-green-500" : "bg-primary-500"}`}
-            style={{ width: `${Math.max(progressPercent, 3)}%` }}
-          />
+      {/* 하단: 진행률 + CTA (모바일/PC 동일 세로 배치) */}
+      <div className="mt-4 border-t border-border pt-3 sm:pt-4">
+        <div className="grid grid-cols-2 items-center gap-3">
+          {/* 좌 50%: 진행바 */}
+          <div className="flex items-center gap-2 text-xs text-foreground-secondary">
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-secondary">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${isGraduated ? "bg-green-500" : "bg-primary-500"}`}
+                style={{ width: `${Math.max(progressPercent, 3)}%` }}
+              />
+            </div>
+            <span className="shrink-0">{progressPercent}%</span>
+          </div>
+          {/* 우 50%: 졸업현황 */}
+          <div className="flex items-center justify-end gap-1.5 text-[10px] text-foreground-secondary sm:gap-2 sm:text-xs">
+            <span className="shrink-0">드릴 {focus.drill_pass_count}/2</span>
+            <span className="text-foreground-muted">·</span>
+            <span className="shrink-0">전이 {focus.transfer_pass_count}/1</span>
+            <span className="text-foreground-muted">·</span>
+            <span className="shrink-0">재평가 {focus.retest_pass_count}/1</span>
+          </div>
         </div>
-        <span className="shrink-0">드릴 {focus.drill_pass_count}/2</span>
-        <span className="shrink-0">전이 {focus.transfer_pass_count}/1</span>
-        <span className="shrink-0">재평가 {focus.retest_pass_count}/1</span>
-      </div>
 
-      {/* CTA */}
-      {isActive && (
-        <a
-          href={`/tutoring/drill?focusId=${focus.id}`}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-700 sm:py-3"
-        >
-          {hasDrill ? "이어서 훈련하기" : "훈련 시작하기"}
-          <ArrowRight className="h-4 w-4" />
-        </a>
-      )}
+        {isActive && (
+          <a
+            href={`/tutoring/drill?focusId=${focus.id}`}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-700 sm:py-3"
+          >
+            {hasDrill ? "이어서 훈련하기" : "훈련 시작하기"}
+            <ArrowRight className="h-4 w-4" />
+          </a>
+        )}
+      </div>
     </div>
   );
 }
