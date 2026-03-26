@@ -34,7 +34,7 @@ const notoSerifKR = Noto_Serif_KR({
 export const metadata: Metadata = {
   title: {
     template: "%s | 하루오픽",
-    default: "하루오픽 - 나의 경험으로 준비하는 OPIc",
+    default: "하루오픽 - OPIc 학습 플랫폼",
   },
   description:
     "나의 일상이 영어 답변이 되는 OPIc 말하기 학습 플랫폼. 기출 분석, 맞춤 스크립트, 실전 모의고사, 약점 튜터링까지.",
