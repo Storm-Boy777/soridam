@@ -99,8 +99,8 @@ export function Navbar({ serverAuth }: { serverAuth?: NavbarServerAuth } = {}) {
           <Image
             src="/images/logo-sunrise-terracotta.png"
             alt="하루오픽"
-            width={130}
-            height={34}
+            width={115}
+            height={30}
             priority
           />
         </Link>
