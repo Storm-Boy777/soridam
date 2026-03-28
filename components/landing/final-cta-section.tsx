@@ -11,16 +11,16 @@ export default function FinalCtaSection() {
       <div className="relative mx-auto max-w-3xl px-6">
         <ScrollReveal preset="fade-up">
           <h2 className="text-[1.8rem] font-extrabold leading-[1.35] tracking-[-0.03em] text-[#3A2E25] sm:text-[2.4rem]">
-            당신의 하루가
+            오늘 시작한 한 걸음이
             <br />
-            가장 완벽한 OPIc 준비입니다
+            내일의 등급을 바꿉니다
           </h2>
         </ScrollReveal>
         <ScrollReveal preset="fade-up" delay={0.15}>
           <p className="mt-4 text-[1rem] leading-[1.7] text-[#8B7E72] sm:text-[1.1rem]">
-            지금 무료로 시작하세요.
+            나의 하루가 스크립트가 되고,
             <br className="sm:hidden" />{" "}
-            모의고사 1회, 빈도 분석, 쉐도잉 훈련이 포함됩니다.
+            반복이 실력이 됩니다.
           </p>
         </ScrollReveal>
         <ScrollReveal preset="scale-up" delay={0.3}>
@@ -33,7 +33,7 @@ export default function FinalCtaSection() {
         </ScrollReveal>
         <ScrollReveal preset="fade-in" delay={0.4}>
           <p className="mt-[18px] text-[0.85rem] text-[#B5A99D]">
-            지금 바로, 부담 없이 시작하세요
+            결제 없이 바로 시작할 수 있습니다
           </p>
         </ScrollReveal>
       </div>
