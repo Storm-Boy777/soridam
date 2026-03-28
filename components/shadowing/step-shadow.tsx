@@ -1,67 +1,58 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
-  CheckCircle2,
-  Eye,
-  EyeOff,
-  EyeClosed,
+  Languages,
+  CaseSensitive,
+  Type,
+  RefreshCw,
 } from "lucide-react";
 import { ShadowingPlayer } from "./shadowing-player";
 import { useShadowingStore, type TextHintLevel } from "@/lib/stores/shadowing";
 
-const HINT_OPTIONS: { level: TextHintLevel; label: string; icon: React.ElementType }[] = [
-  { level: "full", label: "전체 보기", icon: Eye },
-  { level: "first-word", label: "첫단어만", icon: EyeOff },
-  { level: "hidden", label: "숨김", icon: EyeClosed },
+const LANG_OPTIONS: { mode: TextHintLevel; label: string; icon: React.ElementType }[] = [
+  { mode: "both", icon: Languages, label: "영/한" },
+  { mode: "english", icon: CaseSensitive, label: "영어" },
+  { mode: "korean", icon: Type, label: "한글" },
 ];
-
-const HINT_GUIDES: Record<TextHintLevel, string> = {
-  full: "텍스트를 보며 음성과 함께 읽어보세요",
-  "first-word": "첫 단어만 보고 나머지를 떠올려 보세요",
-  hidden: "음성만 듣고 따라 읽어보세요",
-};
-
-// 텍스트 힌트 레벨에 따라 문장 표시
-function renderHintedText(text: string, hintLevel: TextHintLevel): string {
-  switch (hintLevel) {
-    case "full":
-      return text;
-    case "first-word": {
-      const words = text.split(" ");
-      if (words.length <= 1) return text;
-      return words[0] + " " + words.slice(1).map(() => "___").join(" ");
-    }
-    case "hidden":
-      return "• • • • •";
-  }
-}
 
 export function StepShadow() {
   const {
     sentences,
     shadowIndex,
     shadowHintLevel,
-    shadowCompleted,
+    currentTime,
     setShadowIndex,
     setShadowHintLevel,
-    markShadowCompleted,
   } = useShadowingStore();
+
+  // 문장별 반복 재생 횟수 (로컬 상태 — 완료 개념 없음)
+  const [playCounts, setPlayCounts] = useState<Record<number, number>>({});
+
+  // 모바일 여부 — audio 요소 중복 방지
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   const currentSentence = shadowIndex >= 0 && shadowIndex < sentences.length
     ? sentences[shadowIndex]
     : null;
-  const isCompleted = shadowCompleted.includes(shadowIndex);
-  const progress =
-    sentences.length > 0
-      ? Math.round((shadowCompleted.length / sentences.length) * 100)
-      : 0;
+
+  const playCount = playCounts[shadowIndex] ?? 0;
 
   const handleSentenceEnd = useCallback(() => {
-    markShadowCompleted(shadowIndex);
-  }, [shadowIndex, markShadowCompleted]);
+    setPlayCounts((prev) => ({
+      ...prev,
+      [shadowIndex]: (prev[shadowIndex] ?? 0) + 1,
+    }));
+  }, [shadowIndex]);
 
   const goPrev = useCallback(() => {
     if (shadowIndex > 0) setShadowIndex(shadowIndex - 1);
@@ -73,99 +64,149 @@ export function StepShadow() {
 
   if (!currentSentence) return null;
 
+  // 가라오케: 현재 문장 재생 진행도를 단어 수로 선형 분할
+  const words = currentSentence.english.split(" ");
+  const isActiveSentence =
+    currentTime >= currentSentence.start && currentTime <= currentSentence.end;
+  const senProgress = isActiveSentence && currentSentence.duration > 0
+    ? Math.max(0, Math.min(1, (currentTime - currentSentence.start) / currentSentence.duration))
+    : 0;
+  const highlightedCount = isActiveSentence
+    ? Math.ceil(senProgress * words.length)
+    : 0;
+
   return (
-    <div className="space-y-4">
-      {/* 텍스트 힌트 토글 */}
-      <div className="flex items-center justify-center">
-        <div className="inline-flex items-center rounded-full bg-surface-secondary p-0.5">
-          {HINT_OPTIONS.map(({ level, label, icon: Icon }) => (
-            <button
-              key={level}
-              onClick={() => setShadowHintLevel(level)}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                shadowHintLevel === level
-                  ? "bg-primary-500 text-white shadow-sm"
-                  : "text-foreground-muted hover:text-foreground-secondary"
+    <div className="space-y-3 pb-[220px] sm:pb-0">
+      {/* 문장 카드 */}
+      <div className="rounded-[var(--radius-xl)] border border-border bg-surface">
+        {/* 카드 헤더: 문장 번호 + 반복 횟수 + 언어 토글 */}
+        <div className="flex items-center justify-between border-b border-border px-4 py-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-foreground-muted">
+              {shadowIndex + 1} / {sentences.length}
+            </span>
+            {playCount > 0 && (
+              <span className="flex items-center gap-0.5 text-[11px] text-foreground-muted/70">
+                <RefreshCw size={10} />
+                {playCount}회
+              </span>
+            )}
+          </div>
+          <div className="inline-flex rounded-lg border border-border bg-surface-secondary p-0.5">
+            {LANG_OPTIONS.map(({ mode, label, icon: Icon }) => (
+              <button
+                key={mode}
+                onClick={() => setShadowHintLevel(mode)}
+                className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                  shadowHintLevel === mode
+                    ? "bg-surface text-foreground shadow-sm"
+                    : "text-foreground-muted hover:text-foreground-secondary"
+                }`}
+              >
+                <Icon size={12} aria-hidden />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 현재 문장 — 가라오케 */}
+        <div className="p-5 text-center">
+          {(shadowHintLevel === "both" || shadowHintLevel === "english") && (
+            <p className="text-lg font-medium leading-relaxed sm:text-xl">
+              {words.map((word, i) => (
+                <span
+                  key={i}
+                  className={`transition-colors duration-150 ${
+                    i < highlightedCount ? "text-primary-500" : "text-foreground"
+                  }`}
+                >
+                  {word}
+                  {i < words.length - 1 ? " " : ""}
+                </span>
+              ))}
+            </p>
+          )}
+          {(shadowHintLevel === "both" || shadowHintLevel === "korean") && (
+            <p
+              className={`text-xs leading-relaxed text-foreground-muted ${
+                shadowHintLevel === "both"
+                  ? "mt-2"
+                  : "text-lg font-medium text-foreground sm:text-xl"
               }`}
             >
-              <Icon size={13} />
-              <span className="hidden sm:inline">{label}</span>
-            </button>
-          ))}
+              {currentSentence.korean}
+            </p>
+          )}
+        </div>
+
+        {/* 오디오 플레이어 — 데스크탑 전용 (영역 구분선 포함) */}
+        {!isMobile && (
+          <div className="border-t border-border px-4 py-3 sm:px-5">
+            <ShadowingPlayer
+              sentenceMode
+              sentenceIndex={shadowIndex}
+              onSentenceEnd={handleSentenceEnd}
+            />
+          </div>
+        )}
+
+        {/* 문장 탐색 — 데스크탑 전용 */}
+        <div className="hidden items-center justify-center gap-4 border-t border-border px-4 py-2 sm:flex">
+          <button
+            onClick={goPrev}
+            disabled={shadowIndex === 0}
+            className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-foreground-secondary transition-colors hover:bg-surface-secondary disabled:opacity-30"
+          >
+            <ChevronLeft size={16} />
+            이전
+          </button>
+          <button
+            onClick={goNext}
+            disabled={shadowIndex >= sentences.length - 1}
+            className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-foreground-secondary transition-colors hover:bg-surface-secondary disabled:opacity-30"
+          >
+            다음
+            <ChevronRight size={16} />
+          </button>
         </div>
       </div>
 
-      {/* 진행도 */}
-      <div className="flex items-center justify-between text-xs text-foreground-muted">
-        <span>
-          문장 {shadowIndex + 1} / {sentences.length}
-        </span>
-        <span>{progress}% 완료</span>
+      {/* 모바일 고정 재생 바 (이전/다음 바 위) */}
+      {isMobile && (
+        <div className="fixed bottom-[68px] left-0 right-0 z-20 border-t border-border bg-surface px-4 py-3">
+          <ShadowingPlayer
+            sentenceMode
+            sentenceIndex={shadowIndex}
+            onSentenceEnd={handleSentenceEnd}
+          />
+        </div>
+      )}
+
+      {/* 모바일 고정 하단 바: 이전/다음 (1행) */}
+      <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-surface px-5 py-3 sm:hidden">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={goPrev}
+            disabled={shadowIndex === 0}
+            className="inline-flex h-11 items-center gap-1 rounded-lg px-4 text-sm font-medium text-foreground-secondary transition-colors hover:bg-surface-secondary disabled:opacity-30"
+          >
+            <ChevronLeft size={16} />
+            이전
+          </button>
+          <span className="text-xs text-foreground-muted">
+            {shadowIndex + 1} / {sentences.length}
+          </span>
+          <button
+            onClick={goNext}
+            disabled={shadowIndex >= sentences.length - 1}
+            className="inline-flex h-11 items-center gap-1 rounded-lg px-4 text-sm font-medium text-foreground-secondary transition-colors hover:bg-surface-secondary disabled:opacity-30"
+          >
+            다음
+            <ChevronRight size={16} />
+          </button>
+        </div>
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-surface-secondary">
-        <div
-          className="h-1.5 rounded-full bg-primary-500 transition-all"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-
-      {/* 안내 */}
-      <p className="text-center text-sm text-foreground-secondary">
-        {HINT_GUIDES[shadowHintLevel]}
-      </p>
-
-      {/* 현재 문장 (힌트 레벨 적용) */}
-      <div
-        className={`rounded-[var(--radius-xl)] border p-5 text-center ${
-          isCompleted
-            ? "border-green-200 bg-green-50/50"
-            : "border-border bg-surface"
-        }`}
-      >
-        <p className="text-lg font-medium leading-relaxed text-foreground">
-          {currentSentence ? renderHintedText(currentSentence.english, shadowHintLevel) : "—"}
-        </p>
-        {shadowHintLevel === "full" && currentSentence && (
-          <p className="mt-2 text-sm text-foreground-muted">
-            {currentSentence.korean}
-          </p>
-        )}
-
-        {isCompleted && (
-          <div className="mt-2 flex items-center justify-center gap-1 text-xs text-green-600">
-            <CheckCircle2 size={12} />
-            완료
-          </div>
-        )}
-      </div>
-
-      {/* 문장 탐색 */}
-      <div className="flex items-center justify-center gap-4">
-        <button
-          onClick={goPrev}
-          disabled={shadowIndex === 0}
-          className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-foreground-secondary transition-colors hover:bg-surface-secondary disabled:opacity-30"
-        >
-          <ChevronLeft size={16} />
-          이전
-        </button>
-
-        <button
-          onClick={goNext}
-          disabled={shadowIndex >= sentences.length - 1}
-          className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-foreground-secondary transition-colors hover:bg-surface-secondary disabled:opacity-30"
-        >
-          다음
-          <ChevronRight size={16} />
-        </button>
-      </div>
-
-      {/* 문장별 플레이어 */}
-      <ShadowingPlayer
-        sentenceMode
-        sentenceIndex={shadowIndex}
-        onSentenceEnd={handleSentenceEnd}
-      />
     </div>
   );
 }

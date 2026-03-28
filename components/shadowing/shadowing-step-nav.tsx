@@ -7,7 +7,7 @@ import {
   Radio,
 } from "lucide-react";
 import type { ShadowingStep } from "@/lib/types/scripts";
-import { SHADOWING_STEP_LABELS } from "@/lib/types/scripts";
+import { SHADOWING_STEP_LABELS, SHADOWING_STEP_SHORT_LABELS } from "@/lib/types/scripts";
 
 const STEP_ICONS: Record<ShadowingStep, React.ElementType> = {
   listen: Headphones,
@@ -27,32 +27,25 @@ export function ShadowingStepNav({
   currentStep,
   onStepChange,
 }: ShadowingStepNavProps) {
-  const currentIndex = STEPS.indexOf(currentStep);
-
   return (
-    <div className="flex items-center justify-center gap-1 overflow-x-auto px-2 sm:gap-2">
+    <div className="flex">
       {STEPS.map((step, i) => {
         const Icon = STEP_ICONS[step];
         const isActive = step === currentStep;
-        const isPast = i < currentIndex;
 
         return (
           <button
             key={step}
             onClick={() => onStepChange(step)}
-            className={`flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors sm:gap-1.5 sm:px-3 sm:py-2 sm:text-sm ${
+            className={`flex flex-1 items-center justify-center gap-1.5 border-b-2 px-2 py-3 text-xs font-medium transition-colors sm:gap-2 sm:px-4 sm:text-sm ${
               isActive
-                ? "bg-primary-500 text-white"
-                : isPast
-                  ? "bg-primary-50 text-primary-600 hover:bg-primary-100"
-                  : "bg-surface-secondary text-foreground-muted hover:bg-surface-secondary/80"
+                ? "border-primary-500 text-primary-600"
+                : "border-transparent text-foreground-muted hover:border-border hover:text-foreground-secondary"
             }`}
           >
-            <Icon size={14} />
-            <span className="hidden sm:inline">
-              {SHADOWING_STEP_LABELS[step]}
-            </span>
-            <span className="sm:hidden">{i + 1}</span>
+            <Icon size={14} className="hidden sm:block" />
+            <span className="whitespace-nowrap sm:hidden">{SHADOWING_STEP_SHORT_LABELS[step]}</span>
+            <span className="hidden sm:inline">{SHADOWING_STEP_LABELS[step]}</span>
           </button>
         );
       })}

@@ -26,7 +26,11 @@ const STEPS: ShadowingStep[] = ["listen", "shadow", "recite", "speak"];
 export function ShadowingContent({ data, isTrialMode = false }: ShadowingContentProps) {
   const { currentStep, setStep, init, packageId } = useShadowingStore();
 
-  // 데이터 초기화 (패키지가 다르면 리셋)
+  // persist 수동 rehydration: 렌더 중 Zustand setState 방지
+  useEffect(() => {
+    useShadowingStore.persist.rehydrate();
+  }, []);
+
   useEffect(() => {
     if (packageId !== data.packageId) {
       init({
@@ -36,12 +40,14 @@ export function ShadowingContent({ data, isTrialMode = false }: ShadowingContent
         audioUrl: data.wavUrl,
         questionText: data.questionText,
         questionKorean: data.questionKorean,
+        questionAudioUrl: data.questionAudioUrl,
         keyExpressions: data.keyExpressions,
+        structureSummary: data.structureSummary,
+        keySentences: data.keySentences,
       });
     }
   }, [data, packageId, init]);
 
-  // 키보드 단축키
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (
@@ -50,62 +56,58 @@ export function ShadowingContent({ data, isTrialMode = false }: ShadowingContent
       ) {
         return;
       }
-
       const num = parseInt(e.key);
       if (num >= 1 && num <= 4) {
         e.preventDefault();
         setStep(STEPS[num - 1]);
-        return;
       }
     }
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [setStep]);
 
-  // Step 4 체험판: 실전 녹음 대신 완료 CTA
   const renderStepContent = () => {
     switch (currentStep) {
-      case "listen":
-        return <StepListen />;
-      case "shadow":
-        return <StepShadow />;
-      case "recite":
-        return <StepRecite />;
-      case "speak":
-        return isTrialMode ? <TrialComplete type="script" /> : <StepSpeak />;
+      case "listen":  return <StepListen />;
+      case "shadow":  return <StepShadow />;
+      case "recite":  return <StepRecite />;
+      case "speak":   return isTrialMode ? <TrialComplete type="script" /> : <StepSpeak />;
     }
   };
 
+  const stepDescription = currentStep === "speak" && isTrialMode
+    ? "체험판에서는 발화 평가를 제공하지 않습니다."
+    : SHADOWING_STEP_DESCRIPTIONS[currentStep];
+
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6">
-      {/* 체험판 배너 */}
-      {isTrialMode && (
-        <div className="mb-4">
-          <TrialBanner />
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* 고정 탭 네비게이션 */}
+      <div className="shrink-0 border-b border-border bg-surface/80 backdrop-blur-sm">
+        <div className="mx-auto max-w-5xl">
+          <ShadowingStepNav currentStep={currentStep} onStepChange={setStep} />
         </div>
-      )}
-
-      {/* Step 네비게이션 */}
-      <ShadowingStepNav currentStep={currentStep} onStepChange={setStep} />
-
-      {/* Step 설명 */}
-      <p className="mt-3 text-center text-xs text-foreground-muted">
-        {currentStep === "speak" && isTrialMode
-          ? "체험판에서는 발화 평가를 제공하지 않습니다."
-          : SHADOWING_STEP_DESCRIPTIONS[currentStep]}
-      </p>
-
-      {/* Step 콘텐츠 */}
-      <div className="mt-5">
-        {renderStepContent()}
       </div>
 
-      {/* 키보드 단축키 힌트 */}
-      <div className="mt-6 flex justify-center">
-        <p className="text-xs text-foreground-muted/60">
-          키보드 1~4로 단계 전환 가능
-        </p>
+      {/* 스크롤 콘텐츠 영역 */}
+      <div className="relative min-h-0 flex-1">
+        <div className="absolute inset-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="mx-auto w-full max-w-5xl px-4 pb-8 pt-5 sm:px-6">
+            {/* 체험판 배너 */}
+            {isTrialMode && (
+              <div className="mb-4">
+                <TrialBanner />
+              </div>
+            )}
+
+            {/* 단계 설명 */}
+            <p className="mb-5 text-center text-xs text-foreground-muted">
+              {stepDescription}
+            </p>
+
+            {/* 단계 콘텐츠 */}
+            {renderStepContent()}
+          </div>
+        </div>
       </div>
     </div>
   );

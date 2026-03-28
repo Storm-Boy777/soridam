@@ -719,11 +719,14 @@ export interface ShadowingData {
   sentences: TimestampItem[];
   questionText: string | null;
   questionKorean: string | null;
+  questionAudioUrl: string | null;
   topic: string | null;
   keyExpressions: string[];
   targetLevel: string | null;
   ttsVoice: string;
   packageStatus: string;
+  structureSummary: import("@/lib/types/scripts").StructureSummaryItem[] | null;
+  keySentences: import("@/lib/types/scripts").KeySentence[] | null;
 }
 
 export async function getShadowingData(
@@ -752,7 +755,7 @@ export async function getShadowingData(
 
     const { data: script, error: scriptError } = await supabase
       .from("scripts")
-      .select("question_english, question_korean, topic, key_expressions, target_grade")
+      .select("question_id, question_english, question_korean, topic, key_expressions, target_grade, paragraphs")
       .eq("id", pkg.script_id)
       .single();
 
@@ -773,6 +776,17 @@ export async function getShadowingData(
       jsonUrl = jsonUrlData?.publicUrl || null;
     }
 
+    // 질문 오디오 URL 조회
+    let questionAudioUrl: string | null = null;
+    if (script.question_id) {
+      const { data: q } = await supabase
+        .from("questions")
+        .select("audio_url")
+        .eq("id", script.question_id)
+        .single();
+      questionAudioUrl = q?.audio_url || null;
+    }
+
     return {
       data: {
         packageId: pkg.id,
@@ -782,11 +796,14 @@ export async function getShadowingData(
         sentences: pkg.timestamp_data || [],
         questionText: script.question_english,
         questionKorean: script.question_korean,
+        questionAudioUrl,
         topic: script.topic,
         keyExpressions: script.key_expressions || [],
         targetLevel: script.target_grade,
         ttsVoice: pkg.tts_voice,
         packageStatus: pkg.status,
+        structureSummary: (script.paragraphs as import("@/lib/types/scripts").ScriptOutput | null)?.structure_summary ?? null,
+        keySentences: (script.paragraphs as import("@/lib/types/scripts").ScriptOutput | null)?.key_sentences ?? null,
       },
     };
   } catch (err) {

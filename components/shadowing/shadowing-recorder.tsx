@@ -7,8 +7,9 @@ interface ShadowingRecorderProps {
   onRecordingComplete: (blob: Blob, duration: number) => void;
   isRecording: boolean;
   onRecordingChange: (recording: boolean) => void;
-  maxDuration?: number; // 최대 녹음 시간 (초)
+  maxDuration?: number;
   showPlayback?: boolean;
+  compact?: boolean; // 소형 버튼, 레이블 숨김
 }
 
 export function ShadowingRecorder({
@@ -17,6 +18,7 @@ export function ShadowingRecorder({
   onRecordingChange,
   maxDuration = 120,
   showPlayback = false,
+  compact = false,
 }: ShadowingRecorderProps) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -130,32 +132,37 @@ export function ShadowingRecorder({
     return `${m}:${s.toString().padStart(2, "0")}`;
   }
 
+  const btnSize = compact ? "h-11 w-11" : "h-14 w-14";
+  const iconSize = compact ? 18 : 22;
+
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className={`flex ${compact ? "items-center gap-2" : "flex-col items-center gap-3"}`}>
       {/* 녹음 버튼 */}
       <button
         onClick={isRecording ? stopRecording : startRecording}
-        className={`flex h-14 w-14 items-center justify-center rounded-full transition-colors ${
+        className={`flex ${btnSize} items-center justify-center rounded-full transition-colors ${
           isRecording
             ? "animate-pulse bg-red-500 text-white"
             : "bg-primary-500 text-white hover:bg-primary-600"
         }`}
       >
-        {isRecording ? <Square size={22} /> : <Mic size={22} />}
+        {isRecording ? <Square size={iconSize} /> : <Mic size={iconSize} />}
       </button>
 
-      {/* 녹음 시간 */}
-      <p
-        className={`text-sm font-medium ${
-          isRecording ? "text-red-500" : "text-foreground-muted"
-        }`}
-      >
-        {isRecording
-          ? `녹음 중 ${formatDuration(duration)}`
-          : duration > 0
-            ? `${formatDuration(duration)} 녹음됨`
-            : "녹음 대기"}
-      </p>
+      {/* 녹음 상태 텍스트 — compact 모드에서 숨김 */}
+      {!compact && (
+        <p
+          className={`text-sm font-medium ${
+            isRecording ? "text-red-500" : "text-foreground-muted"
+          }`}
+        >
+          {isRecording
+            ? `녹음 중 ${formatDuration(duration)}`
+            : duration > 0
+              ? `${formatDuration(duration)} 녹음됨`
+              : "녹음 대기"}
+        </p>
+      )}
 
       {/* 녹음 재생 */}
       {showPlayback && playbackUrl && !isRecording && (

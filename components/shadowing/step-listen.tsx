@@ -15,9 +15,7 @@ export function StepListen() {
   const activeIndex = useActiveSentenceIndex();
 
   return (
-    <div className="space-y-3">
-      {/* 오디오 플레이어 — 단일 라인 */}
-      <ShadowingPlayer showSpeedControl compact />
+    <div className="space-y-3 pb-20 sm:pb-0">
 
       {/* 스크립트 텍스트 카드 */}
       <div className="rounded-[var(--radius-xl)] border border-border bg-surface">
@@ -58,7 +56,7 @@ export function StepListen() {
             >
               {(displayMode === "both" || displayMode === "english") && (
                 <p
-                  className={`text-sm leading-relaxed ${
+                  className={`text-[13px] leading-relaxed sm:text-[15px] ${
                     i === activeIndex
                       ? "font-medium text-foreground"
                       : "text-foreground-secondary"
@@ -69,7 +67,7 @@ export function StepListen() {
               )}
               {(displayMode === "both" || displayMode === "korean") && (
                 <p
-                  className={`text-xs leading-relaxed ${
+                  className={`text-xs leading-relaxed sm:text-sm ${
                     displayMode === "both" ? "mt-1 border-l-2 border-primary-100 pl-2" : ""
                   } ${
                     i === activeIndex
@@ -83,6 +81,11 @@ export function StepListen() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* 오디오 플레이어 — 모바일: 하단 고정 / 데스크탑: 카드 아래 */}
+      <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-surface px-4 py-[18px] sm:static sm:border-t-0 sm:bg-transparent sm:p-0">
+        <ShadowingPlayer showSpeedControl compact />
       </div>
     </div>
   );

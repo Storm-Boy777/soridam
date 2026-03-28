@@ -7,12 +7,14 @@ import {
   Loader2,
   Upload,
   Coins,
+  MessageCircle,
+  Volume2,
 } from "lucide-react";
 import { ShadowingRecorder } from "./shadowing-recorder";
 import { EvaluationResult } from "./evaluation-result";
 import { useShadowingStore } from "@/lib/stores/shadowing";
 import { startShadowingSession, checkScriptCredit } from "@/lib/actions/scripts";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function StepSpeak() {
   const queryClient = useQueryClient();
@@ -21,6 +23,7 @@ export function StepSpeak() {
     scriptId,
     questionText,
     questionKorean,
+    questionAudioUrl,
     speakTimer,
     setSpeakTimer,
     speakResult,
@@ -32,28 +35,38 @@ export function StepSpeak() {
 
   const [timerActive, setTimerActive] = useState(false);
   const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
+  const [isPlayingQuestion, setIsPlayingQuestion] = useState(false);
+  const questionAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const toggleQuestionAudio = useCallback(() => {
+    if (!questionAudioUrl) return;
+    if (!questionAudioRef.current) {
+      questionAudioRef.current = new Audio(questionAudioUrl);
+      questionAudioRef.current.onended = () => setIsPlayingQuestion(false);
+    }
+    if (isPlayingQuestion) {
+      questionAudioRef.current.pause();
+      questionAudioRef.current.currentTime = 0;
+      setIsPlayingQuestion(false);
+    } else {
+      questionAudioRef.current.currentTime = 0;
+      questionAudioRef.current.play().catch(() => {});
+      setIsPlayingQuestion(true);
+    }
+  }, [questionAudioUrl, isPlayingQuestion]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const [creditCheck, setCreditCheck] = useState<{
-    checked: boolean;
-    hasCredit: boolean;
-    total: number;
-  }>({ checked: false, hasCredit: false, total: 0 });
+  const { data: creditData } = useQuery({
+    queryKey: ["script-credit"],
+    queryFn: async () => {
+      const result = await checkScriptCredit();
+      if (result.error) throw new Error(result.error);
+      return result.data;
+    },
+    staleTime: 60 * 1000,
+  });
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerCountRef = useRef(0);
-
-  // 최초 진입 시 크레딧 확인
-  useEffect(() => {
-    checkScriptCredit().then((result) => {
-      if (result.data) {
-        setCreditCheck({
-          checked: true,
-          hasCredit: result.data.hasCredit,
-          total: result.data.totalCredits,
-        });
-      }
-    });
-  }, []);
 
   // 타이머 정리
   useEffect(() => {
@@ -169,29 +182,19 @@ export function StepSpeak() {
   }
 
   return (
-    <div className="space-y-5">
-      {/* 안내 */}
-      <div className="text-center">
-        <p className="text-sm text-foreground-secondary">
-          실전처럼 <span className="font-medium text-primary-600">텍스트 없이</span> 답변하세요.
-          발화를 분석하여 등급을 평가합니다.
-        </p>
-      </div>
-
+    <div className="space-y-5 pb-20 sm:pb-0">
       {/* 크레딧 안내 */}
       <div className="flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50/50 p-2.5 text-xs">
         <Coins size={14} className="text-amber-600" />
         <span className="text-amber-700">
-          실전 평가는 <span className="font-semibold">스크립트 생성권 1개</span>를 사용합니다
-          {creditCheck.checked && (
-            <span className="ml-1">
-              (현재 {creditCheck.total}개 보유)
-            </span>
+          <span className="font-semibold">스크립트 크레딧 1개</span> 차감
+          {creditData && (
+            <span className="ml-1">· 현재 {creditData.totalCredits}개 보유</span>
           )}
         </span>
       </div>
 
-      {!creditCheck.hasCredit && creditCheck.checked && (
+      {creditData && !creditData.hasCredit && (
         <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
           <AlertCircle size={16} />
           스크립트 생성권이 없습니다. 스토어에서 구매해주세요.
@@ -199,75 +202,113 @@ export function StepSpeak() {
       )}
 
       {/* 질문 표시 */}
-      <div className="rounded-[var(--radius-xl)] border border-primary-200 bg-primary-50/30 p-4 text-center">
-        <p className="text-xs font-medium text-primary-600">질문</p>
-        <p className="mt-1 text-sm font-medium text-foreground">
-          {questionText || "질문 없음"}
-        </p>
-        {questionKorean && (
-          <p className="mt-1 text-xs text-foreground-muted">{questionKorean}</p>
-        )}
-      </div>
-
-      {/* 타이머 */}
-      <div className="flex items-center justify-center gap-2">
-        <Timer
-          size={18}
-          className={isOver2Min ? "text-red-500" : "text-foreground-secondary"}
-        />
-        <span
-          className={`text-2xl font-bold tabular-nums ${
-            isOver2Min ? "text-red-500" : "text-foreground"
-          }`}
-        >
-          {formatTime(speakTimer)}
-        </span>
-      </div>
-
-      {/* 녹음 */}
-      <ShadowingRecorder
-        isRecording={isRecording}
-        onRecordingChange={(recording) => {
-          setRecording(recording);
-          if (recording) {
-            setTimerActive(true);
-            timerCountRef.current = 0;
-            setSpeakTimer(0);
-            // 타이머 시작 (ref 기반으로 stale closure 방지)
-            timerRef.current = setInterval(() => {
-              timerCountRef.current += 1;
-              setSpeakTimer(timerCountRef.current);
-            }, 1000);
-          }
-        }}
-        onRecordingComplete={handleRecordingComplete}
-        showPlayback
-        maxDuration={180}
-      />
-
-      {/* 제출 버튼 */}
-      {recordingBlob && !isSubmitting && (
-        <div className="flex justify-center">
-          <button
-            onClick={handleSubmit}
-            disabled={!creditCheck.hasCredit}
-            className="inline-flex items-center gap-2 rounded-[var(--radius-lg)] bg-primary-500 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-600 disabled:opacity-50"
-          >
-            <Upload size={16} />
-            평가 받기 (1크레딧)
-          </button>
+      <div className="overflow-hidden rounded-[var(--radius-xl)] border border-primary-200">
+        <div className="flex items-center justify-between border-b border-primary-100 bg-primary-50 px-4 py-2">
+          <div className="flex items-center gap-1.5">
+            <MessageCircle size={13} className="text-primary-500" />
+            <span className="text-xs font-semibold text-primary-600">질문</span>
+          </div>
+          {questionAudioUrl && (
+            <button
+              onClick={toggleQuestionAudio}
+              className={`flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
+                isPlayingQuestion
+                  ? "bg-primary-500 text-white"
+                  : "text-primary-500 hover:bg-primary-100"
+              }`}
+            >
+              <Volume2 size={12} />
+              {isPlayingQuestion ? "정지" : "듣기"}
+            </button>
+          )}
         </div>
-      )}
-
-      {/* 제출 중 */}
-      {isSubmitting && (
-        <div className="flex flex-col items-center gap-2 py-4">
-          <Loader2 size={24} className="animate-spin text-primary-500" />
-          <p className="text-sm text-foreground-secondary">
-            발화를 분석하고 있습니다...
+        <div className="bg-primary-50/30 px-5 py-4 text-left">
+          <p className="text-[13px] font-medium leading-relaxed text-foreground sm:text-[15px]">
+            {questionText || "질문 없음"}
           </p>
+          {questionKorean && (
+            <p className="mt-3 border-t border-primary-100 pt-3 text-xs leading-relaxed text-foreground-muted">
+              {questionKorean}
+            </p>
+          )}
         </div>
-      )}
+      </div>
+
+      {/* 타이머 + 녹음 + 제출 — 모바일: 하단 고정 / 데스크탑: 인라인 */}
+      <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-surface px-5 py-3 sm:static sm:space-y-5 sm:border-t-0 sm:bg-transparent sm:p-0">
+        {/* 모바일: 타이머 + 제출/로딩 + 녹음 가로 배치 */}
+        <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-center sm:gap-0">
+          {/* 타이머 */}
+          <div className="flex items-center gap-1.5 sm:mb-4 sm:gap-2">
+            <Timer
+              size={14}
+              className={isOver2Min ? "text-red-500" : "text-foreground-muted"}
+              aria-hidden
+            />
+            <span
+              className={`text-2xl font-bold tabular-nums sm:text-3xl ${
+                isOver2Min ? "text-red-500" : "text-foreground"
+              }`}
+            >
+              {formatTime(speakTimer)}
+            </span>
+            {isOver2Min && (
+              <span className="flex items-center gap-0.5 text-xs text-red-500">
+                <AlertCircle size={10} />
+                초과
+              </span>
+            )}
+          </div>
+
+          {/* 제출 + 녹음 — 모바일 인라인, 데스크탑 세로 */}
+          <div className="flex items-center gap-2 sm:flex-col sm:gap-3">
+            {/* 제출 버튼 — 모바일: 인라인 소형 */}
+            {recordingBlob && !isSubmitting && (
+              <button
+                onClick={handleSubmit}
+                disabled={!creditData?.hasCredit}
+                className="shrink-0 rounded-full bg-primary-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-primary-600 disabled:opacity-50 sm:rounded-[var(--radius-lg)] sm:px-6 sm:py-2.5 sm:text-sm"
+              >
+                <span className="inline-flex items-center gap-1.5 sm:gap-2">
+                  <Upload size={14} className="sm:hidden" />
+                  <Upload size={16} className="hidden sm:block" />
+                  <span className="sm:hidden">평가</span>
+                  <span className="hidden sm:inline">평가 받기 (1크레딧)</span>
+                </span>
+              </button>
+            )}
+
+            {/* 제출 중 */}
+            {isSubmitting && (
+              <div className="flex shrink-0 items-center gap-1.5 sm:flex-col sm:gap-2 sm:py-2">
+                <Loader2 size={18} className="animate-spin text-primary-500 sm:size-5" />
+                <p className="text-xs text-foreground-secondary sm:text-sm">분석 중...</p>
+              </div>
+            )}
+
+            {/* 녹음 */}
+            <ShadowingRecorder
+              compact
+              isRecording={isRecording}
+              onRecordingChange={(recording) => {
+                setRecording(recording);
+                if (recording) {
+                  setTimerActive(true);
+                  timerCountRef.current = 0;
+                  setSpeakTimer(0);
+                  timerRef.current = setInterval(() => {
+                    timerCountRef.current += 1;
+                    setSpeakTimer(timerCountRef.current);
+                  }, 1000);
+                }
+              }}
+              onRecordingComplete={handleRecordingComplete}
+              showPlayback
+              maxDuration={180}
+            />
+          </div>
+        </div>
+      </div>
 
       {/* 에러 */}
       {submitError && (

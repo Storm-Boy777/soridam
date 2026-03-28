@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronRight,
   AlertTriangle,
+  Coins,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import dynamic from "next/dynamic";
@@ -292,9 +293,17 @@ function StartTab({
       >
         <Info size={18} className="shrink-0 text-primary-500" />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-foreground">
-            모의고사 안내
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium text-foreground">
+              모의고사 안내
+            </p>
+            {credit && (
+              <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                <Coins size={11} />
+                응시 크레딧 : {credit.planCredits + credit.credits}
+              </span>
+            )}
+          </div>
           {bannerOpen && (
             <p className="mt-0.5 text-xs text-foreground-secondary sm:mt-1 sm:text-sm">
               실제 OPIc과 동일하게 15문제를 풀고, 예상 등급과 상세 피드백을 받습니다.

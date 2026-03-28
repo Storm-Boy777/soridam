@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Eye, EyeOff, Timer, AlertCircle } from "lucide-react";
+import {
+  Timer,
+  AlertCircle,
+  MessageCircle,
+  ChevronDown,
+  Volume2,
+} from "lucide-react";
 import { ShadowingRecorder } from "./shadowing-recorder";
 import { useShadowingStore } from "@/lib/stores/shadowing";
 
@@ -9,24 +15,41 @@ export function StepRecite() {
   const {
     questionText,
     questionKorean,
-    sentences,
+    questionAudioUrl,
+    structureSummary,
     reciteTimer,
-    recitePeekCount,
-    reciteShowPeek,
     setReciteTimer,
-    incrementPeekCount,
-    togglePeek,
     isRecording,
     setRecording,
     setRecordingDuration,
   } = useShadowingStore();
 
-  // 타이머 (OPIc 기준 2분)
   const timerCountRef = useRef(0);
   const [timerActive, setTimerActive] = useState(false);
   const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
+  const [isPlayingQuestion, setIsPlayingQuestion] = useState(false);
+  const questionAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  // ref 기반 타이머 (stale closure 방지)
+  // 답변 구조 카드 (기본: 오픈)
+  const [isStructureOpen, setIsStructureOpen] = useState(true);
+
+  const toggleQuestionAudio = useCallback(() => {
+    if (!questionAudioUrl) return;
+    if (!questionAudioRef.current) {
+      questionAudioRef.current = new Audio(questionAudioUrl);
+      questionAudioRef.current.onended = () => setIsPlayingQuestion(false);
+    }
+    if (isPlayingQuestion) {
+      questionAudioRef.current.pause();
+      questionAudioRef.current.currentTime = 0;
+      setIsPlayingQuestion(false);
+    } else {
+      questionAudioRef.current.currentTime = 0;
+      questionAudioRef.current.play().catch(() => {});
+      setIsPlayingQuestion(true);
+    }
+  }, [questionAudioUrl, isPlayingQuestion]);
+
   useEffect(() => {
     if (!timerActive) return;
     timerCountRef.current = 0;
@@ -37,12 +60,6 @@ export function StepRecite() {
     }, 1000);
     return () => clearInterval(interval);
   }, [timerActive, setReciteTimer]);
-
-  // peek 토글
-  const handlePeek = useCallback(() => {
-    if (!reciteShowPeek) incrementPeekCount();
-    togglePeek();
-  }, [reciteShowPeek, incrementPeekCount, togglePeek]);
 
   const handleRecordingComplete = useCallback(
     (blob: Blob, duration: number) => {
@@ -62,91 +79,112 @@ export function StepRecite() {
   const isOver2Min = reciteTimer >= 120;
 
   return (
-    <div className="space-y-5">
-      {/* 안내 */}
-      <div className="text-center">
-        <p className="text-sm text-foreground-secondary">
-          음성 없이 <span className="font-medium text-primary-600">스스로 읽어</span>보세요.
-          OPIc 실전처럼 <span className="font-medium">2분 이내</span>를 목표로!
-        </p>
-      </div>
+    <div className="space-y-4 pb-20 sm:pb-0">
 
-      {/* 질문 표시 */}
-      <div className="rounded-[var(--radius-xl)] border border-primary-200 bg-primary-50/30 p-4 text-center">
-        <p className="text-xs font-medium text-primary-600">질문</p>
-        <p className="mt-1 text-sm font-medium text-foreground">
-          {questionText || "질문 없음"}
-        </p>
-        {questionKorean && (
-          <p className="mt-1 text-xs text-foreground-muted">{questionKorean}</p>
-        )}
-      </div>
-
-      {/* 타이머 */}
-      <div className="flex items-center justify-center gap-2">
-        <Timer
-          size={18}
-          className={isOver2Min ? "text-red-500" : "text-foreground-secondary"}
-        />
-        <span
-          className={`text-2xl font-bold tabular-nums ${
-            isOver2Min ? "text-red-500" : "text-foreground"
-          }`}
-        >
-          {formatTime(reciteTimer)}
-        </span>
-        {isOver2Min && (
-          <span className="flex items-center gap-1 text-xs text-red-500">
-            <AlertCircle size={12} />
-            2분 초과
-          </span>
-        )}
-      </div>
-
-      {/* Peek 버튼 (힌트) */}
-      <div className="flex justify-center">
-        <button
-          onClick={handlePeek}
-          className={`inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
-            reciteShowPeek
-              ? "border-amber-300 bg-amber-50 text-amber-700"
-              : "border-border bg-surface text-foreground-secondary hover:bg-surface-secondary"
-          }`}
-        >
-          {reciteShowPeek ? <EyeOff size={14} /> : <Eye size={14} />}
-          {reciteShowPeek ? "힌트 숨기기" : `힌트 보기 (${recitePeekCount}회 사용)`}
-        </button>
-      </div>
-
-      {/* 힌트 텍스트 (peek) */}
-      {reciteShowPeek && (
-        <div className="rounded-[var(--radius-xl)] border border-amber-200 bg-amber-50/50 p-4">
-          <div className="space-y-2">
-            {sentences.map((sent, i) => (
-              <p
-                key={i}
-                className="text-sm leading-relaxed text-foreground-secondary"
-              >
-                {sent.english}
-              </p>
-            ))}
+      {/* 1. 질문 카드 */}
+      <div className="overflow-hidden rounded-[var(--radius-xl)] border border-primary-200">
+        <div className="flex items-center justify-between border-b border-primary-100 bg-primary-50 px-4 py-2">
+          <div className="flex items-center gap-1.5">
+            <MessageCircle size={13} className="text-primary-500" />
+            <span className="text-xs font-semibold text-primary-600">질문</span>
           </div>
+          {questionAudioUrl && (
+            <button
+              onClick={toggleQuestionAudio}
+              className={`flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
+                isPlayingQuestion
+                  ? "bg-primary-500 text-white"
+                  : "text-primary-500 hover:bg-primary-100"
+              }`}
+            >
+              <Volume2 size={12} />
+              {isPlayingQuestion ? "정지" : "듣기"}
+            </button>
+          )}
+        </div>
+        <div className="bg-primary-50/30 px-5 py-4 text-left">
+          <p className="text-[13px] font-medium leading-relaxed text-foreground sm:text-[15px]">
+            {questionText || "질문 없음"}
+          </p>
+          {questionKorean && (
+            <p className="mt-3 border-t border-primary-100 pt-3 text-xs leading-relaxed text-foreground-muted">
+              {questionKorean}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* 2. 답변 구조 — 기본 오픈, 접기 가능 */}
+      {structureSummary && structureSummary.length > 0 && (
+        <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface">
+          <button
+            onClick={() => setIsStructureOpen((v) => !v)}
+            className="flex w-full items-center justify-between px-4 py-2.5 hover:bg-surface-secondary transition-colors"
+          >
+            <span className="text-xs font-semibold text-foreground-secondary">답변 구조</span>
+            <ChevronDown
+              size={14}
+              className={`text-foreground-muted transition-transform duration-200 ${isStructureOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+          {isStructureOpen && (
+            <div className="divide-y divide-border/60 border-t border-border">
+              {structureSummary.map((item, i) => (
+                <div key={i} className="flex flex-col gap-1 px-4 py-3 sm:grid sm:grid-cols-[7rem_1fr] sm:items-start sm:gap-x-3">
+                  <span className="shrink-0 self-start rounded-md bg-surface-secondary px-2 py-0.5 text-[11px] font-semibold text-foreground-secondary text-center sm:w-full">
+                    {item.tag}
+                  </span>
+                  <p className="text-xs leading-relaxed text-foreground-secondary sm:text-[13px]">
+                    {item.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* 녹음 */}
-      <ShadowingRecorder
-        isRecording={isRecording}
-        onRecordingChange={(recording) => {
-          setRecording(recording);
-          if (recording && !timerActive) {
-            setTimerActive(true);
-            setReciteTimer(0);
-          }
-        }}
-        onRecordingComplete={handleRecordingComplete}
-        showPlayback
-      />
+      {/* 3. 타이머 + 녹음 — 모바일: 하단 고정 / 데스크탑: 답변 구조 다음 인라인 */}
+      <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-surface px-5 py-3 sm:static sm:rounded-[var(--radius-xl)] sm:border sm:border-border sm:py-5">
+        <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-center sm:gap-0">
+          <div className="flex items-center gap-1.5 sm:mb-4 sm:gap-2">
+            <Timer
+              size={14}
+              className={isOver2Min ? "text-red-500" : "text-foreground-muted"}
+              aria-hidden
+            />
+            <span
+              className={`text-2xl font-bold tabular-nums sm:text-3xl ${
+                isOver2Min ? "text-red-500" : "text-foreground"
+              }`}
+            >
+              {formatTime(reciteTimer)}
+            </span>
+            {isOver2Min ? (
+              <span className="flex items-center gap-0.5 text-xs text-red-500">
+                <AlertCircle size={10} />
+                초과
+              </span>
+            ) : (
+              <span className="text-xs text-foreground-muted">/ 2분</span>
+            )}
+          </div>
+          <ShadowingRecorder
+            compact
+            isRecording={isRecording}
+            onRecordingChange={(recording) => {
+              setRecording(recording);
+              if (recording && !timerActive) {
+                setTimerActive(true);
+                setReciteTimer(0);
+              }
+            }}
+            onRecordingComplete={handleRecordingComplete}
+            showPlayback
+          />
+        </div>
+      </div>
+
     </div>
   );
 }

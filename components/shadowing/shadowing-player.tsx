@@ -72,7 +72,7 @@ export function ShadowingPlayer({
       // 문장별 모드: 문장 끝에 도달하면 정지
       if (sentenceMode && sentenceIndex != null) {
         const sent = sentences[sentenceIndex];
-        if (sent && t >= sent.end) {
+        if (sent && t >= sent.end && !audio!.paused) {
           audio!.pause();
           setPlaying(false);
           onSentenceEnd?.();
@@ -171,7 +171,7 @@ export function ShadowingPlayer({
 
   if (compact) {
     return (
-      <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2">
+      <div className="flex items-center gap-3">
         {audioUrl && <audio ref={audioRef} src={audioUrl} preload="auto" />}
 
         <button
@@ -202,17 +202,27 @@ export function ShadowingPlayer({
           {formatTime(currentTime)} / {formatTime(duration)}
         </span>
 
-        <button
-          onClick={toggleRepeat}
-          title={repeatTargetIndex != null ? "반복 재생 끄기" : "문장 반복 재생"}
-          className={`shrink-0 rounded-md p-1 transition-colors ${
-            repeatTargetIndex != null
-              ? "bg-primary-100 text-primary-700"
-              : "text-foreground-muted hover:text-foreground-secondary"
-          }`}
-        >
-          <Repeat1 size={14} />
-        </button>
+        {sentenceMode ? (
+          <button
+            onClick={restart}
+            title="다시 듣기"
+            className="shrink-0 rounded-md p-1 text-foreground-muted transition-colors hover:text-foreground-secondary"
+          >
+            <RotateCcw size={14} />
+          </button>
+        ) : (
+          <button
+            onClick={toggleRepeat}
+            title={repeatTargetIndex != null ? "반복 재생 끄기" : "문장 반복 재생"}
+            className={`shrink-0 rounded-md p-1 transition-colors ${
+              repeatTargetIndex != null
+                ? "bg-primary-100 text-primary-700"
+                : "text-foreground-muted hover:text-foreground-secondary"
+            }`}
+          >
+            <Repeat1 size={14} />
+          </button>
+        )}
 
         {showSpeedControl && (
           <button
@@ -228,7 +238,7 @@ export function ShadowingPlayer({
 
   // 기본 모드: 기존 레이아웃
   return (
-    <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-4">
+    <div className="p-4">
       {audioUrl && <audio ref={audioRef} src={audioUrl} preload="auto" />}
 
       {/* 프로그레스 바 */}

@@ -1,12 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { TimestampItem, ShadowingStep, ShadowingEvaluation } from "@/lib/types/scripts";
+import type { TimestampItem, ShadowingStep, ShadowingEvaluation, StructureSummaryItem, KeySentence } from "@/lib/types/scripts";
 
-// 텍스트 힌트 레벨 (Step 2 따라읽기 토글)
-export type TextHintLevel = "full" | "first-word" | "hidden";
-
-// 표시 모드 (Step 1)
+// 표시 모드 (Step 1 듣기 + Step 2 따라읽기 공용)
 export type DisplayMode = "both" | "english" | "korean";
+
+// 하위 호환용 타입 alias
+export type TextHintLevel = DisplayMode;
 
 export interface ShadowingState {
   // === 데이터 (패키지에서 로드) ===
@@ -16,7 +16,10 @@ export interface ShadowingState {
   audioUrl: string | null;
   questionText: string | null;
   questionKorean: string | null;
+  questionAudioUrl: string | null;
   keyExpressions: string[];
+  structureSummary: StructureSummaryItem[] | null;
+  keySentences: KeySentence[] | null;
 
   // === 현재 단계 ===
   currentStep: ShadowingStep;
@@ -55,7 +58,10 @@ export interface ShadowingState {
     audioUrl: string;
     questionText: string | null;
     questionKorean: string | null;
+    questionAudioUrl: string | null;
     keyExpressions: string[];
+    structureSummary: StructureSummaryItem[] | null;
+    keySentences: KeySentence[] | null;
   }) => void;
   setStep: (step: ShadowingStep) => void;
   setPlaying: (playing: boolean) => void;
@@ -93,7 +99,10 @@ const initialState = {
   audioUrl: null,
   questionText: null,
   questionKorean: null,
+  questionAudioUrl: null,
   keyExpressions: [],
+  structureSummary: null,
+  keySentences: null,
   currentStep: "listen" as ShadowingStep,
   isPlaying: false,
   currentTime: 0,
@@ -102,7 +111,7 @@ const initialState = {
   seekRequest: null,
   repeatTargetIndex: null,
   shadowIndex: 0,
-  shadowHintLevel: "full" as TextHintLevel,
+  shadowHintLevel: "both" as TextHintLevel,
   shadowCompleted: [],
   reciteTimer: 0,
   recitePeekCount: 0,
@@ -127,7 +136,10 @@ export const useShadowingStore = create<ShadowingState>()(
           audioUrl: data.audioUrl,
           questionText: data.questionText,
           questionKorean: data.questionKorean,
+          questionAudioUrl: data.questionAudioUrl,
           keyExpressions: data.keyExpressions,
+          structureSummary: data.structureSummary,
+          keySentences: data.keySentences,
         }),
 
       setStep: (step) =>
@@ -187,6 +199,7 @@ export const useShadowingStore = create<ShadowingState>()(
     }),
     {
       name: "shadowing-progress",
+      skipHydration: true, // 렌더 중 rehydration 방지 (ShadowingContent에서 수동 호출)
       // 진도 관련 데이터만 persist
       partialize: (state) => ({
         packageId: state.packageId,

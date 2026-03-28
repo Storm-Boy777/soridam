@@ -45,12 +45,14 @@ export default async function ShadowingPage({ searchParams }: PageProps) {
       targetLevel: "IH",
       ttsVoice: "Zephyr",
       packageStatus: "completed",
+      structureSummary: null,
+      keySentences: null,
     };
 
     return (
       <>
         <ImmersiveHeader title="음악 · 쉐도잉 체험판" backHref="/scripts?tab=shadowing" />
-        <main className="flex flex-1 flex-col">
+        <main className="flex h-0 min-h-0 flex-grow flex-col md:h-auto md:flex-1">
           <ShadowingContent data={trialData} isTrialMode />
         </main>
       </>
@@ -89,7 +91,7 @@ export default async function ShadowingPage({ searchParams }: PageProps) {
   return (
     <>
       <ImmersiveHeader title={topicLabel} backHref="/scripts?tab=shadowing" />
-      <main className="flex flex-1 flex-col">
+      <main className="flex h-0 min-h-0 flex-grow flex-col md:h-auto md:flex-1">
         <ShadowingContent data={result.data} />
       </main>
     </>

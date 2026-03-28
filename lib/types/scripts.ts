@@ -75,15 +75,22 @@ export const TTS_VOICE_LABELS: Record<TtsVoice, string> = {
 export const SHADOWING_STEP_LABELS: Record<ShadowingStep, string> = {
   listen: '듣기',
   shadow: '따라 읽기',
-  recite: '혼자 말하기',
+  recite: '구조로 말하기',
+  speak: '실전 말하기',
+};
+
+export const SHADOWING_STEP_SHORT_LABELS: Record<ShadowingStep, string> = {
+  listen: '듣기',
+  shadow: '따라읽기',
+  recite: '구조로 말하기',
   speak: '실전 말하기',
 };
 
 export const SHADOWING_STEP_DESCRIPTIONS: Record<ShadowingStep, string> = {
-  listen: '원어민 음성을 듣고 전체 흐름을 파악합니다',
-  shadow: '음성을 듣고 따라 읽으며 텍스트 힌트를 조절합니다',
-  recite: '음성 없이 혼자 말해봅니다',
-  speak: '텍스트와 음성 없이 스스로 말합니다 (발화 평가)',
+  listen: '원어민 음성을 듣고 전체 흐름을 파악하세요',
+  shadow: '원어민 음성을 따라 말하세요. 익숙해질 때까지 반복합니다',
+  recite: '답변 구조를 참고하여 스크립트를 떠올려 말해보세요',
+  speak: '훈련한 내용을 얼마나 체화했는지 확인해보세요',
 };
 
 // ── 4계층 JSON 구조 (paragraphs > slots > sentences) ──

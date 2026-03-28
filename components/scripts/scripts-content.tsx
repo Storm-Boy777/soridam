@@ -27,6 +27,7 @@ import {
   Lightbulb,
   BookOpen,
   FlaskConical,
+  Coins,
   type LucideIcon,
 } from "lucide-react";
 import { TOPIC_ICONS } from "@/components/reviews/submit/topic-pagination";
@@ -152,9 +153,17 @@ function CreateTab() {
       >
         <Info size={18} className="shrink-0 text-primary-500" />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-foreground">
-            나만의 맞춤 스크립트란?
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium text-foreground">
+              나만의 맞춤 스크립트란?
+            </p>
+            {creditInfo && (
+              <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                <Coins size={11} />
+                생성 크레딧 : {creditInfo.totalCredits}
+              </span>
+            )}
+          </div>
           {bannerOpen && (
             <p className="mt-0.5 text-xs text-foreground-secondary sm:mt-1 sm:text-sm">
               시험 빈출 주제와 내 경험을 조합하여, 자연스럽고 외우기 쉬운 영어
