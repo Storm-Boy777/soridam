@@ -5,9 +5,21 @@ import ScrollReveal from "@/components/motion/ScrollReveal";
 /* ── 기능 미리보기 카드 데이터 ── */
 
 const FEATURE_CARDS = [
-  { num: "01", title: "빈도 분석", desc: "카테고리별 출제 빈도를\n데이터로 분석합니다", src: "/screenshots/review-frequency.jpg" },
-  { num: "02", title: "후기 제출", desc: "시험 후기를 제출하면\n스크립트 크레딧을 지급합니다", src: "/screenshots/review-submit.jpg" },
-  { num: "03", title: "시험 후기", desc: "다른 수험생의 시험 후기와\n실전 팁을 확인합니다", src: "/screenshots/review-list.jpg" },
+  // 시험후기
+  { num: "01", title: "빈도 분석", desc: "출제 빈도를 데이터로 분석", src: "/screenshots/review-frequency.jpg" },
+  { num: "02", title: "후기 제출", desc: "콤보별 주제와 질문 선택", src: "/screenshots/review-submit.jpg" },
+  // 스크립트
+  { num: "03", title: "스크립트 생성", desc: "내 경험으로 맞춤 스크립트", src: "/screenshots/script-create.png" },
+  // 쉐도잉
+  { num: "04", title: "쉐도잉 훈련", desc: "문장별 하이라이트로 따라읽기", src: "/screenshots/shadowing-follow.png" },
+  // 모의고사
+  { num: "05", title: "실전 모의고사", desc: "15문항 실전 시뮬레이션", src: "/screenshots/mock-exam-session.png" },
+  { num: "06", title: "종합 진단", desc: "예상 등급과 상세 소견", src: "/screenshots/mock-exam-result.png" },
+  { num: "07", title: "세부 진단", desc: "항목별 충족 여부 진단표", src: "/screenshots/mock-exam-detail.png" },
+  { num: "08", title: "문항별 평가", desc: "문항별 충족/미충족 분석", src: "/screenshots/mock-exam-questions.png" },
+  { num: "09", title: "성장 리포트", desc: "등급 변화와 성장 추이", src: "/screenshots/mock-exam-growth.png" },
+  // 튜터링
+  { num: "10", title: "튜터링 진단", desc: "약점 진단과 맞춤 처방", src: "/screenshots/tutoring-diagnosis.png" },
 ];
 
 /* ── 카드 컴포넌트 ── */
@@ -24,8 +36,8 @@ function FeatureCard({ card }: { card: typeof FEATURE_CARDS[number] }) {
       <p className="mt-1 whitespace-pre-line text-center text-[0.7rem] leading-relaxed text-white/50 sm:text-[0.75rem]">
         {card.desc}
       </p>
-      <div className="mt-3 overflow-hidden rounded-xl border-2 border-white/10 shadow-lg">
-        <img src={card.src} alt={card.title} className="w-full" loading="lazy" />
+      <div className="mt-3 h-[480px] overflow-hidden rounded-xl border-2 border-white/10 shadow-lg sm:h-[582px]">
+        <img src={card.src} alt={card.title} className="w-full object-cover object-left-top" loading="lazy" />
       </div>
     </div>
   );
@@ -53,12 +65,12 @@ export default function DeepDiveSection() {
       {/* Marquee — 전체 너비 */}
       <div className="mt-10 overflow-hidden">
         <div className="[mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]">
-          <div className="flex w-max animate-[marquee_20s_linear_infinite] hover:[animation-play-state:paused]">
+          <div className="flex w-max animate-[marquee_40s_linear_infinite] hover:[animation-play-state:paused]">
             {/* 2세트: 각 세트는 카드 2회 반복(6장)으로 화면보다 넓게 */}
             {[0, 1].map((stripIdx) => (
               <div key={stripIdx} className="flex shrink-0 gap-4 pr-4 sm:gap-6 sm:pr-6">
-                {[...FEATURE_CARDS, ...FEATURE_CARDS].map((card, i) => (
-                  <FeatureCard key={`${stripIdx}-${i}`} card={card} />
+                {FEATURE_CARDS.map((card, i) => (
+                  <FeatureCard key={`${stripIdx}-${card.num}`} card={card} />
                 ))}
               </div>
             ))}
