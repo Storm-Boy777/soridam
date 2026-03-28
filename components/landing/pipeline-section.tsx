@@ -59,7 +59,7 @@ export default function PipelineSection() {
                     duration={0.5}
                   >
                     <a
-                      href={`#dive-${step.id}`}
+                      href={step.href}
                       className="group flex w-[130px] flex-col items-center gap-3 text-center"
                     >
                       <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/[0.08] ring-1 ring-white/[0.08] transition-all group-hover:bg-[#D4835E]/20 group-hover:ring-[#D4835E]/30">
@@ -103,7 +103,7 @@ export default function PipelineSection() {
                     duration={0.4}
                   >
                     <a
-                      href={`#dive-${step.id}`}
+                      href={step.href}
                       className="flex items-center gap-4 rounded-2xl px-4 py-3 transition-colors hover:bg-white/[0.04]"
                     >
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/[0.08]">

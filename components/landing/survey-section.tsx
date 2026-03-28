@@ -17,7 +17,7 @@ const SURVEY_ITEMS = [
 
 export default function SurveySection() {
   return (
-    <section className="bg-white py-20 sm:py-[100px]">
+    <section id="dive-survey" className="bg-white py-20 sm:py-[100px]">
       <div className="mx-auto max-w-[1080px] px-6">
         <div className="flex flex-col gap-10 md:items-center md:gap-16 md:flex-row">
           {/* 좌측: 텍스트 */}

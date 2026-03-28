@@ -47,7 +47,7 @@ function FeatureCard({ card }: { card: typeof FEATURE_CARDS[number] }) {
 
 export default function DeepDiveSection() {
   return (
-    <section className="bg-[#FAF6F1] py-20 sm:py-[100px]">
+    <section id="dive-features" className="bg-[#FAF6F1] py-20 sm:py-[100px]">
       <div className="mx-auto max-w-[1080px] px-6">
         <ScrollReveal preset="fade-up" duration={0.5}>
           <p className="text-center font-serif text-[0.8rem] font-bold tracking-wider text-[#D4835E]/50">

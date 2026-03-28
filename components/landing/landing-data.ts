@@ -24,6 +24,7 @@ export const pipelineSteps = [
     label: "서베이 고정",
     icon: "ClipboardList" as const,
     desc: "출제 범위를 고정한다",
+    href: "#dive-survey",
   },
   {
     id: "frequency",
@@ -31,6 +32,7 @@ export const pipelineSteps = [
     label: "빈도분석",
     icon: "BarChart3" as const,
     desc: "어떤 질문이 자주 나올까?",
+    href: "#dive-features",
   },
   {
     id: "script",
@@ -38,6 +40,7 @@ export const pipelineSteps = [
     label: "스크립트",
     icon: "PenLine" as const,
     desc: "내 경험이 답변이 된다",
+    href: "#dive-features",
   },
   {
     id: "shadowing",
@@ -45,6 +48,7 @@ export const pipelineSteps = [
     label: "쉐도잉",
     icon: "Headphones" as const,
     desc: "원어민 발음으로 체화",
+    href: "#dive-features",
   },
   {
     id: "mockexam",
@@ -52,6 +56,7 @@ export const pipelineSteps = [
     label: "모의고사",
     icon: "ClipboardCheck" as const,
     desc: "실전과 동일한 평가",
+    href: "#dive-features",
   },
   {
     id: "tutoring",
@@ -59,6 +64,7 @@ export const pipelineSteps = [
     label: "튜터링",
     icon: "Target" as const,
     desc: "약점만 집중 훈련",
+    href: "#dive-features",
   },
 ];
 
