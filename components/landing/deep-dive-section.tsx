@@ -1,273 +1,70 @@
 "use client";
 
-import {
-  ClipboardList,
-  BarChart3,
-  PenLine,
-  Headphones,
-  ClipboardCheck,
-  Target,
-  ArrowRight,
-  Sparkles,
-  Check,
-} from "lucide-react";
 import ScrollReveal from "@/components/motion/ScrollReveal";
-import CountUp from "./count-up";
-import Pill from "./pill";
-import { deepDives } from "./landing-data";
 
-const iconMap = {
-  survey: ClipboardList,
-  frequency: BarChart3,
-  script: PenLine,
-  shadowing: Headphones,
-  mockexam: ClipboardCheck,
-  tutoring: Target,
-} as const;
+/* ── 기능 미리보기 카드 데이터 ── */
 
-const bgMap = {
-  cream: "bg-[#FAF6F1]",
-  white: "bg-white",
-  warm: "bg-[#F3ECE4]",
-} as const;
+const FEATURE_CARDS = [
+  { num: "01", title: "빈도 분석", desc: "카테고리별 출제 빈도를\n데이터로 분석합니다", src: "/screenshots/review-frequency.jpg" },
+  { num: "02", title: "후기 제출", desc: "시험 후기를 제출하면\n스크립트 크레딧을 지급합니다", src: "/screenshots/review-submit.jpg" },
+  { num: "03", title: "시험 후기", desc: "다른 수험생의 시험 후기와\n실전 팁을 확인합니다", src: "/screenshots/review-list.jpg" },
+];
+
+/* ── 카드 컴포넌트 ── */
+
+function FeatureCard({ card }: { card: typeof FEATURE_CARDS[number] }) {
+  return (
+    <div className="w-[280px] shrink-0 rounded-2xl bg-[#3A2E25] p-4 sm:w-[340px] sm:p-5">
+      <span className="block text-center font-serif text-[2rem] font-bold leading-none text-[#D4835E]/30 sm:text-[2.5rem]">
+        {card.num}
+      </span>
+      <h4 className="mt-1 text-center text-[0.95rem] font-bold text-white sm:text-[1.05rem]">
+        {card.title}
+      </h4>
+      <p className="mt-1 whitespace-pre-line text-center text-[0.7rem] leading-relaxed text-white/50 sm:text-[0.75rem]">
+        {card.desc}
+      </p>
+      <div className="mt-3 overflow-hidden rounded-xl border-2 border-white/10 shadow-lg">
+        <img src={card.src} alt={card.title} className="w-full" loading="lazy" />
+      </div>
+    </div>
+  );
+}
+
+/* ── 메인 섹션: Marquee ── */
 
 export default function DeepDiveSection() {
   return (
-    <>
-      {deepDives.map((dive, idx) => {
-        const Icon = iconMap[dive.id as keyof typeof iconMap];
-        const isReversed = idx % 2 === 1;
+    <section className="bg-[#FAF6F1] py-20 sm:py-[100px]">
+      <div className="mx-auto max-w-[1080px] px-6">
+        <ScrollReveal preset="fade-up" duration={0.5}>
+          <p className="text-center font-serif text-[0.8rem] font-bold tracking-wider text-[#D4835E]/50">
+            FEATURES
+          </p>
+          <h2 className="mt-3 text-center text-[1.5rem] font-extrabold leading-[1.35] tracking-[-0.03em] text-[#3A2E25] [word-break:keep-all] sm:text-[1.8rem]">
+            핵심 기능 미리보기
+          </h2>
+          <p className="mt-2 text-center text-[0.9rem] text-[#8B7E72]">
+            실제 서비스 화면을 확인하세요
+          </p>
+        </ScrollReveal>
+      </div>
 
-        return (
-          <section
-            key={dive.id}
-            id={`dive-${dive.id}`}
-            className={`${bgMap[dive.bg]} py-20 sm:py-[100px]`}
-          >
-            <div className="mx-auto max-w-[1080px] px-6">
-              <div
-                className={`flex flex-col gap-10 md:items-center md:gap-16 ${
-                  isReversed ? "md:flex-row-reverse" : "md:flex-row"
-                }`}
-              >
-                {/* 텍스트 */}
-                <div className="flex-1">
-                  <ScrollReveal
-                    preset={isReversed ? "fade-right" : "fade-left"}
-                    duration={0.5}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="font-serif text-[0.8rem] font-bold tracking-wider text-[#D4835E]/50">
-                        {dive.step}
-                      </span>
-                      <span className="rounded-md bg-[#D4835E]/10 px-2 py-0.5 text-[0.7rem] font-bold text-[#D4835E]">
-                        {dive.badge}
-                      </span>
-                    </div>
-                    <h3 className="mt-4 whitespace-pre-line text-[1.5rem] font-extrabold leading-[1.35] tracking-[-0.03em] text-[#3A2E25] [word-break:keep-all] sm:text-[1.8rem]">
-                      {dive.heading}
-                    </h3>
-                    <ul className="mt-6 flex flex-col gap-3">
-                      {dive.points.map((point, i) => (
-                        <ScrollReveal
-                          key={point}
-                          preset="fade-up"
-                          delay={i * 0.08}
-                          duration={0.4}
-                          as="li"
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#D4835E]" />
-                            <span className="text-[0.95rem] leading-[1.6] text-[#8B7E72]">
-                              {point}
-                            </span>
-                          </div>
-                        </ScrollReveal>
-                      ))}
-                    </ul>
-                  </ScrollReveal>
-                </div>
-
-                {/* 우측 비주얼 */}
-                <div className="flex-1">
-                  <ScrollReveal
-                    preset={isReversed ? "fade-left" : "fade-right"}
-                    duration={0.5}
-                    delay={0.15}
-                  >
-                    {/* 서베이 고정: 항목 카드 */}
-                    {dive.surveyItems && (
-                      <div className="rounded-2xl border border-[#EAE0D5] bg-[#FAF6F1] p-6 sm:p-8">
-                        <p className="mb-3 text-[0.85rem] font-semibold text-[#3A2E25]">
-                          하루오픽 기본 서베이
-                        </p>
-                        <div className="space-y-3">
-                          <div className="rounded-xl bg-white p-3">
-                            <p className="mb-2 text-[0.75rem] font-semibold text-[#D4835E]">기본 설문</p>
-                            <div className="grid grid-cols-2 gap-1.5">
-                              {dive.surveyItems.basic.map((item: string) => (
-                                <div key={item} className="flex items-center gap-1.5 text-[0.8rem] text-[#8B7E72]">
-                                  <Check className="h-3 w-3 shrink-0 text-[#D4835E]" />
-                                  {item}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                          <div className="rounded-xl bg-white p-3">
-                            <p className="mb-2 text-[0.75rem] font-semibold text-[#D4835E]">배경 설문 (12개 이상)</p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {dive.surveyItems.background.map((item: string) => (
-                                <span key={item} className="rounded-full bg-[#D4835E]/[0.08] px-2.5 py-1 text-[0.75rem] font-medium text-[#3A2E25]">
-                                  {item}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between rounded-xl bg-[#3A2E25] px-4 py-3">
-                            <span className="text-[0.8rem] font-medium text-white/70">난이도</span>
-                            <span className="font-serif text-[1.2rem] font-bold text-[#D4835E]">{dive.surveyItems.difficulty}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 스크립트: 7가지 결과 그리드 */}
-                    {dive.example && (
-                      <div className="rounded-2xl border border-[#EAE0D5] bg-[#FAF6F1] p-6 sm:p-8">
-                        <div className="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-[0.85rem] text-[#8B7E72]">
-                          <Sparkles className="h-4 w-4 text-[#D4835E]" />
-                          <span className="font-medium">
-                            &quot;{dive.example.input}&quot;
-                          </span>
-                        </div>
-                        <div className="mt-3 flex items-center justify-center py-1">
-                          <ArrowRight className="h-4 w-4 -rotate-90 text-[#D4835E]/40" />
-                        </div>
-                        <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                          {dive.example.outputs.map((output, i) => (
-                            <div
-                              key={output}
-                              className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-[0.8rem] font-medium ${
-                                i === 0
-                                  ? "col-span-2 bg-[#D4835E] text-white sm:col-span-3"
-                                  : "bg-white text-[#3A2E25]"
-                              }`}
-                            >
-                              <div
-                                className={`h-1.5 w-1.5 rounded-full ${
-                                  i === 0 ? "bg-white/50" : "bg-[#D4835E]/30"
-                                }`}
-                              />
-                              {output}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 쉐도잉: 4단계 */}
-                    {dive.steps4 && (
-                      <div className="rounded-2xl border border-[#EAE0D5] bg-white p-6 sm:p-8">
-                        <p className="mb-4 text-[0.85rem] font-semibold text-[#3A2E25]">
-                          4단계 체화 프로세스
-                        </p>
-                        <div className="flex flex-col gap-2">
-                          {dive.steps4.map((step, i) => (
-                            <div
-                              key={step}
-                              className="flex items-center gap-3 rounded-xl bg-[#FAF6F1] px-4 py-3"
-                            >
-                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#D4835E]/10 font-serif text-[0.75rem] font-bold text-[#D4835E]">
-                                {i + 1}
-                              </span>
-                              <span className="text-[0.9rem] font-medium text-[#3A2E25]">
-                                {step}
-                              </span>
-                              {i < dive.steps4!.length - 1 && (
-                                <ArrowRight className="ml-auto h-3 w-3 text-[#B5A99D]" />
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 모의고사: 3개 통계 */}
-                    {dive.stats && (
-                      <div className="rounded-2xl border border-[#EAE0D5] bg-[#FAF6F1] p-6 sm:p-8">
-                        <div className="grid grid-cols-3 gap-4">
-                          {dive.stats.map((stat) => (
-                            <div
-                              key={stat.label}
-                              className="flex flex-col items-center text-center"
-                            >
-                              <span className="font-serif text-[2rem] font-bold text-[#D4835E] sm:text-[2.5rem]">
-                                <CountUp
-                                  target={stat.value}
-                                  suffix={stat.suffix}
-                                />
-                              </span>
-                              <span className="mt-1 text-[0.8rem] font-medium text-[#3A2E25]">
-                                {stat.label}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 튜터링: 3단 플로우 */}
-                    {dive.flow && (
-                      <div className="rounded-2xl border border-[#EAE0D5] bg-white p-6 sm:p-8">
-                        <div className="flex flex-col gap-3">
-                          {dive.flow.map((step, i) => (
-                            <div key={step}>
-                              <div className="flex items-center gap-3 rounded-xl bg-[#FAF6F1] px-4 py-3.5">
-                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#D4835E]/10 font-serif text-[0.75rem] font-bold text-[#D4835E]">
-                                  {i + 1}
-                                </span>
-                                <span className="text-[0.9rem] font-semibold text-[#3A2E25]">
-                                  {step}
-                                </span>
-                              </div>
-                              {i < dive.flow!.length - 1 && (
-                                <div className="flex justify-center py-1">
-                                  <ArrowRight className="h-4 w-4 -rotate-90 text-[#D4835E]/30" />
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                        <p className="mt-4 text-center text-[0.85rem] text-[#8B7E72]">
-                          아는 것을 할 수 있는 것으로. 반복 수행으로 체화합니다.
-                        </p>
-                      </div>
-                    )}
-
-                    {/* 빈도분석: 아이콘 비주얼 */}
-                    {!dive.surveyItems &&
-                      !dive.example &&
-                      !dive.steps4 &&
-                      !dive.stats &&
-                      !dive.flow && (
-                        <div className="flex flex-col items-center justify-center rounded-2xl border border-[#EAE0D5] bg-white p-8 sm:p-12">
-                          <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-[#D4835E]/10">
-                            <Icon className="h-10 w-10 text-[#D4835E]" />
-                          </div>
-                          <p className="mt-4 text-center text-[0.9rem] font-medium text-[#8B7E72]">
-                            471개 기출 데이터 기반
-                            <br />
-                            주제별 · 질문별 빈도 분석
-                          </p>
-                        </div>
-                      )}
-                  </ScrollReveal>
-                </div>
+      {/* Marquee — 전체 너비 */}
+      <div className="mt-10 overflow-hidden">
+        <div className="[mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]">
+          <div className="flex w-max animate-[marquee_20s_linear_infinite] hover:[animation-play-state:paused]">
+            {/* 2세트: 각 세트는 카드 2회 반복(6장)으로 화면보다 넓게 */}
+            {[0, 1].map((stripIdx) => (
+              <div key={stripIdx} className="flex shrink-0 gap-4 pr-4 sm:gap-6 sm:pr-6">
+                {[...FEATURE_CARDS, ...FEATURE_CARDS].map((card, i) => (
+                  <FeatureCard key={`${stripIdx}-${i}`} card={card} />
+                ))}
               </div>
-            </div>
-          </section>
-        );
-      })}
-    </>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }

@@ -284,6 +284,12 @@ details.faq-item .faq-answer {
   color: #FAEADD;
 }
 
+/* 랜딩 스크린샷 무한 슬라이드 */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
 /* 훈련 모드 개별평가 패널 애니메이션 */
 @keyframes slideUp {
   from {

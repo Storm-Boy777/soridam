@@ -80,8 +80,10 @@ export default function PipelineSection() {
                   </ScrollReveal>
                   {i < pipelineSteps.length - 1 && (
                     <div className="mt-7 flex items-center px-1">
-                      <div className="h-px w-4 bg-white/15 sm:w-6" />
-                      <ArrowRight className="h-3 w-3 text-white/25" />
+                      <svg width="28" height="10" viewBox="0 0 28 10" fill="none" className="text-white/25 sm:w-[36px]">
+                        <line x1="0" y1="5" x2="22" y2="5" stroke="currentColor" strokeWidth="1" />
+                        <path d="M20 1 L27 5 L20 9" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
                     </div>
                   )}
                 </div>

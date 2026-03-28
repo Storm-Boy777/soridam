@@ -3,8 +3,8 @@ import HeroSection from "@/components/landing/hero-section";
 import PainSection from "@/components/landing/pain-section";
 import ContrastSection from "@/components/landing/contrast-section";
 import PipelineSection from "@/components/landing/pipeline-section";
+import SurveySection from "@/components/landing/survey-section";
 import DeepDiveSection from "@/components/landing/deep-dive-section";
-import SocialProofSection from "@/components/landing/social-proof-section";
 import PricingSection from "@/components/landing/pricing-section";
 import FaqSection from "@/components/landing/faq-section";
 import FinalCtaSection from "@/components/landing/final-cta-section";
@@ -25,8 +25,8 @@ export default function HomePage() {
 
       {/* 2막: 해결과 확신 */}
       <PipelineSection />
+      <SurveySection />
       <DeepDiveSection />
-      <SocialProofSection />
 
       {/* 3막: 행동 유도 */}
       <PricingSection />

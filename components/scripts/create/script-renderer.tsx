@@ -397,10 +397,10 @@ export function ScriptSummaryView({
                   )}
                 </div>
                 <div className="flex-1 pb-1">
-                  <span className="text-[12px] font-semibold text-blue-600">
+                  <span className="block text-[12px] font-semibold text-blue-600 sm:inline">
                     {item.tag}
                   </span>
-                  <span className="ml-2 text-[13px] text-foreground-secondary">
+                  <span className="block text-[13px] text-foreground-secondary sm:ml-2 sm:inline">
                     {item.description}
                   </span>
                 </div>
