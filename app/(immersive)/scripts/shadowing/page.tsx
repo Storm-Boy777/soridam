@@ -32,6 +32,7 @@ export default async function ShadowingPage({ searchParams }: PageProps) {
       sentences: TRIAL_TIMESTAMPS,
       questionText: TRIAL_QUESTION.question_english,
       questionKorean: TRIAL_QUESTION.question_korean,
+      questionAudioUrl: null,
       topic: TRIAL_QUESTION.topic,
       keyExpressions: [
         "got interested in",
