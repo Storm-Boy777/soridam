@@ -1085,8 +1085,8 @@ function ShadowingTab({
                   </div>
                 </div>
                 <Link
-                  href={`/scripts/shadowing?session=${session.id}`}
-                  className="inline-flex h-8 items-center gap-1 rounded-lg px-3 text-xs font-medium text-primary-500 transition-colors hover:bg-primary-50"
+                  href={`/scripts/shadowing/${session.id}`}
+                  className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg px-3 text-xs font-medium whitespace-nowrap text-primary-500 transition-colors hover:bg-primary-50"
                 >
                   상세
                   <ArrowRight size={12} />

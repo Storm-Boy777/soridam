@@ -844,6 +844,61 @@ export async function startShadowingSession(
 // 쉐도잉 평가 상세 조회
 // ============================================================
 
+export interface ShadowingSessionDetail {
+  id: string;
+  script_id: string;
+  package_id: string | null;
+  topic: string | null;
+  question_text: string | null;
+  question_korean: string | null;
+  audio_duration: number | null;
+  started_at: string;
+  completed_at: string | null;
+  evaluation: ShadowingEvaluation | null;
+}
+
+export async function getShadowingSessionDetail(
+  sessionId: string
+): Promise<ActionResult<ShadowingSessionDetail>> {
+  try {
+    const { supabase, userId } = await requireUser();
+
+    const { data, error } = await supabase
+      .from("shadowing_sessions")
+      .select(`
+        id, script_id, package_id, topic,
+        question_text, question_korean,
+        audio_duration, started_at, completed_at,
+        shadowing_evaluations (*)
+      `)
+      .eq("id", sessionId)
+      .eq("user_id", userId)
+      .single();
+
+    if (error || !data) {
+      return { error: "세션을 찾을 수 없습니다" };
+    }
+
+    const evalArr = data.shadowing_evaluations as unknown as ShadowingEvaluation[];
+    return {
+      data: {
+        id: data.id,
+        script_id: data.script_id,
+        package_id: data.package_id ?? null,
+        topic: data.topic ?? null,
+        question_text: data.question_text ?? null,
+        question_korean: data.question_korean ?? null,
+        audio_duration: data.audio_duration ?? null,
+        started_at: data.started_at,
+        completed_at: data.completed_at ?? null,
+        evaluation: evalArr?.[0] ?? null,
+      },
+    };
+  } catch (err) {
+    return { error: (err as Error).message };
+  }
+}
+
 export async function getShadowingEvaluation(
   sessionId: string
 ): Promise<ActionResult<ShadowingEvaluation>> {

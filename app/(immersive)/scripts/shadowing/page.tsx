@@ -49,7 +49,7 @@ export default async function ShadowingPage({ searchParams }: PageProps) {
 
     return (
       <>
-        <ImmersiveHeader title="음악 · 쉐도잉 체험판" backHref="/scripts" />
+        <ImmersiveHeader title="음악 · 쉐도잉 체험판" backHref="/scripts?tab=shadowing" />
         <main className="flex flex-1 flex-col">
           <ShadowingContent data={trialData} isTrialMode />
         </main>
@@ -67,7 +67,7 @@ export default async function ShadowingPage({ searchParams }: PageProps) {
   if (result.error || !result.data) {
     return (
       <>
-        <ImmersiveHeader title="쉐도잉 훈련" backHref="/scripts" />
+        <ImmersiveHeader title="쉐도잉 훈련" backHref="/scripts?tab=shadowing" />
         <main className="flex flex-1 flex-col items-center justify-center px-4 py-12">
           <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-8 text-center">
             <p className="text-lg font-semibold text-foreground">
@@ -88,7 +88,7 @@ export default async function ShadowingPage({ searchParams }: PageProps) {
 
   return (
     <>
-      <ImmersiveHeader title={topicLabel} backHref="/scripts" />
+      <ImmersiveHeader title={topicLabel} backHref="/scripts?tab=shadowing" />
       <main className="flex flex-1 flex-col">
         <ShadowingContent data={result.data} />
       </main>
