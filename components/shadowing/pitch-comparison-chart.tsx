@@ -92,8 +92,8 @@ export function PitchComparisonChart({
               border: "1px solid #EAE0D5",
               borderRadius: 8,
             }}
-            formatter={(value: number, name: string) => [
-              `${Math.round(value)} Hz`,
+            formatter={(value, name) => [
+              `${Math.round(Number(value))} Hz`,
               name === "native" ? "원어민" : "내 발음",
             ]}
             labelFormatter={(label) => `${Number(label).toFixed(2)}초`}
