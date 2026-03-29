@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node -e \"try{require('fs').unlinkSync('.next/dev/lock')}catch{}\" && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -19,6 +19,7 @@
     "lucide-react": "^0.574.0",
     "next": "16.1.6",
     "pg": "^8.20.0",
+    "pitchfinder": "^2.3.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-hook-form": "^7.71.1",

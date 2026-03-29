@@ -19,8 +19,9 @@ import { SentenceComparisonResult } from "./sentence-comparison-result";
 import { useShadowingStore, type TextHintLevel } from "@/lib/stores/shadowing";
 import { extractSegment, blobToPCM } from "@/lib/audio/audio-segment";
 import { extractPitch, type PitchFrame } from "@/lib/audio/pitch-extractor";
+import { extractMFCC } from "@/lib/audio/mfcc";
 import { dtw } from "@/lib/audio/dtw";
-import { scorePronunciation, type PronunciationScore } from "@/lib/audio/pronunciation-scorer";
+import { scorePronunciation } from "@/lib/audio/pronunciation-scorer";
 
 const LANG_OPTIONS: { mode: TextHintLevel; label: string; icon: React.ElementType }[] = [
   { mode: "both", icon: Languages, label: "영/한" },
@@ -71,6 +72,7 @@ export function StepShadow() {
   // 분석 결과 캐시
   const [nativePitchData, setNativePitchData] = useState<PitchFrame[] | null>(null);
   const [userPitchData, setUserPitchData] = useState<PitchFrame[] | null>(null);
+  const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
 
   const currentSentence = shadowIndex >= 0 && shadowIndex < sentences.length
     ? sentences[shadowIndex]
@@ -104,6 +106,7 @@ export function StepShadow() {
     setShadowComparisonResult(null);
     setNativePitchData(null);
     setUserPitchData(null);
+    setRecordingBlob(null);
     setRecordingDuration(0);
   }, [shadowIndex, setShadowComparisonState, setShadowComparisonResult]);
 
@@ -129,6 +132,7 @@ export function StepShadow() {
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        setRecordingBlob(blob);
         await analyzeRecording(blob);
       };
 
@@ -186,12 +190,14 @@ export function StepShadow() {
       if (controller.signal.aborted) return;
 
       const nativePitch = extractPitch(nativeSegment.pcm, nativeSegment.sampleRate);
+      const nativeMFCC = extractMFCC(nativeSegment.pcm, nativeSegment.sampleRate);
 
-      // 2. 사용자 녹음 PCM 변환 + 피치 분석
+      // 2. 사용자 녹음 PCM 변환 + 피치 + MFCC 분석
       const userSegment = await blobToPCM(blob);
       if (controller.signal.aborted) return;
 
       const userPitch = extractPitch(userSegment.pcm, userSegment.sampleRate);
+      const userMFCC = extractMFCC(userSegment.pcm, userSegment.sampleRate);
 
       // 3. F0 배열 추출 (DTW 입력)
       const nativeF0 = nativePitch.map((f) => f.f0);
@@ -201,8 +207,8 @@ export function StepShadow() {
       const dtwResult = dtw(nativeF0, userF0);
       if (controller.signal.aborted) return;
 
-      // 5. 점수 계산
-      const score = scorePronunciation(nativePitch, userPitch, dtwResult);
+      // 5. 점수 계산 (MFCC 포함)
+      const score = scorePronunciation(nativePitch, userPitch, dtwResult, nativeMFCC, userMFCC);
 
       // 결과 저장
       setNativePitchData(nativePitch);
@@ -366,27 +372,54 @@ export function StepShadow() {
 
         {/* 녹음 / 분석 / 결과 UI */}
         {showComparisonUI && (
-          <div className="border-t border-border px-4 py-4 sm:px-5">
+          <div className="border-t border-border px-4 py-5 sm:px-5">
             {/* 녹음 준비 or 녹음 중 */}
             {(shadowComparisonState === "ready_to_record" || shadowComparisonState === "recording") && (
-              <div className="flex flex-col items-center gap-3">
-                <p className="text-xs text-foreground-muted">
-                  {isRecording ? `녹음 중 ${recordingDuration}초` : "이 문장을 따라 말해보세요"}
-                </p>
-                <button
-                  onClick={isRecording ? stopRecording : startRecording}
-                  className={`flex h-14 w-14 items-center justify-center rounded-full transition-colors ${
-                    isRecording
-                      ? "animate-pulse bg-red-500 text-white"
-                      : "bg-primary-500 text-white hover:bg-primary-600"
-                  }`}
-                >
-                  {isRecording ? <Square size={22} /> : <Mic size={22} />}
-                </button>
+              <div className="flex flex-col items-center gap-4">
+                {/* 안내 텍스트 */}
+                <div className="text-center">
+                  <p className="text-sm font-medium text-foreground">
+                    {isRecording ? "듣고 있어요..." : "이 문장을 따라 말해보세요"}
+                  </p>
+                  {isRecording && (
+                    <p className="mt-1 text-xs tabular-nums text-red-500">{recordingDuration}초 / {MAX_RECORDING_DURATION}초</p>
+                  )}
+                </div>
+
+                {/* 녹음 버튼 — 링 애니메이션 */}
+                <div className="relative">
+                  {isRecording && (
+                    <>
+                      <div className="absolute inset-0 animate-ping rounded-full bg-red-400/20" style={{ animationDuration: "1.5s" }} />
+                      <div className="absolute -inset-2 animate-pulse rounded-full border-2 border-red-300/40" />
+                    </>
+                  )}
+                  <button
+                    onClick={isRecording ? stopRecording : startRecording}
+                    className={`relative flex h-16 w-16 items-center justify-center rounded-full shadow-lg transition-all active:scale-95 ${
+                      isRecording
+                        ? "bg-red-500 text-white shadow-red-200"
+                        : "bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-primary-200 hover:shadow-xl"
+                    }`}
+                  >
+                    {isRecording ? <Square size={22} /> : <Mic size={24} />}
+                  </button>
+                </div>
+
+                {/* 녹음 중일 때 타이머 바 */}
+                {isRecording && (
+                  <div className="h-1 w-32 overflow-hidden rounded-full bg-surface-secondary">
+                    <div
+                      className="h-1 rounded-full bg-red-500 transition-all duration-200"
+                      style={{ width: `${(recordingDuration / MAX_RECORDING_DURATION) * 100}%` }}
+                    />
+                  </div>
+                )}
+
                 {!isRecording && (
                   <button
                     onClick={() => setShadowComparisonState("idle")}
-                    className="text-[11px] text-foreground-muted hover:text-foreground-secondary"
+                    className="text-[11px] text-foreground-muted transition-colors hover:text-foreground-secondary"
                   >
                     건너뛰기
                   </button>
@@ -396,9 +429,14 @@ export function StepShadow() {
 
             {/* 분석 중 */}
             {shadowComparisonState === "analyzing" && (
-              <div className="flex flex-col items-center gap-2 py-4">
-                <Loader2 size={24} className="animate-spin text-primary-500" />
-                <p className="text-xs text-foreground-secondary">발음 분석 중...</p>
+              <div className="flex flex-col items-center gap-3 py-6">
+                <div className="relative">
+                  <div className="h-12 w-12 animate-spin rounded-full border-[3px] border-surface-secondary border-t-primary-500" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium text-foreground">발음 분석 중</p>
+                  <p className="mt-0.5 text-[11px] text-foreground-muted">피치와 억양을 비교하고 있어요</p>
+                </div>
               </div>
             )}
 
@@ -410,6 +448,10 @@ export function StepShadow() {
                 score={shadowComparisonResult}
                 nativePitch={nativePitchData}
                 userPitch={userPitchData}
+                recordingBlob={recordingBlob}
+                nativeAudioUrl={audioUrl}
+                sentenceStart={currentSentence?.start}
+                sentenceEnd={currentSentence?.end}
                 onRetry={handleRetry}
                 onNext={handleNextFromResult}
               />

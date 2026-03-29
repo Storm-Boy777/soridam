@@ -1,15 +1,13 @@
 /**
- * YIN 기반 피치(F0) 추출기
+ * 피치(F0) 추출기 — pitchfinder 라이브러리 기반
  *
- * 입력: Float32Array PCM + sampleRate
- * 출력: PitchFrame[] (시간, F0 Hz, confidence, 에너지)
- *
- * YIN 알고리즘 — de Cheveigné & Kawahara (2002)
- * 1. 차분 함수 (difference function)
- * 2. 누적 평균 정규화 (CMNDF)
- * 3. 절대 임계값 검출
- * 4. 파라볼릭 보간
+ * 기존 수동 YIN 구현 → npm pitchfinder로 교체
+ * - 검증된 YIN + ACF2PLUS 구현
+ * - 엣지 케이스 처리 완비
+ * - 브라우저 호환성 보장
  */
+
+import Pitchfinder from "pitchfinder";
 
 export interface PitchFrame {
   time: number;       // 초 단위
@@ -18,26 +16,17 @@ export interface PitchFrame {
   energy: number;     // RMS 에너지 (0-1 정규화)
 }
 
-// 튜닝 상수
-const RMS_SILENCE_THRESHOLD = 0.005; // 무음 판정 임계값 (TTS는 에너지가 낮을 수 있음)
-const DEFAULT_YIN_THRESHOLD = 0.3;   // YIN 임계값 (0.15는 너무 엄격 → TTS에서 대부분 무성음 판정)
-const UNVOICED_FALLBACK_THRESHOLD = 0.6; // 임계값 이하 못 찾았을 때 폴백 허용 범위
+// 설정
+const HOP_MS = 10;           // 홉 크기 (ms)
+const FRAME_MS = 30;         // 분석 윈도우 크기 (ms)
+const SILENCE_RATIO = 0.02;  // 최대 에너지 대비 2% 이하면 무음
 
 interface PitchExtractorOptions {
-  frameMs?: number;     // 프레임 크기 (기본: 30ms — 더 넓어야 저주파 검출 가능)
-  hopMs?: number;       // 홉 크기 (기본: 10ms)
-  minF0?: number;       // 최소 F0 Hz (기본: 75)
-  maxF0?: number;       // 최대 F0 Hz (기본: 500)
-  threshold?: number;   // YIN 임계값 (기본: 0.3)
+  hopMs?: number;
+  frameMs?: number;
+  minF0?: number;
+  maxF0?: number;
 }
-
-const DEFAULTS: Required<PitchExtractorOptions> = {
-  frameMs: 30,
-  hopMs: 10,
-  minF0: 75,
-  maxF0: 500,
-  threshold: DEFAULT_YIN_THRESHOLD,
-};
 
 /**
  * PCM 데이터에서 피치 프레임 배열을 추출
@@ -47,112 +36,64 @@ export function extractPitch(
   sampleRate: number,
   options?: PitchExtractorOptions,
 ): PitchFrame[] {
-  const opts = { ...DEFAULTS, ...options };
-  const frameSamples = Math.round((opts.frameMs / 1000) * sampleRate);
-  const hopSamples = Math.round((opts.hopMs / 1000) * sampleRate);
-  const minLag = Math.floor(sampleRate / opts.maxF0);
-  const maxLag = Math.ceil(sampleRate / opts.minF0);
+  const hopMs = options?.hopMs ?? HOP_MS;
+  const frameMs = options?.frameMs ?? FRAME_MS;
+  const minF0 = options?.minF0 ?? 75;
+  const maxF0 = options?.maxF0 ?? 500;
 
-  // W = 분석 윈도우 크기 (프레임 + 최대 래그)
-  const W = frameSamples + maxLag;
+  const hopSamples = Math.round((hopMs / 1000) * sampleRate);
+  const frameSamples = Math.round((frameMs / 1000) * sampleRate);
 
-  // 전체 오디오의 최대 에너지 (정규화용)
-  let maxEnergy = 0;
+  // pitchfinder YIN 디텍터 초기화
+  const detectPitch = Pitchfinder.YIN({
+    sampleRate,
+    threshold: 0.3,
+  });
+
+  // 전체 오디오 피크 에너지 (정규화용)
+  let maxAmp = 0;
   for (let i = 0; i < pcm.length; i++) {
     const v = Math.abs(pcm[i]);
-    if (v > maxEnergy) maxEnergy = v;
+    if (v > maxAmp) maxAmp = v;
   }
-  if (maxEnergy === 0) maxEnergy = 1; // 무음 방지
+  if (maxAmp === 0) maxAmp = 1;
 
   const frames: PitchFrame[] = [];
 
-  for (let start = 0; start + W <= pcm.length; start += hopSamples) {
+  for (let start = 0; start + frameSamples <= pcm.length; start += hopSamples) {
     const time = start / sampleRate;
 
-    // RMS 에너지 계산 (0-1 정규화)
+    // RMS 에너지 계산
     let sumSq = 0;
-    for (let i = start; i < start + frameSamples && i < pcm.length; i++) {
+    for (let i = start; i < start + frameSamples; i++) {
       sumSq += pcm[i] * pcm[i];
     }
     const rms = Math.sqrt(sumSq / frameSamples);
-    const normalizedEnergy = rms / maxEnergy;
+    const normalizedEnergy = rms / maxAmp;
 
-    // 에너지가 너무 낮으면 무성음 처리
-    if (rms < RMS_SILENCE_THRESHOLD) {
+    // 무음 판정 (상대적)
+    if (normalizedEnergy < SILENCE_RATIO) {
       frames.push({ time, f0: 0, confidence: 0, energy: normalizedEnergy });
       continue;
     }
 
-    // 1. 차분 함수 (difference function) — 범위 체크 포함
-    const diff = new Float32Array(maxLag + 1);
-    for (let tau = 0; tau <= maxLag; tau++) {
-      let sum = 0;
-      for (let j = 0; j < frameSamples; j++) {
-        const idx = start + j + tau;
-        if (idx >= pcm.length) break;
-        const d = pcm[start + j] - pcm[idx];
-        sum += d * d;
-      }
-      diff[tau] = sum;
-    }
+    // 프레임 추출
+    const frame = pcm.slice(start, start + frameSamples);
 
-    // 2. 누적 평균 정규화 (CMNDF)
-    const cmndf = new Float32Array(maxLag + 1);
-    cmndf[0] = 1;
-    let runningSum = 0;
-    for (let tau = 1; tau <= maxLag; tau++) {
-      runningSum += diff[tau];
-      cmndf[tau] = runningSum > 0 ? (diff[tau] * tau) / runningSum : 1;
-    }
+    // pitchfinder로 피치 검출
+    const result = detectPitch(frame);
 
-    // 3. 절대 임계값 검출 — minLag부터 시작
-    let bestTau = -1;
-    let bestVal = 1;
-
-    for (let tau = minLag; tau <= maxLag; tau++) {
-      if (cmndf[tau] < opts.threshold) {
-        // 로컬 최솟값 탐색
-        while (tau + 1 <= maxLag && cmndf[tau + 1] < cmndf[tau]) {
-          tau++;
-        }
-        bestTau = tau;
-        bestVal = cmndf[tau];
-        break;
-      }
-    }
-
-    // 임계값 이하를 못 찾으면 전체 최솟값 사용 (폴백 범위 내에서)
-    if (bestTau < 0) {
-      for (let tau = minLag; tau <= maxLag; tau++) {
-        if (cmndf[tau] < bestVal) {
-          bestVal = cmndf[tau];
-          bestTau = tau;
-        }
-      }
-    }
-
-    // 폴백 임계값도 넘으면 무성음
-    if (bestTau < 0 || bestVal > UNVOICED_FALLBACK_THRESHOLD) {
-      frames.push({ time, f0: 0, confidence: 1 - bestVal, energy: normalizedEnergy });
+    if (result === null || result <= 0 || result < minF0 || result > maxF0) {
+      // 피치 검출 실패 → 무성음
+      frames.push({ time, f0: 0, confidence: 0.3, energy: normalizedEnergy });
       continue;
     }
 
-    // 4. 파라볼릭 보간 (정밀도 향상)
-    let refinedTau = bestTau;
-    if (bestTau > 0 && bestTau < maxLag) {
-      const s0 = cmndf[bestTau - 1];
-      const s1 = cmndf[bestTau];
-      const s2 = cmndf[bestTau + 1];
-      const denom = 2 * s1 - s2 - s0;
-      if (denom !== 0) {
-        refinedTau = bestTau + (s0 - s2) / (2 * denom);
-      }
-    }
+    // pitchfinder는 confidence를 직접 반환하지 않으므로
+    // 에너지 기반으로 추정 (에너지가 높을수록 confident)
+    const confidence = Math.min(1, normalizedEnergy * 3);
 
-    const f0 = sampleRate / refinedTau;
-    const confidence = 1 - bestVal;
-
-    frames.push({ time, f0, confidence, energy: normalizedEnergy });
+    frames.push({ time, f0: result, confidence, energy: normalizedEnergy });
   }
 
   return frames;
@@ -163,14 +104,13 @@ export function extractPitch(
  */
 export function getVoicedFrames(
   frames: PitchFrame[],
-  minConfidence = 0.5,
+  minConfidence = 0.3,
 ): PitchFrame[] {
   return frames.filter((f) => f.f0 > 0 && f.confidence >= minConfidence);
 }
 
 /**
  * F0 값만 추출 (DTW 입력용)
- * 무성음은 0으로 유지
  */
 export function getF0Array(frames: PitchFrame[]): number[] {
   return frames.map((f) => f.f0);

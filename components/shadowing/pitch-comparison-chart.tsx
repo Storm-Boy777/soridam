@@ -2,12 +2,11 @@
 
 import { useMemo } from "react";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   ResponsiveContainer,
-  Legend,
   Tooltip,
 } from "recharts";
 import type { PitchFrame } from "@/lib/audio/pitch-extractor";
@@ -23,107 +22,138 @@ interface ChartDataPoint {
   user: number | null;
 }
 
+const MIN_CONFIDENCE = 0.2;
+
+// 데이터 간격을 균일하게 리샘플링 (20ms 간격)
+function resamplePitch(frames: PitchFrame[], stepMs: number): Map<number, number> {
+  const map = new Map<number, number>();
+  if (frames.length === 0) return map;
+
+  const step = stepMs / 1000;
+  const maxTime = frames[frames.length - 1].time;
+
+  for (let t = 0; t <= maxTime; t += step) {
+    // 가장 가까운 프레임 찾기
+    let best: PitchFrame | null = null;
+    let bestDist = Infinity;
+    for (const f of frames) {
+      const d = Math.abs(f.time - t);
+      if (d < bestDist) {
+        bestDist = d;
+        best = f;
+      }
+      if (f.time > t + step) break;
+    }
+    if (best && best.f0 > 0 && best.confidence >= MIN_CONFIDENCE && bestDist < step * 2) {
+      map.set(Math.round(t * 100) / 100, best.f0);
+    }
+  }
+  return map;
+}
+
 export function PitchComparisonChart({
   nativePitch,
   userPitch,
 }: PitchComparisonChartProps) {
   const data = useMemo(() => {
-    // 두 시퀀스를 시간축 기준으로 병합
-    const points: ChartDataPoint[] = [];
-    const allTimes = new Set<number>();
+    const nativeMap = resamplePitch(nativePitch, 20);
+    const userMap = resamplePitch(userPitch, 20);
 
-    for (const f of nativePitch) allTimes.add(Math.round(f.time * 100) / 100);
-    for (const f of userPitch) allTimes.add(Math.round(f.time * 100) / 100);
-
+    const allTimes = new Set([...nativeMap.keys(), ...userMap.keys()]);
     const sortedTimes = [...allTimes].sort((a, b) => a - b);
 
-    // 빠른 룩업용 맵
-    const nativeMap = new Map<number, number>();
-    for (const f of nativePitch) {
-      if (f.f0 > 0 && f.confidence >= 0.6) {
-        nativeMap.set(Math.round(f.time * 100) / 100, f.f0);
-      }
-    }
-    const userMap = new Map<number, number>();
-    for (const f of userPitch) {
-      if (f.f0 > 0 && f.confidence >= 0.6) {
-        userMap.set(Math.round(f.time * 100) / 100, f.f0);
-      }
-    }
-
-    for (const t of sortedTimes) {
-      points.push({
-        time: t,
-        native: nativeMap.get(t) ?? null,
-        user: userMap.get(t) ?? null,
-      });
-    }
-
-    return points;
+    return sortedTimes.map((t) => ({
+      time: t,
+      native: nativeMap.get(t) ?? null,
+      user: userMap.get(t) ?? null,
+    }));
   }, [nativePitch, userPitch]);
 
   if (data.length === 0) return null;
 
   return (
-    <div className="h-[120px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-          <XAxis
-            dataKey="time"
-            tick={{ fontSize: 10 }}
-            tickFormatter={(v) => `${v.toFixed(1)}s`}
-            stroke="#B5A99D"
-            axisLine={false}
-            tickLine={false}
-          />
-          <YAxis
-            domain={[50, "auto"]}
-            tick={{ fontSize: 10 }}
-            tickFormatter={(v) => `${Math.round(Number(v))}`}
-            stroke="#B5A99D"
-            axisLine={false}
-            tickLine={false}
-            width={40}
-            label={{ value: "Hz", position: "insideTopLeft", fontSize: 9, fill: "#B5A99D" }}
-            allowDataOverflow
-          />
-          <Tooltip
-            contentStyle={{
-              fontSize: 11,
-              background: "#FFFCF8",
-              border: "1px solid #EAE0D5",
-              borderRadius: 8,
-            }}
-            formatter={(value, name) => [
-              `${Math.round(Number(value))} Hz`,
-              name === "native" ? "원어민" : "내 발음",
-            ]}
-            labelFormatter={(label) => `${Number(label).toFixed(2)}초`}
-          />
-          <Legend
-            formatter={(value) => (value === "native" ? "원어민" : "내 발음")}
-            wrapperStyle={{ fontSize: 11 }}
-          />
-          <Line
-            type="monotone"
-            dataKey="native"
-            stroke="#D4835E"
-            strokeWidth={2}
-            dot={false}
-            connectNulls={false}
-            isAnimationActive={false}
-          />
-          <Line
-            type="monotone"
-            dataKey="user"
-            stroke="#3B82F6"
-            strokeWidth={2}
-            dot={false}
-            connectNulls={false}
-            isAnimationActive={false}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+    <div className="relative">
+      {/* 범례 — 차트 위 */}
+      <div className="mb-2 flex items-center justify-center gap-5">
+        <div className="flex items-center gap-1.5">
+          <div className="h-[3px] w-4 rounded-full bg-primary-500" />
+          <span className="text-[10px] font-medium text-foreground-secondary">원어민</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="h-[3px] w-4 rounded-full bg-blue-500" />
+          <span className="text-[10px] font-medium text-foreground-secondary">내 발음</span>
+        </div>
+      </div>
+
+      <div className="h-[130px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 5, right: 8, left: -15, bottom: 0 }}>
+            <defs>
+              <linearGradient id="nativeGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#D4835E" stopOpacity={0.25} />
+                <stop offset="100%" stopColor="#D4835E" stopOpacity={0.02} />
+              </linearGradient>
+              <linearGradient id="userGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.2} />
+                <stop offset="100%" stopColor="#3B82F6" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <XAxis
+              dataKey="time"
+              tick={{ fontSize: 9, fill: "#B5A99D" }}
+              tickFormatter={(v) => `${Number(v).toFixed(1)}s`}
+              stroke="transparent"
+              tickLine={false}
+              interval="preserveStartEnd"
+            />
+            <YAxis
+              domain={[50, "auto"]}
+              tick={{ fontSize: 9, fill: "#B5A99D" }}
+              tickFormatter={(v) => `${Math.round(Number(v))}`}
+              stroke="transparent"
+              tickLine={false}
+              width={32}
+              allowDataOverflow
+            />
+            <Tooltip
+              contentStyle={{
+                fontSize: 11,
+                background: "rgba(255,252,248,0.95)",
+                border: "1px solid #EAE0D5",
+                borderRadius: 10,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                padding: "6px 10px",
+              }}
+              formatter={(value, name) => [
+                `${Math.round(Number(value))} Hz`,
+                name === "native" ? "원어민" : "내 발음",
+              ]}
+              labelFormatter={(label) => `${Number(label).toFixed(1)}초`}
+            />
+            <Area
+              type="monotone"
+              dataKey="native"
+              stroke="#D4835E"
+              strokeWidth={2.5}
+              fill="url(#nativeGrad)"
+              dot={false}
+              connectNulls={false}
+              isAnimationActive={false}
+            />
+            <Area
+              type="monotone"
+              dataKey="user"
+              stroke="#3B82F6"
+              strokeWidth={2}
+              strokeDasharray="4 2"
+              fill="url(#userGrad)"
+              dot={false}
+              connectNulls={false}
+              isAnimationActive={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
