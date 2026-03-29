@@ -27,7 +27,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
 
-const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "https://opictalkdoc.com,http://localhost:3001").split(",");
+const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "https://haruopic.com,http://localhost:3001").split(",");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": ALLOWED_ORIGINS[0],
