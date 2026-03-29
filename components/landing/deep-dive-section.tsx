@@ -72,7 +72,7 @@ export default function DeepDiveSection() {
 
       {/* Marquee — 전체 너비 */}
       <div className="mt-10 overflow-hidden">
-        <div className="[mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]">
+        <div className="md:[mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]">
           <div className="flex w-max animate-[marquee_40s_linear_infinite] hover:[animation-play-state:paused]">
             {/* 2세트: 각 세트는 카드 2회 반복(6장)으로 화면보다 넓게 */}
             {[0, 1].map((stripIdx) => (
