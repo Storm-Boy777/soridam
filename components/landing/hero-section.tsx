@@ -33,7 +33,7 @@ const illustrations = [
 
 export default function HeroSection() {
   return (
-    <section className="relative flex h-[calc(100svh-64px)] flex-col items-center overflow-hidden bg-[#FAF6F1] px-5 pt-[clamp(28px,6vh,64px)]">
+    <section className="relative flex flex-col items-center overflow-hidden bg-[#FAF6F1] px-5 pt-[clamp(28px,6vh,64px)] pb-[clamp(32px,10vh,120px)]">
       {/* 배경 글로우 */}
       <div className="pointer-events-none absolute left-1/2 top-[-100px] h-[600px] w-[600px] -translate-x-1/2 bg-[radial-gradient(circle,rgba(212,131,94,0.08)_0%,transparent_70%)]" />
 
@@ -105,12 +105,12 @@ export default function HeroSection() {
       </motion.div>
 
       {/* ── 중간: 문구 + 파이프라인 (이미지와 CTA 사이 가운데) ── */}
-      <div className="relative mx-auto flex flex-1 flex-col items-center justify-center text-center">
+      <div className="relative mx-auto flex flex-col items-center text-center">
         <motion.p
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5, ease: "easeOut" }}
-          className="mt-[clamp(10px,1.5vh,20px)] text-[0.85rem] font-medium text-[#8B7E72] sm:text-[clamp(0.85rem,1vw,1rem)]"
+          className="mt-[clamp(40px,8vh,100px)] text-[0.85rem] font-medium text-[#8B7E72] sm:text-[clamp(0.85rem,1vw,1rem)]"
         >
           하루오픽이 여러분과 함께 합니다.
           <br />
@@ -145,12 +145,12 @@ export default function HeroSection() {
       </div>
 
       {/* ── 하단 고정: CTA 버튼 ── */}
-      <div className="relative mx-auto flex shrink-0 max-w-4xl flex-col items-center pb-[clamp(20px,4vh,52px)] text-center">
+      <div className="relative mx-auto flex max-w-4xl flex-col items-center text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.65, ease: "easeOut" }}
-          className="mt-[clamp(12px,2.5vh,28px)] flex flex-row-reverse items-center justify-center gap-3"
+          className="mt-[clamp(40px,8vh,100px)] flex flex-row-reverse items-center justify-center gap-3"
         >
           <Link
             href="/signup"
