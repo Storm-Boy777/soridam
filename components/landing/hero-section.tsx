@@ -33,7 +33,7 @@ const illustrations = [
 
 export default function HeroSection() {
   return (
-    <section className="relative flex flex-col items-center overflow-hidden bg-[#FAF6F1] px-5 pt-[clamp(28px,6vh,64px)] pb-[clamp(32px,10vh,120px)]">
+    <section className="relative flex flex-col items-center overflow-hidden bg-[#FAF6F1] px-5 pt-7 pb-8 sm:pt-10 sm:pb-16 md:pt-16 md:pb-24">
       {/* 배경 글로우 */}
       <div className="pointer-events-none absolute left-1/2 top-[-100px] h-[600px] w-[600px] -translate-x-1/2 bg-[radial-gradient(circle,rgba(212,131,94,0.08)_0%,transparent_70%)]" />
 
@@ -52,7 +52,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
-          className="mt-[clamp(12px,2vh,24px)] text-[30px] font-extrabold leading-[1.3] tracking-[-0.04em] text-[#3A2E25] sm:text-[clamp(1.75rem,2.8vw,2.8rem)]"
+          className="mt-3 sm:mt-4 md:mt-5 text-[30px] font-extrabold leading-[1.3] tracking-[-0.04em] text-[#3A2E25] sm:text-[clamp(1.75rem,2.8vw,2.8rem)]"
         >
           <span className="text-[#D4835E]">당신의 평범한 하루가</span>
           <br />
@@ -65,7 +65,7 @@ export default function HeroSection() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
-        className="relative mx-auto mt-[clamp(12px,2.5vh,32px)] flex w-full max-w-[1100px] shrink-0 flex-col justify-center"
+        className="relative mx-auto mt-4 sm:mt-5 md:mt-7 flex w-full max-w-[1100px] shrink-0 flex-col justify-center"
       >
         <motion.div
           variants={{
@@ -84,7 +84,7 @@ export default function HeroSection() {
                 visible: { opacity: 1, y: 0, scale: 1 },
               }}
               transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-              className="w-[36vw] flex-shrink-0 sm:w-[28vw] md:flex md:w-auto md:min-h-0 md:flex-col"
+              className="w-[28vw] flex-shrink-0 sm:w-[28vw] md:flex md:w-auto md:min-h-0 md:flex-col"
             >
               <div className="overflow-hidden rounded-2xl md:min-h-0 md:flex-1 md:rounded-[clamp(12px,1vw,16px)]">
                 <Image
@@ -92,11 +92,11 @@ export default function HeroSection() {
                   alt={ill.caption}
                   width={600}
                   height={800}
-                  sizes="(max-width: 768px) 36vw, (max-width: 1024px) 28vw, 200px"
+                  sizes="(max-width: 768px) 28vw, (max-width: 1024px) 28vw, 200px"
                   className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
                 />
               </div>
-              <p className="mt-[clamp(4px,0.5vh,10px)] shrink-0 text-center text-[0.8rem] font-medium text-[#8B7E72] sm:text-[clamp(0.7rem,0.85vw,0.85rem)]">
+              <p className="mt-1 sm:mt-1.5 shrink-0 text-center text-[0.8rem] font-medium text-[#8B7E72] sm:text-[clamp(0.7rem,0.85vw,0.85rem)]">
                 {ill.caption}
               </p>
             </motion.div>
@@ -110,7 +110,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5, ease: "easeOut" }}
-          className="mt-[clamp(40px,8vh,100px)] text-[0.85rem] font-medium text-[#8B7E72] sm:text-[clamp(0.85rem,1vw,1rem)]"
+          className="mt-14 sm:mt-14 md:mt-20 text-[0.85rem] font-medium text-[#8B7E72] sm:text-[clamp(0.85rem,1vw,1rem)]"
         >
           하루오픽이 여러분과 함께 합니다.
           <br />
@@ -124,7 +124,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.6, ease: "easeOut" }}
-          className="mt-[clamp(8px,1.5vh,16px)] flex items-center justify-center gap-1 sm:gap-2"
+          className="mt-3 sm:mt-4 flex items-center justify-center gap-1 sm:gap-2"
         >
           {steps.map((step, i) => (
             <div key={step.label} className="flex items-center gap-1 sm:gap-2">
@@ -150,17 +150,17 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.65, ease: "easeOut" }}
-          className="mt-[clamp(40px,8vh,100px)] flex flex-row-reverse items-center justify-center gap-3"
+          className="mt-14 sm:mt-14 md:mt-20 flex flex-row-reverse items-center justify-center gap-3"
         >
           <Link
             href="/signup"
-            className="inline-flex items-center gap-1.5 rounded-full bg-[#D4835E] px-5 py-2.5 text-[13px] font-bold text-white shadow-[0_4px_20px_rgba(212,131,94,0.25)] transition-all hover:-translate-y-px hover:bg-[#C07350] sm:gap-2 sm:px-[clamp(24px,2.5vw,32px)] sm:py-[clamp(10px,1.2vh,15px)] sm:text-[clamp(13px,1vw,15px)]"
+            className="inline-flex items-center gap-1.5 rounded-full bg-[#D4835E] px-5 py-2.5 text-[13px] font-bold text-white shadow-[0_4px_20px_rgba(212,131,94,0.25)] transition-all hover:-translate-y-px hover:bg-[#C07350] sm:gap-2 sm:px-7 sm:py-3 sm:text-[15px]"
           >
             시작하기 <ArrowRight className="h-4 w-4" />
           </Link>
           <a
             href="#pipeline"
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#EAE0D5] px-4 py-2.5 text-[13px] font-semibold text-[#8B7E72] transition-all hover:border-[#D4C4B0] hover:text-[#3A2E25] sm:px-6 sm:py-[clamp(10px,1.2vh,15px)] sm:text-[clamp(13px,1vw,15px)]"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#EAE0D5] px-4 py-2.5 text-[13px] font-semibold text-[#8B7E72] transition-all hover:border-[#D4C4B0] hover:text-[#3A2E25] sm:px-6 sm:py-3 sm:text-[15px]"
           >
             학습 과정 보기
           </a>
