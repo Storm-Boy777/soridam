@@ -78,17 +78,17 @@ const plans: {
   {
     name: "체험",
     productId: null,
-    price: "0",
+    price: "₩0",
     period: "",
-    description: "OPIc이 어떤 시험인지 경험해 보세요",
+    description: "무료로 하루오픽의 핵심 기능을 경험해 보세요",
     sub: "무제한 이용",
     features: [
       { title: "기출 빈도 분석", details: ["어드밴스 카테고리만 제공"] },
-      { title: "내 경험 기반 맞춤 스크립트", details: ["체험판 + 후기 제출 시 크레딧 지급"] },
-      { title: "내 스크립트로 원어민 발음 체화", details: ["체험판 + 쉐도잉 훈련 무제한"] },
-      { title: "기출 기반 실전 모의고사", details: ["모의고사 체험판"] },
-      { title: "문항별 개별 평가 + 종합 리포트", details: [], enabled: false },
-      { title: "약점 자동 처방 튜터링", details: [], enabled: false },
+      { title: "내 경험 기반 맞춤 스크립트", details: ["체험판 + 후기 제출 시 크레딧 지급", "1회 생성 = 7가지 학습콘텐츠", "핵심표현 · 만능패턴 · 연결어 하이라이팅"] },
+      { title: "내 스크립트로 원어민 발음 체화", details: ["내 스크립트가 원어민 음성으로 변환", "듣기 → 따라읽기 → 혼자말하기 → 실전 녹음", "쉐도잉 훈련 무제한"] },
+      { title: "기출 기반 실전 모의고사", details: ["모의고사 체험판", "기출 질문에서 실전과 동일하게 출제"] },
+      { title: "문항별 개별 평가 + 종합 리포트", details: ["10가지 유형별 맞춤 체크리스트", "과제충족 진단 + 최우선 처방 + 교정문", "영역별 실력 분석 + 성장 리포트"], enabled: false },
+      { title: "약점 자동 처방 튜터링", details: ["튜터링 미포함", "모의고사 결과 기반 약점 진단 + 맞춤 처방", "병목별 3단계 드릴 + 미니 재평가"], enabled: false },
     ],
     highlight: false,
   },
@@ -101,23 +101,11 @@ const plans: {
     sub: "1개월 이용",
     features: [
       { title: "기출 빈도 분석", details: ["전체 카테고리 제공"] },
-      {
-        title: "내 경험 기반 맞춤 스크립트",
-        details: ["스크립트 패키지 생성 15회", "1회 생성 = 7가지 학습콘텐츠"],
-      },
-      {
-        title: "내 스크립트로 원어민 발음 체화",
-        details: ["내 스크립트가 원어민 음성으로 변환", "듣기 → 따라읽기 → 혼자말하기 → 실전 녹음", "무제한 반복 훈련"],
-      },
-      {
-        title: "기출 기반 실전 모의고사",
-        details: ["모의고사 3회", "기출 질문에서 실전과 동일하게 출제"],
-      },
-      {
-        title: "문항별 개별 평가 + 종합 리포트",
-        details: ["10가지 유형별 맞춤 체크리스트", "과제충족 진단 + 최우선 처방 + 교정문", "영역별 실력 분석 + 성장 리포트"],
-      },
-      { title: "약점 자동 처방 튜터링", details: [], enabled: false },
+      { title: "내 경험 기반 맞춤 스크립트", details: ["스크립트 패키지 생성 15회", "1회 생성 = 7가지 학습콘텐츠", "핵심표현 · 만능패턴 · 연결어 하이라이팅"] },
+      { title: "내 스크립트로 원어민 발음 체화", details: ["내 스크립트가 원어민 음성으로 변환", "듣기 → 따라읽기 → 혼자말하기 → 실전 녹음", "발음 평가 + 무제한 반복 훈련"] },
+      { title: "기출 기반 실전 모의고사", details: ["모의고사 3회", "기출 질문에서 실전과 동일하게 출제"] },
+      { title: "문항별 개별 평가 + 종합 리포트", details: ["10가지 유형별 맞춤 체크리스트", "과제충족 진단 + 최우선 처방 + 교정문", "영역별 실력 분석 + 성장 리포트"] },
+      { title: "약점 자동 처방 튜터링", details: ["튜터링 미포함", "모의고사 결과 기반 약점 진단 + 맞춤 처방", "병목별 3단계 드릴 + 미니 재평가"], enabled: false },
     ],
     highlight: false,
   },
@@ -130,26 +118,11 @@ const plans: {
     sub: "2개월 이용",
     features: [
       { title: "기출 빈도 분석", details: ["전체 카테고리 제공"] },
-      {
-        title: "내 경험 기반 맞춤 스크립트",
-        details: ["스크립트 패키지 생성 50회", "1회 생성 = 7가지 학습콘텐츠", "핵심표현 · 만능패턴 · 연결어 하이라이팅"],
-      },
-      {
-        title: "내 스크립트로 원어민 발음 체화",
-        details: ["내 스크립트가 원어민 음성으로 변환", "듣기 → 따라읽기 → 혼자말하기 → 실전 녹음", "발음 평가 + 무제한 반복 훈련"],
-      },
-      {
-        title: "기출 기반 실전 모의고사",
-        details: ["모의고사 10회", "기출 질문에서 실전과 동일하게 출제"],
-      },
-      {
-        title: "문항별 개별 평가 + 종합 리포트",
-        details: ["10가지 유형별 맞춤 체크리스트", "과제충족 진단 + 최우선 처방 + 교정문", "영역별 실력 분석 + 성장 리포트"],
-      },
-      {
-        title: "약점 자동 처방 튜터링",
-        details: ["튜터링 3회 포함", "모의고사 결과 기반 처방", "5가지 프로토콜 반복 훈련"],
-      },
+      { title: "내 경험 기반 맞춤 스크립트", details: ["스크립트 패키지 생성 50회", "1회 생성 = 7가지 학습콘텐츠", "핵심표현 · 만능패턴 · 연결어 하이라이팅"] },
+      { title: "내 스크립트로 원어민 발음 체화", details: ["내 스크립트가 원어민 음성으로 변환", "듣기 → 따라읽기 → 혼자말하기 → 실전 녹음", "발음 평가 + 무제한 반복 훈련"] },
+      { title: "기출 기반 실전 모의고사", details: ["모의고사 10회", "기출 질문에서 실전과 동일하게 출제"] },
+      { title: "문항별 개별 평가 + 종합 리포트", details: ["10가지 유형별 맞춤 체크리스트", "과제충족 진단 + 최우선 처방 + 교정문", "영역별 실력 분석 + 성장 리포트"] },
+      { title: "약점 자동 처방 튜터링", details: ["튜터링 3회 포함", "모의고사 결과 기반 약점 진단 + 맞춤 처방", "병목별 3단계 드릴 + 미니 재평가"] },
     ],
     highlight: true,
   },
@@ -256,19 +229,14 @@ function PaymentMethodModal({
         {/* 결제 수단 선택 */}
         <p className="mb-2 text-xs font-medium text-foreground-secondary">결제 수단 선택</p>
         <div className="flex flex-col gap-2">
-          {/* 신용카드 */}
-          <button
-            onClick={() => onSelect("card")}
-            disabled={loading}
-            className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors hover:border-primary-300 hover:bg-primary-50/50 disabled:opacity-50"
+          {/* 신용카드 (심사 중) */}
+          <div
+            className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-border bg-surface-secondary px-4 py-3 text-sm font-medium text-foreground-muted opacity-60 cursor-not-allowed"
           >
-            {loading && loadingMethod === "card" ? (
-              <Loader2 size={20} className="animate-spin text-primary-500" />
-            ) : (
-              <CreditCard size={20} className="text-foreground-secondary" />
-            )}
-            신용카드
-          </button>
+            <CreditCard size={20} className="text-foreground-muted" />
+            <span>신용카드</span>
+            <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700">심사 중</span>
+          </div>
 
           {/* 카카오페이 */}
           <button
@@ -596,21 +564,12 @@ export function StoreContent({ userId }: { userId: string }) {
                 </div>
 
                 <div className="mt-4 flex items-baseline justify-center gap-1">
-                  {plan.price === "0" ? (
-                    <>
-                      <span className="text-sm text-foreground-secondary">₩</span>
-                      <span className="text-3xl font-bold">0</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-sm text-foreground-secondary">
-                        ₩
-                      </span>
-                      <span className="text-3xl font-bold">{plan.price}</span>
-                      <span className="text-sm text-foreground-secondary">
-                        {plan.period}
-                      </span>
-                    </>
+                  <span className="text-sm text-foreground-secondary">₩</span>
+                  <span className="text-3xl font-bold">{plan.price.replace(/₩/g, "")}</span>
+                  {plan.period && (
+                    <span className="text-sm text-foreground-secondary">
+                      {plan.period}
+                    </span>
                   )}
                 </div>
 
@@ -629,10 +588,10 @@ export function StoreContent({ userId }: { userId: string }) {
                           />
                           <span className={`text-sm font-semibold ${disabled ? "text-foreground-muted line-through" : "text-foreground"}`}>{group.title}</span>
                         </div>
-                        {!disabled && group.details.length > 0 && (
+                        {group.details.length > 0 && (
                           <div className="ml-6 mt-0.5 space-y-0.5">
                             {group.details.map((d, i) => (
-                              <p key={d} className={i === 0 ? "text-xs font-medium text-primary-600" : "text-xs text-foreground-secondary"}>{d}</p>
+                              <p key={d} className={disabled ? "text-xs text-foreground-muted" : i === 0 ? "text-xs font-medium text-primary-600" : "text-xs text-foreground-secondary"}>{d}</p>
                             ))}
                           </div>
                         )}
@@ -655,8 +614,8 @@ export function StoreContent({ userId }: { userId: string }) {
                     구매하기
                   </button>
                 ) : (
-                  <span className="mt-5 inline-flex h-10 items-center justify-center rounded-[var(--radius-lg)] border border-primary-200 text-sm font-medium text-primary-600">
-                    현재 이용 중
+                  <span className="mt-5 inline-flex h-10 items-center justify-center rounded-[var(--radius-lg)] border border-border text-sm font-medium text-foreground-muted">
+                    무료 플랜
                   </span>
                 )}
               </div>

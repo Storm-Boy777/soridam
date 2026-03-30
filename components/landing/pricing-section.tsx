@@ -121,15 +121,17 @@ export default function PricingSection() {
                             {group.title}
                           </span>
                         </div>
-                        {!disabled && group.details.length > 0 && (
+                        {group.details.length > 0 && (
                           <div className="ml-6 mt-0.5 space-y-0.5">
                             {group.details.map((d, i) => (
                               <p
                                 key={d}
                                 className={
-                                  i === 0
-                                    ? "text-xs font-medium text-[#D4835E]"
-                                    : "text-xs text-[#8B7E72]"
+                                  disabled
+                                    ? "text-xs text-[#B5A99D]"
+                                    : i === 0
+                                      ? "text-xs font-medium text-[#D4835E]"
+                                      : "text-xs text-[#8B7E72]"
                                 }
                               >
                                 {d}

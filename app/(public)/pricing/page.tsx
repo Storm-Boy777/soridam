@@ -18,6 +18,7 @@ const plans: {
   period: string;
   description: string;
   sub: string;
+  target: string;
   features: PricingFeature[];
   cta: string;
   href: string;
@@ -25,17 +26,18 @@ const plans: {
 }[] = [
   {
     name: "체험",
-    price: "0",
+    price: "₩0",
     period: "",
-    description: "OPIc이 어떤 시험인지 경험해 보세요",
+    description: "무료로 하루오픽의 핵심 기능을 경험해 보세요",
     sub: "무제한 이용",
+    target: "하루오픽이 어떤 서비스인지 경험해 보세요",
     features: [
       { title: "기출 빈도 분석", details: ["어드밴스 카테고리만 제공"] },
-      { title: "내 경험 기반 맞춤 스크립트", details: ["체험판 + 후기 제출 시 크레딧 지급"] },
-      { title: "내 스크립트로 원어민 발음 체화", details: ["체험판 + 쉐도잉 훈련 무제한"] },
-      { title: "기출 기반 실전 모의고사", details: ["모의고사 체험판"] },
-      { title: "문항별 개별 평가 + 종합 리포트", details: [], enabled: false },
-      { title: "약점 자동 처방 튜터링", details: [], enabled: false },
+      { title: "내 경험 기반 맞춤 스크립트", details: ["체험판 + 후기 제출 시 크레딧 지급", "1회 생성 = 7가지 학습콘텐츠", "핵심표현 · 만능패턴 · 연결어 하이라이팅"] },
+      { title: "내 스크립트로 원어민 발음 체화", details: ["내 스크립트가 원어민 음성으로 변환", "듣기 → 따라읽기 → 혼자말하기 → 실전 녹음", "쉐도잉 훈련 무제한"] },
+      { title: "기출 기반 실전 모의고사", details: ["모의고사 체험판", "기출 질문에서 실전과 동일하게 출제"] },
+      { title: "문항별 개별 평가 + 종합 리포트", details: ["10가지 유형별 맞춤 체크리스트", "과제충족 진단 + 최우선 처방 + 교정문", "영역별 실력 분석 + 성장 리포트"], enabled: false },
+      { title: "약점 자동 처방 튜터링", details: ["튜터링 미포함", "모의고사 결과 기반 약점 진단 + 맞춤 처방", "병목별 3단계 드릴 + 미니 재평가"], enabled: false },
     ],
     cta: "무료로 시작하기",
     href: "/signup",
@@ -47,13 +49,14 @@ const plans: {
     period: " / 3회권",
     description: "본격적인 실전 감각을 키우세요",
     sub: "1개월 이용",
+    target: "부담 없는 가격으로 실전 준비",
     features: [
       { title: "기출 빈도 분석", details: ["전체 카테고리 제공"] },
-      { title: "내 경험 기반 맞춤 스크립트", details: ["스크립트 패키지 생성 15회", "1회 생성 = 7가지 학습콘텐츠"] },
-      { title: "내 스크립트로 원어민 발음 체화", details: ["내 스크립트가 원어민 음성으로 변환", "듣기 → 따라읽기 → 혼자말하기 → 실전 녹음", "무제한 반복 훈련"] },
+      { title: "내 경험 기반 맞춤 스크립트", details: ["스크립트 패키지 생성 15회", "1회 생성 = 7가지 학습콘텐츠", "핵심표현 · 만능패턴 · 연결어 하이라이팅"] },
+      { title: "내 스크립트로 원어민 발음 체화", details: ["내 스크립트가 원어민 음성으로 변환", "듣기 → 따라읽기 → 혼자말하기 → 실전 녹음", "발음 평가 + 무제한 반복 훈련"] },
       { title: "기출 기반 실전 모의고사", details: ["모의고사 3회", "기출 질문에서 실전과 동일하게 출제"] },
       { title: "문항별 개별 평가 + 종합 리포트", details: ["10가지 유형별 맞춤 체크리스트", "과제충족 진단 + 최우선 처방 + 교정문", "영역별 실력 분석 + 성장 리포트"] },
-      { title: "약점 자동 처방 튜터링", details: [], enabled: false },
+      { title: "약점 자동 처방 튜터링", details: ["튜터링 미포함", "모의고사 결과 기반 약점 진단 + 맞춤 처방", "병목별 3단계 드릴 + 미니 재평가"], enabled: false },
     ],
     cta: "구매하기",
     href: "/store",
@@ -65,13 +68,14 @@ const plans: {
     period: " / 10회권",
     description: "빈도 분석부터 약점 튜터링까지, 한 번에",
     sub: "2개월 이용",
+    target: "가성비 최고, 올인원 패키지",
     features: [
       { title: "기출 빈도 분석", details: ["전체 카테고리 제공"] },
       { title: "내 경험 기반 맞춤 스크립트", details: ["스크립트 패키지 생성 50회", "1회 생성 = 7가지 학습콘텐츠", "핵심표현 · 만능패턴 · 연결어 하이라이팅"] },
       { title: "내 스크립트로 원어민 발음 체화", details: ["내 스크립트가 원어민 음성으로 변환", "듣기 → 따라읽기 → 혼자말하기 → 실전 녹음", "발음 평가 + 무제한 반복 훈련"] },
       { title: "기출 기반 실전 모의고사", details: ["모의고사 10회", "기출 질문에서 실전과 동일하게 출제"] },
       { title: "문항별 개별 평가 + 종합 리포트", details: ["10가지 유형별 맞춤 체크리스트", "과제충족 진단 + 최우선 처방 + 교정문", "영역별 실력 분석 + 성장 리포트"] },
-      { title: "약점 자동 처방 튜터링", details: ["튜터링 3회 포함", "모의고사 결과 기반 처방", "5가지 프로토콜 반복 훈련"] },
+      { title: "약점 자동 처방 튜터링", details: ["튜터링 3회 포함", "모의고사 결과 기반 약점 진단 + 맞춤 처방", "병목별 3단계 드릴 + 미니 재평가"] },
     ],
     cta: "구매하기",
     href: "/store",
@@ -121,19 +125,12 @@ export default function PricingPage() {
               )}
 
               <div className="mt-5 flex items-baseline gap-1">
-                {plan.price === "0" ? (
-                  <>
-                    <span className="text-sm text-foreground-secondary">&#8361;</span>
-                    <span className="text-4xl font-bold">0</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-sm text-foreground-secondary">&#8361;</span>
-                    <span className="text-4xl font-bold">{plan.price}</span>
-                    <span className="text-sm text-foreground-secondary">
-                      {plan.period}
-                    </span>
-                  </>
+                <span className="text-sm text-foreground-secondary">&#8361;</span>
+                <span className="text-4xl font-bold">{plan.price.replace(/₩/g, "")}</span>
+                {plan.period && (
+                  <span className="text-sm text-foreground-secondary">
+                    {plan.period}
+                  </span>
                 )}
               </div>
             </div>
@@ -152,10 +149,10 @@ export default function PricingPage() {
                       </svg>
                       <span className={`text-sm font-semibold ${disabled ? "text-foreground-muted line-through" : "text-foreground"}`}>{group.title}</span>
                     </div>
-                    {!disabled && group.details.length > 0 && (
+                    {group.details.length > 0 && (
                       <div className="ml-6 mt-0.5 space-y-0.5">
                         {group.details.map((d, i) => (
-                          <p key={d} className={i === 0 ? "text-xs font-medium text-primary-600" : "text-xs text-foreground-secondary"}>{d}</p>
+                          <p key={d} className={disabled ? "text-xs text-foreground-muted" : i === 0 ? "text-xs font-medium text-primary-600" : "text-xs text-foreground-secondary"}>{d}</p>
                         ))}
                       </div>
                     )}
