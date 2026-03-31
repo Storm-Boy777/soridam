@@ -12,12 +12,15 @@ import {
   ClipboardList,
   GraduationCap,
   Stethoscope,
+  Megaphone,
+  Sparkles,
   ScrollText,
   ArrowLeft,
 } from "lucide-react";
 
 const menuItems = [
   { label: "대시보드", href: "/admin", icon: LayoutDashboard },
+  { label: "베타 관리", href: "/admin/beta", icon: Sparkles },
   { label: "사용자 관리", href: "/admin/users", icon: Users },
   { label: "결제 관리", href: "/admin/payments", icon: CreditCard },
   { label: "콘텐츠 관리", href: "/admin/content", icon: FileText },
@@ -26,6 +29,7 @@ const menuItems = [
   { label: "스크립트", href: "/admin/scripts", icon: FileCode },
   { label: "모의고사", href: "/admin/mock-exam", icon: GraduationCap },
   { label: "튜터링", href: "/admin/tutoring", icon: Stethoscope },
+  { label: "공지사항", href: "/admin/announcements", icon: Megaphone },
   { label: "감사 로그", href: "/admin/logs", icon: ScrollText },
 ];
 

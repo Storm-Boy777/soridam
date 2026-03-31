@@ -40,6 +40,7 @@ function formatCurrency(amount: number) {
 // 플랜 뱃지 색상
 const planColors: Record<string, string> = {
   free: "bg-gray-100 text-gray-600",
+  beta: "bg-primary-50 text-primary-700",
   standard: "bg-blue-50 text-blue-700",
   allinone: "bg-purple-50 text-purple-700",
 };
@@ -639,6 +640,9 @@ function UserDetailView({
         )}
       </SectionCard>
 
+      {/* F. 접속 이력 */}
+      <ActivityLogSection userId={userId} />
+
     </div>
   );
 }
@@ -690,5 +694,62 @@ function SectionCard({ title, children }: { title: string; children: React.React
 function EmptyRow() {
   return (
     <p className="px-4 py-6 text-center text-sm text-foreground-muted">데이터가 없습니다.</p>
+  );
+}
+
+// 접속 이력
+function ActivityLogSection({ userId }: { userId: string }) {
+  const { data: logs, isLoading } = useQuery({
+    queryKey: ["admin-user-activity", userId],
+    queryFn: async () => {
+      const { getUserActivityLog } = await import("@/lib/actions/admin/stats");
+      return getUserActivityLog(userId);
+    },
+    staleTime: 30_000,
+  });
+
+  const ACTION_LABELS: Record<string, string> = {
+    login: "로그인",
+    logout: "로그아웃",
+    page_view: "페이지 조회",
+    module_use: "모듈 사용",
+  };
+
+  return (
+    <SectionCard title="접속 이력">
+      {isLoading ? (
+        <div className="flex justify-center py-6">
+          <Loader2 className="h-4 w-4 animate-spin text-primary-500" />
+        </div>
+      ) : !logs || logs.length === 0 ? (
+        <EmptyRow />
+      ) : (
+        <div className="divide-y divide-border">
+          {logs.map((log, i) => {
+            const meta = log.metadata as Record<string, string> | null;
+            return (
+              <div key={i} className="flex items-center justify-between px-4 py-2 text-sm">
+                <div className="flex items-center gap-3">
+                  <span className="rounded-md bg-surface-secondary px-2 py-0.5 text-xs font-medium text-foreground">
+                    {ACTION_LABELS[log.action] || log.action}
+                  </span>
+                  {meta?.screen && (
+                    <span className="text-xs text-foreground-muted">{meta.screen}</span>
+                  )}
+                </div>
+                <span className="text-xs text-foreground-secondary">
+                  {new Date(log.created_at).toLocaleString("ko-KR", {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </SectionCard>
   );
 }

@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import { Users, CreditCard, GraduationCap, Clock, TrendingUp, BarChart3, ClipboardList, FileText, Cpu, AlertTriangle, Coins, HardDrive } from "lucide-react";
-import { getAdminDashboardStats, getRecentActivity, getConversionMetrics, getAICostStats, getSystemHealthStats } from "@/lib/actions/admin/stats";
+import { Users, CreditCard, GraduationCap, Clock, TrendingUp, BarChart3, ClipboardList, FileText, Cpu, AlertTriangle, Coins, HardDrive, UserX } from "lucide-react";
+import { getAdminDashboardStats, getRecentActivity, getConversionMetrics, getAICostStats, getSystemHealthStats, getInactiveUsersStats } from "@/lib/actions/admin/stats";
 import { AdminStatCard } from "@/components/admin/admin-stat-card";
 import { AdminTrendCharts } from "@/components/admin/admin-trend-charts";
 
@@ -253,6 +253,64 @@ async function SystemHealthSection() {
   );
 }
 
+async function InactiveUsersSection() {
+  const stats = await getInactiveUsersStats();
+
+  return (
+    <div className="space-y-3">
+      <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground-secondary">
+        <UserX size={16} className="text-red-500" />
+        사용자 활동
+      </h2>
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* 비활성 사용자 */}
+        <div className="rounded-xl border border-border bg-surface p-4">
+          <p className="mb-3 text-xs font-medium text-foreground-secondary">비활성 사용자</p>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <p className={`text-xl font-bold tabular-nums ${stats.inactive7days > 0 ? "text-amber-600" : "text-foreground"}`}>
+                {stats.inactive7days}
+              </p>
+              <p className="text-xs text-foreground-muted">7일 미접속</p>
+            </div>
+            <div>
+              <p className={`text-xl font-bold tabular-nums ${stats.inactive14days > 0 ? "text-orange-600" : "text-foreground"}`}>
+                {stats.inactive14days}
+              </p>
+              <p className="text-xs text-foreground-muted">14일 미접속</p>
+            </div>
+            <div>
+              <p className={`text-xl font-bold tabular-nums ${stats.inactive30days > 0 ? "text-red-600" : "text-foreground"}`}>
+                {stats.inactive30days}
+              </p>
+              <p className="text-xs text-foreground-muted">30일+ 미접속</p>
+            </div>
+          </div>
+        </div>
+
+        {/* 최근 로그인 */}
+        <div className="rounded-xl border border-border bg-surface p-4">
+          <p className="mb-3 text-xs font-medium text-foreground-secondary">최근 로그인</p>
+          {stats.recentLogins.length === 0 ? (
+            <p className="py-4 text-center text-xs text-foreground-muted">로그인 기록이 없습니다</p>
+          ) : (
+            <div className="space-y-1.5">
+              {stats.recentLogins.slice(0, 5).map((l, i) => (
+                <div key={i} className="flex items-center justify-between text-xs">
+                  <span className="truncate text-foreground">{l.email}</span>
+                  <span className="shrink-0 text-foreground-muted">
+                    {new Date(l.last_login).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SectionSkeleton() {
   return (
     <div className="space-y-3">
@@ -309,6 +367,11 @@ export default function AdminDashboardPage() {
           <SystemHealthSection />
         </Suspense>
       </div>
+
+      {/* 비활성 사용자 + 최근 로그인 */}
+      <Suspense fallback={<SectionSkeleton />}>
+        <InactiveUsersSection />
+      </Suspense>
 
       <div>
         <h2 className="mb-3 text-sm font-semibold text-foreground-secondary">최근 활동</h2>

@@ -8,6 +8,81 @@ import type {
   ConversionMetrics,
 } from "@/lib/types/admin";
 
+// ── 비활성 사용자 감지 ──
+
+export interface InactiveUsersStats {
+  inactive7days: number;
+  inactive14days: number;
+  inactive30days: number;
+  recentLogins: Array<{ user_id: string; email: string; last_login: string }>;
+}
+
+export async function getInactiveUsersStats(): Promise<InactiveUsersStats> {
+  const { supabase } = await requireAdmin();
+
+  const now = new Date();
+  const d7 = new Date(now.getTime() - 7 * 86400000).toISOString();
+  const d14 = new Date(now.getTime() - 14 * 86400000).toISOString();
+  const d30 = new Date(now.getTime() - 30 * 86400000).toISOString();
+
+  // 전체 사용자의 last_sign_in_at 조회 (Supabase Auth)
+  const { data: authUsers } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+  const users = authUsers?.users || [];
+
+  let inactive7 = 0;
+  let inactive14 = 0;
+  let inactive30 = 0;
+
+  for (const u of users) {
+    const lastSign = u.last_sign_in_at;
+    if (!lastSign || lastSign < d30) inactive30++;
+    else if (lastSign < d14) inactive14++;
+    else if (lastSign < d7) inactive7++;
+  }
+
+  // 최근 로그인 10건 (활동 로그)
+  const { data: recentLogs } = await supabase
+    .from("user_activity_log")
+    .select("user_id, created_at")
+    .eq("action", "login")
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  // 이메일 매핑
+  const userIds = [...new Set((recentLogs || []).map((l) => l.user_id))];
+  const emailMap = new Map<string, string>();
+  for (const uid of userIds) {
+    const { data } = await supabase.auth.admin.getUserById(uid);
+    if (data?.user?.email) emailMap.set(uid, data.user.email);
+  }
+
+  return {
+    inactive7days: inactive7,
+    inactive14days: inactive14,
+    inactive30days: inactive30,
+    recentLogins: (recentLogs || []).map((l) => ({
+      user_id: l.user_id,
+      email: emailMap.get(l.user_id) || "",
+      last_login: l.created_at,
+    })),
+  };
+}
+
+// ── 사용자 활동 로그 조회 ──
+
+export async function getUserActivityLog(userId: string, limit: number = 20) {
+  const { supabase } = await requireAdmin();
+
+  const { data } = await supabase
+    .from("user_activity_log")
+    .select("action, metadata, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  return data || [];
+}
+
 // ── AI 비용 & 시스템 헬스 타입 ──
 
 export interface AICostStats {
