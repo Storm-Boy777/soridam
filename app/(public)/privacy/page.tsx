@@ -10,7 +10,7 @@ export default function PrivacyPage() {
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
       <h1 className="text-3xl font-bold">개인정보처리방침</h1>
       <p className="mt-2 text-sm text-foreground-muted">
-        시행일: 2026년 2월 18일
+        시행일: 2026년 2월 18일 | 개정일: 2026년 3월 31일
       </p>
 
       <div className="mt-10 space-y-10 text-sm leading-relaxed text-foreground-secondary">
@@ -27,8 +27,11 @@ export default function PrivacyPage() {
           </p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>회원가입 및 관리: 본인 확인, 서비스 부정이용 방지</li>
-            <li>서비스 제공: 말하기 학습 서비스, 학습 리포트 생성, 맞춤 학습</li>
-            <li>유료서비스: 결제 처리, 요금 정산</li>
+            <li>
+              서비스 제공: AI 기반 OPIc 말하기 학습(모의고사, 스크립트 생성,
+              튜터링, 쉐도잉), 학습 리포트 생성, 맞춤 학습
+            </li>
+            <li>유료서비스: 결제 처리, 요금 정산, 크레딧 관리</li>
             <li>마케팅: 이벤트·광고성 정보 제공 (별도 동의 시)</li>
           </ul>
         </section>
@@ -60,8 +63,8 @@ export default function PrivacyPage() {
                 서비스 이용 시 자동 수집 항목
               </p>
               <ul className="mt-1 list-disc space-y-0.5 pl-5">
-                <li>학습 기록 (모의고사 응시, 훈련 이력)</li>
-                <li>음성 녹음 데이터 (학습 피드백 생성 목적)</li>
+                <li>학습 기록 (모의고사 응시, 튜터링 훈련, 쉐도잉 이력)</li>
+                <li>음성 녹음 데이터 (AI 평가 및 학습 피드백 생성 목적)</li>
                 <li>접속 IP, 브라우저 정보, 접속 시간</li>
               </ul>
             </div>
@@ -137,6 +140,11 @@ export default function PrivacyPage() {
                   <td className="py-2">위탁 계약 종료 시까지</td>
                 </tr>
                 <tr>
+                  <td className="py-2 pr-4">주식회사 카카오페이</td>
+                  <td className="py-2 pr-4">간편결제 대행</td>
+                  <td className="py-2">위탁 계약 종료 시까지</td>
+                </tr>
+                <tr>
                   <td className="py-2 pr-4">Supabase Inc.</td>
                   <td className="py-2 pr-4">클라우드 인프라 운영 및 데이터 저장</td>
                   <td className="py-2">위탁 계약 종료 시까지</td>
@@ -190,7 +198,7 @@ export default function PrivacyPage() {
             <li>처리 정지 요구</li>
           </ul>
           <p className="mt-2">
-            권리 행사는 서비스 내 설정 또는 이메일(opictalkdoc@gmail.com)로
+            권리 행사는 서비스 내 설정 또는 이메일(haruopic@gmail.com)로
             요청할 수 있으며, 회사는 지체 없이 조치합니다.
           </p>
         </section>
@@ -220,7 +228,7 @@ export default function PrivacyPage() {
           <ul className="mt-2 space-y-0.5">
             <li>성명: 전다영</li>
             <li>직책: 대표</li>
-            <li>이메일: opictalkdoc@gmail.com</li>
+            <li>이메일: haruopic@gmail.com</li>
           </ul>
         </section>
 
@@ -246,7 +254,7 @@ export default function PrivacyPage() {
             <li>
               소재지: 경상북도 구미시 해마루공원로 80, 104동 1903호
             </li>
-            <li>이메일: opictalkdoc@gmail.com</li>
+            <li>이메일: haruopic@gmail.com</li>
           </ul>
         </section>
       </div>

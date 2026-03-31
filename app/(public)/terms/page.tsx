@@ -10,7 +10,7 @@ export default function TermsPage() {
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
       <h1 className="text-3xl font-bold">이용약관</h1>
       <p className="mt-2 text-sm text-foreground-muted">
-        시행일: 2026년 2월 18일
+        시행일: 2026년 2월 18일 | 개정일: 2026년 3월 31일
       </p>
 
       <div className="mt-10 space-y-10 text-sm leading-relaxed text-foreground-secondary">
@@ -34,16 +34,29 @@ export default function TermsPage() {
           </h2>
           <ol className="mt-2 list-decimal space-y-1 pl-5">
             <li>
-              &quot;서비스&quot;란 회사가 제공하는 OPIc 영어 말하기 학습
-              플랫폼을 의미합니다.
+              &quot;서비스&quot;란 회사가 제공하는 AI 기반 OPIc 영어 말하기
+              학습 플랫폼을 의미합니다.
             </li>
             <li>
               &quot;회원&quot;이란 회사와 이용계약을 체결하고 서비스를 이용하는
               자를 의미합니다.
             </li>
             <li>
-              &quot;유료서비스&quot;란 회사가 유료로 제공하는 각종 서비스를
-              의미합니다.
+              &quot;유료서비스&quot;란 회사가 유료로 제공하는 기간제
+              이용권(플랜) 및 횟수권을 의미합니다.
+            </li>
+            <li>
+              &quot;기간제 이용권(플랜)&quot;이란 일정 기간 동안 서비스를
+              이용할 수 있는 이용권으로, 모의고사·스크립트·튜터링 크레딧이
+              포함되며 자동 갱신되지 않습니다.
+            </li>
+            <li>
+              &quot;횟수권&quot;이란 특정 기능을 정해진 횟수만큼 이용할 수
+              있는 이용권으로, 유효기간 없이 사용 시까지 유지됩니다.
+            </li>
+            <li>
+              &quot;크레딧&quot;이란 모의고사, 스크립트, 튜터링 등 유료 기능의
+              이용 횟수를 나타내는 단위를 의미합니다.
             </li>
           </ol>
         </section>
@@ -99,10 +112,11 @@ export default function TermsPage() {
             <li>
               회사는 다음과 같은 서비스를 제공합니다.
               <ul className="mt-1 list-disc space-y-0.5 pl-5">
-                <li>실전 OPIc 모의고사</li>
-                <li>맞춤 튜터링 (실시간 피드백)</li>
-                <li>쉐도잉 학습</li>
-                <li>학습 분석 및 리포트</li>
+                <li>시험후기: OPIc 기출 빈도 분석 및 후기 공유</li>
+                <li>스크립트: AI 맞춤 스크립트 생성 및 원어민 음성 변환</li>
+                <li>모의고사: 기출 기반 실전 모의고사 및 AI 평가 리포트</li>
+                <li>튜터링: AI 약점 진단 및 맞춤 드릴 훈련</li>
+                <li>쉐도잉: 원어민 발음 따라읽기 훈련</li>
               </ul>
             </li>
             <li>
@@ -121,6 +135,15 @@ export default function TermsPage() {
             <li>
               유료서비스의 이용료 및 결제 방법은 서비스 내 요금제 안내 페이지에
               게시된 바에 따릅니다.
+            </li>
+            <li>
+              기간제 이용권(플랜)은 자동 갱신(정기결제)되지 않으며, 유효기간
+              만료 시 자동 종료됩니다.
+            </li>
+            <li>
+              플랜에 포함된 크레딧은 플랜 유효기간 내에만 사용할 수 있으며,
+              만료 시 잔여 플랜 크레딧은 소멸됩니다. 별도 구매한 횟수권
+              크레딧은 유효기간 없이 유지됩니다.
             </li>
             <li>
               회사는 유료서비스의 요금을 변경할 수 있으며, 변경 시 30일 전에
@@ -144,8 +167,15 @@ export default function TermsPage() {
               <ul className="mt-1 list-disc space-y-0.5 pl-5">
                 <li>타인의 정보 도용</li>
                 <li>서비스 운영을 방해하는 행위</li>
-                <li>서비스를 이용하여 얻은 정보를 무단 복제·배포하는 행위</li>
+                <li>
+                  서비스를 이용하여 얻은 정보(AI 생성 콘텐츠 포함)를
+                  무단 복제·배포·상업적 이용하는 행위
+                </li>
                 <li>회사의 지적재산권을 침해하는 행위</li>
+                <li>
+                  자동화 수단(봇, 스크래퍼 등)을 이용하여 서비스에
+                  접근하는 행위
+                </li>
               </ul>
             </li>
           </ol>
@@ -200,8 +230,10 @@ export default function TermsPage() {
               지지 않습니다.
             </li>
             <li>
-              자동 생성된 학습 피드백은 참고용이며, 실제 OPIc 시험 결과를
-              보장하지 않습니다.
+              AI가 생성한 스크립트, 평가 리포트, 튜터링 피드백 등은
+              학습 참고용이며, 실제 OPIc 시험 결과를 보장하지 않습니다.
+              회사는 AI 생성 콘텐츠의 정확성이나 완전성에 대해 보증하지
+              않습니다.
             </li>
           </ol>
         </section>
@@ -209,7 +241,17 @@ export default function TermsPage() {
         {/* 제11조 */}
         <section>
           <h2 className="text-lg font-semibold text-foreground">
-            제11조 (분쟁 해결)
+            제11조 (환불)
+          </h2>
+          <p className="mt-2">
+            유료서비스의 환불에 관한 사항은 별도의 환불 규정에 따릅니다.
+          </p>
+        </section>
+
+        {/* 제12조 */}
+        <section>
+          <h2 className="text-lg font-semibold text-foreground">
+            제12조 (분쟁 해결)
           </h2>
           <ol className="mt-2 list-decimal space-y-1 pl-5">
             <li>
@@ -227,7 +269,8 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-semibold text-foreground">부칙</h2>
           <p className="mt-2">
-            이 약관은 2026년 2월 18일부터 시행합니다.
+            이 약관은 2026년 2월 18일부터 시행하며, 2026년 3월 31일 개정된
+            내용은 같은 날부터 적용됩니다.
           </p>
         </section>
 
@@ -241,7 +284,7 @@ export default function TermsPage() {
             <li>
               소재지: 경상북도 구미시 해마루공원로 80, 104동 1903호
             </li>
-            <li>이메일: opictalkdoc@gmail.com</li>
+            <li>이메일: haruopic@gmail.com</li>
           </ul>
         </section>
       </div>
