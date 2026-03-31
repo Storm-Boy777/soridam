@@ -15,6 +15,10 @@ for /f "tokens=5" %%a in ('netstat -ano ^| findstr :3001 ^| findstr LISTENING') 
     taskkill /PID %%a /F 2>nul
 )
 timeout /t 1 /nobreak >nul
+if exist ".next\dev\lock" (
+    del /f ".next\dev\lock" 2>nul
+    echo Lock file removed.
+)
 echo Done.
 
 echo [2/3] Checking packages...

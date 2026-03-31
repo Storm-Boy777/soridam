@@ -38,8 +38,8 @@ export function Footer() {
             <p>소재지: 경상북도 구미시 해마루공원로 80, 104동 1903호</p>
             <p>
               대표전화: 010-4715-8846 | 이메일:{" "}
-              <a href="mailto:opictalkdoc@gmail.com">
-                opictalkdoc@gmail.com
+              <a href="mailto:haruopic@gmail.com">
+                haruopic@gmail.com
               </a>
             </p>
             <p>통신판매업 신고번호: 제 2026-경북구미-0236 호</p>

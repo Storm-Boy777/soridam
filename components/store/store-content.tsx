@@ -174,6 +174,7 @@ type PayMethodId = "card" | "kakaopay";
 
 const PLAN_LABELS: Record<string, string> = {
   free: "체험",
+  beta: "Beta",
   standard: "실전",
   allinone: "올인원",
 };

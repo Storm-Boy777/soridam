@@ -79,11 +79,33 @@ export interface RevenueStats {
 
 export interface PlanChangeParams {
   userId: string;
-  plan: "free" | "standard" | "allinone";
+  plan: "free" | "standard" | "allinone" | "beta";
   mockExamCredits: number;
   scriptCredits: number;
   expiresInMonths: number;
   reason: string;
+}
+
+// ── 베타 관리 ──
+
+export interface BetaApplication {
+  id: string;
+  user_id: string;
+  user_email: string;
+  user_name: string | null;
+  kakao_nickname: string;
+  status: "pending" | "approved" | "rejected";
+  rejected_reason: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+}
+
+export interface BetaStats {
+  total: number;
+  approved: number;
+  pending: number;
+  rejected: number;
+  remaining: number;
 }
 
 // ── 감사 로그 ──

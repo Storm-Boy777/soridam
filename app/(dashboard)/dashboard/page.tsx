@@ -12,6 +12,7 @@ import {
 import { getAuthClaims, getUser } from "@/lib/auth";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { DashboardStats } from "@/components/dashboard/dashboard-stats";
+import { BetaSection } from "@/components/beta/beta-section";
 
 export const metadata = {
   title: "대시보드",
@@ -231,6 +232,35 @@ async function DashboardStatsLoader({ userId }: { userId: string }) {
   return <DashboardStats userId={userId} initialCredits={credits ?? undefined} />;
 }
 
+/* ── 베타 섹션 서버 로더 ── */
+
+async function BetaSectionLoader({ userId }: { userId: string }) {
+  const supabase = await createServerSupabaseClient();
+  const [{ data: credits }, { data: betaApp }, { data: stats }] = await Promise.all([
+    supabase
+      .from("user_credits")
+      .select("current_plan, plan_expires_at")
+      .eq("user_id", userId)
+      .single(),
+    supabase
+      .from("beta_applications")
+      .select("status, rejected_reason")
+      .eq("user_id", userId)
+      .single(),
+    supabase.rpc("get_beta_stats"),
+  ]);
+
+  return (
+    <BetaSection
+      currentPlan={credits?.current_plan ?? "free"}
+      betaStatus={betaApp?.status ?? null}
+      betaRejectedReason={betaApp?.rejected_reason ?? null}
+      remaining={stats?.remaining ?? 0}
+      planExpiresAt={credits?.plan_expires_at ?? null}
+    />
+  );
+}
+
 /* ── 페이지 ── */
 
 export default async function DashboardPage() {
@@ -272,6 +302,13 @@ export default async function DashboardPage() {
             />
           ))}
         </div>
+      )}
+
+      {/* 베타 배너 */}
+      {userId && (
+        <Suspense fallback={null}>
+          <BetaSectionLoader userId={userId} />
+        </Suspense>
       )}
 
       {/* 모듈 바로가기 — 즉시 렌더 */}

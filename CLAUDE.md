@@ -1,4 +1,4 @@
-# CLAUDE.md - OPIcTalkDoc 프로젝트
+# CLAUDE.md - HaruOPIc (하루오픽) 프로젝트
 
 ## 🔄 자동 업데이트 규칙
 
@@ -46,8 +46,8 @@
 
 ## 🎯 Project Overview
 
-**OPIcTalkDoc** - AI 기반 OPIc 영어 말하기 학습 플랫폼
-- 도메인: https://opictalkdoc.com
+**HaruOPIc (하루오픽)** - AI 기반 OPIc 영어 말하기 학습 플랫폼
+- 도메인: https://haruopic.com (리브랜딩 완료, 구 opictalkdoc.com → 리다이렉트)
 - 소리담(soridam) 베타의 최종 버전 기능을 이관하여 구축하는 프로젝트
 - 소리담 소스코드: `C:\Users\js777\Desktop\soridam`
 
@@ -256,7 +256,7 @@ docs/
 ### Vercel
 - **팀**: OPIcTalkDoc (Pro)
 - **프로젝트**: opictalkdoc-app
-- **도메인**: opictalkdoc.com, www.opictalkdoc.com
+- **도메인**: haruopic.com, www.haruopic.com (구 opictalkdoc.com → 리다이렉트)
 - **자동 배포**: main 브랜치 푸시 시 자동 배포
 
 ### DNS (Spaceship)
@@ -266,13 +266,13 @@ docs/
 ### 테스트 계정 (심사/검수용)
 - **ID**: `test@opictalkdoc.com`
 - **PW**: `Test1234@@`
-- **URL**: https://opictalkdoc.com/login
+- **URL**: https://haruopic.com/login
 - **용도**: 카카오페이, PG사, 통신판매업 심사 등 외부 검수용
 
 ## 📁 프로젝트 구조
 
 ```
-opictalkdoc/                 # Git 루트 = Next.js 루트 (표준 구조)
+haruopic/                    # Git 루트 = Next.js 루트 (표준 구조)
 ├── CLAUDE.md                # 프로젝트 가이드 (이 파일)
 ├── .gitignore
 ├── README.md
@@ -531,7 +531,7 @@ perf: 성능 개선
 
 ```bash
 # 이 저장소 전용 설정
-git config user.email "opictalkdoc@gmail.com"
+git config user.email "haruopic@gmail.com"
 git config user.name "opictalkdoc"
 
 # 원격 저장소 (인증 포함)
@@ -573,13 +573,14 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 | 03-15 | UI/UX 개선 | PC 진행과정 화살표 + 제출이력 수직정렬 + 스크립트 크레딧 2회 통일 + 전략가이드 수치 제거 |
 | 03-25 | **튜터링 재설계** | 전문가 자문 기반 새 설계서 완성. 기존 V2 코드/DB 전부 삭제. 파이프라인 C→D→QSE→E→L1→F, 3단 등급, Layer1 규칙엔진, CO-STAR 프롬프트 |
 | 03-26 | **튜터링 구현** | Phase 1 전체 구현 (7테이블 + SA 12개 + EF 3개 + Layer1 엔진 + QSE + 9컴포넌트 + 2페이지) |
+| 03-31 | **리브랜딩 완료 확인** | P-5 전항목 완료 확인 + 레거시 EF 4개 삭제 (tutoring-v2-* 3개 + tutoring) + 문서 갱신 |
 
 <!-- 이후 새 이력은 이 테이블에 행 추가 + memory/개발이력.md에 상세 기록 -->
 
 ## 🔮 현재 상태 & 다음 단계
 
-**현재**: Phase 3 완료 + 튜터링 Phase 1 구현 완료
-**다음 작업**: 튜터링 EF 배포 + 실데이터 테스트 → 리브랜딩(P-5)
+**현재**: Phase 3 완료 + 튜터링 Phase 1 구현 완료 + 리브랜딩(P-5) 완료
+**다음 작업**: 오픈 베타 준비 (피드백 채널, 에러 모니터링, 베타 크레딧 정책)
 
 ### 모의고사 평가 파이프라인 (현행)
 ```
@@ -615,20 +616,19 @@ Stage C: mock-test-report (평가엔진 7-Step + overview/growth GPT)
 | 진입 조건 | ✅ | 모의고사 3회 이상, 최근 최대 5회, 재진입 시 새 3회 |
 | 다음 | ⏳ | EF 배포 + 실데이터 테스트 + 프롬프트 조정 |
 
-### ⏳ 리브랜딩 작업 (P-5: 오픽톡닥 → 하루오픽)
-> Phase 3 전체 완료(Step 4 튜터링까지) 후 진행. 상세는 `docs/의사결정.md` P-5, `docs/실행계획.md` 참조.
+### ✅ 리브랜딩 완료 (P-5: 오픽톡닥 → 하루오픽)
 
-| # | 작업 | 상세 |
+| # | 작업 | 상태 |
 |---|------|------|
-| 1 | 도메인 구매 | haruopic.com |
-| 2 | DNS 설정 | Vercel에 haruopic.com 연결 |
-| 3 | 기존 도메인 리다이렉트 | opictalkdoc.com → haruopic.com (301), PG 심사 완료까지 유지 |
-| 4 | 코드 텍스트 치환 | "오픽톡닥" → "하루오픽", "OPIcTalkDoc" → "HaruOPIc" |
-| 5 | 로고 재생성 | 반창고 아이콘 + "하루오픽" (temp/generate-logo.html) |
-| 6 | CORS 변경 | haruopic.com 추가 (opictalkdoc.com도 당분간 유지) |
-| 7 | 환경변수 | NEXT_PUBLIC_SITE_URL → haruopic.com |
-| 8 | GitHub 저장소명 | 변경 (선택) |
-| 9 | 문서 일괄 갱신 | CLAUDE.md, 실행계획.md 등 이름/도메인 치환 |
+| 1 | 도메인 구매 (haruopic.com) | ✅ |
+| 2 | DNS 설정 (Vercel 연결) | ✅ |
+| 3 | 기존 도메인 리다이렉트 (opictalkdoc.com → haruopic.com) | ✅ |
+| 4 | 코드 텍스트 치환 ("오픽톡닥" → "하루오픽") | ✅ |
+| 5 | 로고 재생성 (sunrise 시리즈) | ✅ |
+| 6 | CORS 확인 (haruopic.com 포함) | ✅ |
+| 7 | 환경변수 (Vercel 프로덕션 설정) | ✅ |
+| 8 | GitHub 저장소명 | 미변경 (opictalkdoc-app 유지) |
+| 9 | 문서 일괄 갱신 | ✅ |
 
 ### 네비게이션 구조 (확정)
 ```
@@ -740,5 +740,5 @@ PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/1
 > 의사결정 기록은 `docs/의사결정.md` 참조
 
 ---
-*최종 업데이트: 2026-03-26*
-*상태: Phase 3 전체 ✅ + 튜터링 Phase 1 구현 ✅. 다음: EF 배포 + 실데이터 테스트 → 리브랜딩(P-5)*
+*최종 업데이트: 2026-03-31*
+*상태: Phase 3 전체 ✅ + 튜터링 Phase 1 ✅ + 리브랜딩(P-5) ✅. 다음: 오픈 베타 준비*

@@ -475,7 +475,7 @@ perf: 성능 개선
 
 ```bash
 # 이 저장소 전용 설정
-git config user.email "opictalkdoc@gmail.com"
+git config user.email "haruopic@gmail.com"
 git config user.name "opictalkdoc"
 
 # 원격 저장소 (인증 포함)
