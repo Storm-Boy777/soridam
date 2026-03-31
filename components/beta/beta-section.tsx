@@ -107,7 +107,7 @@ export function BetaSection({
               </span>
             </div>
             <p className="mt-1 text-sm text-foreground-secondary">
-              4월 한 달간 모의고사 3회 + 스크립트 15회를 무료로 이용하세요!
+              4월 한정, 모의고사 3회 + 스크립트 15회 무료 제공!
             </p>
           </div>
           <button
