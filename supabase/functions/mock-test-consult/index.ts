@@ -487,8 +487,6 @@ Deno.serve(async (req: Request) => {
         weak_point_count: result.weak_points.length,
         tokens_used: tokensUsed,
         processing_time_ms: processingTimeMs,
-        all_consulted: allConsulted,
-        progress: `${consultedCount}/${totalTargetCount}`,
       }),
       {
         status: 200,

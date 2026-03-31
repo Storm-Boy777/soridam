@@ -9,12 +9,11 @@ disable-model-invocation: true
 # Edge Function 배포 스킬
 
 ## 배포 설정
-- **프로젝트**: `rwdsyqnrrpwkureqfxwb`
-- **작업 디렉토리**: `C:/Users/js777/Desktop/opictalkdoc`
-- **토큰 환경변수**: `SUPABASE_ACCESS_TOKEN` (bashrc에 설정됨)
+- 프로젝트: `rwdsyqnrrpwkureqfxwb`
+- 작업 디렉터리: `C:/Users/js777/Desktop/haruopic`
+- 토큰 환경변수: `SUPABASE_ACCESS_TOKEN`
 
-## JWT 검증 비활성화 필수 함수
-아래 함수는 반드시 `--no-verify-jwt` 플래그를 붙여야 한다:
+## JWT 검증 비활성화가 필요한 함수
 - `mock-test-eval-judge`
 - `mock-test-eval-coach`
 - `mock-test-report`
@@ -23,26 +22,26 @@ disable-model-invocation: true
 ## 실행 절차
 
 ### 인자가 특정 함수명인 경우
-1. `supabase/functions/$0/` 디렉토리 존재 확인
+1. `supabase/functions/<함수명>/` 디렉터리 존재 확인
 2. JWT 비활성화 대상인지 확인
 3. 배포 명령 실행
 
-### 인자가 "all"인 경우
-1. `supabase/functions/` 아래 모든 함수 디렉토리 나열 (`_shared` 제외)
-2. 각 함수를 순차 배포 (JWT 비활성화 대상은 자동 적용)
+### 인자가 `all`인 경우
+1. `supabase/functions/` 아래 모든 함수 디렉터리 확인 (`_shared` 제외)
+2. 각 함수를 순서대로 배포
 
-### 배포 명령 템플릿
+## 배포 명령 템플릿
 
 일반 함수:
 ```bash
-cd C:/Users/js777/Desktop/opictalkdoc && SUPABASE_ACCESS_TOKEN=sbp_92d17e1a6d55b906b31878a97fec2a62ccab5964 npx supabase functions deploy {함수명} --project-ref rwdsyqnrrpwkureqfxwb
+cd C:/Users/js777/Desktop/haruopic && SUPABASE_ACCESS_TOKEN=sbp_fc12c101bf2c5db193b876d59e7b1a2dbd65a5bf npx supabase functions deploy <함수명> --project-ref rwdsyqnrrpwkureqfxwb
 ```
 
-JWT 비활성화 함수:
+JWT 검증 비활성화 함수:
 ```bash
-cd C:/Users/js777/Desktop/opictalkdoc && SUPABASE_ACCESS_TOKEN=sbp_92d17e1a6d55b906b31878a97fec2a62ccab5964 npx supabase functions deploy {함수명} --project-ref rwdsyqnrrpwkureqfxwb --no-verify-jwt
+cd C:/Users/js777/Desktop/haruopic && SUPABASE_ACCESS_TOKEN=sbp_fc12c101bf2c5db193b876d59e7b1a2dbd65a5bf npx supabase functions deploy <함수명> --project-ref rwdsyqnrrpwkureqfxwb --no-verify-jwt
 ```
 
 ## 출력
-- 각 함수의 배포 성공/실패 상태를 보고
+- 함수별 배포 성공/실패 상태 보고
 - 실패 시 에러 메시지 포함

@@ -1,16 +1,14 @@
 "use server";
 
+import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import {
   transformDiagnosisData,
   type DiagnosisTransformInput,
+  type DiagnosisTransformOutput,
 } from "@/lib/mock-exam-result/diagnosis-transformer";
-import type {
-  OverviewV2,
-  GrowthV2,
-} from "@/lib/types/mock-exam-result";
+import type { OverviewV2 } from "@/lib/types/mock-exam-result";
 import type { OverviewData } from "@/components/mock-exam/result/tab-overview";
-import type { DiagnosisTransformOutput } from "@/lib/mock-exam-result/diagnosis-transformer";
 import type { QuestionsData } from "@/components/mock-exam/result/tab-questions";
 import type { QuestionEvalV2Real } from "@/lib/mock-data/mock-exam-result-questions";
 import type { GrowthReportV2, GradeHistoryItem } from "@/lib/mock-data/mock-exam-result";
@@ -20,379 +18,19 @@ type ActionResult<T = null> = {
   data?: T;
 };
 
-// ── 헬퍼: 현재 로그인 유저 확인 ──
+type ViewerContext = {
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>> | ReturnType<typeof createClient>;
+  userId: string;
+  isAdmin: boolean;
+};
 
-async function requireUser() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("로그인이 필요합니다");
-  return { supabase, userId: user.id };
-}
+type SessionAccessResult<TSession> = ViewerContext & {
+  session: TSession;
+};
 
-// (getSessionResultV2 삭제됨 — V2는 탭별 개별 SA 사용: getOverviewData/getDiagnosisData/getQuestionsData/getGrowthData)
-
-// ============================================================
-// 2. 종합 진단 탭 데이터 변환 (buildOverviewData)
-// ============================================================
-
-export async function getOverviewData(
-  sessionId: string,
-): Promise<ActionResult<OverviewData>> {
-  try {
-    const { supabase, userId } = await requireUser();
-
-    const [sessionRes, reportRes] = await Promise.all([
-      supabase
-        .from("mock_test_sessions")
-        .select("mode, started_at, total_questions")
-        .eq("session_id", sessionId)
-        .eq("user_id", userId)
-        .single(),
-      supabase
-        .from("mock_test_reports")
-        .select("final_level, overview")
-        .eq("session_id", sessionId)
-        .single(),
-    ]);
-
-    if (sessionRes.error || reportRes.error) {
-      return { error: "데이터 조회 실패" };
-    }
-
-    const overview = reportRes.data.overview as OverviewV2 | null;
-    if (!overview) {
-      return { error: "종합 진단 데이터 미생성 (report-v2 EF 실행 필요)" };
-    }
-
-    return {
-      data: {
-        session: {
-          session_id: sessionId,
-          grade: reportRes.data.final_level || "IM2",
-          mode: sessionRes.data.mode as "training" | "test",
-          date: sessionRes.data.started_at || "",
-          total_questions: sessionRes.data.total_questions || 15,
-        },
-        overall_comments: overview.overall_comments,
-        performance_summary: overview.performance_summary,
-      },
-    };
-  } catch (err) {
-    return { error: err instanceof Error ? err.message : String(err) };
-  }
-}
-
-// ============================================================
-// 3. 세부진단표 데이터 (getDiagnosisData)
-// ============================================================
-
-export async function getDiagnosisData(
-  sessionId: string,
-): Promise<ActionResult<DiagnosisTransformOutput>> {
-  try {
-    const { supabase, userId } = await requireUser();
-
-    // 리포트 조회 + 세션 소유자 확인 병렬 실행
-    const [reportResult, sessionResult] = await Promise.all([
-      supabase
-        .from("mock_test_reports")
-        .select("aggregated_checkboxes, final_level")
-        .eq("session_id", sessionId)
-        .single(),
-      supabase
-        .from("mock_test_sessions")
-        .select("user_id")
-        .eq("session_id", sessionId)
-        .eq("user_id", userId)
-        .single(),
-    ]);
-
-    if (reportResult.error || !reportResult.data) {
-      return { error: "리포트 조회 실패" };
-    }
-    if (!sessionResult.data) {
-      return { error: "세션 접근 권한 없음" };
-    }
-
-    const report = reportResult.data;
-
-    const agg = (report.aggregated_checkboxes || {}) as Record<string, Record<string, { final_pass?: boolean; pass?: boolean; evidence?: string }>>;
-
-    // DB 구조 { final_pass, pass_rate, ... } → 변환기 입력 { pass, evidence } 매핑
-    function normalizeCheckboxes(
-      raw: Record<string, { final_pass?: boolean; pass?: boolean; evidence?: string }> | undefined,
-    ): Record<string, { pass: boolean; evidence?: string }> {
-      if (!raw) return {};
-      const result: Record<string, { pass: boolean; evidence?: string }> = {};
-      for (const [id, val] of Object.entries(raw)) {
-        result[id] = {
-          pass: val.final_pass ?? val.pass ?? false,
-          evidence: val.evidence,
-        };
-      }
-      return result;
-    }
-
-    const input: DiagnosisTransformInput = {
-      aggregated_int: normalizeCheckboxes(agg.int),
-      aggregated_adv: normalizeCheckboxes(agg.adv),
-      aggregated_al: normalizeCheckboxes(agg.al),
-      final_level: report.final_level || "IM2",
-    };
-
-    return { data: transformDiagnosisData(input) };
-  } catch (err) {
-    return { error: err instanceof Error ? err.message : String(err) };
-  }
-}
-
-// ============================================================
-// 4. 문항별 평가 데이터 (getQuestionsData)
-// ============================================================
-
-export async function getQuestionsData(
-  sessionId: string,
-): Promise<ActionResult<QuestionsData>> {
-  try {
-    const { supabase, userId } = await requireUser();
-
-    // consults_v2 (소견) + reports_v2 (등급) 병렬 조회
-    const [consultsRes, reportRes] = await Promise.all([
-      supabase
-        .from("mock_test_consults")
-        .select("*")
-        .eq("session_id", sessionId)
-        .order("question_number"),
-      supabase
-        .from("mock_test_reports")
-        .select("final_level, target_grade")
-        .eq("session_id", sessionId)
-        .single(),
-    ]);
-
-    if (consultsRes.error || !consultsRes.data?.length) {
-      return { error: "v2 소견 데이터 없음" };
-    }
-
-    // 소유자 확인 + 질문 메타 + 답변 데이터 병렬 조회
-    const questionIds = consultsRes.data.map((e) => e.question_id);
-    const [sessionRes, questionsRes, answersRes] = await Promise.all([
-      supabase
-        .from("mock_test_sessions")
-        .select("user_id")
-        .eq("session_id", sessionId)
-        .eq("user_id", userId)
-        .single(),
-      supabase
-        .from("questions")
-        .select("id, question_short, question_type_eng, topic, category")
-        .in("id", questionIds),
-      supabase
-        .from("mock_test_answers")
-        .select("*")
-        .eq("session_id", sessionId)
-        .order("question_number"),
-    ]);
-
-    if (!sessionRes.data) {
-      return { error: "세션 접근 권한 없음" };
-    }
-
-    const qMap = new Map(
-      (questionsRes.data || []).map((q) => [q.id, q]),
-    );
-
-    const answers = answersRes.data || [];
-    const answerMap = new Map(
-      answers.map((a) => [a.question_number, a]),
-    );
-
-    // consults_v2 → QuestionEvalV2Real 변환
-    const evaluations: QuestionEvalV2Real[] = consultsRes.data.map((e) => {
-      const qMeta = qMap.get(e.question_id);
-      const answer = answerMap.get(e.question_number);
-      const pron = answer?.pronunciation_assessment as Record<string, number> | null;
-
-      return {
-        question_number: e.question_number,
-        question_title: qMeta?.question_short || `Q${e.question_number}`,
-        question_type: e.question_type,
-        target_grade: e.target_grade,
-        topic: qMeta?.topic || "",
-        category: qMeta?.category || "",
-        fulfillment: e.fulfillment as "fulfilled" | "partial" | "unfulfilled" | "skipped",
-        task_checklist: e.task_checklist as Array<{ item: string; pass: boolean; evidence?: string }>,
-        observation: e.observation,
-        directions: e.directions as string[],
-        weak_points: e.weak_points as Array<{ code: string; severity: "severe" | "moderate" | "mild"; reason: string; evidence: string }>,
-        audio_url: answer?.audio_url || "",
-        transcript: answer?.transcript || "",
-        speech_meta: {
-          duration_sec: answer?.audio_duration || 0,
-          wpm: answer?.wpm || 0,
-          word_count: answer?.word_count || 0,
-          accuracy_score: pron?.accuracy_score ?? null,
-          fluency_score: pron?.fluency_score ?? null,
-          prosody_score: pron?.prosody_score ?? null,
-          pause_count_3s_plus: answer?.long_pause_count || 0,
-        },
-      };
-    });
-
-    return {
-      data: {
-        target_grade: reportRes.data?.target_grade || consultsRes.data[0]?.target_grade || "IH",
-        session_grade: reportRes.data?.final_level || "IM2",
-        evaluations,
-      },
-    };
-  } catch (err) {
-    return { error: err instanceof Error ? err.message : String(err) };
-  }
-}
-
-// ============================================================
-// 5. v2 문항별 개별 평가 트리거 (triggerEvalV2)
-//    문항별로 eval-v2 EF를 fire-and-forget 개별 호출
-// ============================================================
-
-export async function triggerEvalV2(
-  sessionId: string,
-  options?: { target_grade?: string; model?: string },
-): Promise<ActionResult<{ status: string; triggered_count: number }>> {
-  try {
-    const { supabase, userId } = await requireUser();
-
-    // 소유자 확인
-    const { data: session } = await supabase
-      .from("mock_test_sessions")
-      .select("user_id, question_ids")
-      .eq("session_id", sessionId)
-      .eq("user_id", userId)
-      .single();
-    if (!session) {
-      return { error: "세션 접근 권한 없음" };
-    }
-
-    // v1 답변 조회 (Q2~ : Q1 자기소개 제외)
-    const { data: answers } = await supabase
-      .from("mock_test_answers")
-      .select("question_number, question_id, eval_status")
-      .eq("session_id", sessionId)
-      .gte("question_number", 2)
-      .order("question_number");
-
-    if (!answers || answers.length === 0) {
-      return { error: "평가 대상 답변 없음" };
-    }
-
-    // 이미 v2 평가된 문항 확인 (재실행 시 덮어씀)
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-    // 문항별 병렬 fire-and-forget 호출
-    const evalPromises = answers.map((answer) =>
-      fetch(`${supabaseUrl}/functions/v1/mock-test-eval`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${serviceKey}`,
-        },
-        body: JSON.stringify({
-          session_id: sessionId,
-          question_number: answer.question_number,
-          target_grade: options?.target_grade,
-          model: options?.model,
-        }),
-      }).catch((err) => {
-        console.error(
-          `[triggerEvalV2] Q${answer.question_number} EF 호출 실패:`,
-          err,
-        );
-      })
-    );
-    // 모든 EF 호출이 네트워크에 발사될 때까지 대기 (응답은 기다리지 않음)
-    Promise.allSettled(evalPromises);
-    const triggeredCount = answers.length;
-
-    console.log(
-      `[triggerEvalV2] ${sessionId}: ${triggeredCount}개 문항 eval-v2 트리거`,
-    );
-
-    return { data: { status: "triggered", triggered_count: triggeredCount } };
-  } catch (err) {
-    return { error: err instanceof Error ? err.message : String(err) };
-  }
-}
-
-// ============================================================
-// 6. v2 리포트 생성 트리거 (triggerReportV2)
-// ============================================================
-
-export async function triggerReportV2(
-  sessionId: string,
-): Promise<ActionResult<{ status: string }>> {
-  try {
-    const { supabase, userId } = await requireUser();
-
-    // 소유자 확인
-    const { data: session } = await supabase
-      .from("mock_test_sessions")
-      .select("user_id")
-      .eq("session_id", sessionId)
-      .eq("user_id", userId)
-      .single();
-    if (!session) {
-      return { error: "세션 접근 권한 없음" };
-    }
-
-    // v2 report 이미 완료 확인
-    const { data: existingReport } = await supabase
-      .from("mock_test_reports")
-      .select("status")
-      .eq("session_id", sessionId)
-      .single();
-
-    if (existingReport?.status === "completed") {
-      return { data: { status: "already_completed" } };
-    }
-
-    // v2 eval 존재 확인
-    const { count } = await supabase
-      .from("mock_test_evaluations")
-      .select("id", { count: "exact", head: true })
-      .eq("session_id", sessionId);
-
-    if (!count || count === 0) {
-      return { error: "v2 문항별 평가 미완성 — eval-v2 EF 실행 필요" };
-    }
-
-    // report-v2 EF 호출 (fire-and-forget)
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-    fetch(`${supabaseUrl}/functions/v1/mock-test-report`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${serviceKey}`,
-      },
-      body: JSON.stringify({ session_id: sessionId }),
-    }).catch((err) => {
-      console.error("[triggerReportV2] EF 호출 실패:", err);
-    });
-
-    return { data: { status: "triggered" } };
-  } catch (err) {
-    return { error: err instanceof Error ? err.message : String(err) };
-  }
-}
-
-// ============================================================
-// 7. 성장리포트 데이터 (getGrowthData)
-// ============================================================
+type SessionOwnerRow = {
+  user_id: string;
+};
 
 const GRADE_ORDER = ["NL", "NM", "NH", "IL", "IM1", "IM2", "IM3", "IH", "AL"];
 
@@ -407,29 +45,355 @@ const TYPE_LABEL_MAP: Record<string, string> = {
   description: "묘사",
   routine: "루틴",
   comparison: "비교",
-  past_childhood: "경험·처음",
+  past_childhood: "경험·어린 시절",
   past_recent: "경험·최근",
   past_special: "경험·특별",
   rp_11: "질문하기",
-  rp_12: "대안제시",
+  rp_12: "대안 제시",
   adv_14: "비교·변화",
-  adv_15: "사회이슈",
+  adv_15: "사회 이슈",
 };
+
+async function requireViewer(): Promise<ViewerContext> {
+  const authSupabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await authSupabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const isAdmin = user.app_metadata?.role === "admin";
+  const supabase = isAdmin
+    ? createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      )
+    : authSupabase;
+
+  return {
+    supabase,
+    userId: user.id,
+    isAdmin,
+  };
+}
+
+async function requireSessionAccess<TSession extends Record<string, unknown>>(
+  sessionId: string,
+  columns: string,
+): Promise<SessionAccessResult<TSession>> {
+  const context = await requireViewer();
+
+  let query = context.supabase
+    .from("mock_test_sessions")
+    .select(columns)
+    .eq("session_id", sessionId);
+
+  if (!context.isAdmin) {
+    query = query.eq("user_id", context.userId);
+  }
+
+  const { data, error } = await query.single<TSession>();
+
+  if (error || !data) {
+    throw new Error("세션 접근 권한이 없습니다.");
+  }
+
+  return {
+    ...context,
+    session: data,
+  };
+}
+
+export async function getOverviewData(
+  sessionId: string,
+): Promise<ActionResult<OverviewData>> {
+  try {
+    const { supabase, session } = await requireSessionAccess<{
+      mode: "training" | "test";
+      started_at: string | null;
+      total_questions: number | null;
+    }>(sessionId, "mode, started_at, total_questions");
+
+    const { data: report, error } = await supabase
+      .from("mock_test_reports")
+      .select("final_level, overview")
+      .eq("session_id", sessionId)
+      .single();
+
+    if (error || !report) {
+      return { error: "데이터 조회에 실패했습니다." };
+    }
+
+    const overview = report.overview as OverviewV2 | null;
+    if (!overview) {
+      return { error: "종합 진단 데이터가 아직 생성되지 않았습니다." };
+    }
+
+    return {
+      data: {
+        session: {
+          session_id: sessionId,
+          grade: report.final_level || "IM2",
+          mode: session.mode,
+          date: session.started_at || "",
+          total_questions: session.total_questions || 15,
+        },
+        overall_comments: overview.overall_comments,
+        performance_summary: overview.performance_summary,
+      },
+    };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+export async function getDiagnosisData(
+  sessionId: string,
+): Promise<ActionResult<DiagnosisTransformOutput>> {
+  try {
+    const { supabase } = await requireSessionAccess<SessionOwnerRow>(sessionId, "user_id");
+
+    const { data: report, error } = await supabase
+      .from("mock_test_reports")
+      .select("aggregated_checkboxes, final_level")
+      .eq("session_id", sessionId)
+      .single();
+
+    if (error || !report) {
+      return { error: "리포트 조회에 실패했습니다." };
+    }
+
+    const aggregated = (report.aggregated_checkboxes || {}) as Record<
+      string,
+      Record<string, { final_pass?: boolean; pass?: boolean; evidence?: string }>
+    >;
+
+    const normalizeCheckboxes = (
+      raw: Record<string, { final_pass?: boolean; pass?: boolean; evidence?: string }> | undefined,
+    ): Record<string, { pass: boolean; evidence?: string }> => {
+      if (!raw) return {};
+
+      const normalized: Record<string, { pass: boolean; evidence?: string }> = {};
+      for (const [checkboxId, value] of Object.entries(raw)) {
+        normalized[checkboxId] = {
+          pass: value.final_pass ?? value.pass ?? false,
+          evidence: value.evidence,
+        };
+      }
+      return normalized;
+    };
+
+    const input: DiagnosisTransformInput = {
+      aggregated_int: normalizeCheckboxes(aggregated.int),
+      aggregated_adv: normalizeCheckboxes(aggregated.adv),
+      aggregated_al: normalizeCheckboxes(aggregated.al),
+      final_level: report.final_level || "IM2",
+    };
+
+    return {
+      data: transformDiagnosisData(input),
+    };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+export async function getQuestionsData(
+  sessionId: string,
+): Promise<ActionResult<QuestionsData>> {
+  try {
+    const { supabase } = await requireSessionAccess<SessionOwnerRow>(sessionId, "user_id");
+
+    const [consultsRes, reportRes] = await Promise.all([
+      supabase
+        .from("mock_test_consults")
+        .select("*")
+        .eq("session_id", sessionId)
+        .order("question_number"),
+      supabase
+        .from("mock_test_reports")
+        .select("final_level, target_grade")
+        .eq("session_id", sessionId)
+        .single(),
+    ]);
+
+    if (consultsRes.error || !consultsRes.data?.length) {
+      return { error: "문항별 코칭 데이터가 없습니다." };
+    }
+
+    const questionIds = consultsRes.data.map((consult) => consult.question_id);
+    const [questionsRes, answersRes] = await Promise.all([
+      supabase
+        .from("questions")
+        .select("id, question_short, question_type_eng, topic, category")
+        .in("id", questionIds),
+      supabase
+        .from("mock_test_answers")
+        .select("*")
+        .eq("session_id", sessionId)
+        .order("question_number"),
+    ]);
+
+    const questionMap = new Map((questionsRes.data || []).map((question) => [question.id, question]));
+    const answerMap = new Map((answersRes.data || []).map((answer) => [answer.question_number, answer]));
+
+    const evaluations: QuestionEvalV2Real[] = consultsRes.data.map((consult) => {
+      const questionMeta = questionMap.get(consult.question_id);
+      const answer = answerMap.get(consult.question_number);
+      const pronunciation = (answer?.pronunciation_assessment || null) as Record<string, number> | null;
+
+      return {
+        question_number: consult.question_number,
+        question_title: questionMeta?.question_short || `Q${consult.question_number}`,
+        question_type: consult.question_type,
+        target_grade: consult.target_grade,
+        topic: questionMeta?.topic || "",
+        category: questionMeta?.category || "",
+        fulfillment: consult.fulfillment as "fulfilled" | "partial" | "unfulfilled" | "skipped",
+        task_checklist: consult.task_checklist as Array<{ item: string; pass: boolean; evidence?: string }>,
+        observation: consult.observation,
+        directions: consult.directions as string[],
+        weak_points: consult.weak_points as Array<{
+          code: string;
+          severity: "severe" | "moderate" | "mild";
+          reason: string;
+          evidence: string;
+        }>,
+        audio_url: answer?.audio_url || "",
+        transcript: answer?.transcript || "",
+        speech_meta: {
+          duration_sec: answer?.audio_duration || 0,
+          wpm: answer?.wpm || 0,
+          word_count: answer?.word_count || 0,
+          accuracy_score: pronunciation?.accuracy_score ?? null,
+          fluency_score: pronunciation?.fluency_score ?? null,
+          prosody_score: pronunciation?.prosody_score ?? null,
+          pause_count_3s_plus: answer?.long_pause_count || 0,
+        },
+      };
+    });
+
+    return {
+      data: {
+        target_grade: reportRes.data?.target_grade || consultsRes.data[0]?.target_grade || "IH",
+        session_grade: reportRes.data?.final_level || "IM2",
+        evaluations,
+      },
+    };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+export async function triggerEvalV2(
+  sessionId: string,
+  options?: { target_grade?: string; model?: string },
+): Promise<ActionResult<{ status: string; triggered_count: number }>> {
+  try {
+    const { supabase } = await requireSessionAccess<SessionOwnerRow>(sessionId, "user_id");
+
+    const { data: answers } = await supabase
+      .from("mock_test_answers")
+      .select("question_number, question_id, eval_status")
+      .eq("session_id", sessionId)
+      .gte("question_number", 2)
+      .order("question_number");
+
+    if (!answers?.length) {
+      return { error: "평가 대상 답변이 없습니다." };
+    }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+    const evalPromises = answers.map((answer) =>
+      fetch(`${supabaseUrl}/functions/v1/mock-test-eval`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({
+          session_id: sessionId,
+          question_number: answer.question_number,
+          target_grade: options?.target_grade,
+          model: options?.model,
+        }),
+      }).catch((error) => {
+        console.error(`[triggerEvalV2] Q${answer.question_number} 호출 실패:`, error);
+      }),
+    );
+
+    Promise.allSettled(evalPromises);
+
+    return {
+      data: {
+        status: "triggered",
+        triggered_count: answers.length,
+      },
+    };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+export async function triggerReportV2(
+  sessionId: string,
+): Promise<ActionResult<{ status: string }>> {
+  try {
+    const { supabase } = await requireSessionAccess<SessionOwnerRow>(sessionId, "user_id");
+
+    const { data: existingReport } = await supabase
+      .from("mock_test_reports")
+      .select("status")
+      .eq("session_id", sessionId)
+      .single();
+
+    if (existingReport?.status === "completed") {
+      return { data: { status: "already_completed" } };
+    }
+
+    const { count } = await supabase
+      .from("mock_test_evaluations")
+      .select("id", { count: "exact", head: true })
+      .eq("session_id", sessionId);
+
+    if (!count) {
+      return { error: "문항별 평가가 아직 생성되지 않았습니다." };
+    }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+    fetch(`${supabaseUrl}/functions/v1/mock-test-report`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({ session_id: sessionId }),
+    }).catch((error) => {
+      console.error("[triggerReportV2] 호출 실패:", error);
+    });
+
+    return { data: { status: "triggered" } };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+}
 
 export async function getGrowthData(
   sessionId: string,
 ): Promise<ActionResult<GrowthReportV2>> {
   try {
-    const { supabase, userId } = await requireUser();
+    const { supabase, session } = await requireSessionAccess<{
+      user_id: string;
+      started_at: string | null;
+    }>(sessionId, "user_id, started_at");
 
-    // 소유자 확인 + 현재 리포트 + 전체 이력 병렬 조회
-    const [sessionRes, reportRes, allReportsRes] = await Promise.all([
-      supabase
-        .from("mock_test_sessions")
-        .select("user_id, started_at")
-        .eq("session_id", sessionId)
-        .eq("user_id", userId)
-        .single(),
+    const [reportRes, allReportsRes] = await Promise.all([
       supabase
         .from("mock_test_reports")
         .select("final_level, target_grade, growth")
@@ -438,53 +402,59 @@ export async function getGrowthData(
       supabase
         .from("mock_test_reports")
         .select("session_id, final_level, completed_at")
-        .eq("user_id", userId)
+        .eq("user_id", session.user_id)
         .eq("status", "completed")
         .order("completed_at"),
     ]);
 
-    const session = sessionRes.data;
     const report = reportRes.data;
-    const allReports = allReportsRes.data;
+    const allReports = allReportsRes.data || [];
 
-    if (!session) return { error: "세션 접근 권한 없음" };
-    if (!report?.growth) return { error: "성장 분석 데이터 미생성" };
+    if (!report?.growth) {
+      return { error: "성장 분석 데이터가 아직 생성되지 않았습니다." };
+    }
 
     const growth = report.growth as {
       improvements: Array<{ area: string; detail: string; evidence_questions: number[] }>;
       weaknesses: Array<{ area: string; detail: string; severity: string; wp_codes: string[] }>;
-      type_comparison: Array<{ type: string; type_ko: string; status: string; comment: string; fulfillment_rate: number }>;
+      type_comparison: Array<{
+        type: string;
+        type_ko: string;
+        status: string;
+        comment: string;
+        fulfillment_rate: number;
+      }>;
       bottleneck_summary: string;
     };
 
-    const gradeHistory: GradeHistoryItem[] = (allReports || []).map((r, i) => ({
-      session_count: i + 1,
-      grade: r.final_level || "IM1",
-      date: r.completed_at || "",
+    const gradeHistory: GradeHistoryItem[] = allReports.map((history, index) => ({
+      session_count: index + 1,
+      grade: history.final_level || "IM1",
+      date: history.completed_at || "",
     }));
 
     const currentSessionCount = gradeHistory.length;
-
-    // 이전 세션 찾기
-    const prevReport = (allReports || [])
-      .filter((r) => r.session_id !== sessionId && (r.completed_at || "") < (session.started_at || ""))
+    const previousReport = allReports
+      .filter(
+        (history) =>
+          history.session_id !== sessionId &&
+          (history.completed_at || "") < (session.started_at || ""),
+      )
       .pop();
 
-    // 1회차면 성장 분석 불가 — null 반환
-    if (!prevReport) {
-      return { error: "첫 번째 시험입니다. 다음 시험 후 성장 분석이 제공됩니다." };
+    if (!previousReport) {
+      return { error: "첫 응시입니다. 다음 응시부터 성장 분석을 제공합니다." };
     }
 
     const currentGrade = report.final_level || "IM2";
-    const prevGrade = prevReport.final_level || currentGrade;
-    const diff = GRADE_ORDER.indexOf(currentGrade) - GRADE_ORDER.indexOf(prevGrade);
+    const previousGrade = previousReport.final_level || currentGrade;
+    const diff = GRADE_ORDER.indexOf(currentGrade) - GRADE_ORDER.indexOf(previousGrade);
 
-    // DB growth → UI GrowthReportV2 변환
     const result: GrowthReportV2 = {
       previous_session: {
-        session_id: prevReport?.session_id || "",
-        grade: prevGrade,
-        date: prevReport?.completed_at || "",
+        session_id: previousReport.session_id || "",
+        grade: previousGrade,
+        date: previousReport.completed_at || "",
         session_count: Math.max(currentSessionCount - 1, 1),
       },
       current_session: {
@@ -496,38 +466,34 @@ export async function getGrowthData(
       target_grade: report.target_grade || "IH",
       grade_history: gradeHistory,
       grade_change: {
-        previous: prevGrade,
+        previous: previousGrade,
         current: currentGrade,
         diff,
       },
-      // DB: [{area, detail}] → UI: string[]
-      improvements: growth.improvements.map((i) => i.detail),
-      weaknesses: growth.weaknesses.map((w) => w.detail),
-      // DB: [{type, type_ko, status, comment, fulfillment_rate}] → UI 형식
-      type_comparison: growth.type_comparison.map((tc) => {
-        const rate = tc.fulfillment_rate;
-        const met = Math.round(rate * 5);
-        const status = TYPE_STATUS_MAP[tc.status] || "maintained";
+      improvements: growth.improvements.map((item) => item.detail),
+      weaknesses: growth.weaknesses.map((item) => item.detail),
+      type_comparison: growth.type_comparison.map((comparison) => {
+        const rate = comparison.fulfillment_rate;
+        const status = TYPE_STATUS_MAP[comparison.status] || "maintained";
         return {
-          type: tc.type,
-          type_label: TYPE_LABEL_MAP[tc.type] || tc.type_ko || tc.type,
+          type: comparison.type,
+          type_label:
+            TYPE_LABEL_MAP[comparison.type] || comparison.type_ko || comparison.type,
           status,
-          criteria_met: met,
+          criteria_met: Math.round(rate * 5),
           criteria_total: 5,
-          change_observation: tc.comment,
-          remaining: status === "reached"
-            ? "목표 등급 수준에 도달하였습니다."
-            : `충족률 ${Math.round(rate * 100)}% — 추가 개선이 필요합니다.`,
+          change_observation: comparison.comment,
+          remaining:
+            status === "reached"
+              ? "목표 등급 요구를 충분히 충족했습니다."
+              : `충족률 ${Math.round(rate * 100)}%로 추가 개선이 필요합니다.`,
         };
       }),
-      focus_point: {
-        area_label: growth.weaknesses[0]?.area || "종합",
-        observation: growth.bottleneck_summary,
-      },
+      bottleneck_summary: growth.bottleneck_summary,
     };
 
     return { data: result };
-  } catch (err) {
-    return { error: err instanceof Error ? err.message : String(err) };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) };
   }
 }

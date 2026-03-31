@@ -1,19 +1,3 @@
-/**
- * mock-test-report — Stage C: 종합 리포트 Edge Function
- *
- * 역할: 14개 문항 결과를 집계하여 등급 판정 + 종합 소견 + 성장 분석 생성
- *
- * 데이터 소스:
- * - evaluations: 체크박스 (eval가 저장)
- * - consults: 소견/방향/약점 (consult가 저장)
- * - answers: 발화 메타 (V1 process가 저장)
- *
- * 프롬프트: evaluation_prompts (CO-STAR, DB 로드)
- * API: OpenAI Chat Completions API
- *
- * 출력: overview + growth + final_level → mock_test_reports에 저장
- */
-
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   runRuleEngine,
@@ -27,7 +11,9 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
 
-const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "https://haruopic.com,http://localhost:3001").split(",");
+const ALLOWED_ORIGINS = (
+  Deno.env.get("ALLOWED_ORIGINS") || "https://haruopic.com,http://localhost:3001"
+).split(",");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": ALLOWED_ORIGINS[0],
@@ -35,46 +21,81 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// ── question_type 한글 매핑 ──
-
 const QUESTION_TYPE_KO: Record<string, string> = {
   description: "묘사",
   routine: "루틴",
   comparison: "비교",
-  past_childhood: "경험 (어린 시절)",
-  past_special: "경험 (특별한)",
-  past_recent: "경험 (최근)",
-  rp_11: "롤플레이 (질문하기)",
-  rp_12: "롤플레이 (대안 제시)",
+  past_childhood: "경험(어린 시절)",
+  past_special: "경험(특별한 경험)",
+  past_recent: "경험(최근 경험)",
+  rp_11: "롤플레이(질문하기)",
+  rp_12: "롤플레이(대안 제시)",
   adv_14: "비교·변화",
-  adv_15: "사회적 이슈",
+  adv_15: "사회 이슈",
 };
 
-// ── 유틸리티 ──
+type PromptRow = {
+  key: string;
+  prompt_text: string;
+};
+
+type EvalRow = {
+  question_number: number;
+  question_type: string;
+  checkboxes: Record<string, CheckboxResult> | null;
+  checkbox_type: "INT" | "ADV" | "AL" | null;
+  skipped_by_preprocess: boolean | null;
+};
+
+type ConsultWeakPoint = {
+  code: string;
+  severity: string;
+};
+
+type ConsultChecklistItem = {
+  pass: boolean;
+};
+
+type ConsultRow = {
+  question_number: number;
+  question_type: string;
+  fulfillment: "fulfilled" | "partial" | "unfulfilled" | "skipped";
+  task_checklist: ConsultChecklistItem[] | null;
+  observation: string | null;
+  weak_points: ConsultWeakPoint[] | null;
+  skipped_by_preprocess: boolean | null;
+};
+
+type AnswerRow = {
+  question_number: number;
+  audio_duration: number | null;
+  word_count: number | null;
+  wpm: number | null;
+  filler_word_count: number | null;
+  pronunciation_assessment: Record<string, number> | null;
+};
 
 async function withRetry<T>(
   fn: () => Promise<T>,
-  maxRetries: number = 2,
-  label: string = "",
+  maxRetries = 2,
+  label = "",
 ): Promise<T> {
   let lastError: Error | null = null;
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err));
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
       if (attempt < maxRetries) {
-        const delay = Math.pow(2, attempt) * 1000;
-        console.error(
-          `[${label}] 재시도 ${attempt + 1}/${maxRetries}, ${delay}ms 후...`,
-        );
-        await new Promise((r) => setTimeout(r, delay));
+        const delayMs = Math.pow(2, attempt) * 1000;
+        console.error(`[${label}] retry ${attempt + 1}/${maxRetries} after ${delayMs}ms`);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
     }
   }
-  throw new Error(
-    `${label} ${maxRetries + 1}회 시도 후 실패: ${lastError?.message}`,
-  );
+
+  throw new Error(`${label} failed after ${maxRetries + 1} attempts: ${lastError?.message}`);
 }
 
 function substituteVariables(
@@ -88,15 +109,13 @@ function substituteVariables(
   return result;
 }
 
-// ── Chat Completions API 호출 ──
-
 async function callGpt<T>(
   systemPrompt: string,
   userPrompt: string,
   responseFormat: Record<string, unknown>,
   model: string,
 ): Promise<{ result: T; tokensUsed: number }> {
-  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -114,19 +133,48 @@ async function callGpt<T>(
     }),
   });
 
-  if (!resp.ok) {
-    const errText = await resp.text();
-    throw new Error(`Chat Completions API 실패 (${resp.status}): ${errText}`);
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Chat Completions API failed (${response.status}): ${errorText}`);
   }
 
-  const json = await resp.json();
+  const json = await response.json();
   const content = json.choices?.[0]?.message?.content || "{}";
   const tokensUsed = json.usage?.total_tokens || 0;
 
-  return { result: JSON.parse(content) as T, tokensUsed };
+  return {
+    result: JSON.parse(content) as T,
+    tokensUsed,
+  };
 }
 
-// ── 메인 핸들러 ──
+async function markReportFailed(
+  sessionId: string,
+  userId: string | null,
+  message: string,
+) {
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+  await Promise.all([
+    supabase
+      .from("mock_test_reports")
+      .upsert(
+        {
+          session_id: sessionId,
+          ...(userId ? { user_id: userId } : {}),
+          status: "failed",
+        },
+        { onConflict: "session_id" },
+      ),
+    supabase
+      .from("mock_test_sessions")
+      .update({
+        holistic_status: "failed",
+        report_error: message,
+      })
+      .eq("session_id", sessionId),
+  ]);
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -134,20 +182,21 @@ Deno.serve(async (req: Request) => {
   }
 
   const startTime = Date.now();
+  let sessionIdForFailure: string | null = null;
+  let userIdForFailure: string | null = null;
 
   try {
     const body = await req.json();
-    const {
-      session_id,
-      model = "gpt-4.1",
-    } = body as {
+    const { session_id, model = "gpt-4.1" } = body as {
       session_id: string;
       model?: string;
     };
 
+    sessionIdForFailure = session_id ?? null;
+
     if (!session_id) {
       return new Response(
-        JSON.stringify({ error: "session_id 필수" }),
+        JSON.stringify({ error: "session_id is required" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -159,42 +208,35 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // ── 1. 병렬 DB 로드 ──
-
     const [sessionRes, evalsRes, consultsRes, answersRes, promptsRes] =
       await Promise.all([
-        // 세션 정보
         supabase
           .from("mock_test_sessions")
           .select("user_id, mode, started_at")
           .eq("session_id", session_id)
           .single(),
-        // 체크박스 (evaluations)
         supabase
           .from("mock_test_evaluations")
           .select(
-            "question_number, question_type, checkboxes, checkbox_type, pass_count, fail_count, pass_rate, skipped_by_preprocess",
+            "question_number, question_type, checkboxes, checkbox_type, skipped_by_preprocess",
           )
           .eq("session_id", session_id)
           .order("question_number"),
-        // 소견 (consults)
         supabase
           .from("mock_test_consults")
           .select(
-            "question_number, question_type, target_grade, fulfillment, task_checklist, observation, directions, weak_points, skipped_by_preprocess",
+            "question_number, question_type, fulfillment, task_checklist, observation, weak_points, skipped_by_preprocess",
           )
           .eq("session_id", session_id)
           .order("question_number"),
-        // 발화 메타 (answers)
         supabase
           .from("mock_test_answers")
           .select(
-            "question_number, audio_duration, word_count, wpm, filler_word_count, filler_ratio, pronunciation_assessment",
+            "question_number, audio_duration, word_count, wpm, filler_word_count, pronunciation_assessment",
           )
           .eq("session_id", session_id)
           .gte("question_number", 2)
           .order("question_number"),
-        // 프롬프트 6행
         supabase
           .from("evaluation_prompts")
           .select("key, prompt_text")
@@ -208,80 +250,88 @@ Deno.serve(async (req: Request) => {
           ]),
       ]);
 
-    if (sessionRes.error || !sessionRes.data)
+    if (sessionRes.error || !sessionRes.data) {
       throw new Error(`세션 조회 실패: ${sessionRes.error?.message}`);
-    if (evalsRes.error || !evalsRes.data || evalsRes.data.length === 0)
+    }
+    if (evalsRes.error || !evalsRes.data || evalsRes.data.length === 0) {
       throw new Error(`체크박스 조회 실패: ${evalsRes.error?.message || "데이터 없음"}`);
-    if (consultsRes.error || !consultsRes.data || consultsRes.data.length === 0)
-      throw new Error(`소견 조회 실패: ${consultsRes.error?.message || "데이터 없음"}`);
-    if (promptsRes.error || !promptsRes.data || promptsRes.data.length < 6)
-      throw new Error(`프롬프트 로드 실패: ${promptsRes.error?.message || "6행 미만"}`);
+    }
+    if (consultsRes.error || !consultsRes.data || consultsRes.data.length === 0) {
+      throw new Error(`코칭 조회 실패: ${consultsRes.error?.message || "데이터 없음"}`);
+    }
+    if (promptsRes.error || !promptsRes.data || promptsRes.data.length < 6) {
+      throw new Error(`프롬프트 로드 실패: ${promptsRes.error?.message || "6개 미만"}`);
+    }
 
-    const userId = sessionRes.data.user_id;
-    const evals = evalsRes.data;
-    const consults = consultsRes.data;
-    const answers = answersRes.data || [];
-    const pm: Record<string, string> = {};
-    for (const row of promptsRes.data) pm[row.key] = row.prompt_text;
+    const session = sessionRes.data;
+    const userId = session.user_id;
+    userIdForFailure = userId;
+    const evals = (evalsRes.data || []) as EvalRow[];
+    const consults = (consultsRes.data || []) as ConsultRow[];
+    const answers = ((answersRes.data || []) as AnswerRow[]);
+    const promptMap = Object.fromEntries(
+      ((promptsRes.data || []) as PromptRow[]).map((row) => [row.key, row.prompt_text]),
+    );
 
-    // ── 2. Rule Engine 등급 판정 ──
-
-    const answerMap = new Map(answers.map((a) => [a.question_number, a]));
-
-    // inputs 검증: 빈 체크박스, 알 수 없는 question_type 필터링
+    const answerMap = new Map(answers.map((answer) => [answer.question_number, answer]));
     const validQuestionTypes = new Set([
-      "description", "routine", "comparison",
-      "past_childhood", "past_special", "past_recent",
-      "rp_11", "rp_12", "adv_14", "adv_15",
+      "description",
+      "routine",
+      "comparison",
+      "past_childhood",
+      "past_special",
+      "past_recent",
+      "rp_11",
+      "rp_12",
+      "adv_14",
+      "adv_15",
     ]);
 
     const ruleEngineInputs: EvaluationInput[] = evals
-      .filter((e) => {
-        if (!e.checkboxes || Object.keys(e.checkboxes).length === 0) {
-          console.warn(`[report] Q${e.question_number}: 체크박스 데이터 없음 — Rule Engine 입력에서 제외`);
+      .filter((evaluation) => {
+        if (!evaluation.checkboxes || Object.keys(evaluation.checkboxes).length === 0) {
+          console.warn(
+            `[report] Q${evaluation.question_number}: checkboxes missing, skip from rule engine`,
+          );
           return false;
         }
-        if (!validQuestionTypes.has(e.question_type)) {
-          console.warn(`[report] Q${e.question_number}: 알 수 없는 question_type "${e.question_type}" — 제외`);
+        if (!validQuestionTypes.has(evaluation.question_type)) {
+          console.warn(
+            `[report] Q${evaluation.question_number}: unknown question_type "${evaluation.question_type}"`,
+          );
           return false;
         }
         return true;
       })
-      .map((e) => {
-        const a = answerMap.get(e.question_number);
-        const pron = (a?.pronunciation_assessment || {}) as Record<string, number>;
+      .map((evaluation) => {
+        const answer = answerMap.get(evaluation.question_number);
+        const pronunciation = answer?.pronunciation_assessment || {};
         return {
-          question_number: e.question_number,
-          question_type: e.question_type,
-          checkbox_type: (e.checkbox_type || "INT") as "INT" | "ADV" | "AL",
-          checkboxes: (e.checkboxes || {}) as Record<string, CheckboxResult>,
-          skipped: e.skipped_by_preprocess || false,
-          pronunciation_assessment: pron.accuracy_score
+          question_number: evaluation.question_number,
+          question_type: evaluation.question_type,
+          checkbox_type: (evaluation.checkbox_type || "INT") as "INT" | "ADV" | "AL",
+          checkboxes: evaluation.checkboxes || {},
+          skipped: evaluation.skipped_by_preprocess || false,
+          pronunciation_assessment: pronunciation.accuracy_score
             ? {
-                accuracy_score: pron.accuracy_score,
-                prosody_score: pron.prosody_score || 0,
-                fluency_score: pron.fluency_score || 0,
+                accuracy_score: pronunciation.accuracy_score,
+                prosody_score: pronunciation.prosody_score || 0,
+                fluency_score: pronunciation.fluency_score || 0,
               }
             : null,
         };
       });
 
     if (ruleEngineInputs.length === 0) {
-      console.error("[report] Rule Engine 입력이 0개 — 평가 데이터 비정상");
-      await supabase
-        .from("mock_test_reports")
-        .upsert(
-          {
-            session_id,
-            user_id: userId,
-            status: "failed",
-            error_message: "Rule Engine 입력 데이터 없음 (체크박스 미완료)",
-          },
-          { onConflict: "session_id" },
-        );
+      const message = "Rule Engine 입력 데이터가 없습니다.";
+      console.error(`[report] ${message}`);
+      await markReportFailed(session_id, userId, message);
       return new Response(
-        JSON.stringify({ error: "평가 데이터 비정상 — 체크박스 미완료" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({ error: message }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
@@ -296,53 +346,61 @@ Deno.serve(async (req: Request) => {
           `(INT=${(ruleEngineResult.int_pass_rate * 100).toFixed(0)}%, ` +
           `ADV=${(ruleEngineResult.adv_pass_rate * 100).toFixed(0)}%)`,
       );
-    } catch (reErr) {
-      const errMsg = reErr instanceof Error ? reErr.message : String(reErr);
-      console.error("[report] Rule Engine 실패:", errMsg);
-      await supabase
-        .from("mock_test_reports")
-        .upsert(
-          {
-            session_id,
-            user_id: userId,
-            status: "failed",
-            error_message: `Rule Engine 실패: ${errMsg}`,
-          },
-          { onConflict: "session_id" },
-        );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("[report] Rule Engine 실패:", message);
+      await markReportFailed(session_id, userId, `Rule Engine 실패: ${message}`);
       return new Response(
-        JSON.stringify({ error: `Rule Engine 실패: ${errMsg}` }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({ error: `Rule Engine 실패: ${message}` }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
-    // ── 3. 상태: processing ──
-
-    await supabase
+    const { error: processingError } = await supabase
       .from("mock_test_reports")
       .upsert(
-        { session_id, user_id: userId, status: "processing" },
+        {
+          session_id,
+          user_id: userId,
+          status: "processing",
+        },
         { onConflict: "session_id" },
       );
 
-    // ── 4. GPT 입력 데이터 구성 ──
+    if (processingError) {
+      throw new Error(`report processing 상태 저장 실패: ${processingError.message}`);
+    }
 
-    // 목표 등급: 사용자 프로필(user_metadata)에서 직접 조회 (SSOT)
+    await supabase
+      .from("mock_test_sessions")
+      .update({
+        holistic_status: "processing",
+        report_error: null,
+      })
+      .eq("session_id", session_id);
+
     const { data: authUser } = await supabase.auth.admin.getUserById(session.user_id);
-    const target_grade = (authUser?.user?.user_metadata?.target_grade as string) || "IH";
+    const targetGrade = (authUser?.user?.user_metadata?.target_grade as string) || "IH";
 
-    // 발화 통계 집계
-    let totalDuration = 0, totalWords = 0, totalFillers = 0;
-    let pronSum = 0, fluencySum = 0, pronCount = 0;
-    for (const a of answers) {
-      totalDuration += Number(a.audio_duration || 0);
-      totalWords += a.word_count || 0;
-      totalFillers += a.filler_word_count || 0;
-      const pron = (a.pronunciation_assessment || {}) as Record<string, number>;
-      if (pron.accuracy_score) {
-        pronSum += pron.accuracy_score;
-        fluencySum += pron.fluency_score || 0;
-        pronCount++;
+    let totalDuration = 0;
+    let totalWords = 0;
+    let totalFillers = 0;
+    let accuracySum = 0;
+    let fluencySum = 0;
+    let pronunciationCount = 0;
+
+    for (const answer of answers) {
+      totalDuration += Number(answer.audio_duration || 0);
+      totalWords += answer.word_count || 0;
+      totalFillers += answer.filler_word_count || 0;
+      const pronunciation = answer.pronunciation_assessment || {};
+      if (pronunciation.accuracy_score) {
+        accuracySum += pronunciation.accuracy_score;
+        fluencySum += pronunciation.fluency_score || 0;
+        pronunciationCount += 1;
       }
     }
 
@@ -350,79 +408,92 @@ Deno.serve(async (req: Request) => {
       `평균 WPM: ${totalDuration > 0 ? Math.round(totalWords / (totalDuration / 60)) : 0}`,
       `총 발화 시간: ${Math.round(totalDuration)}초`,
       `총 단어 수: ${totalWords}`,
-      `발음 평균: ${pronCount > 0 ? (pronSum / pronCount).toFixed(1) : "N/A"}`,
-      `유창성 평균: ${pronCount > 0 ? (fluencySum / pronCount).toFixed(1) : "N/A"}`,
+      `총 필러 수: ${totalFillers}`,
+      `발음 평균: ${pronunciationCount > 0 ? (accuracySum / pronunciationCount).toFixed(1) : "N/A"}`,
+      `유창성 평균: ${pronunciationCount > 0 ? (fluencySum / pronunciationCount).toFixed(1) : "N/A"}`,
     ].join("\n");
 
-    // 유형별 충족 집계 (consults 기반)
-    const typeStats: Record<string, { total: number; fulfilled: number; partial: number; unfulfilled: number; skipped: number }> = {};
-    for (const c of consults) {
-      if (!typeStats[c.question_type])
-        typeStats[c.question_type] = { total: 0, fulfilled: 0, partial: 0, unfulfilled: 0, skipped: 0 };
-      typeStats[c.question_type].total++;
-      const f = c.fulfillment as "fulfilled" | "partial" | "unfulfilled" | "skipped";
-      if (typeStats[c.question_type][f] !== undefined) typeStats[c.question_type][f]++;
+    const typeStats: Record<
+      string,
+      { total: number; fulfilled: number; partial: number; unfulfilled: number; skipped: number }
+    > = {};
+
+    for (const consult of consults) {
+      if (!typeStats[consult.question_type]) {
+        typeStats[consult.question_type] = {
+          total: 0,
+          fulfilled: 0,
+          partial: 0,
+          unfulfilled: 0,
+          skipped: 0,
+        };
+      }
+
+      const stats = typeStats[consult.question_type];
+      stats.total += 1;
+      stats[consult.fulfillment] += 1;
     }
 
     const typeFulfillment = Object.entries(typeStats)
-      .map(([type, s]) => {
-        const ko = QUESTION_TYPE_KO[type] || type;
-        const rate = s.total > 0 ? Math.round((s.fulfilled / s.total) * 100) : 0;
-        return `${ko}(${type}): 총${s.total}문항, fulfilled=${s.fulfilled}, partial=${s.partial}, unfulfilled=${s.unfulfilled}, skipped=${s.skipped}, 충족률=${rate}%`;
+      .map(([questionType, stats]) => {
+        const label = QUESTION_TYPE_KO[questionType] || questionType;
+        const rate = stats.total > 0 ? Math.round((stats.fulfilled / stats.total) * 100) : 0;
+        return `${label}(${questionType}): 총 ${stats.total}문항, fulfilled=${stats.fulfilled}, partial=${stats.partial}, unfulfilled=${stats.unfulfilled}, skipped=${stats.skipped}, 충족률=${rate}%`;
       })
       .join("\n");
 
-    // WP 빈도 집계 (consults 기반)
-    const wpFreq: Record<string, number> = {};
-    for (const c of consults) {
-      for (const wp of (c.weak_points as Array<{ code: string }>)) {
-        wpFreq[wp.code] = (wpFreq[wp.code] || 0) + 1;
+    const weakPointFrequency: Record<string, number> = {};
+    for (const consult of consults) {
+      for (const weakPoint of consult.weak_points || []) {
+        weakPointFrequency[weakPoint.code] = (weakPointFrequency[weakPoint.code] || 0) + 1;
       }
     }
-    const wpFrequency = Object.entries(wpFreq)
-      .sort(([, a], [, b]) => b - a)
+
+    const wpFrequency = Object.entries(weakPointFrequency)
+      .sort(([, left], [, right]) => right - left)
       .slice(0, 10)
-      .map(([code, freq]) => `${code}: ${freq}회`)
+      .map(([code, count]) => `${code}: ${count}회`)
       .join("\n");
 
-    // 문항별 평가 요약 (consults 기반)
     const questionEvaluations = consults
-      .map((c) => {
-        const ko = QUESTION_TYPE_KO[c.question_type] || c.question_type;
-        const wpCodes = (c.weak_points as Array<{ code: string; severity: string }>)
-          .map((wp) => `${wp.code}(${wp.severity})`)
+      .map((consult) => {
+        const label = QUESTION_TYPE_KO[consult.question_type] || consult.question_type;
+        const weakPoints = (consult.weak_points || [])
+          .map((weakPoint) => `${weakPoint.code}(${weakPoint.severity})`)
           .join(", ");
-        const checklistPassed = (c.task_checklist as Array<{ pass: boolean }>).filter((t) => t.pass).length;
-        const checklistTotal = (c.task_checklist as Array<{ pass: boolean }>).length;
-        const a = answerMap.get(c.question_number);
+        const checklistPassed = (consult.task_checklist || []).filter((item) => item.pass).length;
+        const checklistTotal = (consult.task_checklist || []).length;
+        const answer = answerMap.get(consult.question_number);
+
         return [
-          `Q${c.question_number} [${ko}/${c.question_type}]`,
-          `  fulfillment: ${c.fulfillment}`,
+          `Q${consult.question_number} [${label}/${consult.question_type}]`,
+          `  fulfillment: ${consult.fulfillment}`,
           `  checklist: ${checklistPassed}/${checklistTotal} 충족`,
-          `  observation: ${(c.observation as string).slice(0, 200)}`,
-          wpCodes ? `  weak_points: ${wpCodes}` : "",
-          a ? `  wpm: ${a.wpm}, duration: ${a.audio_duration}s` : "",
-          c.skipped_by_preprocess ? "  (무응답)" : "",
+          `  observation: ${(consult.observation || "").slice(0, 200)}`,
+          weakPoints ? `  weak_points: ${weakPoints}` : "",
+          answer ? `  wpm: ${answer.wpm}, duration: ${answer.audio_duration}s` : "",
+          consult.skipped_by_preprocess ? "  (무응답/스킵 처리)" : "",
         ]
           .filter(Boolean)
           .join("\n");
       })
       .join("\n\n");
 
-    // 충족 현황 집계
-    const totalEvals = consults.length;
-    const fulfilledCount = consults.filter((c) => c.fulfillment === "fulfilled").length;
-    const partialCount = consults.filter((c) => c.fulfillment === "partial").length;
-    const unfulfilledCount = consults.filter((c) => c.fulfillment === "unfulfilled").length;
-    const skippedCount = consults.filter((c) => c.fulfillment === "skipped").length;
-    const fulfillmentSummary = `fulfilled=${fulfilledCount}, partial=${partialCount}, unfulfilled=${unfulfilledCount}, skipped=${skippedCount} (충족률 ${Math.round((fulfilledCount / totalEvals) * 100)}%)`;
+    const totalEvaluations = consults.length;
+    const fulfilledCount = consults.filter((consult) => consult.fulfillment === "fulfilled").length;
+    const partialCount = consults.filter((consult) => consult.fulfillment === "partial").length;
+    const unfulfilledCount = consults.filter((consult) => consult.fulfillment === "unfulfilled").length;
+    const skippedCount = consults.filter((consult) => consult.fulfillment === "skipped").length;
 
-    // ── 5. Overview GPT 호출 ──
+    const fulfillmentSummary =
+      `fulfilled=${fulfilledCount}, partial=${partialCount}, ` +
+      `unfulfilled=${unfulfilledCount}, skipped=${skippedCount} ` +
+      `(충족률=${Math.round((fulfilledCount / totalEvaluations) * 100)}%)`;
 
-    const overviewUser = substituteVariables(pm["report_overview_user"], {
-      target_grade: target_grade,
+    const overviewUser = substituteVariables(promptMap["report_overview_user"], {
+      target_grade: targetGrade,
       final_level: finalLevel,
-      total_questions: String(totalEvals),
+      total_questions: String(totalEvaluations),
       fulfillment_summary: fulfillmentSummary,
       type_fulfillment: typeFulfillment,
       wp_frequency: wpFrequency,
@@ -430,54 +501,43 @@ Deno.serve(async (req: Request) => {
       question_evaluations: questionEvaluations,
     });
 
-    const overviewSchema = JSON.parse(pm["report_overview_schema"]);
-
-    console.log(`[report] overview GPT 호출 (${overviewUser.length}자)`);
-
-    const overviewPromise = withRetry(
-      () => callGpt(pm["report_overview"], overviewUser, overviewSchema, model),
-      2,
-      "overview",
-    );
-
-    // ── 6. Growth GPT 호출 (병렬) ──
-
-    const growthUser = substituteVariables(pm["report_growth_user"], {
-      target_grade: target_grade,
+    const growthUser = substituteVariables(promptMap["report_growth_user"], {
+      target_grade: targetGrade,
       final_level: finalLevel,
-      total_questions: String(totalEvals),
+      total_questions: String(totalEvaluations),
       fulfillment_summary: fulfillmentSummary,
       type_fulfillment: typeFulfillment,
       wp_frequency: wpFrequency,
       question_evaluations: questionEvaluations,
     });
 
-    const growthSchema = JSON.parse(pm["report_growth_schema"]);
+    const overviewSchema = JSON.parse(promptMap["report_overview_schema"]);
+    const growthSchema = JSON.parse(promptMap["report_growth_schema"]);
 
-    console.log(`[report] growth GPT 호출 (${growthUser.length}자)`);
-
-    const growthPromise = withRetry(
-      () => callGpt(pm["report_growth"], growthUser, growthSchema, model),
-      2,
-      "growth",
-    );
-
-    // ── 7. 병렬 완료 대기 ──
+    console.log(`[report] overview GPT 호출 (${overviewUser.length} chars)`);
+    console.log(`[report] growth GPT 호출 (${growthUser.length} chars)`);
 
     const [overviewResult, growthResult] = await Promise.all([
-      overviewPromise,
-      growthPromise,
+      withRetry(
+        () => callGpt(promptMap["report_overview"], overviewUser, overviewSchema, model),
+        2,
+        "overview",
+      ),
+      withRetry(
+        () => callGpt(promptMap["report_growth"], growthUser, growthSchema, model),
+        2,
+        "growth",
+      ),
     ]);
 
     const totalTokens = overviewResult.tokensUsed + growthResult.tokensUsed;
 
     console.log(
-      `[report] 완료: overview=${overviewResult.tokensUsed}t, growth=${growthResult.tokensUsed}t, 합계=${totalTokens}t`,
+      `[report] 완료: overview=${overviewResult.tokensUsed}t, ` +
+        `growth=${growthResult.tokensUsed}t, 합계=${totalTokens}t`,
     );
 
-    // ── 8. DB 저장 ──
-
-    const { error: updateErr } = await supabase
+    const { error: updateError } = await supabase
       .from("mock_test_reports")
       .upsert(
         {
@@ -486,15 +546,13 @@ Deno.serve(async (req: Request) => {
           overview: overviewResult.result,
           growth: growthResult.result,
           final_level: finalLevel,
-          target_grade: target_grade,
-          rule_engine_result: ruleEngineResult || {},
-          aggregated_checkboxes: ruleEngineResult
-            ? {
-                int: ruleEngineResult.aggregated_int_checkboxes,
-                adv: ruleEngineResult.aggregated_adv_checkboxes,
-                al: ruleEngineResult.aggregated_al_checkboxes,
-              }
-            : {},
+          target_grade: targetGrade,
+          rule_engine_result: ruleEngineResult,
+          aggregated_checkboxes: {
+            int: ruleEngineResult.aggregated_int_checkboxes,
+            adv: ruleEngineResult.aggregated_adv_checkboxes,
+            al: ruleEngineResult.aggregated_al_checkboxes,
+          },
           model,
           tokens_used: totalTokens,
           processing_time_ms: Date.now() - startTime,
@@ -504,11 +562,17 @@ Deno.serve(async (req: Request) => {
         { onConflict: "session_id" },
       );
 
-    if (updateErr) {
-      console.error("[report] DB 저장 실패:", updateErr.message);
+    if (updateError) {
+      throw new Error(`report DB 저장 실패: ${updateError.message}`);
     }
 
-    // ── 9. 응답 ──
+    await supabase
+      .from("mock_test_sessions")
+      .update({
+        holistic_status: "completed",
+        report_error: null,
+      })
+      .eq("session_id", session_id);
 
     return new Response(
       JSON.stringify({
@@ -516,7 +580,7 @@ Deno.serve(async (req: Request) => {
         session_id,
         model,
         final_level: finalLevel,
-        target_grade: target_grade,
+        target_grade: targetGrade,
         total_tokens: totalTokens,
         total_time_ms: Date.now() - startTime,
       }),
@@ -525,21 +589,12 @@ Deno.serve(async (req: Request) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error("[report] 오류:", message);
 
-    try {
-      const b = await req.clone().json().catch(() => ({}));
-      if (b.session_id) {
-        const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-        await sb
-          .from("mock_test_reports")
-          .update({ status: "failed" })
-          .eq("session_id", b.session_id);
-      }
-    } catch {
-      /* 무시 */
+    if (sessionIdForFailure) {
+      await markReportFailed(sessionIdForFailure, userIdForFailure, message);
     }
 
     return new Response(
