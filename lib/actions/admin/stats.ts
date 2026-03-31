@@ -115,7 +115,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     supabase
       .from("mock_test_answers")
       .select("*", { count: "exact", head: true })
-      .not("eval_status", "in", '("complete","skipped")'),
+      .not("eval_status", "in", '("completed","skipped")'),
   ]);
 
   // 에러 로깅
