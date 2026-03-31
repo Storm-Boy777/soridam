@@ -145,6 +145,11 @@ export default function PrivacyPage() {
                   <td className="py-2">위탁 계약 종료 시까지</td>
                 </tr>
                 <tr>
+                  <td className="py-2 pr-4">주식회사 NHN KCP</td>
+                  <td className="py-2 pr-4">전자결제 대행</td>
+                  <td className="py-2">위탁 계약 종료 시까지</td>
+                </tr>
+                <tr>
                   <td className="py-2 pr-4">Supabase Inc.</td>
                   <td className="py-2 pr-4">클라우드 인프라 운영 및 데이터 저장</td>
                   <td className="py-2">위탁 계약 종료 시까지</td>
