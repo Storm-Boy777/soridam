@@ -2,6 +2,7 @@
 
 // 오픈 베타 신청/상태 조회 (사용자 측)
 
+import { createClient } from "@supabase/supabase-js";
 import { getUser } from "@/lib/auth";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 
@@ -46,6 +47,21 @@ export async function applyBeta(kakaoNickname: string) {
     }
     return { error: "신청 중 오류가 발생했습니다" };
   }
+
+  // 하루오픽 닉네임 통일 (오픈채팅 = 네비바 = profiles = 관리자 표시)
+  await supabase
+    .from("profiles")
+    .update({ display_name: trimmed })
+    .eq("id", user.id);
+
+  // user_metadata.display_name도 업데이트 (네비바 표시용, service role 필요)
+  const adminClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  await adminClient.auth.admin.updateUserById(user.id, {
+    user_metadata: { display_name: trimmed },
+  });
 
   return { success: true };
 }
