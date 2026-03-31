@@ -195,7 +195,27 @@ export default function AdminPaymentsPage() {
     <div className="space-y-5">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-foreground">결제 관리</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-bold text-foreground">결제 관리</h1>
+          <button
+            onClick={async () => {
+              const { toCSV, downloadCSV } = await import("@/lib/utils/csv-export");
+              const csv = toCSV(orders as unknown as Record<string, unknown>[], [
+                { key: "user_email", label: "이메일" },
+                { key: "product_name", label: "상품" },
+                { key: "amount", label: "금액" },
+                { key: "status", label: "상태" },
+                { key: "pay_method", label: "결제수단" },
+                { key: "paid_at", label: "결제일" },
+              ]);
+              downloadCSV(csv, `payments_${new Date().toISOString().split("T")[0]}.csv`);
+            }}
+            className="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-foreground-secondary hover:bg-surface-secondary"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            CSV
+          </button>
+        </div>
         {total > 0 && (
           <span className="text-sm text-foreground-muted">
             총 <span className="font-semibold text-foreground">{total}</span>건

@@ -8,6 +8,22 @@ import type {
   ConversionMetrics,
 } from "@/lib/types/admin";
 
+// ── AI 비용 & 시스템 헬스 타입 ──
+
+export interface AICostStats {
+  totalTokens: number;
+  moduleBreakdown: { module: string; tokens: number; sessions: number }[];
+  dailyCosts: { date: string; tokens: number }[];
+}
+
+export interface SystemHealthStats {
+  pendingEvals: number;
+  failedEvals: number;
+  avgWaitMinutes: number; // 평가 대기 평균 시간 (분)
+  pipelineStatus: { stage: string; pending: number; failed: number; completed: number }[];
+  storageUsage: { bucket: string; fileCount: number }[];
+}
+
 export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
   const { supabase } = await requireAdmin();
 
@@ -225,4 +241,134 @@ export async function getDailyTrends(days: number = 30): Promise<DailyTrend[]> {
   }
 
   return [...dateMap.values()];
+}
+
+// ── AI 비용 모니터링 ──
+
+export async function getAICostStats(): Promise<AICostStats> {
+  const { supabase } = await requireAdmin();
+
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - 30);
+  const startIso = startDate.toISOString();
+
+  // 모듈별 토큰 사용량 병렬 조회
+  const [tutoringRes, mockReportsRes, scriptsRes] = await Promise.all([
+    // 튜터링 세션 토큰
+    supabase.from("tutoring_sessions").select("tokens_used, created_at"),
+    // 모의고사 리포트 (토큰 정보가 있으면)
+    supabase.from("mock_test_reports").select("created_at").limit(5000),
+    // 스크립트 생성 (토큰 추정: 1회 생성 ≈ 4000토큰)
+    supabase.from("scripts").select("created_at").limit(5000),
+  ]);
+
+  const tutoringTokens = (tutoringRes.data || []).reduce((sum, s) => sum + (s.tokens_used || 0), 0);
+  const tutoringCount = (tutoringRes.data || []).length;
+  // 모의고사: 1세션(14문항) ≈ 평균 50,000 토큰 (judge+coach+report+growth)
+  const mockCount = (mockReportsRes.data || []).length;
+  const mockTokens = mockCount * 50000;
+  // 스크립트: 1회 ≈ 4,000 토큰
+  const scriptCount = (scriptsRes.data || []).length;
+  const scriptTokens = scriptCount * 4000;
+
+  // 일별 토큰 추이 (최근 30일)
+  const dateMap = new Map<string, number>();
+  for (let i = 30; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    dateMap.set(d.toISOString().split("T")[0], 0);
+  }
+
+  for (const s of tutoringRes.data || []) {
+    const key = s.created_at?.split("T")[0];
+    if (key && dateMap.has(key)) dateMap.set(key, (dateMap.get(key) || 0) + (s.tokens_used || 0));
+  }
+  for (const r of mockReportsRes.data || []) {
+    const key = r.created_at?.split("T")[0];
+    if (key && dateMap.has(key)) dateMap.set(key, (dateMap.get(key) || 0) + 50000);
+  }
+  for (const s of scriptsRes.data || []) {
+    const key = s.created_at?.split("T")[0];
+    if (key && dateMap.has(key)) dateMap.set(key, (dateMap.get(key) || 0) + 4000);
+  }
+
+  return {
+    totalTokens: tutoringTokens + mockTokens + scriptTokens,
+    moduleBreakdown: [
+      { module: "모의고사", tokens: mockTokens, sessions: mockCount },
+      { module: "튜터링", tokens: tutoringTokens, sessions: tutoringCount },
+      { module: "스크립트", tokens: scriptTokens, sessions: scriptCount },
+    ],
+    dailyCosts: [...dateMap.entries()].map(([date, tokens]) => ({ date, tokens })),
+  };
+}
+
+// ── 시스템 헬스 모니터링 ──
+
+export async function getSystemHealthStats(): Promise<SystemHealthStats> {
+  const { supabase } = await requireAdmin();
+
+  // 파이프라인 상태별 답변 수
+  const { data: answers } = await supabase
+    .from("mock_test_answers")
+    .select("eval_status, created_at, updated_at")
+    .limit(5000);
+
+  const pipeline: Record<string, { pending: number; failed: number; completed: number }> = {
+    "STT (음성→텍스트)": { pending: 0, failed: 0, completed: 0 },
+    "Judge (체크박스)": { pending: 0, failed: 0, completed: 0 },
+    "Consult (소견)": { pending: 0, failed: 0, completed: 0 },
+    "Report (종합)": { pending: 0, failed: 0, completed: 0 },
+  };
+
+  let pendingCount = 0;
+  let failedCount = 0;
+  let totalWaitMs = 0;
+  let waitItems = 0;
+
+  for (const a of answers || []) {
+    const status = a.eval_status || "pending";
+    if (status === "complete" || status === "skipped") {
+      pipeline["Report (종합)"].completed++;
+    } else if (status === "error" || status === "failed") {
+      failedCount++;
+      if (status === "error") pipeline["STT (음성→텍스트)"].failed++;
+      else pipeline["Judge (체크박스)"].failed++;
+    } else if (status === "pending") {
+      pendingCount++;
+      pipeline["STT (음성→텍스트)"].pending++;
+      if (a.created_at) {
+        totalWaitMs += Date.now() - new Date(a.created_at).getTime();
+        waitItems++;
+      }
+    } else if (status === "processing" || status === "stt_completed") {
+      pendingCount++;
+      pipeline["STT (음성→텍스트)"].completed++;
+      pipeline["Judge (체크박스)"].pending++;
+    } else if (status === "evaluating" || status === "judge_completed") {
+      pipeline["Judge (체크박스)"].completed++;
+      pipeline["Consult (소견)"].pending++;
+    }
+  }
+
+  // Storage 버킷별 파일 수 (간접 추정)
+  const [audioRes, mockAudioRes, tutoringAudioRes, scriptPkgRes] = await Promise.all([
+    supabase.from("shadowing_evaluations").select("*", { count: "exact", head: true }),
+    supabase.from("mock_test_answers").select("*", { count: "exact", head: true }).not("audio_url", "is", null),
+    supabase.from("tutoring_attempts").select("*", { count: "exact", head: true }).not("audio_url", "is", null),
+    supabase.from("script_packages").select("*", { count: "exact", head: true }),
+  ]);
+
+  return {
+    pendingEvals: pendingCount,
+    failedEvals: failedCount,
+    avgWaitMinutes: waitItems > 0 ? Math.round(totalWaitMs / waitItems / 60000) : 0,
+    pipelineStatus: Object.entries(pipeline).map(([stage, counts]) => ({ stage, ...counts })),
+    storageUsage: [
+      { bucket: "쉐도잉 녹음", fileCount: audioRes.count || 0 },
+      { bucket: "모의고사 녹음", fileCount: mockAudioRes.count || 0 },
+      { bucket: "튜터링 녹음", fileCount: tutoringAudioRes.count || 0 },
+      { bucket: "스크립트 패키지", fileCount: scriptPkgRes.count || 0 },
+    ],
+  };
 }

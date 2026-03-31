@@ -396,3 +396,106 @@ export async function toggleUserBan(params: {
 
   return { success: true };
 }
+
+// 사용자 완전 삭제
+export async function deleteUser(params: {
+  userId: string;
+  reason: string;
+}): Promise<{ success: boolean; error?: string }> {
+  const { supabase, userId: adminId, userEmail: adminEmail } = await requireAdmin();
+
+  // 삭제 대상 이메일 기록용
+  const { data: targetUser } = await supabase.auth.admin.getUserById(params.userId);
+  const targetEmail = targetUser?.user?.email || "unknown";
+
+  // 관리자 자신은 삭제 불가
+  if (params.userId === adminId) {
+    return { success: false, error: "자신의 계정은 삭제할 수 없습니다" };
+  }
+
+  try {
+    // 1. Storage 파일 삭제 (오디오 녹음)
+    const buckets = ["audio-recordings", "mock-test-recordings", "tutoring-recordings", "script-packages"];
+    for (const bucket of buckets) {
+      const { data: files } = await supabase.storage.from(bucket).list(params.userId);
+      if (files && files.length > 0) {
+        const paths = files.map((f) => `${params.userId}/${f.name}`);
+        await supabase.storage.from(bucket).remove(paths);
+      }
+    }
+
+    // 2. DB 데이터 삭제 (깊은 의존 순서부터)
+    // 튜터링 관련
+    const { data: tSessions } = await supabase.from("tutoring_sessions").select("id").eq("user_id", params.userId);
+    if (tSessions && tSessions.length > 0) {
+      const tSessionIds = tSessions.map((s) => s.id);
+      const { data: focuses } = await supabase.from("tutoring_focuses").select("id").in("session_id", tSessionIds);
+      if (focuses && focuses.length > 0) {
+        const focusIds = focuses.map((f) => f.id);
+        await supabase.from("tutoring_retests").delete().in("focus_id", focusIds);
+        const { data: drills } = await supabase.from("tutoring_drills").select("id").in("focus_id", focusIds);
+        if (drills && drills.length > 0) {
+          await supabase.from("tutoring_attempts").delete().in("drill_id", drills.map((d) => d.id));
+        }
+        await supabase.from("tutoring_drills").delete().in("focus_id", focusIds);
+        await supabase.from("tutoring_focuses").delete().in("id", focusIds);
+      }
+      await supabase.from("tutoring_sessions").delete().in("id", tSessionIds);
+    }
+
+    // 모의고사 관련
+    const { data: mockSessions } = await supabase.from("mock_test_sessions").select("session_id").eq("user_id", params.userId);
+    if (mockSessions && mockSessions.length > 0) {
+      const sessionIds = mockSessions.map((s) => s.session_id);
+      await supabase.from("mock_test_reports").delete().in("session_id", sessionIds);
+      await supabase.from("mock_test_consults").delete().in("session_id", sessionIds);
+      await supabase.from("mock_test_evaluations").delete().in("session_id", sessionIds);
+      await supabase.from("mock_test_answers").delete().in("session_id", sessionIds);
+    }
+    await supabase.from("mock_test_sessions").delete().eq("user_id", params.userId);
+
+    // 스크립트 관련
+    await supabase.from("shadowing_evaluations").delete().eq("user_id", params.userId);
+    await supabase.from("shadowing_sessions").delete().eq("user_id", params.userId);
+    const { data: scripts } = await supabase.from("scripts").select("id").eq("user_id", params.userId);
+    if (scripts && scripts.length > 0) {
+      await supabase.from("script_packages").delete().in("script_id", scripts.map((s) => s.id));
+    }
+    await supabase.from("scripts").delete().eq("user_id", params.userId);
+
+    // 후기 관련
+    const { data: subs } = await supabase.from("submissions").select("id").eq("user_id", params.userId);
+    if (subs && subs.length > 0) {
+      const subIds = subs.map((s) => s.id);
+      await supabase.from("submission_questions").delete().in("submission_id", subIds);
+      await supabase.from("submission_combos").delete().in("submission_id", subIds);
+    }
+    await supabase.from("submissions").delete().eq("user_id", params.userId);
+
+    // 결제 + 크레딧 + 프로필
+    await supabase.from("orders").delete().eq("user_id", params.userId);
+    await supabase.from("user_credits").delete().eq("user_id", params.userId);
+    await supabase.from("profiles").delete().eq("id", params.userId);
+
+    // 3. Supabase Auth 사용자 삭제
+    const { error: authError } = await supabase.auth.admin.deleteUser(params.userId);
+    if (authError) {
+      return { success: false, error: `Auth 삭제 실패: ${authError.message}` };
+    }
+
+    // 4. 감사 로그
+    await supabase.from("admin_audit_log").insert({
+      admin_id: adminId,
+      admin_email: adminEmail,
+      action: "user_delete",
+      target_type: "user",
+      target_id: params.userId,
+      details: { email: targetEmail, reason: params.reason },
+    });
+
+    return { success: true };
+  } catch (err) {
+    console.error("[deleteUser] error:", err);
+    return { success: false, error: "사용자 삭제 중 오류가 발생했습니다" };
+  }
+}

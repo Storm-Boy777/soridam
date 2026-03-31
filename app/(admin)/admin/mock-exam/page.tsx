@@ -10,16 +10,18 @@ import {
   retriggerEvaluation,
   getAdminSessionDetail,
   deleteAdminSession,
+  getEvalQualityStats,
 } from "@/lib/actions/admin/mock-exam";
 import { EvalPipelineView } from "@/components/admin/eval-pipeline-view";
 import { EvalSettingsTab } from "@/components/admin/eval-settings-tab";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, BarChart3, AlertTriangle, CheckCircle2 } from "lucide-react";
 import type { AdminMockSession } from "@/lib/types/admin";
 
-type PageTab = "monitoring" | "settings";
+type PageTab = "monitoring" | "settings" | "quality";
 
 const PAGE_TABS: { key: PageTab; label: string }[] = [
   { key: "monitoring", label: "모니터링" },
+  { key: "quality", label: "평가 품질" },
   { key: "settings", label: "평가 설정" },
 ];
 
@@ -349,6 +351,9 @@ export default function AdminMockExamPage() {
       {/* 평가 설정 탭 */}
       {pageTab === "settings" && <EvalSettingsTab />}
 
+      {/* 평가 품질 탭 */}
+      {pageTab === "quality" && <EvalQualityTab />}
+
       {/* 모니터링 탭 */}
       {pageTab === "monitoring" && (
         <>
@@ -529,6 +534,116 @@ export default function AdminMockExamPage() {
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
       />
+    </div>
+  );
+}
+
+/* ── 평가 품질 탭 ── */
+
+const LEVEL_ORDER = ["AL", "IH", "IM3", "IM2", "IM1", "IL", "NH", "NM", "NL"];
+
+function EvalQualityTab() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-eval-quality"],
+    queryFn: getEvalQualityStats,
+    staleTime: 60_000,
+  });
+
+  if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-primary-500" /></div>;
+  if (!data) return <p className="py-12 text-center text-sm text-foreground-muted">데이터를 불러올 수 없습니다</p>;
+
+  const maxCount = Math.max(...LEVEL_ORDER.map((l) => data.levelDistribution[l] || 0), 1);
+  const maxCountRecent = Math.max(...LEVEL_ORDER.map((l) => data.recentLevelDistribution[l] || 0), 1);
+
+  return (
+    <div className="space-y-6">
+      {/* KPI */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="rounded-xl border border-border bg-surface p-3">
+          <p className="text-xs text-foreground-muted">스킵률</p>
+          <p className="text-xl font-bold text-foreground">{data.skipRate}%</p>
+        </div>
+        <div className="rounded-xl border border-border bg-surface p-3">
+          <p className="text-xs text-foreground-muted">실패율</p>
+          <p className={`text-xl font-bold ${data.failRate > 5 ? "text-red-600" : "text-foreground"}`}>{data.failRate}%</p>
+        </div>
+        <div className="rounded-xl border border-border bg-surface p-3">
+          <p className="text-xs text-foreground-muted">평균 처리 시간</p>
+          <p className="text-xl font-bold text-foreground">{data.avgProcessingMinutes}분</p>
+        </div>
+        <div className="rounded-xl border border-border bg-surface p-3">
+          <p className="text-xs text-foreground-muted">체크박스 이상</p>
+          <p className={`text-xl font-bold ${data.checkboxAnomalies.length > 0 ? "text-amber-600" : "text-green-600"}`}>
+            {data.checkboxAnomalies.length}개
+          </p>
+        </div>
+      </div>
+
+      {/* 등급 분포 히스토그램 */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-border bg-surface p-4">
+          <h3 className="mb-3 text-sm font-semibold text-foreground">전체 등급 분포</h3>
+          <div className="space-y-1.5">
+            {LEVEL_ORDER.map((level) => {
+              const count = data.levelDistribution[level] || 0;
+              return (
+                <div key={level} className="flex items-center gap-2">
+                  <span className="w-8 text-xs font-medium text-foreground">{level}</span>
+                  <div className="h-5 flex-1 rounded-md bg-surface-secondary">
+                    <div
+                      className="h-full rounded-md bg-primary-400"
+                      style={{ width: `${(count / maxCount) * 100}%` }}
+                    />
+                  </div>
+                  <span className="w-8 text-right text-xs tabular-nums text-foreground-muted">{count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border bg-surface p-4">
+          <h3 className="mb-3 text-sm font-semibold text-foreground">최근 30일 등급 분포</h3>
+          <div className="space-y-1.5">
+            {LEVEL_ORDER.map((level) => {
+              const count = data.recentLevelDistribution[level] || 0;
+              return (
+                <div key={level} className="flex items-center gap-2">
+                  <span className="w-8 text-xs font-medium text-foreground">{level}</span>
+                  <div className="h-5 flex-1 rounded-md bg-surface-secondary">
+                    <div
+                      className="h-full rounded-md bg-blue-400"
+                      style={{ width: `${(count / maxCountRecent) * 100}%` }}
+                    />
+                  </div>
+                  <span className="w-8 text-right text-xs tabular-nums text-foreground-muted">{count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* 체크박스 이상 항목 */}
+      {data.checkboxAnomalies.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-amber-800">
+            <AlertTriangle size={16} />
+            체크박스 이상 감지 ({data.checkboxAnomalies.length}개)
+          </h3>
+          <p className="mb-3 text-xs text-amber-700">Pass율이 10% 미만 또는 95% 초과인 항목입니다. 평가 기준을 점검해 주세요.</p>
+          <div className="space-y-1">
+            {data.checkboxAnomalies.map((a) => (
+              <div key={a.id} className="flex items-center justify-between text-xs">
+                <span className="font-mono text-amber-800">{a.id}</span>
+                <span className={`font-bold ${a.passRate < 10 ? "text-red-600" : "text-green-600"}`}>
+                  {a.passRate}%
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   Search,
   Coins,
@@ -13,10 +13,12 @@ import {
   Loader2,
   Shield,
   ShieldOff,
+  Download,
+  Trash2,
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getUsers, getAdminUserDetail, adjustCredit, changePlan, toggleUserBan } from "@/lib/actions/admin/users";
+import { getUsers, getAdminUserDetail, adjustCredit, changePlan, toggleUserBan, deleteUser } from "@/lib/actions/admin/users";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
 import { CreditAdjustModal } from "@/components/admin/credit-adjust-modal";
 import { PlanChangeModal } from "@/components/admin/plan-change-modal";
@@ -327,7 +329,28 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-foreground">사용자 관리</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-bold text-foreground">사용자 관리</h1>
+          <button
+            onClick={async () => {
+              const { toCSV, downloadCSV } = await import("@/lib/utils/csv-export");
+              const allData = await getUsers({ page: 1, pageSize: 1000 });
+              const csv = toCSV(allData.data as unknown as Record<string, unknown>[], [
+                { key: "email", label: "이메일" },
+                { key: "display_name", label: "이름" },
+                { key: "current_plan", label: "플랜" },
+                { key: "mock_exam_credits", label: "모의고사 크레딧" },
+                { key: "script_credits", label: "스크립트 크레딧" },
+                { key: "created_at", label: "가입일" },
+              ]);
+              downloadCSV(csv, `users_${new Date().toISOString().split("T")[0]}.csv`);
+            }}
+            className="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-foreground-secondary hover:bg-surface-secondary"
+          >
+            <Download size={13} />
+            CSV
+          </button>
+        </div>
         <form onSubmit={handleSearch} className="flex gap-2">
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-muted" />
@@ -504,6 +527,25 @@ function UserDetailView({
                   계정 차단
                 </button>
               )}
+              <button
+                onClick={async () => {
+                  const reason = prompt(`"${user.email}" 계정을 완전히 삭제합니다.\n모든 데이터(녹음, 스크립트, 모의고사, 결제 등)가 영구 삭제됩니다.\n\n삭제 사유를 입력하세요:`);
+                  if (!reason) return;
+                  const confirm2 = window.confirm(`정말로 "${user.email}" 계정을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`);
+                  if (!confirm2) return;
+                  const result = await deleteUser({ userId: user.id, reason });
+                  if (result.success) {
+                    toast.success("사용자가 삭제되었습니다");
+                    onBack();
+                  } else {
+                    toast.error(result.error || "삭제 실패");
+                  }
+                }}
+                className="flex items-center gap-1 rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100"
+              >
+                <Trash2 size={14} />
+                계정 삭제
+              </button>
             </div>
           </div>
         </div>

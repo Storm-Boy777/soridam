@@ -11,6 +11,7 @@ import {
   FileCode,
   ClipboardList,
   GraduationCap,
+  Stethoscope,
   ScrollText,
   ArrowLeft,
 } from "lucide-react";
@@ -24,6 +25,7 @@ const menuItems = [
   { label: "기출 승인", href: "/admin/exam-approval", icon: FileCheck },
   { label: "스크립트", href: "/admin/scripts", icon: FileCode },
   { label: "모의고사", href: "/admin/mock-exam", icon: GraduationCap },
+  { label: "튜터링", href: "/admin/tutoring", icon: Stethoscope },
   { label: "감사 로그", href: "/admin/logs", icon: ScrollText },
 ];
 

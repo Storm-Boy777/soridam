@@ -12,10 +12,16 @@ const ACTION_OPTIONS = [
   { value: "credit_adjust", label: "크레딧 조정" },
   { value: "import_review", label: "기출 입력" },
   { value: "prompt_update", label: "프롬프트 수정" },
+  { value: "eval_prompt_update", label: "평가프롬프트 수정" },
   { value: "eval_retrigger", label: "평가 재실행" },
+  { value: "eval_settings_update", label: "평가 설정 변경" },
   { value: "plan_change", label: "플랜 변경" },
   { value: "refund", label: "환불" },
   { value: "user_ban", label: "계정 차단" },
+  { value: "user_delete", label: "계정 삭제" },
+  { value: "delete_mock_session", label: "세션 삭제" },
+  { value: "tip_update", label: "팁 수정" },
+  { value: "checklist_update", label: "체크리스트 수정" },
 ];
 
 export default function AdminLogsPage() {

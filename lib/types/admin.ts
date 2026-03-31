@@ -196,6 +196,60 @@ export interface ConversionMetrics {
   scriptRate: number;
 }
 
+// ── 튜터링 모니터링 ──
+
+export interface AdminTutoringSession {
+  id: string;
+  user_id: string;
+  user_email: string;
+  status: string;
+  current_stable_level: string | null;
+  final_target_level: string | null;
+  created_at: string;
+  completed_at: string | null;
+  focus_count: number;
+  graduated_count: number;
+  tokens_used: number;
+}
+
+export interface TutoringStats {
+  totalSessions: number;
+  activeSessions: number;
+  completedSessions: number;
+  diagnosingSessions: number;
+  avgTokensUsed: number;
+  focusGraduationRate: number; // graduated / total focuses
+  statusDistribution: Record<string, number>;
+  levelDistribution: Record<string, number>;
+}
+
+export interface AdminTutoringDetail {
+  session: AdminTutoringSession;
+  focuses: Array<{
+    id: string;
+    label: string;
+    focus_code: string;
+    priority_rank: number;
+    status: string;
+    drill_pass_count: number;
+    retest_pass_count: number;
+  }>;
+  drills: Array<{
+    id: string;
+    focus_id: string;
+    question_number: number;
+    question_english: string;
+    status: string;
+    attempt_count: number;
+  }>;
+  retests: Array<{
+    id: string;
+    focus_id: string;
+    overall_result: string | null;
+    created_at: string;
+  }>;
+}
+
 // ── 공통 ──
 
 export interface PaginatedResult<T> {

@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import { Users, CreditCard, GraduationCap, Clock, TrendingUp, BarChart3, ClipboardList, FileText } from "lucide-react";
-import { getAdminDashboardStats, getRecentActivity, getConversionMetrics } from "@/lib/actions/admin/stats";
+import { Users, CreditCard, GraduationCap, Clock, TrendingUp, BarChart3, ClipboardList, FileText, Cpu, AlertTriangle, Coins, HardDrive } from "lucide-react";
+import { getAdminDashboardStats, getRecentActivity, getConversionMetrics, getAICostStats, getSystemHealthStats } from "@/lib/actions/admin/stats";
 import { AdminStatCard } from "@/components/admin/admin-stat-card";
 import { AdminTrendCharts } from "@/components/admin/admin-trend-charts";
 
@@ -161,6 +161,107 @@ function MetricCard({
   );
 }
 
+async function AICostSection() {
+  const cost = await getAICostStats();
+  const totalM = (cost.totalTokens / 1_000_000).toFixed(2);
+
+  return (
+    <div className="space-y-3">
+      <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground-secondary">
+        <Coins size={16} className="text-amber-500" />
+        AI 비용 (토큰)
+      </h2>
+      <div className="rounded-xl border border-border bg-surface p-4">
+        <p className="text-2xl font-bold tabular-nums text-foreground">{totalM}M</p>
+        <p className="text-xs text-foreground-muted">총 누적 토큰</p>
+        <div className="mt-3 space-y-2">
+          {cost.moduleBreakdown.map((m) => (
+            <div key={m.module} className="flex items-center justify-between text-sm">
+              <span className="text-foreground-secondary">{m.module}</span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-foreground-muted">{m.sessions}건</span>
+                <span className="font-medium tabular-nums text-foreground">
+                  {(m.tokens / 1_000_000).toFixed(2)}M
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+async function SystemHealthSection() {
+  const health = await getSystemHealthStats();
+
+  return (
+    <div className="space-y-3">
+      <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground-secondary">
+        <Cpu size={16} className="text-green-500" />
+        시스템 헬스
+      </h2>
+      <div className="rounded-xl border border-border bg-surface p-4">
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <p className="text-2xl font-bold tabular-nums text-foreground">{health.pendingEvals}</p>
+            <p className="text-xs text-foreground-muted">평가 대기</p>
+          </div>
+          <div>
+            <p className={`text-2xl font-bold tabular-nums ${health.failedEvals > 0 ? "text-red-600" : "text-foreground"}`}>
+              {health.failedEvals}
+            </p>
+            <p className="text-xs text-foreground-muted">실패</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold tabular-nums text-foreground">{health.avgWaitMinutes}분</p>
+            <p className="text-xs text-foreground-muted">평균 대기</p>
+          </div>
+        </div>
+
+        {/* 파이프라인 */}
+        <div className="mt-4 space-y-1.5">
+          {health.pipelineStatus.map((p) => (
+            <div key={p.stage} className="flex items-center justify-between text-xs">
+              <span className="text-foreground-secondary">{p.stage}</span>
+              <div className="flex items-center gap-2">
+                {p.pending > 0 && <span className="text-amber-600">{p.pending} 대기</span>}
+                {p.failed > 0 && <span className="text-red-600">{p.failed} 실패</span>}
+                <span className="text-foreground-muted">{p.completed} 완료</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Storage */}
+        <div className="mt-4 border-t border-border pt-3">
+          <p className="mb-1.5 flex items-center gap-1 text-xs font-medium text-foreground-secondary">
+            <HardDrive size={12} />
+            Storage
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {health.storageUsage.map((s) => (
+              <div key={s.bucket} className="flex items-center justify-between text-xs">
+                <span className="text-foreground-muted">{s.bucket}</span>
+                <span className="font-medium text-foreground">{s.fileCount.toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SectionSkeleton() {
+  return (
+    <div className="space-y-3">
+      <div className="h-5 w-32 animate-pulse rounded bg-surface-secondary" />
+      <div className="h-48 animate-pulse rounded-xl border border-border bg-surface-secondary" />
+    </div>
+  );
+}
+
 function StatsSkeleton() {
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -198,6 +299,16 @@ export default function AdminDashboardPage() {
 
       {/* 추이 차트 */}
       <AdminTrendCharts />
+
+      {/* AI 비용 + 시스템 헬스 */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Suspense fallback={<SectionSkeleton />}>
+          <AICostSection />
+        </Suspense>
+        <Suspense fallback={<SectionSkeleton />}>
+          <SystemHealthSection />
+        </Suspense>
+      </div>
 
       <div>
         <h2 className="mb-3 text-sm font-semibold text-foreground-secondary">최근 활동</h2>

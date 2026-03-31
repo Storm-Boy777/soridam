@@ -144,7 +144,7 @@ function EvalPromptsTab() {
           name={p.name}
           initialContent={p.content}
           onSave={updateEvalPrompt}
-          showHistory={false}
+          showHistory={true}
         />
       ))}
       {prompts.length === 0 && (
@@ -176,7 +176,7 @@ function TutoringPromptsTab() {
           name={p.name}
           initialContent={p.content}
           onSave={updateEvalPrompt}
-          showHistory={false}
+          showHistory={true}
         />
       ))}
       {prompts.length === 0 && (

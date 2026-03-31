@@ -300,6 +300,91 @@ export async function updateTaskChecklist(
   return { success: true };
 }
 
+// ── 평가 품질 QA ──
+
+export interface EvalQualityStats {
+  levelDistribution: Record<string, number>;
+  recentLevelDistribution: Record<string, number>; // 최근 30일
+  skipRate: number; // 스킵률 (%)
+  failRate: number; // 실패율 (%)
+  avgProcessingMinutes: number; // 평균 처리 시간 (분)
+  checkboxAnomalies: Array<{ id: string; passRate: number }>; // 비정상 체크박스 (pass율 <10% 또는 >95%)
+}
+
+export async function getEvalQualityStats(): Promise<EvalQualityStats> {
+  const { supabase } = await requireAdmin();
+
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const thirtyDaysIso = thirtyDaysAgo.toISOString();
+
+  const [reportsRes, recentReportsRes, answersRes, evalsRes] = await Promise.all([
+    // 전체 등급 분포
+    supabase.from("mock_test_reports").select("final_level").not("final_level", "is", null),
+    // 최근 30일 등급 분포
+    supabase.from("mock_test_reports").select("final_level").not("final_level", "is", null).gte("created_at", thirtyDaysIso),
+    // 답변 상태 분포
+    supabase.from("mock_test_answers").select("eval_status, created_at, updated_at").limit(10000),
+    // 체크박스 평가 (최근 200건)
+    supabase.from("mock_test_evaluations").select("checkboxes").limit(200),
+  ]);
+
+  // 등급 분포
+  const levelDistribution: Record<string, number> = {};
+  for (const r of reportsRes.data || []) {
+    if (r.final_level) levelDistribution[r.final_level] = (levelDistribution[r.final_level] || 0) + 1;
+  }
+  const recentLevelDistribution: Record<string, number> = {};
+  for (const r of recentReportsRes.data || []) {
+    if (r.final_level) recentLevelDistribution[r.final_level] = (recentLevelDistribution[r.final_level] || 0) + 1;
+  }
+
+  // 스킵/실패율 + 처리 시간
+  const answers = answersRes.data || [];
+  const total = answers.length;
+  const skipped = answers.filter((a) => a.eval_status === "skipped").length;
+  const failed = answers.filter((a) => a.eval_status === "error" || a.eval_status === "failed").length;
+  let totalProcessMs = 0;
+  let processedCount = 0;
+  for (const a of answers) {
+    if (a.eval_status === "complete" && a.created_at && a.updated_at) {
+      totalProcessMs += new Date(a.updated_at).getTime() - new Date(a.created_at).getTime();
+      processedCount++;
+    }
+  }
+
+  // 체크박스 이상 탐지
+  const checkboxPassCounts = new Map<string, { pass: number; total: number }>();
+  for (const e of evalsRes.data || []) {
+    const checkboxes = e.checkboxes as Record<string, boolean> | null;
+    if (!checkboxes) continue;
+    for (const [key, passed] of Object.entries(checkboxes)) {
+      const entry = checkboxPassCounts.get(key) || { pass: 0, total: 0 };
+      entry.total++;
+      if (passed) entry.pass++;
+      checkboxPassCounts.set(key, entry);
+    }
+  }
+  const checkboxAnomalies: Array<{ id: string; passRate: number }> = [];
+  for (const [id, counts] of checkboxPassCounts) {
+    if (counts.total < 10) continue; // 표본 부족
+    const rate = Math.round((counts.pass / counts.total) * 100);
+    if (rate < 10 || rate > 95) {
+      checkboxAnomalies.push({ id, passRate: rate });
+    }
+  }
+  checkboxAnomalies.sort((a, b) => a.passRate - b.passRate);
+
+  return {
+    levelDistribution,
+    recentLevelDistribution,
+    skipRate: total > 0 ? Math.round((skipped / total) * 1000) / 10 : 0,
+    failRate: total > 0 ? Math.round((failed / total) * 1000) / 10 : 0,
+    avgProcessingMinutes: processedCount > 0 ? Math.round(totalProcessMs / processedCount / 60000) : 0,
+    checkboxAnomalies: checkboxAnomalies.slice(0, 10),
+  };
+}
+
 // ── 세션 상세 조회 (사용자 화면 재사용용) ──
 
 export async function getAdminSessionDetail(sessionId: string): Promise<{
