@@ -70,19 +70,6 @@ export function TabGrowth({ data: propData }: TabGrowthProps = {}) {
           </div>
         </div>
 
-        {/* ── 섹션 5: 집중 훈련 포인트 + CTA ── */}
-        <div className="px-6 py-6 md:px-10">
-          <SectionTitle>집중 훈련 포인트 <span className="ml-2 inline-block rounded bg-[#fff3e0] px-1.5 py-0.5 text-[11px] font-bold text-[#e65100]">{data.focus_point.area_label}</span></SectionTitle>
-          <p className="mb-5 text-[14px] leading-[1.9] text-[#2f3644]">
-            {data.focus_point.observation}
-          </p>
-          <a
-            href="/tutoring?tab=prescription"
-            className="flex items-center justify-center gap-2 rounded bg-[#2449d8] px-4 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-[#1a38b0]"
-          >
-            튜터링으로 집중 훈련하기
-          </a>
-        </div>
 
       </div>
     </div>

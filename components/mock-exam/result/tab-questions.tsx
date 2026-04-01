@@ -310,7 +310,6 @@ function AudioPlayer({ url }: { url: string }) {
 
 // ── 정상 응답 콘텐츠 (4파트) ──
 function EvalContent({ data }: { data: QuestionEvalV2Real }) {
-  const [showTranscript, setShowTranscript] = useState(false);
   const passCount = data.task_checklist.filter((t) => t.pass).length;
   const totalCount = data.task_checklist.length;
 
@@ -388,85 +387,45 @@ function EvalContent({ data }: { data: QuestionEvalV2Real }) {
             </div>
           )}
 
-          {/* 튜터링 CTA */}
-          {data.weak_points.length > 0 && (
-            <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-[#d0d7e2] bg-[#f7f9fc] px-4 py-3 text-[13px] font-bold text-[#2449d8] transition-colors hover:bg-[#eef1f7]">
-              <span>🏥</span>
-              <span>이 유형 튜터링으로 연습하기</span>
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
-          )}
         </div>
       )}
 
-      {/* Part D: 내 답변 (음성 재생 + 트랜스크립트) */}
+      {/* Part D: 내 답변 (음성 재생 + 트랜스크립트) — 항상 펼침 */}
       {(data.transcript || data.audio_url) && (
         <div className="px-5 py-4">
-          <button
-            onClick={() => setShowTranscript(!showTranscript)}
-            className="flex items-center gap-1.5 text-[12px] font-bold text-[#5f6976] transition-colors hover:text-[#2f3644]"
-          >
-            <svg
-              className={`h-3.5 w-3.5 transition-transform ${showTranscript ? "rotate-90" : ""}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-            내 답변 보기
-          </button>
-          {showTranscript && (
-            <div className="mt-3 space-y-3">
-              {/* 음성 재생 */}
-              {data.audio_url && (
-                <AudioPlayer url={data.audio_url} />
-              )}
+          <p className="text-[12px] font-bold text-[#5f6976]">내 답변</p>
+          <div className="mt-3 space-y-3">
+            {/* 음성 재생 */}
+            {data.audio_url && (
+              <AudioPlayer url={data.audio_url} />
+            )}
 
-              {/* 트랜스크립트 */}
-              {data.transcript && (
-                <div className="rounded bg-[#f7f9fc] px-4 py-3">
-                  <p className="text-[13px] italic leading-[1.8] text-[#5f6976]">
-                    &ldquo;{data.transcript}&rdquo;
-                  </p>
-                </div>
-              )}
-
-              {/* 음성 메타 */}
-              <div className="flex flex-wrap gap-4 text-[11px] text-[#8a93a1]">
-                <span>
-                  발화{" "}
-                  {Math.floor(data.speech_meta.duration_sec / 60)}분{" "}
-                  {data.speech_meta.duration_sec % 60}초
-                </span>
-                <span>단어 {data.speech_meta.word_count}개</span>
-                <span>속도 {data.speech_meta.wpm} WPM</span>
-                {data.speech_meta.accuracy_score && (
-                  <span>발음 {data.speech_meta.accuracy_score}점</span>
-                )}
-                {data.speech_meta.fluency_score && (
-                  <span>유창성 {data.speech_meta.fluency_score}점</span>
-                )}
+            {/* 트랜스크립트 */}
+            {data.transcript && (
+              <div className="rounded bg-[#f7f9fc] px-4 py-3">
+                <p className="text-[13px] italic leading-[1.8] text-[#5f6976]">
+                  &ldquo;{data.transcript}&rdquo;
+                </p>
               </div>
+            )}
+
+            {/* 음성 메타 */}
+            <div className="flex flex-wrap gap-4 text-[11px] text-[#8a93a1]">
+              <span>
+                발화{" "}
+                {Math.floor(data.speech_meta.duration_sec / 60)}분{" "}
+                {data.speech_meta.duration_sec % 60}초
+              </span>
+              <span>단어 {data.speech_meta.word_count}개</span>
+              <span>속도 {data.speech_meta.wpm} WPM</span>
+              {data.speech_meta.accuracy_score && (
+                <span>발음 {data.speech_meta.accuracy_score}점</span>
+              )}
+              {data.speech_meta.fluency_score && (
+                <span>유창성 {data.speech_meta.fluency_score}점</span>
+              )}
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>
@@ -490,23 +449,6 @@ function SkippedContent({ data }: { data: QuestionEvalV2Real }) {
           불완전하더라도 시도하는 것이 평가에 유리합니다.
         </p>
       </div>
-      <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-[#d0d7e2] bg-[#f7f9fc] px-4 py-3 text-[13px] font-bold text-[#2449d8] transition-colors hover:bg-[#eef1f7]">
-        <span>🏥</span>
-        <span>이 유형 튜터링으로 연습하기</span>
-        <svg
-          className="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-      </button>
     </div>
   );
 }

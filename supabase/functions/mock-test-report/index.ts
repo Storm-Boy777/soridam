@@ -527,6 +527,78 @@ Deno.serve(async (req: Request) => {
       question_evaluations: questionEvaluations,
     });
 
+    // ── 이전 세션 데이터 조회 (성장 비교용) ──
+    let previousComparison = "이전 시험 데이터 없음 (첫 번째 시험)";
+
+    const { data: prevReport } = await supabase
+      .from("mock_test_reports")
+      .select("session_id, final_level, rule_engine_result, growth")
+      .eq("user_id", userId)
+      .eq("status", "completed")
+      .neq("session_id", session_id)
+      .order("completed_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (prevReport) {
+      // 이전 세션의 consults 조회
+      const { data: prevConsults } = await supabase
+        .from("mock_test_consults")
+        .select("question_type, fulfillment, weak_points")
+        .eq("session_id", prevReport.session_id);
+
+      // 이전 유형별 충족 통계
+      const prevTypeStats: Record<string, { total: number; fulfilled: number; partial: number; unfulfilled: number; skipped: number }> = {};
+      for (const c of prevConsults || []) {
+        if (!prevTypeStats[c.question_type]) {
+          prevTypeStats[c.question_type] = { total: 0, fulfilled: 0, partial: 0, unfulfilled: 0, skipped: 0 };
+        }
+        prevTypeStats[c.question_type].total += 1;
+        prevTypeStats[c.question_type][c.fulfillment as "fulfilled" | "partial" | "unfulfilled" | "skipped"] += 1;
+      }
+
+      const prevTypeFulfillment = Object.entries(prevTypeStats)
+        .map(([qt, s]) => {
+          const label = QUESTION_TYPE_KO[qt] || qt;
+          const rate = s.total > 0 ? Math.round((s.fulfilled / s.total) * 100) : 0;
+          return `${label}(${qt}): 총 ${s.total}문항, fulfilled=${s.fulfilled}, partial=${s.partial}, unfulfilled=${s.unfulfilled}, skipped=${s.skipped}, 충족률=${rate}%`;
+        })
+        .join("\n");
+
+      // 이전 WP 빈도
+      const prevWpFreq: Record<string, number> = {};
+      for (const c of prevConsults || []) {
+        for (const wp of (c.weak_points as ConsultWeakPoint[]) || []) {
+          prevWpFreq[wp.code] = (prevWpFreq[wp.code] || 0) + 1;
+        }
+      }
+      const prevWpStr = Object.entries(prevWpFreq)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 10)
+        .map(([code, count]) => `${code}: ${count}회`)
+        .join("\n");
+
+      const prevTotal = (prevConsults || []).length;
+      const prevFulfilled = (prevConsults || []).filter((c) => c.fulfillment === "fulfilled").length;
+
+      previousComparison = [
+        `## 이전 시험 결과 (비교 기준)`,
+        `- 판정 등급: ${prevReport.final_level}`,
+        `- 평가 문항 수: ${prevTotal}개`,
+        `- 충족률: ${prevTotal > 0 ? Math.round((prevFulfilled / prevTotal) * 100) : 0}%`,
+        ``,
+        `### 이전 유형별 충족 집계`,
+        prevTypeFulfillment,
+        ``,
+        `### 이전 상위 빈도 약점`,
+        prevWpStr || "없음",
+      ].join("\n");
+
+      console.log(`[report] 이전 세션 비교: ${prevReport.session_id} (${prevReport.final_level})`);
+    } else {
+      console.log("[report] 이전 세션 없음 (첫 번째 시험)");
+    }
+
     const growthUser = substituteVariables(promptMap["report_growth_user"], {
       target_grade: targetGrade,
       final_level: finalLevel,
@@ -535,6 +607,7 @@ Deno.serve(async (req: Request) => {
       type_fulfillment: typeFulfillment,
       wp_frequency: wpFrequency,
       question_evaluations: questionEvaluations,
+      previous_comparison: previousComparison,
     });
 
     const overviewSchema = JSON.parse(promptMap["report_overview_schema"]);
@@ -563,36 +636,42 @@ Deno.serve(async (req: Request) => {
         `growth=${growthResult.tokensUsed}t, 합계=${totalTokens}t`,
     );
 
-    const { error: updateError } = await supabase
-      .from("mock_test_reports")
-      .upsert(
-        {
-          session_id,
-          user_id: userId,
-          overview: overviewResult.result,
-          growth: growthResult.result,
-          final_level: finalLevel,
-          target_grade: targetGrade,
-          rule_engine_result: ruleEngineResult,
-          aggregated_checkboxes: {
-            int: ruleEngineResult.aggregated_int_checkboxes,
-            adv: ruleEngineResult.aggregated_adv_checkboxes,
-            al: ruleEngineResult.aggregated_al_checkboxes,
-          },
-          model,
-          tokens_used: totalTokens,
-          processing_time_ms: Date.now() - startTime,
-          status: "completed",
-          completed_at: new Date().toISOString(),
-        },
-        { onConflict: "session_id" },
-      );
+    // GPT 완료 후 새 클라이언트로 저장 (GPT 대기 중 기존 연결 끊김 방지)
+    const freshClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    if (updateError) {
-      throw new Error(`report DB 저장 실패: ${updateError.message}`);
-    }
+    await withRetry(
+      async () => {
+        const { error: updateError } = await freshClient
+          .from("mock_test_reports")
+          .upsert(
+            {
+              session_id,
+              user_id: userId,
+              overview: overviewResult.result,
+              growth: growthResult.result,
+              final_level: finalLevel,
+              target_grade: targetGrade,
+              rule_engine_result: ruleEngineResult,
+              aggregated_checkboxes: {
+                int: ruleEngineResult.aggregated_int_checkboxes,
+                adv: ruleEngineResult.aggregated_adv_checkboxes,
+                al: ruleEngineResult.aggregated_al_checkboxes,
+              },
+              model,
+              tokens_used: totalTokens,
+              processing_time_ms: Date.now() - startTime,
+              status: "completed",
+              completed_at: new Date().toISOString(),
+            },
+            { onConflict: "session_id" },
+          );
+        if (updateError) throw new Error(updateError.message);
+      },
+      2,
+      "report DB 저장",
+    );
 
-    await supabase
+    await freshClient
       .from("mock_test_sessions")
       .update({
         holistic_status: "completed",
