@@ -1494,7 +1494,7 @@ function Step5Complete({
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [selectedVoice, setSelectedVoice] = useState<TtsVoice>("Zephyr");
+  const [selectedVoice, setSelectedVoice] = useState<TtsVoice>("Aoede");
   const [packageState, setPackageState] = useState<
     "idle" | "phase1" | "phase2" | "completed" | "partial" | "error"
   >("idle");
@@ -1800,7 +1800,7 @@ function Step5Complete({
 
 function TrialStep5({ onGoToScripts }: { onGoToScripts: () => void }) {
   const [phase, setPhase] = useState<"idle" | "loading" | "done">("idle");
-  const [selectedVoice, setSelectedVoice] = useState<TtsVoice>("Zephyr");
+  const [selectedVoice, setSelectedVoice] = useState<TtsVoice>("Aoede");
   const [progress, setProgress] = useState(0);
 
   // 페이크 프로그레스

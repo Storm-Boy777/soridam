@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen justify-center bg-background px-4 pt-12 sm:pt-20">
       <div className="w-full max-w-md">
         {/* 로고 */}
         <div className="mb-8 text-center">

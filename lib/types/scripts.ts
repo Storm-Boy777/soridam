@@ -19,7 +19,7 @@ export const PACKAGE_STATUSES = ['processing', 'completed', 'partial', 'failed']
 export type PackageStatus = (typeof PACKAGE_STATUSES)[number];
 
 // TTS 음성 (Gemini TTS prebuilt voices)
-export const TTS_VOICES = ['Zephyr', 'Aoede'] as const;
+export const TTS_VOICES = ['Aoede', 'Zephyr'] as const;
 export type TtsVoice = (typeof TTS_VOICES)[number];
 
 // 쉐도잉 세션 상태
@@ -68,7 +68,7 @@ export const PACKAGE_STATUS_LABELS: Record<PackageStatus, string> = {
 };
 
 export const TTS_VOICE_LABELS: Record<TtsVoice, string> = {
-  Zephyr: 'Zephyr (중성)',
+  Zephyr: 'Zephyr (남성)',
   Aoede: 'Aoede (여성)',
 };
 
