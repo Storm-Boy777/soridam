@@ -26,8 +26,6 @@ export function TrialComplete({ type }: TrialCompleteProps) {
         </h2>
         <p className="mt-1.5 max-w-sm text-center text-xs text-foreground-secondary sm:mt-2 sm:text-sm">
           나만의 경험으로 만든 맞춤 스크립트를 직접 생성해보세요.
-          <br />
-          시험 후기를 제출하면 스크립트 생성권을 받을 수 있어요.
         </p>
 
         <div className="mt-6 flex w-full max-w-xs flex-col gap-3">
@@ -36,7 +34,7 @@ export function TrialComplete({ type }: TrialCompleteProps) {
             className="flex items-center justify-center gap-2 rounded-[var(--radius-lg)] bg-primary-500 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-600"
           >
             <CreditCard size={16} />
-            요금제 보기
+            크레딧 충전하기
           </Link>
         </div>
 
@@ -90,7 +88,7 @@ export function TrialComplete({ type }: TrialCompleteProps) {
           className="flex items-center justify-center gap-2 rounded-[var(--radius-lg)] bg-primary-500 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-600"
         >
           <CreditCard size={16} />
-          요금제 보기
+          크레딧 충전하기
         </Link>
       </div>
 

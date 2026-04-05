@@ -80,7 +80,6 @@ export function SubmitTab({ initialSubmissions }: SubmitTabProps) {
           </p>
           {bannerOpen && (
             <p className="mt-0.5 text-xs text-foreground-secondary sm:mt-1 sm:text-sm">
-              OPIc 시험 후기를 제출하면 스크립트 패키지 생성권 2개가 지급됩니다.
               여러분의 후기 데이터가 빈도 분석의 정확도를 높여줍니다.
             </p>
           )}
@@ -99,16 +98,9 @@ export function SubmitTab({ initialSubmissions }: SubmitTabProps) {
             <p className="text-sm font-medium text-green-800">
               후기가 성공적으로 제출되었습니다!
             </p>
-            {creditGranted ? (
-              <p className="mt-0.5 text-xs text-green-600">
-                스크립트 패키지 생성권 2개가 지급되었습니다. 감사합니다.
-              </p>
-            ) : (
-              <p className="mt-0.5 text-xs text-foreground-secondary">
-                소중한 후기 감사합니다! 스크립트 무료 생성권은 OPIc 응시 규정에 따라
-                마지막 지급일로부터 25일 이후 후기 제출 시 지급됩니다. (최초 2회는 즉시 지급)
-              </p>
-            )}
+            <p className="mt-0.5 text-xs text-green-600">
+              소중한 후기 감사합니다.
+            </p>
           </div>
         </div>
       )}
@@ -117,7 +109,6 @@ export function SubmitTab({ initialSubmissions }: SubmitTabProps) {
       <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-4 sm:p-6">
         <h3 className="text-sm font-semibold text-foreground sm:text-base">시험 후기 제출하기</h3>
         <p className="mt-0.5 text-xs text-foreground-secondary sm:mt-1 sm:text-sm">
-          시험 후기를 제출하면 스크립트 패키지 생성권 2개가 지급됩니다.
           여러분의 데이터가 더 정확한 빈도 분석을 만듭니다.
         </p>
 

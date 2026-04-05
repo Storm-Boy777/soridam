@@ -300,7 +300,7 @@ function StartTab({
             {credit && (
               <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700">
                 <Coins size={11} />
-                응시권 : {credit.planCredits + credit.credits}
+                크레딧 : ₩{(credit.balanceKrw ?? 0).toLocaleString()}
               </span>
             )}
           </div>
@@ -370,9 +370,9 @@ function StartTab({
       {/* 크레딧 표시 — 크레딧 있을 때만 (없을 때는 NoCreditCard에서 표시) */}
       {credit && credit.available && (
         <div className="flex items-center gap-2 text-sm">
-          <span className="text-foreground-secondary">모의고사 응시권:</span>
+          <span className="text-foreground-secondary">크레딧 잔액:</span>
           <span className="font-bold text-foreground">
-            {credit.planCredits + credit.credits}회
+            ₩{(credit.balanceKrw ?? 0).toLocaleString()}
           </span>
         </div>
       )}
@@ -386,7 +386,7 @@ function StartTab({
             hasCredit={false}
           />
           <div className="mt-4">
-            <NoCreditCard type="mock-exam" credits={credit ? credit.planCredits + credit.credits : 0} />
+            <NoCreditCard type="mock-exam" credits={credit?.balanceKrw ?? 0} />
           </div>
         </div>
       )}
@@ -472,7 +472,7 @@ function StartTab({
         }}
         onCancel={() => setShowAbandonConfirm(false)}
         title="모의고사를 포기하시겠습니까?"
-        description="사용한 응시권은 복구되지 않습니다."
+        description="사용한 크레딧은 복구되지 않습니다."
         confirmLabel="포기하기"
         cancelLabel="계속하기"
         variant="warning"

@@ -123,7 +123,7 @@ export function PlanChangeModal({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-sm font-medium text-foreground-secondary">
-                모의고사 응시권
+                모의고사 크레딧
               </label>
               <input
                 type="number"
@@ -136,7 +136,7 @@ export function PlanChangeModal({
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-foreground-secondary">
-                스크립트 생성권
+                스크립트 크레딧
               </label>
               <input
                 type="number"
@@ -165,7 +165,7 @@ export function PlanChangeModal({
             />
             {isFree && (
               <p className="mt-1 text-xs text-foreground-muted">
-                Free 플랜은 이용권 0, 기간 없음으로 설정됩니다.
+                Free 플랜은 크레딧 0, 기간 없음으로 설정됩니다.
               </p>
             )}
           </div>

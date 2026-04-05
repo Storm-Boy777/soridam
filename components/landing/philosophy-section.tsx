@@ -17,63 +17,63 @@ export default function PhilosophySection() {
         사용한 만큼만, 원가 그대로.
       </p>
 
-      {/* ② 요금제 3개 카드 */}
+      {/* ② 크레딧 3개 카드 */}
       <div className="mx-auto mt-10 grid max-w-3xl gap-5 sm:grid-cols-3">
         {/* 크레딧 충전 */}
-        <div className="flex flex-col rounded-2xl border border-[#2A6B55] bg-[#1A4D3A] p-6">
-          <p className="text-sm font-bold text-[#6EE7B7]">크레딧 충전</p>
+        <div className="flex flex-col items-center rounded-2xl border border-white/10 bg-white/[0.06] p-6 text-center">
+          <p className="text-sm font-bold text-primary-400">크레딧 충전</p>
           <div className="mt-4">
             <span className="text-3xl font-extrabold">10,000</span>
             <span className="ml-1 text-sm text-gray-400">원</span>
           </div>
-          <div className="mt-5 space-y-2 text-left text-xs text-gray-300">
-            <p>✓ 크레딧 10,000원분</p>
-            <p>✓ 사용량에 따라 차감</p>
-            <p>✓ 모의고사 · 스크립트 · 튜터링</p>
+          <div className="mt-5 space-y-2 text-xs text-gray-300">
+            <p><span className="text-primary-400">✓</span> 크레딧 10,000원분</p>
+            <p><span className="text-primary-400">✓</span> 사용량에 따라 차감</p>
+            <p><span className="text-primary-400">✓</span> 모의고사 · 스크립트 · 튜터링</p>
           </div>
           <Link
             href="/store"
-            className="mt-6 rounded-xl bg-white/20 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/30"
+            className="mt-6 w-full rounded-xl bg-primary-500 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-600"
           >
             충전하기
           </Link>
         </div>
 
         {/* 충전 + 후원 */}
-        <div className="flex flex-col rounded-2xl border border-[#2A4080] bg-[#1A3060] p-6">
-          <p className="text-sm font-bold text-[#93C5FD]">충전 + 후원</p>
+        <div className="flex flex-col items-center rounded-2xl border border-white/10 bg-white/[0.06] p-6 text-center">
+          <p className="text-sm font-bold text-secondary-400">충전 + 후원</p>
           <div className="mt-4">
             <span className="text-3xl font-extrabold">15,000</span>
             <span className="ml-1 text-sm text-gray-400">원</span>
           </div>
-          <div className="mt-5 space-y-2 text-left text-xs text-gray-300">
-            <p>✓ 크레딧 10,000원분</p>
-            <p>✓ 서버 후원 5,000원 포함</p>
-            <p>✓ 모의고사 · 스크립트 · 튜터링</p>
+          <div className="mt-5 space-y-2 text-xs text-gray-300">
+            <p><span className="text-secondary-400">✓</span> 크레딧 10,000원분</p>
+            <p><span className="text-secondary-400">✓</span> 서버 후원 5,000원 포함</p>
+            <p><span className="text-secondary-400">✓</span> 소리담을 지속가능하게</p>
           </div>
           <Link
             href="/store"
-            className="mt-6 rounded-xl bg-white/20 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/30"
+            className="mt-6 w-full rounded-xl bg-secondary-500 py-2.5 text-sm font-bold text-white transition-colors hover:bg-secondary-600"
           >
             충전 + 후원하기
           </Link>
         </div>
 
         {/* 후원만 */}
-        <div className="flex flex-col rounded-2xl border border-[#8B6520] bg-[#5C4215] p-6">
-          <p className="text-sm font-bold text-[#FCD34D]">후원만</p>
+        <div className="flex flex-col items-center rounded-2xl border border-white/10 bg-white/[0.06] p-6 text-center">
+          <p className="text-sm font-bold text-accent-400">후원</p>
           <div className="mt-4">
             <span className="text-3xl font-extrabold">5,000</span>
             <span className="ml-1 text-sm text-gray-400">원</span>
           </div>
-          <div className="mt-5 space-y-2 text-left text-xs text-gray-300">
-            <p>☕ 크레딧 미포함</p>
-            <p>☕ 소리담을 지속가능하게</p>
-            <p>☕ 서버운영비 후원</p>
+          <div className="mt-5 space-y-2 text-xs text-gray-300">
+            <p><span className="text-accent-400">✓</span> 크레딧 미포함</p>
+            <p><span className="text-accent-400">✓</span> 소리담을 지속가능하게</p>
+            <p><span className="text-accent-400">✓</span> 서버운영비 후원</p>
           </div>
           <Link
             href="/store"
-            className="mt-6 rounded-xl bg-white/20 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/30"
+            className="mt-6 w-full rounded-xl bg-accent-500 py-2.5 text-sm font-bold text-white transition-colors hover:bg-accent-600"
           >
             후원하기
           </Link>
@@ -105,7 +105,7 @@ export default function PhilosophySection() {
             {/* 단가표 */}
             <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]">
               <div className="border-b border-white/10 px-4 py-3 sm:px-5">
-                <p className="text-xs font-bold text-gray-400">AI 서비스 원가</p>
+                <p className="text-xs font-bold text-gray-400">AI 사용 모델 및 서비스 원가</p>
               </div>
               <div className="divide-y divide-white/5 text-xs">
                 {[

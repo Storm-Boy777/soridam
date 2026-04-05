@@ -27,7 +27,7 @@ const appNav: NavItem[] = [
   { label: "모의고사", href: "/mock-exam" },
   { label: "튜터링", href: "/tutoring" },
   { label: "만능패턴", href: "/patterns" },
-  { label: "스토어", href: "/store" },
+  { label: "AI 스토어", href: "/store" },
 ];
 
 /** 서버에서 전달하는 인증 정보 (선택적). 전달 시 클라이언트 getSession() 스킵 → 깜빡임 제거 */

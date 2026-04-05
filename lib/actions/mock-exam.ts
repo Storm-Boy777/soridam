@@ -738,31 +738,24 @@ export async function getEvaluation(input: {
 export async function checkMockExamCredit(): Promise<
   ActionResult<{
     available: boolean;
-    planCredits: number;
-    credits: number;
+    balanceKrw: number;
   }>
 > {
   try {
     const { supabase, userId } = await requireUser();
 
-    const { data, error } = await supabase
-      .from("user_credits")
-      .select("plan_mock_exam_credits, mock_exam_credits")
+    const { data: balance } = await supabase
+      .from("polar_balances")
+      .select("balance_krw")
       .eq("user_id", userId)
       .single();
 
-    if (error || !data) {
-      return { error: "이용권 정보를 조회할 수 없습니다" };
-    }
-
-    const planCredits = Number(data.plan_mock_exam_credits ?? 0);
-    const credits = Number(data.mock_exam_credits ?? 0);
+    const balanceKrw = balance?.balance_krw ?? 0;
 
     return {
       data: {
-        available: planCredits + credits > 0,
-        planCredits,
-        credits,
+        available: balanceKrw > 0,
+        balanceKrw,
       },
     };
   } catch (err) {

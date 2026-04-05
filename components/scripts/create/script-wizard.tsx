@@ -558,17 +558,10 @@ export function ScriptWizard({
       {/* ── 크레딧 표시 (체험판에서는 숨김) ── */}
       {creditInfo && step <= 2 && !isTrialMode && (
         <div className="border-b border-border bg-surface-secondary/50 px-4 py-2 text-center text-xs text-foreground-muted">
-          스크립트 생성권:{" "}
+          크레딧 잔액:{" "}
           <span className="font-semibold text-primary-500">
-            {creditInfo.totalCredits}회
-          </span>{" "}
-          남음
-          {creditInfo.planCredits > 0 && (
-            <span className="ml-1">
-              (플랜 {creditInfo.planCredits} + 횟수권{" "}
-              {creditInfo.permanentCredits})
-            </span>
-          )}
+            ₩{(creditInfo.balanceKrw ?? creditInfo.totalCredits ?? 0).toLocaleString()}
+          </span>
         </div>
       )}
 
@@ -675,7 +668,7 @@ export function ScriptWizard({
                   className="inline-flex items-center gap-1.5 text-sm text-foreground-secondary hover:text-foreground"
                 >
                   <RotateCcw size={14} />
-                  재생성 (1회 차감)
+                  재생성
                 </button>
                 <button
                   onClick={handleConfirm}
@@ -1024,7 +1017,7 @@ function Step2Input({
 
       {!hasCredit && !isTrialMode && (
         <p className="text-center text-xs text-red-500">
-          스크립트 생성권이 없습니다. 스토어에서 구매해주세요.
+          크레딧이 부족합니다. AI 스토어에서 충전해주세요.
         </p>
       )}
     </div>
@@ -2094,8 +2087,8 @@ function RegenerateModal({
 
         <p className="mt-3 text-xs text-foreground-secondary">
           현재 스크립트가 삭제되고 새로 생성됩니다.{" "}
-          <span className="font-semibold text-primary-600">생성권 1회</span>가
-          차감됩니다.
+          <span className="font-semibold text-primary-600">크레딧</span>이
+          사용량에 따라 차감됩니다.
         </p>
 
         <div className="mt-4">
@@ -2129,13 +2122,13 @@ function RegenerateModal({
             ) : (
               <RotateCcw size={14} />
             )}
-            재생성 (1회 차감)
+            재생성
           </button>
         </div>
 
         {!hasCredit && (
           <p className="mt-2 text-center text-xs text-red-500">
-            스크립트 생성권이 없습니다.
+            크레딧이 부족합니다.
           </p>
         )}
       </div>

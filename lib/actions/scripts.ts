@@ -47,26 +47,22 @@ export async function checkScriptCredit(): Promise<ActionResult<CreditCheckResul
   try {
     const { supabase, userId } = await requireUser();
 
-    const { data, error } = await supabase
-      .from("user_credits")
-      .select("plan_script_credits, script_credits")
+    const { data: balance } = await supabase
+      .from("polar_balances")
+      .select("balance_krw")
       .eq("user_id", userId)
       .single();
 
-    if (error || !data) {
-      return { error: "이용권 정보를 조회할 수 없습니다" };
-    }
-
-    const planCredits = data.plan_script_credits ?? 0;
-    const permanentCredits = data.script_credits ?? 0;
-    const totalCredits = planCredits + permanentCredits;
+    const balanceKrw = balance?.balance_krw ?? 0;
 
     return {
       data: {
-        hasCredit: totalCredits > 0,
-        planCredits,
-        permanentCredits,
-        totalCredits,
+        hasCredit: balanceKrw > 0,
+        balanceKrw,
+        // 하위 호환용 (기존 UI에서 참조)
+        planCredits: 0,
+        permanentCredits: 0,
+        totalCredits: balanceKrw,
       },
     };
   } catch (err) {

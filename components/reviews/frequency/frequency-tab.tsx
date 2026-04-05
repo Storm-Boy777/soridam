@@ -227,7 +227,7 @@ export function FrequencyTab({ initialStats, initialFrequency, isPaidUser = fals
               href="/store"
               className="shrink-0 rounded-lg bg-primary-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-600 transition-colors"
             >
-              요금제 보기
+              크레딧 충전하기
             </Link>
           </div>
         )}

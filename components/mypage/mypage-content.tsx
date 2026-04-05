@@ -354,7 +354,7 @@ function PlanTab({ user, credits }: { user: UserData; credits?: CreditsData }) {
     <div className="space-y-6">
       {/* 현재 플랜 — 브랜드 강조 배경 */}
       <div className="rounded-[var(--radius-xl)] border border-primary-200 bg-primary-50/50 p-4 sm:p-6">
-        <h3 className="mb-4 font-semibold text-foreground">현재 요금제</h3>
+        <h3 className="mb-4 font-semibold text-foreground">크레딧 현황</h3>
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-[var(--radius-lg)] bg-white p-3 text-center">
             <p className="text-xs text-foreground-muted">플랜</p>
@@ -382,52 +382,14 @@ function PlanTab({ user, credits }: { user: UserData; credits?: CreditsData }) {
         <h3 className="mb-4 font-semibold text-foreground">남은 사용량</h3>
         <div className="grid gap-4 sm:grid-cols-3">
           {/* 모의고사 */}
-          <div className="rounded-[var(--radius-lg)] bg-surface-secondary p-4 text-center">
-            <div className="flex items-center justify-center gap-2">
-              <ClipboardList size={18} className="text-secondary-600" />
-              <p className="text-sm text-foreground-secondary">모의고사</p>
-            </div>
-            <p className="mt-2 text-xl font-bold text-foreground">
-              {mockCredits}
-              <span className="text-sm font-normal text-foreground-muted">회</span>
+          <div className="col-span-full rounded-[var(--radius-lg)] bg-surface-secondary p-4 text-center">
+            <p className="text-sm text-foreground-secondary">크레딧 잔액</p>
+            <p className="mt-2 text-2xl font-bold text-foreground">
+              ₩{(credits?.balance_krw ?? 0).toLocaleString()}
             </p>
-            <div className="mt-2 flex items-center justify-center gap-2 text-[11px] text-foreground-muted">
-              <span>플랜 {credits?.plan_mock_exam_credits ?? 0}</span>
-              <span className="text-border">|</span>
-              <span>횟수권 {credits?.mock_exam_credits ?? 0}</span>
-            </div>
-          </div>
-          {/* 스크립트 */}
-          <div className="rounded-[var(--radius-lg)] bg-surface-secondary p-4 text-center">
-            <div className="flex items-center justify-center gap-2">
-              <Flame size={18} className="text-primary-500" />
-              <p className="text-sm text-foreground-secondary">스크립트</p>
-            </div>
-            <p className="mt-2 text-xl font-bold text-foreground">
-              {scriptCredits}
-              <span className="text-sm font-normal text-foreground-muted">회</span>
+            <p className="mt-1 text-[11px] text-foreground-muted">
+              모의고사 · 스크립트 · 튜터링 사용 시 차감
             </p>
-            <div className="mt-2 flex items-center justify-center gap-2 text-[11px] text-foreground-muted">
-              <span>플랜 {credits?.plan_script_credits ?? 0}</span>
-              <span className="text-border">|</span>
-              <span>횟수권 {credits?.script_credits ?? 0}</span>
-            </div>
-          </div>
-          {/* 튜터링 */}
-          <div className="rounded-[var(--radius-lg)] bg-surface-secondary p-4 text-center">
-            <div className="flex items-center justify-center gap-2">
-              <Zap size={18} className="text-accent-500" />
-              <p className="text-sm text-foreground-secondary">튜터링</p>
-            </div>
-            <p className="mt-2 text-xl font-bold text-foreground">
-              {tutoringCredits}
-              <span className="text-sm font-normal text-foreground-muted">회</span>
-            </p>
-            <div className="mt-2 flex items-center justify-center gap-2 text-[11px] text-foreground-muted">
-              <span>플랜 {credits?.plan_tutoring_credits ?? 0}</span>
-              <span className="text-border">|</span>
-              <span>횟수권 {credits?.tutoring_credits ?? 0}</span>
-            </div>
           </div>
         </div>
       </div>
@@ -444,7 +406,7 @@ function PlanTab({ user, credits }: { user: UserData; credits?: CreditsData }) {
           </p>
           <Link href="/store" className="mt-4 block">
             <Button size="sm" className="w-full">
-              요금제 보기
+              크레딧 충전하기
               <ArrowRight size={14} className="ml-1" />
             </Button>
           </Link>
@@ -706,7 +668,7 @@ function AccountTab({ user }: { user: UserData }) {
               정말 탈퇴하시겠습니까?
             </p>
             <p className="mt-1 text-xs text-foreground-secondary">
-              모든 학습 기록, 결제 내역, 이용권이 즉시 삭제되며 복구할 수
+              모든 학습 기록, 결제 내역, 크레딧이 즉시 삭제되며 복구할 수
               없습니다.
             </p>
             {deleteError && (

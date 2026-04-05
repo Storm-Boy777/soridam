@@ -174,7 +174,7 @@ export function DiagnosisTab({
             {credit && (
               <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700">
                 <Coins size={11} />
-                훈련권 : {credit.plan_credits + credit.credits}
+                크레딧 : ₩{(credit.balanceKrw ?? (credit.plan_credits + credit.credits) ?? 0).toLocaleString()}
               </span>
             )}
           </div>
@@ -380,19 +380,19 @@ function StartDiagnosisView({
           <>
             <div className="mb-3 flex items-center gap-2 text-xs text-foreground-secondary sm:text-sm">
               <AlertTriangle className="h-4 w-4 shrink-0 text-accent-500" />
-              튜터링 훈련권이 없습니다
+              크레딧이 부족합니다
             </div>
             <a
               href="/store"
               className="flex h-9 w-full items-center justify-center gap-2 rounded-[var(--radius-lg)] bg-primary-500 px-4 text-sm font-medium text-white transition-colors hover:bg-primary-600 sm:h-10"
             >
-              훈련권 구매하기
+              크레딧 충전하기
               <ArrowRight size={16} />
             </a>
           </>
         )}
         <p className="mt-2 text-center text-[11px] text-foreground-muted sm:text-xs">
-          훈련권 1회 소모 · 진단 + 훈련 전체 포함
+          크레딧이 사용량에 따라 차감됩니다
         </p>
       </div>
     </div>

@@ -217,9 +217,9 @@ export function StepSpeak() {
       <div className="flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50/50 p-2.5 text-xs">
         <Coins size={14} className="text-amber-600" />
         <span className="text-amber-700">
-          <span className="font-semibold">스크립트 생성권 1회</span> 차감
+          크레딧이 사용량에 따라 차감됩니다
           {creditData && (
-            <span className="ml-1">· 현재 {creditData.totalCredits}개 보유</span>
+            <span className="ml-1 font-semibold">· 잔액 ₩{(creditData.balanceKrw ?? creditData.totalCredits ?? 0).toLocaleString()}</span>
           )}
         </span>
       </div>
@@ -227,7 +227,7 @@ export function StepSpeak() {
       {creditData && !creditData.hasCredit && (
         <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
           <AlertCircle size={16} />
-          스크립트 생성권이 없습니다. 스토어에서 구매해주세요.
+          크레딧이 부족합니다. AI 스토어에서 충전해주세요.
         </div>
       )}
 

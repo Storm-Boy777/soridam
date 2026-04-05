@@ -137,7 +137,7 @@ export function TestModeConfirm({
   const items = [
     "조용한 환경에서 진행합니다",
     "40분 동안 중단 없이 진행할 수 있습니다",
-    "응시권 1회가 차감됩니다",
+    "크레딧이 사용량에 따라 차감됩니다",
   ];
 
   if (!open) return null;

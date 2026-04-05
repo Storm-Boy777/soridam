@@ -1,16 +1,15 @@
 "use client";
 
-import { X, FlaskConical, CreditCard } from "lucide-react";
+import { X, FlaskConical, Wallet } from "lucide-react";
 import Link from "next/link";
 
 interface TrialCreditGateProps {
   open: boolean;
   onClose: () => void;
-  // 어떤 크레딧이 부족한지 (모의고사 or 스크립트)
   type: "mock-exam" | "script";
 }
 
-// 크레딧 부족 시 체험판/후기/요금제 3가지 CTA 모달
+// 크레딧 부족 시 체험판/충전 CTA 모달
 export function TrialCreditGate({ open, onClose, type }: TrialCreditGateProps) {
   if (!open) return null;
 
@@ -27,7 +26,7 @@ export function TrialCreditGate({ open, onClose, type }: TrialCreditGateProps) {
         </button>
 
         <h3 className="text-lg font-semibold text-foreground">
-          {title} 이용권이 부족합니다
+          크레딧이 부족합니다
         </h3>
         <p className="mt-1 text-sm text-foreground-secondary">
           아래 방법으로 {title}를 이용할 수 있습니다.
@@ -49,18 +48,18 @@ export function TrialCreditGate({ open, onClose, type }: TrialCreditGateProps) {
             </div>
           </Link>
 
-          {/* 요금제 */}
+          {/* 크레딧 충전 */}
           <Link
             href="/store"
             onClick={onClose}
             className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4 transition-colors hover:border-primary-300 hover:bg-primary-50/30"
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-100">
-              <CreditCard size={18} className="text-accent-600" />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-100">
+              <Wallet size={18} className="text-primary-600" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground">요금제 구매하기</p>
-              <p className="text-xs text-foreground-muted">이용권을 구매하여 바로 이용</p>
+              <p className="text-sm font-semibold text-foreground">크레딧 충전하기</p>
+              <p className="text-xs text-foreground-muted">AI 스토어에서 크레딧을 충전</p>
             </div>
           </Link>
         </div>

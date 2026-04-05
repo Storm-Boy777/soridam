@@ -64,19 +64,7 @@ export function WizardStep3({ submissionId, onComplete, onBack }: WizardStep3Pro
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
-      {/* 크레딧 보상 안내 */}
-      <div className="flex items-start gap-2.5 rounded-xl border border-secondary-200 bg-secondary-50/50 p-3 sm:gap-3 sm:rounded-[var(--radius-xl)] sm:p-4">
-        <Gift size={16} className="mt-0.5 shrink-0 text-secondary-600 sm:hidden" />
-        <Gift size={18} className="mt-0.5 hidden shrink-0 text-secondary-600 sm:block" />
-        <div>
-          <p className="text-[13px] font-medium text-foreground sm:text-sm">
-            후기를 완료하면 스크립트 패키지 생성권 2개를 드려요!
-          </p>
-          <p className="mt-0.5 text-[11px] text-foreground-secondary sm:text-xs">
-            OPIc 응시 주기(25일)에 맞춰 생성권이 지급됩니다
-          </p>
-        </div>
-      </div>
+
 
       {/* 한줄 후기 */}
       <div>

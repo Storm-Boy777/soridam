@@ -153,24 +153,21 @@ export async function checkTutoringCredit(): Promise<ActionResult<TutoringCredit
   try {
     const { supabase, userId } = await requireUser();
 
-    const { data: credits, error } = await supabase
-      .from("user_credits")
-      .select("plan_tutoring_credits, tutoring_credits")
+    const { data: balance } = await supabase
+      .from("polar_balances")
+      .select("balance_krw")
       .eq("user_id", userId)
       .single();
 
-    if (error) {
-      return { error: `크레딧 조회 실패: ${error.message}` };
-    }
-
-    const planCredits = credits?.plan_tutoring_credits ?? 0;
-    const ownCredits = credits?.tutoring_credits ?? 0;
+    const balanceKrw = balance?.balance_krw ?? 0;
 
     return {
       data: {
-        available: planCredits + ownCredits > 0,
-        plan_credits: planCredits,
-        credits: ownCredits,
+        available: balanceKrw > 0,
+        balanceKrw,
+        // 하위 호환용
+        plan_credits: 0,
+        credits: balanceKrw,
       },
     };
   } catch (err) {

@@ -5,10 +5,7 @@ import { X } from "lucide-react";
 import type { CreditAdjustParams } from "@/lib/types/admin";
 
 const CREDIT_TYPES = [
-  { value: "mock_exam_credits", label: "모의고사 응시권 (영구)" },
-  { value: "script_credits", label: "스크립트 생성권 (영구)" },
-  { value: "plan_mock_exam_credits", label: "모의고사 응시권 (플랜)" },
-  { value: "plan_script_credits", label: "스크립트 생성권 (플랜)" },
+  { value: "balance_krw", label: "크레딧 잔액 (원)" },
 ] as const;
 
 interface CreditAdjustModalProps {
@@ -45,7 +42,7 @@ export function CreditAdjustModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-bold text-foreground">이용권 조정</h3>
+          <h3 className="text-lg font-bold text-foreground">크레딧 조정</h3>
           <button onClick={onClose} className="text-foreground-muted hover:text-foreground">
             <X size={20} />
           </button>
@@ -58,7 +55,7 @@ export function CreditAdjustModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-foreground-secondary">
-              이용권 유형
+              크레딧 유형
             </label>
             <select
               value={creditType}
@@ -93,7 +90,7 @@ export function CreditAdjustModal({
               onChange={(e) => setReason(e.target.value)}
               rows={2}
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-              placeholder="이용권 조정 사유를 입력하세요"
+              placeholder="크레딧 조정 사유를 입력하세요"
             />
           </div>
 
