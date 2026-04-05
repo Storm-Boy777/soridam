@@ -4,6 +4,7 @@
 // T-9 결정: CRUD는 Server Actions, AI 호출은 Edge Functions
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logApiUsage, extractChatUsage, estimateAudioDuration } from "../_shared/api-usage-logger.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -256,16 +257,48 @@ async function handleGenerate(supabase: any, body: any) {
     "generate"
   );
 
-  const pass1Result = await callGPT(system, user, scriptGenerationSchema, 0.8, 4000);
+  const pass1Start = Date.now();
+  const { content: pass1Result, usage: pass1Usage } = await callGPT(system, user, scriptGenerationSchema, 0.8, 4000);
+  const pass1Ms = Date.now() - pass1Start;
+
+  // Pass 1 사용량 로깅
+  await logApiUsage(supabase, {
+    user_id: script.user_id,
+    session_type: "script",
+    session_id: script_id,
+    feature: "script_generate_pass1",
+    service: "openai_chat",
+    model: "gpt-4.1",
+    ef_name: "scripts",
+    tokens_in: pass1Usage.prompt_tokens,
+    tokens_out: pass1Usage.completion_tokens,
+    processing_time_ms: pass1Ms,
+  });
 
   // Pass 2: 학습 리스트 추출
-  const analysisLists = await runPass2Analysis(
+  const { analysisLists, usage: pass2Usage, processingTimeMs: pass2Ms } = await runPass2Analysis(
     supabase,
     pass1Result.full_text.english,
     script.target_grade,
     script.question_type,
     script.question_english
   );
+
+  // Pass 2 사용량 로깅
+  if (pass2Usage) {
+    await logApiUsage(supabase, {
+      user_id: script.user_id,
+      session_type: "script",
+      session_id: script_id,
+      feature: "script_generate_pass2",
+      service: "openai_chat",
+      model: "gpt-4.1",
+      ef_name: "scripts",
+      tokens_in: pass2Usage.prompt_tokens,
+      tokens_out: pass2Usage.completion_tokens,
+      processing_time_ms: pass2Ms,
+    });
+  }
 
   // 분석 결과를 pass1Result에 병합
   pass1Result.structure_summary = analysisLists.structure_summary;
@@ -336,16 +369,48 @@ async function handleCorrect(supabase: any, body: any) {
     "correct"
   );
 
-  const pass1Result = await callGPT(system, user, scriptGenerationSchema, 0.8, 4000);
+  const pass1Start = Date.now();
+  const { content: pass1Result, usage: pass1Usage } = await callGPT(system, user, scriptGenerationSchema, 0.8, 4000);
+  const pass1Ms = Date.now() - pass1Start;
+
+  // Pass 1 사용량 로깅
+  await logApiUsage(supabase, {
+    user_id: script.user_id,
+    session_type: "script",
+    session_id: script_id,
+    feature: "script_correct_pass1",
+    service: "openai_chat",
+    model: "gpt-4.1",
+    ef_name: "scripts",
+    tokens_in: pass1Usage.prompt_tokens,
+    tokens_out: pass1Usage.completion_tokens,
+    processing_time_ms: pass1Ms,
+  });
 
   // Pass 2: 학습 리스트 추출
-  const analysisLists = await runPass2Analysis(
+  const { analysisLists, usage: pass2Usage, processingTimeMs: pass2Ms } = await runPass2Analysis(
     supabase,
     pass1Result.full_text.english,
     script.target_grade,
     script.question_type,
     script.question_english
   );
+
+  // Pass 2 사용량 로깅
+  if (pass2Usage) {
+    await logApiUsage(supabase, {
+      user_id: script.user_id,
+      session_type: "script",
+      session_id: script_id,
+      feature: "script_correct_pass2",
+      service: "openai_chat",
+      model: "gpt-4.1",
+      ef_name: "scripts",
+      tokens_in: pass2Usage.prompt_tokens,
+      tokens_out: pass2Usage.completion_tokens,
+      processing_time_ms: pass2Ms,
+    });
+  }
 
   pass1Result.structure_summary = analysisLists.structure_summary;
   pass1Result.key_sentences = analysisLists.key_sentences;
@@ -436,22 +501,54 @@ ${user_prompt || "전체적으로 더 자연스럽게 개선해주세요."}
 동일한 JSON 형식으로 반환하세요.
 `;
 
-  const pass1Result = await callGPT(
+  const pass1Start = Date.now();
+  const { content: pass1Result, usage: pass1Usage } = await callGPT(
     system,
     baseUser + refineContext,
     scriptGenerationSchema,
     0.8,
     4000
   );
+  const pass1Ms = Date.now() - pass1Start;
+
+  // Pass 1 사용량 로깅
+  await logApiUsage(supabase, {
+    user_id: script.user_id,
+    session_type: "script",
+    session_id: script_id,
+    feature: "script_refine_pass1",
+    service: "openai_chat",
+    model: "gpt-4.1",
+    ef_name: "scripts",
+    tokens_in: pass1Usage.prompt_tokens,
+    tokens_out: pass1Usage.completion_tokens,
+    processing_time_ms: pass1Ms,
+  });
 
   // Pass 2: 학습 리스트 추출
-  const analysisLists = await runPass2Analysis(
+  const { analysisLists, usage: pass2Usage, processingTimeMs: pass2Ms } = await runPass2Analysis(
     supabase,
     pass1Result.full_text.english,
     script.target_grade,
     script.question_type,
     script.question_english
   );
+
+  // Pass 2 사용량 로깅
+  if (pass2Usage) {
+    await logApiUsage(supabase, {
+      user_id: script.user_id,
+      session_type: "script",
+      session_id: script_id,
+      feature: "script_refine_pass2",
+      service: "openai_chat",
+      model: "gpt-4.1",
+      ef_name: "scripts",
+      tokens_in: pass2Usage.prompt_tokens,
+      tokens_out: pass2Usage.completion_tokens,
+      processing_time_ms: pass2Ms,
+    });
+  }
 
   pass1Result.structure_summary = analysisLists.structure_summary;
   pass1Result.key_sentences = analysisLists.key_sentences;
@@ -604,7 +701,11 @@ async function runPass2Analysis(
   targetLevel: string,
   questionType: string,
   questionEnglish: string
-): Promise<AnalysisLists> {
+): Promise<{
+  analysisLists: AnalysisLists;
+  usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } | null;
+  processingTimeMs: number;
+}> {
   try {
     // 분석 시스템 프롬프트 로드
     const { data: template } = await supabase
@@ -616,7 +717,7 @@ async function runPass2Analysis(
 
     if (!template) {
       console.warn("script_analysis 프롬프트 없음, 빈 리스트 반환");
-      return EMPTY_LISTS;
+      return { analysisLists: EMPTY_LISTS, usage: null, processingTimeMs: 0 };
     }
 
     const userPrompt = `Target level: ${targetLevel}
@@ -628,26 +729,32 @@ ${fullEnglishText}
 
 Extract 7 categories of learning content from this script following the density guidelines for ${targetLevel} level.`;
 
-    const result = await callGPT(
+    const pass2Start = Date.now();
+    const { content: result, usage } = await callGPT(
       template.system_prompt,
       userPrompt,
       analysisListSchema,
       0.3,
       2500
     );
+    const pass2Ms = Date.now() - pass2Start;
 
     return {
-      structure_summary: result.structure_summary || [],
-      key_sentences: result.key_sentences || [],
-      key_expressions: result.key_expressions || [],
-      discourse_markers: result.discourse_markers || [],
-      reusable_patterns: result.reusable_patterns || [],
-      similar_questions: result.similar_questions || [],
-      expansion_ideas: result.expansion_ideas || [],
+      analysisLists: {
+        structure_summary: result.structure_summary || [],
+        key_sentences: result.key_sentences || [],
+        key_expressions: result.key_expressions || [],
+        discourse_markers: result.discourse_markers || [],
+        reusable_patterns: result.reusable_patterns || [],
+        similar_questions: result.similar_questions || [],
+        expansion_ideas: result.expansion_ideas || [],
+      },
+      usage,
+      processingTimeMs: pass2Ms,
     };
   } catch (err) {
     console.error("Pass 2 분석 실패, 빈 리스트 반환:", err);
-    return EMPTY_LISTS;
+    return { analysisLists: EMPTY_LISTS, usage: null, processingTimeMs: 0 };
   }
 }
 
@@ -659,7 +766,7 @@ async function callGPT(
   jsonSchema: any,
   temperature: number = 0.8,
   maxTokens: number = 4000
-) {
+): Promise<{ content: any; usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } }> {
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -688,16 +795,18 @@ async function callGPT(
   }
 
   const result = await response.json();
-  const content = result.choices?.[0]?.message?.content;
+  const rawContent = result.choices?.[0]?.message?.content;
 
-  if (!content) {
+  if (!rawContent) {
     throw new Error("GPT 응답이 비어있습니다");
   }
 
+  const usage = extractChatUsage(result);
+
   try {
-    return JSON.parse(content);
+    return { content: JSON.parse(rawContent), usage };
   } catch (parseErr) {
-    console.error("GPT 응답 JSON 파싱 실패:", content.slice(0, 200));
+    console.error("GPT 응답 JSON 파싱 실패:", rawContent.slice(0, 200));
     throw new Error("GPT 응답 JSON 파싱 실패");
   }
 }
@@ -784,14 +893,10 @@ async function handleEvaluate(supabase: any, body: any, authHeader: string) {
 
   const userId = session.user_id;
 
-  // 크레딧 차감
-  const { data: creditOk, error: creditError } = await supabase.rpc(
-    "consume_script_credit",
-    { p_user_id: userId }
-  );
-
-  if (creditError || !creditOk) {
-    return jsonResponse({ error: "스크립트 생성권이 부족합니다" }, 402);
+  // 크레딧 잔액 확인 (실비용은 logApiUsage에서 자동 차감)
+  const { data: balance } = await supabase.rpc("polar_get_balance", { p_user_id: userId });
+  if (!balance || balance <= 0) {
+    return jsonResponse({ error: "크레딧이 부족합니다. 스토어에서 충전해주세요." }, 402);
   }
 
   try {
@@ -806,6 +911,7 @@ async function handleEvaluate(supabase: any, body: any, authHeader: string) {
     formData.append("model", "whisper-1");
     formData.append("language", "en");
 
+    const whisperStart = Date.now();
     const whisperRes = await fetch(
       "https://api.openai.com/v1/audio/transcriptions",
       {
@@ -814,6 +920,7 @@ async function handleEvaluate(supabase: any, body: any, authHeader: string) {
         body: formData,
       }
     );
+    const whisperMs = Date.now() - whisperStart;
 
     if (!whisperRes.ok) {
       // 환불 (세션 상태로 이중 환불 방지)
@@ -827,6 +934,19 @@ async function handleEvaluate(supabase: any, body: any, authHeader: string) {
     if (!whisperResult.text) {
       console.warn("Whisper 응답에 text 필드 없음:", JSON.stringify(whisperResult).slice(0, 200));
     }
+
+    // Whisper STT 사용량 로깅
+    await logApiUsage(supabase, {
+      user_id: userId,
+      session_type: "shadowing",
+      session_id: session_id,
+      feature: "script_evaluate_stt",
+      service: "openai_whisper",
+      model: "whisper-1",
+      ef_name: "scripts",
+      audio_duration_sec: audio_duration || estimateAudioDuration(audioBlob.size, "webm"),
+      processing_time_ms: whisperMs,
+    });
 
     // 발화 길이 검증 (5단어 미만 → 환불)
     const wordCount = transcript.split(/\s+/).filter(Boolean).length;
@@ -879,13 +999,29 @@ ${wordCount}단어, ${audio_duration || 0}초
 위 정보를 기반으로 OPIc 말하기를 평가하세요.`;
 
     // GPT-4.1 평가
-    const evalResult = await callGPT(
+    const evalStart = Date.now();
+    const { content: evalResult, usage: evalUsage } = await callGPT(
       systemPrompt,
       userPrompt,
       evaluationSchema,
       0.3,
       2000
     );
+    const evalMs = Date.now() - evalStart;
+
+    // GPT 평가 사용량 로깅
+    await logApiUsage(supabase, {
+      user_id: userId,
+      session_type: "shadowing",
+      session_id: session_id,
+      feature: "script_evaluate_gpt",
+      service: "openai_chat",
+      model: "gpt-4.1",
+      ef_name: "scripts",
+      tokens_in: evalUsage.prompt_tokens,
+      tokens_out: evalUsage.completion_tokens,
+      processing_time_ms: evalMs,
+    });
 
     // 세션 완료 업데이트
     await supabase

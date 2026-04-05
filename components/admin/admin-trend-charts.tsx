@@ -94,16 +94,16 @@ export function AdminTrendCharts() {
             <p className="mb-3 text-sm font-medium text-foreground">가입 추이</p>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#EAE0D5" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#E8E6E1" />
                 <XAxis
                   dataKey="date"
                   tickFormatter={formatDate}
-                  tick={{ fontSize: 11, fill: "#B5A99D" }}
+                  tick={{ fontSize: 11, fill: "#A0A0AF" }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 11, fill: "#B5A99D" }}
+                  tick={{ fontSize: 11, fill: "#A0A0AF" }}
                   axisLine={false}
                   tickLine={false}
                   allowDecimals={false}
@@ -113,9 +113,9 @@ export function AdminTrendCharts() {
                   type="monotone"
                   dataKey="signups"
                   name="가입"
-                  stroke="#D4835E"
+                  stroke="#3A5BC7"
                   strokeWidth={2}
-                  dot={{ r: 2, fill: "#D4835E" }}
+                  dot={{ r: 2, fill: "#3A5BC7" }}
                   activeDot={{ r: 4 }}
                 />
               </LineChart>
@@ -127,16 +127,16 @@ export function AdminTrendCharts() {
             <p className="mb-3 text-sm font-medium text-foreground">매출 추이</p>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#EAE0D5" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#E8E6E1" />
                 <XAxis
                   dataKey="date"
                   tickFormatter={formatDate}
-                  tick={{ fontSize: 11, fill: "#B5A99D" }}
+                  tick={{ fontSize: 11, fill: "#A0A0AF" }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 11, fill: "#B5A99D" }}
+                  tick={{ fontSize: 11, fill: "#A0A0AF" }}
                   axisLine={false}
                   tickLine={false}
                   tickFormatter={(v: number) =>
@@ -147,7 +147,7 @@ export function AdminTrendCharts() {
                 <Bar
                   dataKey="revenue"
                   name="매출"
-                  fill="#B8945A"
+                  fill="#3A5BC7"
                   radius={[4, 4, 0, 0]}
                 />
               </BarChart>
@@ -159,16 +159,16 @@ export function AdminTrendCharts() {
             <p className="mb-3 text-sm font-medium text-foreground">모듈 사용량</p>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#EAE0D5" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#E8E6E1" />
                 <XAxis
                   dataKey="date"
                   tickFormatter={formatDate}
-                  tick={{ fontSize: 11, fill: "#B5A99D" }}
+                  tick={{ fontSize: 11, fill: "#A0A0AF" }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 11, fill: "#B5A99D" }}
+                  tick={{ fontSize: 11, fill: "#A0A0AF" }}
                   axisLine={false}
                   tickLine={false}
                   allowDecimals={false}

@@ -92,8 +92,8 @@ export function PitchComparisonChart({
           <AreaChart data={data} margin={{ top: 5, right: 8, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="nativeGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#D4835E" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="#D4835E" stopOpacity={0.02} />
+                <stop offset="0%" stopColor="#3A5BC7" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#3A5BC7" stopOpacity={0.02} />
               </linearGradient>
               <linearGradient id="userGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.25} />
@@ -108,7 +108,7 @@ export function PitchComparisonChart({
             />
             <YAxis
               domain={[minY, maxY]}
-              tick={{ fontSize: 9, fill: "#B5A99D" }}
+              tick={{ fontSize: 9, fill: "#A0A0AF" }}
               tickFormatter={(v) => `${Math.round(Number(v))}`}
               stroke="transparent"
               tickLine={false}
@@ -118,7 +118,7 @@ export function PitchComparisonChart({
               contentStyle={{
                 fontSize: 11,
                 background: "rgba(255,252,248,0.95)",
-                border: "1px solid #EAE0D5",
+                border: "1px solid #E8E6E1",
                 borderRadius: 10,
                 boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
                 padding: "6px 10px",
@@ -132,7 +132,7 @@ export function PitchComparisonChart({
             <Area
               type="monotone"
               dataKey="native"
-              stroke="#D4835E"
+              stroke="#3A5BC7"
               strokeWidth={2.5}
               fill="url(#nativeGrad)"
               dot={false}

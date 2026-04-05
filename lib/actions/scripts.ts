@@ -89,14 +89,10 @@ export async function createScript(
   try {
     const { supabase, userId } = await requireUser();
 
-    // 크레딧 차감 (RPC)
-    const { data: creditOk, error: creditError } = await supabase.rpc(
-      "consume_script_credit",
-      { p_user_id: userId }
-    );
-
-    if (creditError || !creditOk) {
-      return { error: "스크립트 생성권이 부족합니다. 스토어에서 구매해주세요." };
+    // 크레딧 잔액 확인 (실비용은 EF에서 API 호출 시 자동 차감)
+    const { data: balance } = await supabase.rpc("polar_get_balance", { p_user_id: userId });
+    if (!balance || balance <= 0) {
+      return { error: "크레딧이 부족합니다. 스토어에서 충전해주세요." };
     }
 
     // 기존 스크립트 확인 (UPSERT용)
@@ -147,9 +143,6 @@ export async function createScript(
       .single();
 
     if (error || !data) {
-      // 크레딧 환불
-      const { error: refundError } = await supabase.rpc("refund_script_credit", { p_user_id: userId });
-      if (refundError) console.error("크레딧 환불 실패:", refundError);
       return { error: "스크립트 생성에 실패했습니다" };
     }
 
@@ -190,14 +183,10 @@ export async function createCorrectScript(
   try {
     const { supabase, userId } = await requireUser();
 
-    // 크레딧 차감
-    const { data: creditOk, error: creditError } = await supabase.rpc(
-      "consume_script_credit",
-      { p_user_id: userId }
-    );
-
-    if (creditError || !creditOk) {
-      return { error: "스크립트 생성권이 부족합니다. 스토어에서 구매해주세요." };
+    // 크레딧 잔액 확인 (실비용은 EF에서 API 호출 시 자동 차감)
+    const { data: balance } = await supabase.rpc("polar_get_balance", { p_user_id: userId });
+    if (!balance || balance <= 0) {
+      return { error: "크레딧이 부족합니다. 스토어에서 충전해주세요." };
     }
 
     // 기존 스크립트 확인
@@ -245,8 +234,6 @@ export async function createCorrectScript(
       .single();
 
     if (error || !data) {
-      const { error: refundError } = await supabase.rpc("refund_script_credit", { p_user_id: userId });
-      if (refundError) console.error("크레딧 환불 실패:", refundError);
       return { error: "스크립트 교정에 실패했습니다" };
     }
 

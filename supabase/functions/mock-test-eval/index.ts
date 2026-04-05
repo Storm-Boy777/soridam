@@ -21,12 +21,13 @@ import {
   validateCheckboxes,
   type CheckboxResult,
 } from "../_shared/checkbox-definitions.ts";
+import { logApiUsage } from "../_shared/api-usage-logger.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
 
-const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "https://haruopic.com,http://localhost:3001").split(",");
+const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "https://soridamhub.com,http://localhost:3001").split(",");
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") || "";
@@ -162,7 +163,7 @@ async function callGptDiagnose(
   userPrompt: string,
   responseFormat: Record<string, unknown>,
   model: string,
-): Promise<{ result: DiagnoseResult; tokensUsed: number }> {
+): Promise<{ result: DiagnoseResult; tokensUsed: number; promptTokens: number; completionTokens: number }> {
   const resp = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -189,8 +190,10 @@ async function callGptDiagnose(
   const json = await resp.json();
   const content = json.choices?.[0]?.message?.content || "{}";
   const tokensUsed = json.usage?.total_tokens || 0;
+  const promptTokens = json.usage?.prompt_tokens || 0;
+  const completionTokens = json.usage?.completion_tokens || 0;
 
-  return { result: JSON.parse(content) as DiagnoseResult, tokensUsed };
+  return { result: JSON.parse(content) as DiagnoseResult, tokensUsed, promptTokens, completionTokens };
 }
 
 // ── consult fire-and-forget ──
@@ -409,7 +412,7 @@ Deno.serve(async (req: Request) => {
 
     const responseFormat = buildCheckboxSchema(checkboxIds);
 
-    const { result, tokensUsed } = await withRetry(
+    const { result, tokensUsed, promptTokens, completionTokens } = await withRetry(
       () =>
         callGptDiagnose(
           promptMap["diagnose"],
@@ -428,6 +431,20 @@ Deno.serve(async (req: Request) => {
     );
 
     const processingTimeMs = Date.now() - startTime;
+
+    // API 사용량 로깅 (실패해도 메인 로직 중단 안 함)
+    logApiUsage(supabase, {
+      user_id: session.user_id,
+      session_type: "mock_exam",
+      session_id: session_id,
+      feature: "mock_eval",
+      service: "openai_chat",
+      model: model,
+      ef_name: "mock-test-eval",
+      tokens_in: promptTokens,
+      tokens_out: completionTokens,
+      processing_time_ms: processingTimeMs,
+    }).catch((err) => console.error("[eval] API 로깅 실패:", err?.message));
 
     console.log(
       `[eval] Q${question_number} (${questionType}/${checkboxType}): ` +

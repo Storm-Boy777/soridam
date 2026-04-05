@@ -4,6 +4,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { loadPromptSet, buildMessages } from "../_shared/tutoring-prompts.ts";
+import { logApiUsage, extractChatUsage } from "../_shared/api-usage-logger.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -31,7 +32,7 @@ Deno.serve(async (req: Request) => {
     // 2. Focus 데이터 조회
     const { data: focus, error: focusErr } = await supabase
       .from("tutoring_focuses")
-      .select("*, tutoring_sessions!inner(current_stable_level, next_step_level, final_target_level)")
+      .select("*, tutoring_sessions!inner(id, user_id, current_stable_level, next_step_level, final_target_level)")
       .eq("id", focus_id)
       .single();
 
@@ -60,9 +61,22 @@ Deno.serve(async (req: Request) => {
     };
 
     const messages = buildMessages(promptE, promptEInput);
-    const drillPlan = await callGPT(messages, promptE.model);
+    const { content: drillPlan, usage: promptEUsage } = await callGPT(messages, promptE.model);
 
     console.log(`[tutoring-generate-drills] Prompt E 완료`);
+
+    // API 사용량 로깅 (Prompt E)
+    await logApiUsage(supabase, {
+      user_id: session.user_id,
+      session_type: "tutoring",
+      session_id: session.id,
+      feature: "tutoring_drills_e",
+      service: "openai_chat",
+      model: promptE.model,
+      ef_name: "tutoring-generate-drills",
+      tokens_in: promptEUsage.prompt_tokens,
+      tokens_out: promptEUsage.completion_tokens,
+    });
 
     // 5. DB 저장
     await supabase
@@ -172,5 +186,5 @@ async function callGPT(messages: { role: string; content: string }[], model = "g
   });
   if (!response.ok) throw new Error(`GPT 에러: ${response.status}`);
   const data = await response.json();
-  return JSON.parse(data.choices?.[0]?.message?.content ?? "{}");
+  return { content: JSON.parse(data.choices?.[0]?.message?.content ?? "{}"), usage: extractChatUsage(data) };
 }

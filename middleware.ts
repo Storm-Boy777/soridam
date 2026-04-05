@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // 인증이 필요한 보호 라우트
-const protectedRoutes = ["/dashboard", "/profile", "/reviews", "/store", "/scripts", "/mock-exam", "/tutoring", "/mypage", "/admin"];
+const protectedRoutes = ["/dashboard", "/profile", "/reviews", "/store", "/scripts", "/mock-exam", "/tutoring", "/patterns", "/mypage", "/admin"];
 
 // 인증된 사용자가 접근하면 리다이렉트할 라우트
 const authRoutes = ["/login", "/signup"];

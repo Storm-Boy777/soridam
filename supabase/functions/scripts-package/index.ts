@@ -3,6 +3,7 @@
 // Phase 2: Whisper STT word-level → 타임스탬프 매칭 → JSON → Storage
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logApiUsage, extractGeminiUsage, extractWhisperDuration } from "../_shared/api-usage-logger.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -249,6 +250,25 @@ async function handleGeneratePackage(supabase: any, body: any) {
       return jsonResponse({ error: "음성 데이터를 받지 못했습니다" }, 500);
     }
 
+    // Gemini TTS 사용량 로깅 (실패해도 메인 로직 계속)
+    try {
+      const geminiUsage = extractGeminiUsage(ttsData);
+      await logApiUsage(supabase, {
+        user_id,
+        session_type: "script",
+        session_id: script_id,
+        feature: "tts_generate",
+        service: "gemini_tts",
+        model: TTS_MODEL,
+        ef_name: "scripts-package",
+        tokens_in: geminiUsage.prompt_tokens,
+        tokens_out: geminiUsage.candidates_tokens,
+        text_length: script.english_text.length,
+      });
+    } catch (logErr) {
+      console.error("[scripts-package] Gemini TTS 사용량 로깅 실패:", logErr);
+    }
+
     await updatePackageProgress(supabase, packageId, 40);
 
     // base64 → PCM → 리샘플(24kHz→44.1kHz) → WAV
@@ -393,6 +413,24 @@ async function handleGenerateShadowing(supabase: any, body: any) {
     }
 
     const whisperResult = await whisperResponse.json();
+
+    // Whisper STT 사용량 로깅 (실패해도 메인 로직 계속)
+    try {
+      const whisperDuration = extractWhisperDuration(whisperResult);
+      await logApiUsage(supabase, {
+        user_id,
+        session_type: "script",
+        session_id: pkg.script_id,
+        feature: "tts_timestamp",
+        service: "openai_whisper",
+        model: "whisper-1",
+        ef_name: "scripts-package",
+        audio_duration_sec: whisperDuration,
+      });
+    } catch (logErr) {
+      console.error("[scripts-package] Whisper 사용량 로깅 실패:", logErr);
+    }
+
     const whisperWords: WhisperWord[] = whisperResult.words || [];
 
     if (whisperWords.length === 0) {

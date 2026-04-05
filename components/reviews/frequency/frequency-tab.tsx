@@ -141,7 +141,7 @@ export function FrequencyTab({ initialStats, initialFrequency, isPaidUser = fals
         {[
           { icon: FileText, color: "bg-primary-50 text-primary-500", label: "총 후기", value: initialStats.totalReviews, unit: "개" },
           { icon: TrendingUp, color: "bg-secondary-50 text-secondary-600", label: "분석 주제", value: initialStats.uniqueTopics, unit: "개" },
-          { icon: Users, color: "bg-accent-50 text-accent-500", label: "분석 질문", value: initialStats.uniqueQuestions, unit: "개" },
+          { icon: Users, color: "bg-primary-50 text-primary-500", label: "분석 질문", value: initialStats.uniqueQuestions, unit: "개" },
         ].map(({ icon: Icon, color, label, value, unit }) => (
           <div key={label} className="flex flex-col items-center text-center sm:rounded-[var(--radius-xl)] sm:border sm:border-border sm:bg-surface sm:px-5 sm:py-4">
             <div className="hidden sm:flex items-center gap-2">

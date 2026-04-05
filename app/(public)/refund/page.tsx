@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "환불 규정",
-  description: "하루오픽 환불 규정 안내",
+  description: "소리담 환불 규정 안내",
 };
 
 export default function RefundPage() {
@@ -21,7 +21,7 @@ export default function RefundPage() {
           </h2>
           <p className="mt-2">
             이 규정은 스투스 OPIc(이하 &quot;회사&quot;)이 제공하는
-            하루오픽(HaruOPIc) 유료서비스에 대한 환불 기준과 절차를
+            소리담(HaruOPIc) 유료서비스에 대한 환불 기준과 절차를
             규정합니다.
             전자상거래 등에서의 소비자보호에 관한 법률 및
             콘텐츠이용자보호지침에 따릅니다.
@@ -211,7 +211,7 @@ export default function RefundPage() {
           </h2>
           <ol className="mt-2 list-decimal space-y-1 pl-5">
             <li>
-              환불 요청은 이메일(haruopic@gmail.com)로 접수합니다.
+              환불 요청은 이메일(soridamhub@gmail.com)로 접수합니다.
             </li>
             <li>
               접수 후 3영업일 이내에 환불 가능 여부를 안내합니다.
@@ -263,9 +263,9 @@ export default function RefundPage() {
         <section className="rounded-[var(--radius-lg)] border border-border bg-surface-secondary p-5">
           <p className="font-medium text-foreground">환불 문의</p>
           <ul className="mt-2 space-y-0.5">
-            <li>이메일: haruopic@gmail.com</li>
+            <li>이메일: soridamhub@gmail.com</li>
             <li>상호: 스투스 OPIc</li>
-            <li>대표자: 전다영</li>
+            <li>대표: 전다영</li>
             <li>사업자등록번호: 757-18-02318</li>
           </ul>
         </section>

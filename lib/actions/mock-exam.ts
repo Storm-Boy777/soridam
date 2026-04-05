@@ -208,14 +208,10 @@ export async function createSession(
       };
     }
 
-    // 크레딧 차감 (plpgsql RPC)
-    const { data: creditOk, error: creditErr } = await supabase.rpc(
-      "consume_mock_exam_credit",
-      { p_user_id: userId }
-    );
-
-    if (creditErr || !creditOk) {
-      return { error: "모의고사 응시권이 부족합니다" };
+    // 크레딧 잔액 확인 (실비용은 EF에서 API 호출 시 자동 차감)
+    const { data: balance } = await supabase.rpc("polar_get_balance", { p_user_id: userId });
+    if (!balance || balance <= 0) {
+      return { error: "크레딧이 부족합니다. 스토어에서 충전해주세요." };
     }
 
     // 기출 문제 ID 조회 (Q1~Q15, Q1 자기소개 포함)
@@ -226,9 +222,6 @@ export async function createSession(
       .order("question_number", { ascending: true });
 
     if (sqErr || !subQuestions || subQuestions.length === 0) {
-      // 크레딧 환불
-      const { error: refundErr } = await supabase.rpc("refund_mock_exam_credit", { p_user_id: userId });
-      if (refundErr) console.error("크레딧 환불 실패:", refundErr);
       return { error: "기출 문제를 조회할 수 없습니다" };
     }
 
@@ -259,9 +252,6 @@ export async function createSession(
       });
 
     if (insertErr) {
-      // 크레딧 환불
-      const { error: refundErr } = await supabase.rpc("refund_mock_exam_credit", { p_user_id: userId });
-      if (refundErr) console.error("크레딧 환불 실패:", refundErr);
       return { error: "세션 생성 실패" };
     }
 

@@ -12,7 +12,7 @@ type QStatus =
   | "answered"     // 답변 완료 (아직 평가 안 시작)
   | "pending";     // 미답변
 
-// 상태별 스타일 — 하루오픽 디자인 시스템 컬러
+// 상태별 스타일 — 소리담 디자인 시스템 컬러
 const STATUS_STYLES: Record<QStatus, string> = {
   current:     "bg-primary-500 text-white ring-2 ring-primary-300",
   eval_done:   "bg-emerald-500 text-white",

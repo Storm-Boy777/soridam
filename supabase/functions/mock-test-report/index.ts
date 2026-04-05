@@ -7,13 +7,14 @@ import {
   type RuleEngineResult,
 } from "../_shared/rule-engine.ts";
 import type { CheckboxResult } from "../_shared/checkbox-definitions.ts";
+import { logApiUsage } from "../_shared/api-usage-logger.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
 
 const ALLOWED_ORIGINS = (
-  Deno.env.get("ALLOWED_ORIGINS") || "https://haruopic.com,http://localhost:3001"
+  Deno.env.get("ALLOWED_ORIGINS") || "https://soridamhub.com,http://localhost:3001"
 ).split(",");
 
 const corsHeaders = {
@@ -115,7 +116,7 @@ async function callGpt<T>(
   userPrompt: string,
   responseFormat: Record<string, unknown>,
   model: string,
-): Promise<{ result: T; tokensUsed: number }> {
+): Promise<{ result: T; tokensUsed: number; promptTokens: number; completionTokens: number }> {
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -142,10 +143,14 @@ async function callGpt<T>(
   const json = await response.json();
   const content = json.choices?.[0]?.message?.content || "{}";
   const tokensUsed = json.usage?.total_tokens || 0;
+  const promptTokens = json.usage?.prompt_tokens || 0;
+  const completionTokens = json.usage?.completion_tokens || 0;
 
   return {
     result: JSON.parse(content) as T,
     tokensUsed,
+    promptTokens,
+    completionTokens,
   };
 }
 
@@ -635,6 +640,32 @@ Deno.serve(async (req: Request) => {
       `[report] 완료: overview=${overviewResult.tokensUsed}t, ` +
         `growth=${growthResult.tokensUsed}t, 합계=${totalTokens}t`,
     );
+
+    // API 사용량 로깅 — overview + growth 각각 기록 (실패해도 메인 로직 중단 안 함)
+    Promise.all([
+      logApiUsage(supabase, {
+        user_id: userId,
+        session_type: "mock_exam",
+        session_id: session_id,
+        feature: "mock_report_overview",
+        service: "openai_chat",
+        model: model,
+        ef_name: "mock-test-report",
+        tokens_in: overviewResult.promptTokens,
+        tokens_out: overviewResult.completionTokens,
+      }),
+      logApiUsage(supabase, {
+        user_id: userId,
+        session_type: "mock_exam",
+        session_id: session_id,
+        feature: "mock_report_growth",
+        service: "openai_chat",
+        model: model,
+        ef_name: "mock-test-report",
+        tokens_in: growthResult.promptTokens,
+        tokens_out: growthResult.completionTokens,
+      }),
+    ]).catch((err) => console.error("[report] API 로깅 실패:", err?.message));
 
     // GPT 완료 후 새 클라이언트로 저장 (GPT 대기 중 기존 연결 끊김 방지)
     const freshClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);

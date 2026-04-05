@@ -237,12 +237,10 @@ export async function startDiagnosis(): Promise<ActionResult<{ session_id: strin
       return { error: "이미 진행 중인 튜터링 세션이 있습니다." };
     }
 
-    // 3. 크레딧 소모
-    const { error: creditErr } = await supabase.rpc("consume_tutoring_credit", {
-      p_user_id: userId,
-    });
-    if (creditErr) {
-      return { error: `크레딧 소모 실패: ${creditErr.message}` };
+    // 3. 크레딧 잔액 확인 (실비용은 EF에서 API 호출 시 자동 차감)
+    const { data: balance } = await supabase.rpc("polar_get_balance", { p_user_id: userId });
+    if (!balance || balance <= 0) {
+      return { error: "크레딧이 부족합니다. 스토어에서 충전해주세요." };
     }
 
     // 4. 분석할 세션 ID 조회 (이전 튜터링 세션 제외, 최근 MAX_SESSIONS개)
@@ -275,8 +273,6 @@ export async function startDiagnosis(): Promise<ActionResult<{ session_id: strin
     const analyzedIds = (sessions ?? []).map((s) => s.session_id);
 
     if (analyzedIds.length < MIN_SESSIONS) {
-      // 크레딧 환불
-      await supabase.rpc("refund_tutoring_credit", { p_user_id: userId });
       return { error: `분석 가능한 세션이 ${MIN_SESSIONS}회 미만입니다.` };
     }
 
@@ -301,7 +297,6 @@ export async function startDiagnosis(): Promise<ActionResult<{ session_id: strin
       });
 
     if (insertErr) {
-      await supabase.rpc("refund_tutoring_credit", { p_user_id: userId });
       return { error: `세션 생성 실패: ${insertErr.message}` };
     }
 

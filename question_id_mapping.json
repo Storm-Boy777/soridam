@@ -1,0 +1,4536 @@
+{
+  "_metadata": {
+    "generated_at": "2026-04-04T14:32:16.794Z",
+    "total_matched": 129,
+    "exact": 1,
+    "partial": 128,
+    "haruopic_only": 342,
+    "soridam_only": 381,
+    "haruopic_total": 471,
+    "soridam_total": 510
+  },
+  "matches": [
+    {
+      "haruopic_id": "SPK_SYS_SYS_UNK_01",
+      "soridam_id": "SYSTEM_SPEAKER_TEST",
+      "topic_haru": "스피커 테스트",
+      "topic_sori": "스피커 테스트",
+      "match_type": "exact"
+    },
+    {
+      "haruopic_id": "APL_ADV_COM_Q14_01",
+      "soridam_id": "COM_HOM_A2_01",
+      "topic_haru": "가전제품",
+      "topic_sori": "가전/전자제품",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "APR_RP_SEL_Q11_01",
+      "soridam_id": "COM_BAN_RP_C1_01",
+      "topic_haru": "여행(공항)",
+      "topic_sori": "은행 계좌 개설",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "APR_RP_SEL_Q12_02",
+      "soridam_id": "COM_BAN_RP_C1_03",
+      "topic_haru": "여행(공항)",
+      "topic_sori": "은행 계좌 개설",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "BIC_RP_COM_Q11_01",
+      "soridam_id": "COM_BAN_RP_C1_02",
+      "topic_haru": "자전거",
+      "topic_sori": "은행 계좌 개설",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "BIC_RP_COM_Q12_02",
+      "soridam_id": "COM_BAN_RP_C1_04",
+      "topic_haru": "자전거",
+      "topic_sori": "은행 계좌 개설",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "BNK_RP_COM_Q11_01",
+      "soridam_id": "COM_BIC_RP_C1_01",
+      "topic_haru": "은행",
+      "topic_sori": "자전거 대여",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "BNK_RP_COM_Q11_02",
+      "soridam_id": "COM_CAR_RP_C1_01",
+      "topic_haru": "은행",
+      "topic_sori": "자동차 고장",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "BNK_RP_COM_Q12_03",
+      "soridam_id": "COM_BIC_RP_C1_02",
+      "topic_haru": "은행",
+      "topic_sori": "자전거 대여",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "BNK_RP_COM_Q12_04",
+      "soridam_id": "COM_CAR_RP_C1_02",
+      "topic_haru": "은행",
+      "topic_sori": "자동차 고장",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "BPT_RP_COM_Q11_01",
+      "soridam_id": "COM_RES_RP_C1_02",
+      "topic_haru": "생일파티",
+      "topic_sori": "식당 방문",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "BPT_RP_COM_Q12_02",
+      "soridam_id": "COM_CLO_RP_C1_03",
+      "topic_haru": "생일파티",
+      "topic_sori": "옷 구매",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "CAR_RP_COM_Q11_01",
+      "soridam_id": "COM_CLO_RP_C1_01",
+      "topic_haru": "자동차 고장",
+      "topic_sori": "옷 구매",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "CAR_RP_COM_Q12_02",
+      "soridam_id": "COM_CLO_RP_C1_04",
+      "topic_haru": "자동차 고장",
+      "topic_sori": "옷 구매",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "CLB_RP_COM_Q11_01",
+      "soridam_id": "COM_CLO_RP_C1_02",
+      "topic_haru": "기념모임",
+      "topic_sori": "옷 구매",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "CLB_RP_COM_Q12_02",
+      "soridam_id": "COM_HEA_RP_C2_03",
+      "topic_haru": "기념모임",
+      "topic_sori": "헬스장 이용",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "CLT_RP_COM_Q11_01",
+      "soridam_id": "COM_FUR_RP_C1_01",
+      "topic_haru": "옷 구매",
+      "topic_sori": "가구 구매",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "CLT_RP_COM_Q11_02",
+      "soridam_id": "COM_HEA_RP_C2_01",
+      "topic_haru": "옷 구매",
+      "topic_sori": "헬스장 이용",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "CLT_RP_COM_Q12_03",
+      "soridam_id": "COM_HEA_RP_C2_04",
+      "topic_haru": "옷 구매",
+      "topic_sori": "헬스장 이용",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "CLT_RP_COM_Q12_04",
+      "soridam_id": "COM_HOL_RP_C1_02",
+      "topic_haru": "옷 구매",
+      "topic_sori": "휴일 식사초대",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "DNT_GEN_COM_RCT_04",
+      "soridam_id": "COM_DEN_N_C2_03",
+      "topic_haru": "치과",
+      "topic_sori": "치과",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "DRA_RP_COM_Q11_01",
+      "soridam_id": "COM_HEA_RP_C2_02",
+      "topic_haru": "병원예약",
+      "topic_sori": "헬스장 이용",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "DRA_RP_COM_Q12_02",
+      "soridam_id": "COM_HOT_RP1_05",
+      "topic_haru": "병원예약",
+      "topic_sori": "호텔 이용",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "DTR_ADV_SEL_Q14_01",
+      "soridam_id": "SEL_TRI_A1_01",
+      "topic_haru": "국내여행",
+      "topic_sori": "국내여행",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "DTR_GEN_SEL_DESC_01",
+      "soridam_id": "SEL_TRI_N3_01",
+      "topic_haru": "국내여행",
+      "topic_sori": "국내여행",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "EVA_RP_COM_Q12_02",
+      "soridam_id": "COM_HOT_RP1_06",
+      "topic_haru": "우리나라 방문",
+      "topic_sori": "호텔 이용",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "FRA_RP_COM_Q11_01",
+      "soridam_id": "COM_HIK_RP_C1_01",
+      "topic_haru": "친구약속",
+      "topic_sori": "하이킹",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "FRA_RP_COM_Q12_02",
+      "soridam_id": "COM_HOT_RP1_07",
+      "topic_haru": "친구약속",
+      "topic_sori": "호텔 이용",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "FRN_RP_COM_Q11_01",
+      "soridam_id": "COM_HOL_RP_C1_01",
+      "topic_haru": "가구",
+      "topic_sori": "휴일 식사초대",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "FRN_RP_COM_Q12_02",
+      "soridam_id": "COM_HOT_RP1_08",
+      "topic_haru": "가구",
+      "topic_sori": "호텔 이용",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "FRN_RP_COM_Q12_03",
+      "soridam_id": "COM_HW_RP1_02",
+      "topic_haru": "가구",
+      "topic_sori": "해외여행 날씨",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "FVA_RP_SEL_Q11_01",
+      "soridam_id": "COM_HOT_RP1_01",
+      "topic_haru": "친구휴가",
+      "topic_sori": "호텔 이용",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "FVA_RP_SEL_Q12_02",
+      "soridam_id": "COM_INT_RP_C1_02",
+      "topic_haru": "친구휴가",
+      "topic_sori": "웹사이트 정보",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "GRC_RP_COM_Q11_01",
+      "soridam_id": "COM_HOT_RP1_03",
+      "topic_haru": "식료품점",
+      "topic_sori": "호텔 이용",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "GRC_RP_COM_Q12_02",
+      "soridam_id": "COM_INT_RP_C1_03",
+      "topic_haru": "식료품점",
+      "topic_sori": "웹사이트 정보",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "GTR_RP_COM_Q11_01",
+      "soridam_id": "COM_HOT_RP1_04",
+      "topic_haru": "지형(여행)",
+      "topic_sori": "호텔 이용",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "GTR_RP_COM_Q12_02",
+      "soridam_id": "COM_INV_RP_C1_02",
+      "topic_haru": "지형(여행)",
+      "topic_sori": "취업 면접",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "GYM_RP_COM_Q11_01",
+      "soridam_id": "COM_HW_RP1_01",
+      "topic_haru": "헬스클럽",
+      "topic_sori": "해외여행 날씨",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "GYM_RP_COM_Q11_02",
+      "soridam_id": "COM_INT_RP_C1_01",
+      "topic_haru": "헬스클럽",
+      "topic_sori": "웹사이트 정보",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "GYM_RP_COM_Q12_03",
+      "soridam_id": "COM_MED_RP_C1_02",
+      "topic_haru": "헬스클럽",
+      "topic_sori": "병원 예약",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "GYM_RP_COM_Q12_04",
+      "soridam_id": "COM_MOD_RP_C1_03",
+      "topic_haru": "헬스클럽",
+      "topic_sori": "친구 만남 계획",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "GYM_RP_COM_SPC_05",
+      "soridam_id": "COM_HEA_RP_C2_06",
+      "topic_haru": "헬스클럽",
+      "topic_sori": "헬스장 이용",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "HFD_RP_COM_Q12_02",
+      "soridam_id": "COM_MOD_RP_C1_04",
+      "topic_haru": "건강식품",
+      "topic_sori": "친구 만남 계획",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "HLT_ADV_COM_Q14_02",
+      "soridam_id": "COM_HEA_A_C6_02",
+      "topic_haru": "건강",
+      "topic_sori": "건강",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "HML_RP_COM_Q12_02",
+      "soridam_id": "COM_MOV_RP_C1_03",
+      "topic_haru": "휴일식사",
+      "topic_sori": "영화 관람 계획",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "HML_RP_COM_SPC_03",
+      "soridam_id": "COM_HOL_RP_C1_03",
+      "topic_haru": "휴일식사",
+      "topic_sori": "휴일 식사초대",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "HSG_ADV_SEL_Q14_01",
+      "soridam_id": "SEL_HOM_A1_01",
+      "topic_haru": "집",
+      "topic_sori": "집",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "HSG_GEN_SEL_DESC_01",
+      "soridam_id": "SEL_HOM_N6_01",
+      "topic_haru": "집",
+      "topic_sori": "집",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "HSG_GEN_SEL_DESC_02",
+      "soridam_id": "SEL_HOM_N6_02",
+      "topic_haru": "집",
+      "topic_sori": "집",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "HTL_RP_COM_Q11_01",
+      "soridam_id": "COM_MED_RP_C1_01",
+      "topic_haru": "호텔",
+      "topic_sori": "병원 예약",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "HTL_RP_COM_Q11_02",
+      "soridam_id": "COM_MOD_RP_C1_01",
+      "topic_haru": "호텔",
+      "topic_sori": "친구 만남 계획",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "HTL_RP_COM_Q11_03",
+      "soridam_id": "COM_MOD_RP_C1_02",
+      "topic_haru": "호텔",
+      "topic_sori": "친구 만남 계획",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "HTL_RP_COM_Q11_04",
+      "soridam_id": "COM_MOV_RP_C1_01",
+      "topic_haru": "호텔",
+      "topic_sori": "영화 관람 계획",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "HTL_RP_COM_Q12_05",
+      "soridam_id": "COM_MOV_RP_C1_04",
+      "topic_haru": "호텔",
+      "topic_sori": "영화 관람 계획",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "HTL_RP_COM_Q12_06",
+      "soridam_id": "COM_MP3_RP_C1_02",
+      "topic_haru": "호텔",
+      "topic_sori": "MP3 Player 구매",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "HTL_RP_COM_Q12_07",
+      "soridam_id": "COM_PAR_RP_C1_05",
+      "topic_haru": "호텔",
+      "topic_sori": "파티 초대 및 준비",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "HTL_RP_COM_Q12_08",
+      "soridam_id": "COM_PAR_RP_C1_06",
+      "topic_haru": "호텔",
+      "topic_sori": "파티 초대 및 준비",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "HTW_RP_COM_Q11_01",
+      "soridam_id": "COM_MOV_RP_C1_02",
+      "topic_haru": "호텔(날씨)",
+      "topic_sori": "영화 관람 계획",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "HTW_RP_COM_Q12_02",
+      "soridam_id": "COM_PAR_RP_C1_07",
+      "topic_haru": "호텔(날씨)",
+      "topic_sori": "파티 초대 및 준비",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "INT_GEN_COM_CMP_06",
+      "soridam_id": "COM_INT_N_C1_06",
+      "topic_haru": "인터넷",
+      "topic_sori": "인터넷",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "INT_RP_COM_Q11_01",
+      "soridam_id": "COM_MP3_RP_C1_01",
+      "topic_haru": "인터넷",
+      "topic_sori": "MP3 Player 구매",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "INT_RP_COM_Q12_02",
+      "soridam_id": "COM_PAR_RP_C1_08",
+      "topic_haru": "인터넷",
+      "topic_sori": "파티 초대 및 준비",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "INT_RP_COM_Q12_03",
+      "soridam_id": "COM_PER_RP_C1_02",
+      "topic_haru": "인터넷",
+      "topic_sori": "공연 예매",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "JBI_RP_COM_Q11_01",
+      "soridam_id": "COM_PAK_RP_C1_01",
+      "topic_haru": "회사면접",
+      "topic_sori": "공원 방문",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "JBI_RP_COM_Q12_02",
+      "soridam_id": "COM_PHO_RP_C1_04",
+      "topic_haru": "회사면접",
+      "topic_sori": "휴대폰 구매",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "MOV_ADV_SEL_Q14_01",
+      "soridam_id": "SEL_MOV_A_C4_01",
+      "topic_haru": "영화",
+      "topic_sori": "영화",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "MOV_GEN_SEL_DESC_01",
+      "soridam_id": "SEL_MOV_N_C3_01",
+      "topic_haru": "영화",
+      "topic_sori": "영화",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "MOV_GEN_SEL_RCT_03",
+      "soridam_id": "SEL_MOV_N_C3_03",
+      "topic_haru": "영화",
+      "topic_sori": "영화",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "MOV_RP_SEL_Q11_01",
+      "soridam_id": "COM_PAR_RP_C1_02",
+      "topic_haru": "영화",
+      "topic_sori": "파티 초대 및 준비",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "MOV_RP_SEL_Q11_02",
+      "soridam_id": "COM_PAR_RP_C1_03",
+      "topic_haru": "영화",
+      "topic_sori": "파티 초대 및 준비",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "MOV_RP_SEL_Q12_03",
+      "soridam_id": "COM_PHO_RP_C1_05",
+      "topic_haru": "영화",
+      "topic_sori": "휴대폰 구매",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "MOV_RP_SEL_Q12_04",
+      "soridam_id": "COM_PHO_RP_C1_06",
+      "topic_haru": "영화",
+      "topic_sori": "휴대폰 구매",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "MP3_RP_SEL_Q11_01",
+      "soridam_id": "COM_PAR_RP_C1_04",
+      "topic_haru": "MP3",
+      "topic_sori": "파티 초대 및 준비",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "MP3_RP_SEL_Q12_02",
+      "soridam_id": "COM_REA_RP_C1_02",
+      "topic_haru": "MP3",
+      "topic_sori": "부동산 (새 집 찾기)",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "MP3_RP_SEL_SPC_03",
+      "soridam_id": "COM_PAR_RP_C1_11",
+      "topic_haru": "MP3",
+      "topic_sori": "파티 초대 및 준비",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "MUS_ADV_SEL_Q14_01",
+      "soridam_id": "SEL_MUS_A_C3_01",
+      "topic_haru": "음악",
+      "topic_sori": "음악",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "MUS_GEN_SEL_SPC_04",
+      "soridam_id": "SEL_MUS_N_C2_04",
+      "topic_haru": "음악",
+      "topic_sori": "음악",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "NTR_RP_COM_Q11_01",
+      "soridam_id": "COM_PER_RP_C1_01",
+      "topic_haru": "영양사",
+      "topic_sori": "공연 예매",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "NTR_RP_COM_Q12_02",
+      "soridam_id": "COM_REL_RP_C3_02",
+      "topic_haru": "영양사",
+      "topic_sori": "가족 집 돌봐주기",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "OTR_ADV_SEL_Q14_01",
+      "soridam_id": "SEL_OTR_A_C5_01",
+      "topic_haru": "해외여행",
+      "topic_sori": "해외여행",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "OTR_GEN_SEL_DESC_01",
+      "soridam_id": "SEL_OTR_N_C2_01",
+      "topic_haru": "해외여행",
+      "topic_sori": "해외여행",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "PFM_RP_SEL_Q11_01",
+      "soridam_id": "COM_PHO_RP_C1_01",
+      "topic_haru": "공연",
+      "topic_sori": "휴대폰 구매",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "PFM_RP_SEL_Q12_02",
+      "soridam_id": "COM_REN_RP_C2_03",
+      "topic_haru": "공연",
+      "topic_sori": "차량 렌트",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "PHN_RP_COM_Q11_01",
+      "soridam_id": "COM_PHO_RP_C1_02",
+      "topic_haru": "전화기",
+      "topic_sori": "휴대폰 구매",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "PHN_RP_COM_Q11_02",
+      "soridam_id": "COM_PHO_RP_C1_03",
+      "topic_haru": "전화기",
+      "topic_sori": "휴대폰 구매",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "PHN_RP_COM_Q11_03",
+      "soridam_id": "COM_REA_RP_C1_01",
+      "topic_haru": "전화기",
+      "topic_sori": "부동산 (새 집 찾기)",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "PHN_RP_COM_Q12_04",
+      "soridam_id": "COM_REN_RP_C2_04",
+      "topic_haru": "전화기",
+      "topic_sori": "차량 렌트",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "PHN_RP_COM_Q12_05",
+      "soridam_id": "COM_REN_RP_C2_05",
+      "topic_haru": "전화기",
+      "topic_sori": "차량 렌트",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "PHN_RP_COM_Q12_06",
+      "soridam_id": "COM_RES_RP_C1_06",
+      "topic_haru": "전화기",
+      "topic_sori": "식당 방문",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "PTY_RP_COM_Q11_01",
+      "soridam_id": "COM_PAR_RP_C1_01",
+      "topic_haru": "파티",
+      "topic_sori": "파티 초대 및 준비",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "PTY_RP_COM_Q11_02",
+      "soridam_id": "COM_REN_RP_C2_01",
+      "topic_haru": "파티",
+      "topic_sori": "차량 렌트",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "PTY_RP_COM_Q11_03",
+      "soridam_id": "COM_REN_RP_C2_02",
+      "topic_haru": "파티",
+      "topic_sori": "차량 렌트",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "PTY_RP_COM_Q12_04",
+      "soridam_id": "COM_RES_RP_C1_07",
+      "topic_haru": "파티",
+      "topic_sori": "식당 방문",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "PTY_RP_COM_Q12_05",
+      "soridam_id": "COM_RES_RP_C1_08",
+      "topic_haru": "파티",
+      "topic_sori": "식당 방문",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "PTY_RP_COM_Q12_06",
+      "soridam_id": "COM_SHO_RP_C1_03",
+      "topic_haru": "파티",
+      "topic_sori": "쇼핑 정보 문의",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "PTY_RP_COM_SPC_09",
+      "soridam_id": "COM_RES_RP_C1_12",
+      "topic_haru": "파티",
+      "topic_sori": "식당 방문",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "RCA_RP_COM_Q11_01",
+      "soridam_id": "COM_RES_RP_C1_01",
+      "topic_haru": "렌터카",
+      "topic_sori": "식당 방문",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "RCA_RP_COM_Q11_02",
+      "soridam_id": "COM_RES_RP_C1_03",
+      "topic_haru": "렌터카",
+      "topic_sori": "식당 방문",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "RCA_RP_COM_Q12_03",
+      "soridam_id": "COM_SHO_RP_C1_04",
+      "topic_haru": "렌터카",
+      "topic_sori": "쇼핑 정보 문의",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "RCA_RP_COM_Q12_04",
+      "soridam_id": "COM_SHO_RP_C3_03",
+      "topic_haru": "렌터카",
+      "topic_sori": "세일 상품 구매",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "RCA_RP_COM_Q12_05",
+      "soridam_id": "COM_SHO_RP_C3_04",
+      "topic_haru": "렌터카",
+      "topic_sori": "세일 상품 구매",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "RCY_RP_COM_Q11_01",
+      "soridam_id": "COM_RES_RP_C1_04",
+      "topic_haru": "재활용",
+      "topic_sori": "식당 방문",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "RCY_RP_COM_Q11_02",
+      "soridam_id": "COM_SHO_RP_C3_01",
+      "topic_haru": "재활용",
+      "topic_sori": "세일 상품 구매",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "RCY_RP_COM_Q12_03",
+      "soridam_id": "COM_TRA_RP_C1_02",
+      "topic_haru": "재활용",
+      "topic_sori": "기차표 예매",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "RCY_RP_COM_Q12_04",
+      "soridam_id": "COM_TRI_RP_C1_04",
+      "topic_haru": "재활용",
+      "topic_sori": "여행 계획",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "REL_RP_SEL_Q12_02",
+      "soridam_id": "COM_TRI_RP_C1_05",
+      "topic_haru": "친척집",
+      "topic_sori": "여행 계획",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "RES_RP_SEL_Q11_01",
+      "soridam_id": "COM_SHO_RP_C3_02",
+      "topic_haru": "부동산",
+      "topic_sori": "세일 상품 구매",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "RES_RP_SEL_Q12_02",
+      "soridam_id": "COM_TRI_RP_C1_06",
+      "topic_haru": "부동산",
+      "topic_sori": "여행 계획",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "RST_GEN_COM_RCT_12",
+      "soridam_id": "COM_RES_N_C2_11",
+      "topic_haru": "음식점",
+      "topic_sori": "음식점",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "RST_GEN_COM_RCT_14",
+      "soridam_id": "COM_RES_N_C2_14",
+      "topic_haru": "음식점",
+      "topic_sori": "음식점",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "RST_RP_COM_Q11_01",
+      "soridam_id": "COM_TEC_RP_C1_01",
+      "topic_haru": "음식점",
+      "topic_sori": "기술 산업 정보 조사",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "RST_RP_COM_Q11_03",
+      "soridam_id": "COM_TRA_RP_C1_01",
+      "topic_haru": "음식점",
+      "topic_sori": "기차표 예매",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "RST_RP_COM_Q11_04",
+      "soridam_id": "COM_TRI_RP_C1_01",
+      "topic_haru": "음식점",
+      "topic_sori": "여행 계획",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "RST_RP_COM_Q12_05",
+      "soridam_id": "COM_TRI_RP_C4_02",
+      "topic_haru": "음식점",
+      "topic_sori": "해외 친구 방문 / 지리",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "RST_RP_COM_Q12_06",
+      "soridam_id": "COM_TRI_RP_C5_02",
+      "topic_haru": "음식점",
+      "topic_sori": "친구의 미국 여행",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "RST_RP_COM_Q12_07",
+      "soridam_id": "COM_TRI_RP_C7_02",
+      "topic_haru": "음식점",
+      "topic_sori": "공항 (비행 지연)",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "RST_RP_COM_Q12_08",
+      "soridam_id": "COM_TV_RP_C1_02",
+      "topic_haru": "음식점",
+      "topic_sori": "친구들과 영화 관람 준비",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "SHP_GEN_SEL_DESC_01",
+      "soridam_id": "SEL_SHO_N_C3_01",
+      "topic_haru": "쇼핑",
+      "topic_sori": "쇼핑",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "SHP_GEN_SEL_DESC_03",
+      "soridam_id": "SEL_SHO_N_C3_02",
+      "topic_haru": "쇼핑",
+      "topic_sori": "쇼핑",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "STR_RP_SEL_Q11_01",
+      "soridam_id": "COM_TRI_RP_C1_02",
+      "topic_haru": "상점문의",
+      "topic_sori": "여행 계획",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "STR_RP_SEL_Q11_02",
+      "soridam_id": "COM_TRI_RP_C1_03",
+      "topic_haru": "상점문의",
+      "topic_sori": "여행 계획",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "STV_ADV_SEL_Q14_01",
+      "soridam_id": "SEL_VAC_A_C3_01",
+      "topic_haru": "집에서 보내는 휴가",
+      "topic_sori": "집에서 보내는 휴가",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "STV_GEN_SEL_DESC_01",
+      "soridam_id": "SEL_VAC_N_C2_01",
+      "topic_haru": "집에서 휴가",
+      "topic_sori": "집에서 보내는 휴가",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "STV_GEN_SEL_RCT_03",
+      "soridam_id": "SEL_VAC_N_C2_03",
+      "topic_haru": "집에서 휴가",
+      "topic_sori": "집에서 보내는 휴가",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "TIR_RP_COM_Q11_01",
+      "soridam_id": "COM_TRI_RP_C4_01",
+      "topic_haru": "기술산업 보고서",
+      "topic_sori": "해외 친구 방문 / 지리",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "TRP_RP_SEL_Q11_01",
+      "soridam_id": "COM_TRI_RP_C5_01",
+      "topic_haru": "여행",
+      "topic_sori": "친구의 미국 여행",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "TRP_RP_SEL_Q11_02",
+      "soridam_id": "COM_TRI_RP_C7_01",
+      "topic_haru": "여행",
+      "topic_sori": "공항 (비행 지연)",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "TRP_RP_SEL_Q11_03",
+      "soridam_id": "COM_TV_RP_C1_01",
+      "topic_haru": "여행",
+      "topic_sori": "친구들과 영화 관람 준비",
+      "match_type": "partial_60"
+    },
+    {
+      "haruopic_id": "TV_GEN_SEL_RCT_06",
+      "soridam_id": "SEL_TV_N_C4_06",
+      "topic_haru": "텔레비전",
+      "topic_sori": "TV",
+      "match_type": "partial_60"
+    }
+  ],
+  "haruopic_only": [
+    {
+      "id": "APL_ADV_COM_Q15_02",
+      "topic": "가전제품",
+      "preview": "Think about a specific modern appliance or smart device that people consider incredibly useful or convenient to have at "
+    },
+    {
+      "id": "APL_ADV_COM_Q15_03",
+      "topic": "가전제품",
+      "preview": "How have modern home appliances completely changed our daily lives? How was doing household chores in the past different"
+    },
+    {
+      "id": "APL_GEN_COM_CMP_03",
+      "topic": "가전제품",
+      "preview": "Compare a specific household appliance you used during your childhood with a similar device you use today. How are they "
+    },
+    {
+      "id": "APL_GEN_COM_CMP_04",
+      "topic": "가전제품",
+      "preview": "How have household appliances changed over the past few years due to new technology? Give me a few specific examples of "
+    },
+    {
+      "id": "APL_GEN_COM_DESC_01",
+      "topic": "가전제품",
+      "preview": "Please describe an electronic household appliance you bought not too long ago. Explain its primary functions and unique "
+    },
+    {
+      "id": "APL_GEN_COM_DESC_02",
+      "topic": "가전제품",
+      "preview": "Are there any ongoing controversies or problems regarding household appliances where you live? You could discuss topics "
+    },
+    {
+      "id": "APL_GEN_COM_SPC_05",
+      "topic": "가전제품",
+      "preview": "Have you ever experienced significant inconvenience because a household appliance suddenly broke down or malfunctioned? "
+    },
+    {
+      "id": "APM_GEN_COM_CMP_03",
+      "topic": "약속",
+      "preview": "How have appointments with specialists, such as doctors or hair stylists, changed over time? What are the biggest simila"
+    },
+    {
+      "id": "APM_GEN_COM_DESC_01",
+      "topic": "약속",
+      "preview": "What are the most common types of reservations or appointments you make? Who are the professionals you usually meet with"
+    },
+    {
+      "id": "APM_GEN_COM_RCT_04",
+      "topic": "약속",
+      "preview": "Discuss the very last appointment you went to and the circumstances surrounding it. Who exactly did you have to meet wit"
+    },
+    {
+      "id": "APM_GEN_COM_RTN_02",
+      "topic": "약속",
+      "preview": "What is the typical procedure for scheduling an appointment? Describe the sequence you follow and the factors you must c"
+    },
+    {
+      "id": "APR_RP_SEL_SPC_03",
+      "topic": "여행(공항)",
+      "preview": "That's the end of the situation. Have you ever faced unexpected challenges or obstacles while traveling? Tell me about a"
+    },
+    {
+      "id": "APT_GEN_COM_CHILD_03",
+      "topic": "예약",
+      "preview": "Tell me about a specific appointment you clearly remember from your childhood. You might have visited a doctor, a dentis"
+    },
+    {
+      "id": "APT_GEN_COM_DESC_01",
+      "topic": "예약",
+      "preview": "What specific types of locations do you visit when you have various scheduled appointments? Tell me about the places you"
+    },
+    {
+      "id": "APT_GEN_COM_RTN_02",
+      "topic": "예약",
+      "preview": "What is your typical routine when you have a scheduled appointment? Describe the steps you usually take to prepare and m"
+    },
+    {
+      "id": "APT_GEN_COM_SPC_04",
+      "topic": "예약",
+      "preview": "Sometimes, amusing or completely surprising things happen during a scheduled meeting. Tell me about a specific appointme"
+    },
+    {
+      "id": "BIC_RP_COM_SPC_03",
+      "topic": "자전거",
+      "preview": "That's the end of the situation. Now, tell me about an incident where you encountered a problem while riding a bicycle o"
+    },
+    {
+      "id": "BNK_GEN_COM_CMP_03",
+      "topic": "은행",
+      "preview": "Banking services have definitely changed over time. Tell me about a local bank you remember visiting during your childho"
+    },
+    {
+      "id": "BNK_GEN_COM_DESC_01",
+      "topic": "은행",
+      "preview": "Tell me about the financial institutions in your region. What is the general interior and exterior of these banks like, "
+    },
+    {
+      "id": "BNK_GEN_COM_RTN_02",
+      "topic": "은행",
+      "preview": "Tell me about the typical errands you handle when visiting a bank. Do you mainly go for depositing money, seeking financ"
+    },
+    {
+      "id": "BNK_GEN_COM_SPC_04",
+      "topic": "은행",
+      "preview": "Sometimes, unexpected issues arise when dealing with financial institutions. Tell me in detail about a problem you exper"
+    },
+    {
+      "id": "BNK_RP_COM_SPC_05",
+      "topic": "은행",
+      "preview": "That's the end of the situation. Have you ever experienced an issue with your debit or credit card while using an ATM? M"
+    },
+    {
+      "id": "BNK_RP_COM_SPC_06",
+      "topic": "은행",
+      "preview": "That's the end of the situation. Can you recall a specific issue you had with a bank account or credit card that forced "
+    },
+    {
+      "id": "BPT_RP_COM_SPC_03",
+      "topic": "생일파티",
+      "preview": "That's the end of the situation. Have you ever organized a trip or a party, only to cancel it at the very last minute du"
+    },
+    {
+      "id": "CAR_RP_COM_SPC_03",
+      "topic": "자동차 고장",
+      "preview": "That's the end of the situation. Tell me about the most recent time you experienced mechanical trouble with a car. What "
+    },
+    {
+      "id": "CLB_RP_COM_SPC_03",
+      "topic": "기념모임",
+      "preview": "Has anything particularly interesting or unusual ever occurred in your neighborhood? Tell me in detail about a highly me"
+    },
+    {
+      "id": "CLT_RP_COM_SPC_05",
+      "topic": "옷 구매",
+      "preview": "That's the end of the situation. Have you ever purchased a piece of clothing only to realize you didn't actually like it"
+    },
+    {
+      "id": "CLT_RP_COM_SPC_06",
+      "topic": "옷 구매",
+      "preview": "That's the end of the situation. Have you ever bought an item of clothing and later discovered a serious flaw, like a no"
+    },
+    {
+      "id": "DNT_GEN_COM_CMP_03",
+      "topic": "치과",
+      "preview": "How was the dental clinic you visited as a child different from the ones you go to as an adult? What specific things hav"
+    },
+    {
+      "id": "DNT_GEN_COM_DESC_01",
+      "topic": "치과",
+      "preview": "Describe a dental clinic located close to where you live. What is the interior design like, how is the waiting area, and"
+    },
+    {
+      "id": "DNT_GEN_COM_RTN_02",
+      "topic": "치과",
+      "preview": "Tell me about your regular visits to the dental clinic. What kind of check-ups or treatments do you typically receive, a"
+    },
+    {
+      "id": "DNT_GEN_COM_SPC_05",
+      "topic": "치과",
+      "preview": "Tell me about an unforgettable experience you had during a visit to the dentist's office. What happened before, during, "
+    },
+    {
+      "id": "DRA_RP_COM_SPC_03",
+      "topic": "병원예약",
+      "preview": "That's the end of the situation. Have you ever had to miss an important appointment, or found yourself arriving extremel"
+    },
+    {
+      "id": "DTR_ADV_SEL_Q15_02",
+      "topic": "국내여행",
+      "preview": "When people discuss domestic travel, what are the most common issues or concerns they typically bring up? What exactly c"
+    },
+    {
+      "id": "DTR_GEN_SEL_CHILD_03",
+      "topic": "국내여행",
+      "preview": "Tell me about some of the memorable domestic trips you took during your youth. Where did you usually travel, and who acc"
+    },
+    {
+      "id": "DTR_GEN_SEL_RTN_02",
+      "topic": "국내여행",
+      "preview": "Can you tell me about the specific steps you take to prepare for a domestic trip? Describe what you usually pack in your"
+    },
+    {
+      "id": "DTR_GEN_SEL_SPC_04",
+      "topic": "국내여행",
+      "preview": "Traveling often leads to interesting, funny, or totally unexpected situations. Tell me about one unforgettable travel ex"
+    },
+    {
+      "id": "EVA_RP_COM_Q11_01",
+      "topic": "우리나라 방문",
+      "preview": "I'd like to give you a situation and ask you to act it out. I am an interviewer planning to visit your country next mont"
+    },
+    {
+      "id": "EVA_RP_COM_SPC_03",
+      "topic": "우리나라 방문",
+      "preview": "Tell me in detail about a specific moment when you discovered or realized something fascinating about your own country. "
+    },
+    {
+      "id": "FAM_ADV_COM_Q14_01",
+      "topic": "가족/친구",
+      "preview": "Choose two close friends or family members and describe their personalities in detail. What specific traits do they have"
+    },
+    {
+      "id": "FAM_ADV_COM_Q15_02",
+      "topic": "가족/친구",
+      "preview": "Whenever you gather with your friends or family members, what kinds of interesting topics or current events usually domi"
+    },
+    {
+      "id": "FAM_GEN_COM_CHILD_05",
+      "topic": "가족/친구",
+      "preview": "Tell me about an early childhood memory of visiting a friend or relative's house. Who did you go to see, what was your f"
+    },
+    {
+      "id": "FAM_GEN_COM_DESC_01",
+      "topic": "가족/친구",
+      "preview": "Can you describe a close relative or a friend that you frequently spend time with? Who exactly is this person, and what "
+    },
+    {
+      "id": "FAM_GEN_COM_DESC_02",
+      "topic": "가족/친구",
+      "preview": "Tell me about the specific friends or relatives whose homes you enjoy visiting. How are you related to them, and what ar"
+    },
+    {
+      "id": "FAM_GEN_COM_RCT_06",
+      "topic": "가족/친구",
+      "preview": "Tell me about the last time you got together with your friends or family members. Was it for a special celebration or ju"
+    },
+    {
+      "id": "FAM_GEN_COM_RTN_03",
+      "topic": "가족/친구",
+      "preview": "When you gather with your friends or family members, what are your favorite group activities? Explain what you usually d"
+    },
+    {
+      "id": "FAM_GEN_COM_RTN_04",
+      "topic": "가족/친구",
+      "preview": "Tell me about your usual routine when visiting the homes of your friends or relatives. Do you normally share a meal, hav"
+    },
+    {
+      "id": "FAM_GEN_COM_SPC_07",
+      "topic": "가족/친구",
+      "preview": "Could you tell me about a special occasion or a major holiday you celebrated with your close friends or family? Tell me "
+    },
+    {
+      "id": "FAM_GEN_COM_SPC_08",
+      "topic": "가족/친구",
+      "preview": "Talk about a memorable time when you went to visit a friend or a relative's house. What kinds of activities did you do t"
+    },
+    {
+      "id": "FOD_ADV_COM_Q14_01",
+      "topic": "음식",
+      "preview": "How has grocery shopping changed over the last twenty years? What are some of the biggest trends or shifts you have noti"
+    },
+    {
+      "id": "FOD_ADV_COM_Q15_02",
+      "topic": "음식",
+      "preview": "There have been numerous news reports lately about food contamination or products containing dangerous bacteria. Tell me"
+    },
+    {
+      "id": "FOD_GEN_COM_CHILD_05",
+      "topic": "음식",
+      "preview": "Tell me about how you first became interested in eating a healthy diet. Did you grow up in a family that prioritized hea"
+    },
+    {
+      "id": "FOD_GEN_COM_CHILD_06",
+      "topic": "음식",
+      "preview": "Tell me about a fond memory you have of a special food or dish from your childhood. Where and when did you usually eat t"
+    },
+    {
+      "id": "FOD_GEN_COM_CMP_04",
+      "topic": "음식",
+      "preview": "A lot of people are trying to maintain a healthy diet these days. What types of food are considered healthy in your coun"
+    },
+    {
+      "id": "FOD_GEN_COM_DESC_01",
+      "topic": "음식",
+      "preview": "What are the most common traditional foods in your country? Which specific dishes are highly favored by the locals, and "
+    },
+    {
+      "id": "FOD_GEN_COM_RCT_07",
+      "topic": "음식",
+      "preview": "When was the last time you had a really healthy meal? Who were you dining with, what nutritious ingredients did you eat,"
+    },
+    {
+      "id": "FOD_GEN_COM_RTN_02",
+      "topic": "음식",
+      "preview": "How do you usually go about shopping for healthy ingredients? Describe the specific steps and preparations you take when"
+    },
+    {
+      "id": "FOD_GEN_COM_RTN_03",
+      "topic": "음식",
+      "preview": "Tell me about your daily eating habits. What types of food do you regularly consume, and where do you typically have you"
+    },
+    {
+      "id": "FOD_GEN_COM_SPC_08",
+      "topic": "음식",
+      "preview": "Tell me about a memorable experience you had while having a meal, whether it was exceptionally good or completely disast"
+    },
+    {
+      "id": "FOD_GEN_COM_SPC_09",
+      "topic": "음식",
+      "preview": "Sometimes our dining plans don't work out as expected, like a restaurant losing a reservation or a delivery arriving wit"
+    },
+    {
+      "id": "FRA_RP_COM_SPC_03",
+      "topic": "친구약속",
+      "preview": "That's the end of the situation. Can you recall a time when you had free time and made plans, but they got ruined by bad"
+    },
+    {
+      "id": "FRN_GEN_COM_CHILD_03",
+      "topic": "가구",
+      "preview": "Tell me about the furniture you grew up with in your childhood home. How was it different from the pieces you own today?"
+    },
+    {
+      "id": "FRN_GEN_COM_DESC_01",
+      "topic": "가구",
+      "preview": "Tell me about the various pieces of furniture you currently have in your home. Do you have a specific item that is your "
+    },
+    {
+      "id": "FRN_GEN_COM_RTN_02",
+      "topic": "가구",
+      "preview": "Tell me about your daily routine involving the furniture in your house. What kind of activities do you usually do using "
+    },
+    {
+      "id": "FRN_GEN_COM_SPC_04",
+      "topic": "가구",
+      "preview": "Sometimes, unexpected issues arise with our home furniture, such as broken parts or stained fabric. Tell me about a spec"
+    },
+    {
+      "id": "FRN_RP_COM_SPC_04",
+      "topic": "가구",
+      "preview": "That's the end of the situation. Have you ever purchased a piece of furniture that completely failed to meet your expect"
+    },
+    {
+      "id": "FRN_RP_COM_SPC_05",
+      "topic": "가구",
+      "preview": "That's the end of the situation. Have you ever found yourself in a similar spot? Have you ever bought a product for your"
+    },
+    {
+      "id": "FRT_GEN_COM_CMP_03",
+      "topic": "자유시간",
+      "preview": "Do you have more or less free time now compared to when you were younger? Describe for me how the amount of your leisure"
+    },
+    {
+      "id": "FRT_GEN_COM_DESC_01",
+      "topic": "자유시간",
+      "preview": "Tell me about the popular leisure destinations where locals enjoy spending their time off. Do they prefer hanging out at"
+    },
+    {
+      "id": "FRT_GEN_COM_RCT_04",
+      "topic": "자유시간",
+      "preview": "Tell me about the last time you had some free time. What kind of memorable leisure activity did you engage in, and who d"
+    },
+    {
+      "id": "FRT_GEN_COM_RTN_02",
+      "topic": "자유시간",
+      "preview": "What do people in your country usually do to relax during their free time? Describe some of the most popular hobbies and"
+    },
+    {
+      "id": "FSH_GEN_COM_CMP_04",
+      "topic": "패션",
+      "preview": "Fashion trends are constantly changing. Tell me about the types of clothing that were considered trendy when you were a "
+    },
+    {
+      "id": "FSH_GEN_COM_DESC_01",
+      "topic": "패션",
+      "preview": "What are the common fashion trends among the people in your country? Is there a noticeable difference between profession"
+    },
+    {
+      "id": "FSH_GEN_COM_DESC_02",
+      "topic": "패션",
+      "preview": "What specific types of garments do you personally prefer to wear? Describe the outfit you have on right now, and explain"
+    },
+    {
+      "id": "FSH_GEN_COM_RCT_05",
+      "topic": "패션",
+      "preview": "Tell me about the last time you went shopping for a new piece of clothing. Which store did you visit, and what exact ite"
+    },
+    {
+      "id": "FSH_GEN_COM_RTN_03",
+      "topic": "패션",
+      "preview": "Tell me about your fashion shopping habits. Where do you typically go to buy new clothes, and what is your usual process"
+    },
+    {
+      "id": "FVA_RP_SEL_SPC_03",
+      "topic": "친구휴가",
+      "preview": "That's the end of the situation. Tell me about a highly memorable trip you have taken in the past. When did it take plac"
+    },
+    {
+      "id": "GEO_ADV_COM_Q14_01",
+      "topic": "지형",
+      "preview": "Think about a neighboring country that is geographically close to yours. In what significant ways has this nation change"
+    },
+    {
+      "id": "GEO_ADV_COM_Q14_02",
+      "topic": "지형",
+      "preview": "Tell me in detail about the recent changes you have observed regarding the relationship between your country and neighbo"
+    },
+    {
+      "id": "GEO_ADV_COM_Q15_03",
+      "topic": "지형",
+      "preview": "Tell me in detail about a recent news story you've heard involving a country geographically close to yours. What exactly"
+    },
+    {
+      "id": "GEO_ADV_COM_Q15_04",
+      "topic": "지형",
+      "preview": "I'd like you to think about a specific historic event that deeply affected the relationship between your country and a n"
+    },
+    {
+      "id": "GEO_GEN_COM_CHILD_06",
+      "topic": "지형",
+      "preview": "Describe an early memory you have involving your country's geography. Perhaps you visited a unique landform or a famous "
+    },
+    {
+      "id": "GEO_GEN_COM_CHILD_07",
+      "topic": "지형",
+      "preview": "I'd like you to pick a favorite geographical location or nature spot in your country from your childhood. Describe the l"
+    },
+    {
+      "id": "GEO_GEN_COM_CMP_05",
+      "topic": "지형",
+      "preview": "How has the overall landscape of your country changed over the past decade? Pick one specific area, such as urban develo"
+    },
+    {
+      "id": "GEO_GEN_COM_DESC_01",
+      "topic": "지형",
+      "preview": "Describe the overall geographic features of your country. Does the landscape consist mostly of mountainous areas, coastl"
+    },
+    {
+      "id": "GEO_GEN_COM_DESC_02",
+      "topic": "지형",
+      "preview": "Tell me about a neighboring nation that borders your country. Describe its physical landscape, the characteristics of it"
+    },
+    {
+      "id": "GEO_GEN_COM_RTN_03",
+      "topic": "지형",
+      "preview": "Tell me about the popular outdoor activities people enjoy in your country due to its geographical features. Do they usua"
+    },
+    {
+      "id": "GEO_GEN_COM_RTN_04",
+      "topic": "지형",
+      "preview": "Please tell me about how people in your country typically spend their free time. What are some of the most common hobbie"
+    },
+    {
+      "id": "GEO_GEN_COM_SPC_08",
+      "topic": "지형",
+      "preview": "People often have moving or deeply memorable experiences when exploring nature. For example, you might have hiked up a s"
+    },
+    {
+      "id": "GRC_RP_COM_SPC_03",
+      "topic": "식료품점",
+      "preview": "Tell me about the time you first discovered your favorite grocery store. Where is it situated and what initially drew yo"
+    },
+    {
+      "id": "GTH_ADV_COM_Q14_01",
+      "topic": "모임",
+      "preview": "How have traditional celebrations and social gatherings in your country changed since you were a child? Do people host t"
+    },
+    {
+      "id": "GTH_ADV_COM_Q14_02",
+      "topic": "모임",
+      "preview": "Gatherings and celebrations in small rural towns are often quite different from those held in bustling big cities. Tell "
+    },
+    {
+      "id": "GTH_ADV_COM_Q15_03",
+      "topic": "모임",
+      "preview": "Hosting major community celebrations or gatherings requires a lot of hard work, organization, and funding. Have there be"
+    },
+    {
+      "id": "GTH_ADV_COM_Q15_04",
+      "topic": "모임",
+      "preview": "What kinds of concerns or complaints do you typically hear when large gatherings or festivals are held in your neighborh"
+    },
+    {
+      "id": "GTH_GEN_COM_DESC_01",
+      "topic": "모임",
+      "preview": "Tell me about the various community events or celebrations that take place in your neighborhood. What kind of activities"
+    },
+    {
+      "id": "GTH_GEN_COM_DESC_02",
+      "topic": "모임",
+      "preview": "Where do people in your community typically host their parties or festive gatherings? Are they usually held at a private"
+    },
+    {
+      "id": "GTH_GEN_COM_RCT_04",
+      "topic": "모임",
+      "preview": "Tell me about the last holiday party or social gathering that you attended. What was the special occasion, who did you g"
+    },
+    {
+      "id": "GTH_GEN_COM_RTN_03",
+      "topic": "모임",
+      "preview": "Choose a major holiday celebrated in your country and tell me about the typical traditions. Where do people usually gath"
+    },
+    {
+      "id": "GTH_GEN_COM_SPC_05",
+      "topic": "모임",
+      "preview": "Tell me about a community event or a celebration that took place in your neighborhood. Describe the venue, the people wh"
+    },
+    {
+      "id": "GTH_GEN_COM_SPC_06",
+      "topic": "모임",
+      "preview": "Sometimes, unexpected incidents can occur when people get together for a celebration. Tell me all about a surprising eve"
+    },
+    {
+      "id": "GTH_GEN_COM_SPC_07",
+      "topic": "모임",
+      "preview": "Tell me about a time when you helped organize a party or a special event. Perhaps you took care of inviting guests, sett"
+    },
+    {
+      "id": "GTH_GEN_COM_SPC_08",
+      "topic": "모임",
+      "preview": "Tell me about a memorable gathering or local festival that took place in your community. Describe the location of the ev"
+    },
+    {
+      "id": "GTR_RP_COM_SPC_03",
+      "topic": "지형(여행)",
+      "preview": "That's the end of the situation. Have you ever traveled to another country or region where the natural geography was com"
+    },
+    {
+      "id": "GYM_RP_COM_SPC_06",
+      "topic": "헬스클럽",
+      "preview": "That's the end of the situation. Tell me in detail about a major health-related challenge you once faced. What specific "
+    },
+    {
+      "id": "HFD_RP_COM_Q11_01",
+      "topic": "건강식품",
+      "preview": "I'd like to give you a situation and ask you to act it out. A brand new health food store just opened up in your town. C"
+    },
+    {
+      "id": "HFD_RP_COM_SPC_03",
+      "topic": "건강식품",
+      "preview": "We often have interesting experiences while dining out with friends, family, or colleagues. Tell me about a particularly"
+    },
+    {
+      "id": "HLT_ADV_COM_Q14_01",
+      "topic": "건강",
+      "preview": "Different generations have very different views on what it means to be healthy. What did your parents' generation think "
+    },
+    {
+      "id": "HLT_ADV_COM_Q15_03",
+      "topic": "건강",
+      "preview": "Health-related news stories are constantly making headlines. Tell me about a recent news report you saw regarding a majo"
+    },
+    {
+      "id": "HLT_ADV_COM_Q15_04",
+      "topic": "건강",
+      "preview": "Describe a recent notable event in your area that centered around health issues. It could be a controversy in the local "
+    },
+    {
+      "id": "HLT_GEN_COM_CMP_06",
+      "topic": "건강",
+      "preview": "Our understanding of good health and how to maintain it often changes over time. How did people try to stay healthy when"
+    },
+    {
+      "id": "HLT_GEN_COM_CMP_07",
+      "topic": "건강",
+      "preview": "How have the typical eating habits of health-conscious people changed since you were a child? Was the standard healthy d"
+    },
+    {
+      "id": "HLT_GEN_COM_DESC_01",
+      "topic": "건강",
+      "preview": "Tell me about the typical diet of health-conscious individuals. What specific ingredients do they consume, and where do "
+    },
+    {
+      "id": "HLT_GEN_COM_DESC_02",
+      "topic": "건강",
+      "preview": "Tell me about a shop near your home that specializes in healthy products. What is the interior like, and what kind of at"
+    },
+    {
+      "id": "HLT_GEN_COM_DESC_03",
+      "topic": "건강",
+      "preview": "Tell me about an individual in your life who maintains an exceptionally healthy lifestyle. What is their physical appear"
+    },
+    {
+      "id": "HLT_GEN_COM_RTN_04",
+      "topic": "건강",
+      "preview": "Tell me about the various activities and habits you maintain to stay in good shape. What is your daily routine for takin"
+    },
+    {
+      "id": "HLT_GEN_COM_RTN_05",
+      "topic": "건강",
+      "preview": "What are the typical eating habits of healthy individuals in your country? Describe what they usually consume for breakf"
+    },
+    {
+      "id": "HLT_GEN_COM_SPC_08",
+      "topic": "건강",
+      "preview": "Tell me about a specific incident you experienced related to improving your health. Perhaps you tried to cook a challeng"
+    },
+    {
+      "id": "HLT_GEN_COM_SPC_09",
+      "topic": "건강",
+      "preview": "Tell me about a specific time when you learned a valuable lesson about maintaining good health. You might have picked it"
+    },
+    {
+      "id": "HLT_GEN_COM_SPC_10",
+      "topic": "건강",
+      "preview": "Tell me about a time when you or someone close to you tried a new activity to get healthier. It could involve taking up "
+    },
+    {
+      "id": "HLT_GEN_COM_SPC_11",
+      "topic": "건강",
+      "preview": "People try many different methods to stay fit, like joining a specialized cooking class or starting a gym routine. Tell "
+    },
+    {
+      "id": "HML_RP_COM_Q11_01",
+      "topic": "휴일식사",
+      "preview": "I'd like to give you a situation and ask you to act it out. A close friend has invited you over for a special holiday me"
+    },
+    {
+      "id": "HOL_ADV_COM_Q14_01",
+      "topic": "휴일",
+      "preview": "What are some of the most widely celebrated holidays in your country? Describe what people typically do during these occ"
+    },
+    {
+      "id": "HOL_ADV_COM_Q15_02",
+      "topic": "휴일",
+      "preview": "What are some of the most common issues or complaints people have when it comes to national holidays or long weekends? F"
+    },
+    {
+      "id": "HOL_GEN_COM_CHILD_03",
+      "topic": "휴일",
+      "preview": "Describe for me the most memorable holiday experience you had during your childhood. Where were you celebrating, what di"
+    },
+    {
+      "id": "HOL_GEN_COM_RTN_01",
+      "topic": "휴일",
+      "preview": "Tell me about the most popular holidays celebrated in your country. Where do people usually gather for these occasions, "
+    },
+    {
+      "id": "HOL_GEN_COM_RTN_02",
+      "topic": "휴일",
+      "preview": "Pick one of your favorite holidays and describe the traditional ways people celebrate it. What specific activities, food"
+    },
+    {
+      "id": "HOL_GEN_COM_SPC_04",
+      "topic": "휴일",
+      "preview": "Tell me in detail about the most recent holiday you celebrated. Did you follow traditional customs, or did anything unex"
+    },
+    {
+      "id": "HSG_ADV_SEL_Q14_02",
+      "topic": "집",
+      "preview": "I would like to now talk about where you live. How has the architectural style of homes changed over the past five to te"
+    },
+    {
+      "id": "HSG_ADV_SEL_Q15_03",
+      "topic": "집",
+      "preview": "What are some of the major problems most people face when renting a house or an apartment? How do tenants typically deal"
+    },
+    {
+      "id": "HSG_ADV_SEL_Q15_04",
+      "topic": "집",
+      "preview": "Sometimes, issues like an oversupply of new homes or a severe housing shortage can create a huge controversy in a commun"
+    },
+    {
+      "id": "HSG_GEN_SEL_CHILD_06",
+      "topic": "집",
+      "preview": "Tell me about the house or apartment where you spent your childhood. What did your home and the surrounding neighborhood"
+    },
+    {
+      "id": "HSG_GEN_SEL_CMP_05",
+      "topic": "집",
+      "preview": "Describe the house or apartment you lived in when you were a child. How was that home different from the place you are l"
+    },
+    {
+      "id": "HSG_GEN_SEL_RTN_03",
+      "topic": "집",
+      "preview": "What is your typical daily routine when you are at home? Describe the activities you usually do during the weekdays, and"
+    },
+    {
+      "id": "HSG_GEN_SEL_RTN_04",
+      "topic": "집",
+      "preview": "Tell me what kinds of chores you handle to keep your living space neat and cozy. What are your specific responsibilities"
+    },
+    {
+      "id": "HSG_GEN_SEL_SPC_07",
+      "topic": "집",
+      "preview": "People often feel the need to refresh their living spaces, whether by bringing in new furniture, repainting, or adding d"
+    },
+    {
+      "id": "HSG_GEN_SEL_SPC_08",
+      "topic": "집",
+      "preview": "Talk about an unforgettable memory you share with your family inside your home. It could be an amusing incident, a surpr"
+    },
+    {
+      "id": "HSG_GEN_SEL_SPC_09",
+      "topic": "집",
+      "preview": "Unexpected issues are bound to happen in any household, like broken appliances, failed home projects, or disagreements w"
+    },
+    {
+      "id": "HSG_GEN_SEL_SPC_10",
+      "topic": "집",
+      "preview": "Pick one of the household issues you just mentioned and explain exactly what went wrong. Start by describing when it occ"
+    },
+    {
+      "id": "HSP_GEN_COM_CHILD_03",
+      "topic": "병원",
+      "preview": "Do you remember having to visit a hospital or clinic when you were a child? Describe the specific reason for your visit,"
+    },
+    {
+      "id": "HSP_GEN_COM_DESC_01",
+      "topic": "병원",
+      "preview": "What is the typical hospital environment like in your country? Describe the overall mood inside these medical centers an"
+    },
+    {
+      "id": "HSP_GEN_COM_RCT_04",
+      "topic": "병원",
+      "preview": "Have you recently visited a hospital or clinic? Please share what the overall experience was like. Make sure to include "
+    },
+    {
+      "id": "HSP_GEN_COM_RTN_02",
+      "topic": "병원",
+      "preview": "What are the common duties and routines of doctors working in hospitals? Describe the typical roles and responsibilities"
+    },
+    {
+      "id": "HSP_GEN_COM_SPC_05",
+      "topic": "병원",
+      "preview": "Have you ever had a highly memorable experience involving a trip to the hospital? Please explain what happened during th"
+    },
+    {
+      "id": "HTL_GEN_COM_DESC_01",
+      "topic": "호텔",
+      "preview": "Tell me about the various types of accommodation available in your country. What do the hotels generally look like, and "
+    },
+    {
+      "id": "HTL_GEN_COM_RCT_03",
+      "topic": "호텔",
+      "preview": "When was the last time you stayed overnight in a hotel? Tell me the whole story of where the accommodation was located, "
+    },
+    {
+      "id": "HTL_GEN_COM_RTN_02",
+      "topic": "호텔",
+      "preview": "Tell me what you normally do when staying at a hotel. Describe your routine from the moment you check in to the time you"
+    },
+    {
+      "id": "HTL_GEN_COM_SPC_04",
+      "topic": "호텔",
+      "preview": "People often remember hotels that have a unique, beautiful, or interesting vibe. Tell me about a specific hotel that lef"
+    },
+    {
+      "id": "HTL_RP_COM_SPC_09",
+      "topic": "호텔",
+      "preview": "That's the end of the situation. Tell me about a truly memorable experience you had during a hotel stay. Perhaps you ran"
+    },
+    {
+      "id": "HTL_RP_COM_SPC_10",
+      "topic": "호텔",
+      "preview": "That's the end of the situation. Have you ever encountered a major issue while traveling abroad, whether it was a busine"
+    },
+    {
+      "id": "HTL_RP_COM_SPC_11",
+      "topic": "호텔",
+      "preview": "That's the end of the situation. Think about a trip where your itinerary completely fell apart or didn't go as expected."
+    },
+    {
+      "id": "HTL_RP_COM_SPC_12",
+      "topic": "호텔",
+      "preview": "That's the end of the situation. Has a similar situation ever happened to you? Have you ever accidentally left a valuabl"
+    },
+    {
+      "id": "HTW_RP_COM_SPC_03",
+      "topic": "호텔(날씨)",
+      "preview": "That's the end of the situation. Have you ever experienced a time when the weather was completely different from the loc"
+    },
+    {
+      "id": "IND_ADV_COM_Q14_01",
+      "topic": "산업",
+      "preview": "Can you tell me about a specific industry that you closely follow? You might be interested in the food industry, renewab"
+    },
+    {
+      "id": "IND_ADV_COM_Q14_02",
+      "topic": "산업",
+      "preview": "How do people typically prepare for their careers in your country's major industries? Do they rely on general university"
+    },
+    {
+      "id": "IND_ADV_COM_Q15_03",
+      "topic": "산업",
+      "preview": "Tell me about a time when a highly anticipated product completely failed to meet public expectations. Perhaps a new vide"
+    },
+    {
+      "id": "IND_ADV_COM_Q15_04",
+      "topic": "산업",
+      "preview": "What is a specific industry or company that everyone in your country seems to be talking about these days? Tell me why t"
+    },
+    {
+      "id": "IND_GEN_COM_CMP_05",
+      "topic": "산업",
+      "preview": "What are some of the companies that young job seekers want to work for these days? Why do you think so many young people"
+    },
+    {
+      "id": "IND_GEN_COM_CMP_06",
+      "topic": "산업",
+      "preview": "Describe a specific company or business sector in your country that is highly attractive to job seekers. When was this i"
+    },
+    {
+      "id": "IND_GEN_COM_DESC_01",
+      "topic": "산업",
+      "preview": "Tell me about a prominent industry in your country that is widely recognized. You can choose any sector, such as technol"
+    },
+    {
+      "id": "IND_GEN_COM_DESC_02",
+      "topic": "산업",
+      "preview": "Can you tell me about a highly successful or famous company within that industry? Describe how this business was first e"
+    },
+    {
+      "id": "IND_GEN_COM_DESC_03",
+      "topic": "산업",
+      "preview": "How has this particular industry impacted your personal life? Tell me about the specific products or services it provide"
+    },
+    {
+      "id": "IND_GEN_COM_RTN_04",
+      "topic": "산업",
+      "preview": "What do people in your country usually do to prepare for their future careers? How do they gather information about diff"
+    },
+    {
+      "id": "IND_GEN_COM_SPC_07",
+      "topic": "산업",
+      "preview": "When this company launched its signature products, did they find immediate success? Describe the specific obstacles or c"
+    },
+    {
+      "id": "IND_GEN_COM_SPC_08",
+      "topic": "산업",
+      "preview": "Tell me about a specific effort or project you took on to get ready for your current career. Describe the entire experie"
+    },
+    {
+      "id": "INT_ADV_COM_Q14_01",
+      "topic": "인터넷",
+      "preview": "What kinds of modern concerns do people have about internet use when it comes to data security, privacy, or online safet"
+    },
+    {
+      "id": "INT_ADV_COM_Q14_02",
+      "topic": "인터넷",
+      "preview": "How has surfing the internet changed since you first logged online years ago? What aspects of the web are still similar,"
+    },
+    {
+      "id": "INT_ADV_COM_Q15_03",
+      "topic": "인터넷",
+      "preview": "How does the way people use the internet vary across different age groups, from the younger generation to the elderly? F"
+    },
+    {
+      "id": "INT_ADV_COM_Q15_04",
+      "topic": "인터넷",
+      "preview": "What are some of the most serious problems or concerns people have regarding the internet today? Give me some background"
+    },
+    {
+      "id": "INT_GEN_COM_CHILD_07",
+      "topic": "인터넷",
+      "preview": "When did you first become interested in surfing the internet? Tell me about your very first online experience in great d"
+    },
+    {
+      "id": "INT_GEN_COM_DESC_01",
+      "topic": "인터넷",
+      "preview": "Tell me about the specific website or online platform you browse most frequently. What kind of content does it offer, an"
+    },
+    {
+      "id": "INT_GEN_COM_DESC_02",
+      "topic": "인터넷",
+      "preview": "What specific types of online video clips do you stream for entertainment, study, or business purposes? Tell me about yo"
+    },
+    {
+      "id": "INT_GEN_COM_RCT_08",
+      "topic": "인터넷",
+      "preview": "Tell me all about what you did online yesterday, whether it was for your job, your studies, or just for entertainment. W"
+    },
+    {
+      "id": "INT_GEN_COM_RTN_03",
+      "topic": "인터넷",
+      "preview": "How do your friends and family members typically use the internet in their daily lives? Do they mostly rely on it for wo"
+    },
+    {
+      "id": "INT_GEN_COM_RTN_04",
+      "topic": "인터넷",
+      "preview": "Tell me about your personal routine when browsing the internet. What types of websites do you visit most often, and what"
+    },
+    {
+      "id": "INT_GEN_COM_RTN_05",
+      "topic": "인터넷",
+      "preview": "Tell me about your general online routine both at work and during your free time. How do your internet activities differ"
+    },
+    {
+      "id": "INT_GEN_COM_SPC_09",
+      "topic": "인터넷",
+      "preview": "Tell me about a specific project you worked on that required extensive internet research. Start by giving me some backgr"
+    },
+    {
+      "id": "INT_GEN_COM_SPC_10",
+      "topic": "인터넷",
+      "preview": "We all come across memorable content while surfing the internet. Talk about a specific video, article, or website you've"
+    },
+    {
+      "id": "INT_GEN_COM_SPC_11",
+      "topic": "인터넷",
+      "preview": "Describe a memorable piece of content you came across online, whether it was for work or just for fun. It could have bee"
+    },
+    {
+      "id": "INT_RP_COM_SPC_04",
+      "topic": "인터넷",
+      "preview": "That's the end of the situation. Have you ever encountered a frustrating problem while surfing the internet? Maybe the w"
+    },
+    {
+      "id": "INT_RP_COM_SPC_05",
+      "topic": "인터넷",
+      "preview": "That's the end of the situation. Can you tell me about a time when you heavily relied on the internet to complete a past"
+    },
+    {
+      "id": "JBI_RP_COM_SPC_03",
+      "topic": "회사면접",
+      "preview": "That's the end of the situation. Have you ever been forced to miss a scheduled class, an important meeting, or a job int"
+    },
+    {
+      "id": "MOV_ADV_SEL_Q15_02",
+      "topic": "영화",
+      "preview": "When you and your friends or family talk about movies, what specific topics or current issues regarding the film industr"
+    },
+    {
+      "id": "MOV_GEN_SEL_RTN_02",
+      "topic": "영화",
+      "preview": "Tell me about your typical routine when you go to the movie theater. Who do you usually go with, and what kinds of activ"
+    },
+    {
+      "id": "MOV_GEN_SEL_SPC_04",
+      "topic": "영화",
+      "preview": "Tell me about the most memorable movie you have seen in the past. What was the central plot, and what elements made the "
+    },
+    {
+      "id": "MOV_GEN_SEL_SPC_05",
+      "topic": "영화",
+      "preview": "Who is your favorite movie star? Tell me about a recent news story or interesting incident involving this actor. Start w"
+    },
+    {
+      "id": "MOV_RP_SEL_SPC_05",
+      "topic": "영화",
+      "preview": "That's the end of the situation. Has a similar problem ever happened to you? Have you ever purchased tickets or made res"
+    },
+    {
+      "id": "MOV_RP_SEL_SPC_06",
+      "topic": "영화",
+      "preview": "That's the end of the situation. Have you ever sat down to watch an incredibly boring movie? If so, how did you handle i"
+    },
+    {
+      "id": "MUS_ADV_SEL_Q15_02",
+      "topic": "음악",
+      "preview": "What kinds of new electronic gadgets or audio equipment are music lovers most interested in these days? What are they cu"
+    },
+    {
+      "id": "MUS_GEN_SEL_CHILD_03",
+      "topic": "음악",
+      "preview": "When did you first develop an interest in music? What specific genres or artists did you listen to when you were young? "
+    },
+    {
+      "id": "MUS_GEN_SEL_DESC_01",
+      "topic": "음악",
+      "preview": "You indicated in the survey that you listen to music. What specific genres of music do you usually enjoy? Who are your f"
+    },
+    {
+      "id": "MUS_GEN_SEL_RTN_02",
+      "topic": "음악",
+      "preview": "Tell me about the different ways you enjoy listening to music in your daily life. Where do you typically go to listen to"
+    },
+    {
+      "id": "NTR_RP_COM_SPC_03",
+      "topic": "영양사",
+      "preview": "Describe a time when you made a drastic change to your daily diet or workout routine. What initially motivated you to ma"
+    },
+    {
+      "id": "OTR_ADV_SEL_Q15_02",
+      "topic": "해외여행",
+      "preview": "When people talk about traveling internationally, what specific activities or sights are they usually most eager to expe"
+    },
+    {
+      "id": "OTR_GEN_COM_CHILD_06",
+      "topic": "외국 국가",
+      "preview": "Think about a specific foreign country you visited when you were young. Describe what the environment and culture were l"
+    },
+    {
+      "id": "OTR_GEN_COM_DESC_02",
+      "topic": "외국 국가",
+      "preview": "Tell me about a famous international destination that travelers from your country frequently visit. What makes that spec"
+    },
+    {
+      "id": "OTR_GEN_COM_RTN_04",
+      "topic": "외국 국가",
+      "preview": "Tell me about the common activities tourists enjoy when traveling abroad. What kind of destinations do they usually visi"
+    },
+    {
+      "id": "OTR_GEN_COM_SPC_10",
+      "topic": "외국 국가",
+      "preview": "Tell me a specific story about a time when you or an acquaintance traveled internationally. Perhaps you encountered a hi"
+    },
+    {
+      "id": "OTR_GEN_SEL_CHILD_05",
+      "topic": "해외여행",
+      "preview": "Describe your very first trip to another country. Do you remember when it was and where you went? Who did you travel wit"
+    },
+    {
+      "id": "OTR_GEN_SEL_RCT_07",
+      "topic": "해외여행",
+      "preview": "Tell me about your most recent overseas trip. What was the main purpose of your travel, who accompanied you, and what ex"
+    },
+    {
+      "id": "OTR_GEN_SEL_RTN_03",
+      "topic": "해외여행",
+      "preview": "Can you tell me about your usual routine when taking an international trip? What specific activities do you look forward"
+    },
+    {
+      "id": "OTR_GEN_SEL_SPC_08",
+      "topic": "해외여행",
+      "preview": "Occasionally, something completely out of the ordinary happens when we travel abroad. Have you ever faced a surprising o"
+    },
+    {
+      "id": "OTR_GEN_SEL_SPC_09",
+      "topic": "해외여행",
+      "preview": "What is the absolute most memorable experience you have ever had while traveling abroad? When and where did you go, and "
+    },
+    {
+      "id": "PCO_GEN_COM_DESC_01",
+      "topic": "선호회사",
+      "preview": "Tell me more about the specific corporation you just brought up. What exactly do they produce, who forms their main clie"
+    },
+    {
+      "id": "PCO_GEN_COM_RTN_02",
+      "topic": "선호회사",
+      "preview": "What was your routine for landing your current position? Describe the specific steps you took to prepare, and explain th"
+    },
+    {
+      "id": "PCO_GEN_COM_UNK_03",
+      "topic": "선호회사",
+      "preview": "Describe a highly sought-after company among young professionals today. What is the name of the business, what are the e"
+    },
+    {
+      "id": "PFM_RP_SEL_SPC_03",
+      "topic": "공연",
+      "preview": "That's the end of the situation. Have you ever bought tickets or made plans for a show, only to realize later that you c"
+    },
+    {
+      "id": "PHN_ADV_COM_Q14_01",
+      "topic": "전화기",
+      "preview": "Describe how people typically used cell phones five to ten years ago. What were they able to do with those early functio"
+    },
+    {
+      "id": "PHN_ADV_COM_Q14_02",
+      "topic": "전화기",
+      "preview": "How have mobile phones evolved over the years? What were the devices like when you were younger, and how do they compare"
+    },
+    {
+      "id": "PHN_ADV_COM_Q14_03",
+      "topic": "전화기",
+      "preview": "We can use smartphones to do so much more now than in the past, like navigating with GPS, reading instant reviews, and b"
+    },
+    {
+      "id": "PHN_ADV_COM_Q15_04",
+      "topic": "전화기",
+      "preview": "In many societies, experts worry that young people are losing their face-to-face communication skills because they spend"
+    },
+    {
+      "id": "PHN_ADV_COM_Q15_05",
+      "topic": "전화기",
+      "preview": "What kinds of societal concerns or negative side effects usually come up when people discuss the heavy use of cell phone"
+    },
+    {
+      "id": "PHN_ADV_COM_Q15_06",
+      "topic": "전화기",
+      "preview": "Millions of people now rely on their smartphones to catch up on breaking news, from sports updates to global events. Tel"
+    },
+    {
+      "id": "PHN_GEN_COM_CHILD_06",
+      "topic": "전화기",
+      "preview": "Think back to when you first got the mobile phone you are currently using. How did you choose that specific model? Tell "
+    },
+    {
+      "id": "PHN_GEN_COM_CMP_05",
+      "topic": "전화기",
+      "preview": "Describe the very first cell phone you remember owning. What did the device look like, and what kind of basic features d"
+    },
+    {
+      "id": "PHN_GEN_COM_DESC_01",
+      "topic": "전화기",
+      "preview": "What is the most outstanding feature of your smartphone? Is it the high-quality camera, or perhaps the various apps and "
+    },
+    {
+      "id": "PHN_GEN_COM_RTN_02",
+      "topic": "전화기",
+      "preview": "Describe your daily routine with your smartphone. Besides making phone calls, what kinds of apps or features do you and "
+    },
+    {
+      "id": "PHN_GEN_COM_RTN_03",
+      "topic": "전화기",
+      "preview": "Tell me about the usual topics you discuss when talking on the phone with your friends. What are the most common things "
+    },
+    {
+      "id": "PHN_GEN_COM_RTN_04",
+      "topic": "전화기",
+      "preview": "I'd like to know about your personal habits when making phone calls. Who do you contact most frequently, how long do you"
+    },
+    {
+      "id": "PHN_GEN_COM_SPC_07",
+      "topic": "전화기",
+      "preview": "While smartphones are generally easy to use, we sometimes need help with specific features, apps, or battery issues. Tel"
+    },
+    {
+      "id": "PHN_GEN_COM_SPC_08",
+      "topic": "전화기",
+      "preview": "Can you tell me about a particularly memorable phone conversation you've had recently? Perhaps a friend shared some exci"
+    },
+    {
+      "id": "PHN_RP_COM_SPC_07",
+      "topic": "전화기",
+      "preview": "That's the end of the situation. Have you ever experienced an unexpected problem or hardware issue with your cell phone?"
+    },
+    {
+      "id": "PHN_RP_COM_SPC_08",
+      "topic": "전화기",
+      "preview": "That's the end of the situation. Have you ever had to go through the process of setting up a brand new smartphone? Tell "
+    },
+    {
+      "id": "PHN_RP_COM_SPC_09",
+      "topic": "전화기",
+      "preview": "That's the end of the situation. People often experience cell phone issues while traveling or commuting, such as the bat"
+    },
+    {
+      "id": "PHN_RP_COM_SPC_10",
+      "topic": "전화기",
+      "preview": "That's the end of the situation. Have you ever experienced an unexpected problem or hardware issue with your cell phone?"
+    },
+    {
+      "id": "PHR_GEN_COM_DESC_01",
+      "topic": "약국",
+      "preview": "Describe a drugstore or pharmacy situated near your residence. What does the storefront look like, what items are displa"
+    },
+    {
+      "id": "PHR_GEN_COM_RCT_03",
+      "topic": "약국",
+      "preview": "Can you tell me about a recent experience you had visiting a pharmacy? What kind of medicine or items did you need to pi"
+    },
+    {
+      "id": "PHR_GEN_COM_RTN_02",
+      "topic": "약국",
+      "preview": "Tell me about the typical reasons you visit a pharmacy. What specific items do you usually purchase or what services do "
+    },
+    {
+      "id": "PHR_GEN_COM_SPC_04",
+      "topic": "약국",
+      "preview": "Tell me about a surprisingly memorable experience you encountered while visiting a local pharmacy. What exactly happened"
+    },
+    {
+      "id": "PTY_RP_COM_SPC_07",
+      "topic": "파티",
+      "preview": "That's the end of the situation. Can you tell me about a highly memorable visit you made to see your family or friends? "
+    },
+    {
+      "id": "PTY_RP_COM_SPC_08",
+      "topic": "파티",
+      "preview": "That's the end of the situation. Have you ever set up plans for a trip or a party, but had to call it off at the last mi"
+    },
+    {
+      "id": "RCA_RP_COM_SPC_06",
+      "topic": "렌터카",
+      "preview": "That's the end of the situation. Have you ever had to rent a vehicle for a trip? Tell me about a specific time you rente"
+    },
+    {
+      "id": "RCA_RP_COM_SPC_07",
+      "topic": "렌터카",
+      "preview": "That's the end of the situation. Can you tell me about a highly memorable vacation experience, whether it was due to an "
+    },
+    {
+      "id": "RCY_ADV_COM_Q14_01",
+      "topic": "재활용",
+      "preview": "The handling of recyclable materials has definitely changed over the years. Tell me how the collection process used to b"
+    },
+    {
+      "id": "RCY_ADV_COM_Q14_02",
+      "topic": "재활용",
+      "preview": "Describe what the general attitude toward recycling was like when you were a child. Did people actively sort their trash"
+    },
+    {
+      "id": "RCY_ADV_COM_Q15_03",
+      "topic": "재활용",
+      "preview": "Stories about recycling and environmental protection are frequently featured in the media. Tell me about a recent news s"
+    },
+    {
+      "id": "RCY_ADV_COM_Q15_04",
+      "topic": "재활용",
+      "preview": "What are some of the major stories in the news today concerning recycling or the environment? Please describe what curre"
+    },
+    {
+      "id": "RCY_GEN_COM_CHILD_04",
+      "topic": "재활용",
+      "preview": "Tell me what the recycling process was like when you were a child. Was there a designated place or special containers fo"
+    },
+    {
+      "id": "RCY_GEN_COM_DESC_01",
+      "topic": "재활용",
+      "preview": "Recycling is a common practice. Tell me about the various types of items you typically sort out for recycling. What spec"
+    },
+    {
+      "id": "RCY_GEN_COM_RTN_02",
+      "topic": "재활용",
+      "preview": "I'd like to know about the recycling system in your country. What types of materials do people usually sort out, and how"
+    },
+    {
+      "id": "RCY_GEN_COM_RTN_03",
+      "topic": "재활용",
+      "preview": "How do you usually handle recycling at home? Please explain the exact steps you take, from sorting the items to taking t"
+    },
+    {
+      "id": "RCY_GEN_COM_SPC_05",
+      "topic": "재활용",
+      "preview": "Can you tell me about a memorable story or an unexpected experience you had related to recycling? Perhaps you faced an i"
+    },
+    {
+      "id": "RCY_GEN_COM_SPC_06",
+      "topic": "재활용",
+      "preview": "Recycling can sometimes be tricky or lead to unexpected issues. For instance, the collection truck might be late, or the"
+    },
+    {
+      "id": "RCY_RP_COM_SPC_05",
+      "topic": "재활용",
+      "preview": "Do you remember the very first time you were introduced to the concept of recycling? Tell me how you found out about it,"
+    },
+    {
+      "id": "RCY_RP_COM_SPC_06",
+      "topic": "재활용",
+      "preview": "Describe a specific time when you struggled with the recycling process. For example, you might have moved to a new neigh"
+    },
+    {
+      "id": "REL_RP_SEL_Q11_01",
+      "topic": "친척집",
+      "preview": "I'd like to give you a situation and ask you to act it out. A family member is leaving for a vacation, and you've agreed"
+    },
+    {
+      "id": "REL_RP_SEL_SPC_03",
+      "topic": "친척집",
+      "preview": "That's the end of the situation. Have you ever promised to do a favor for a friend or family member, but later found out"
+    },
+    {
+      "id": "RES_RP_SEL_SPC_03",
+      "topic": "부동산",
+      "preview": "That's the end of the situation. Have you ever been shocked to find something damaged or broken inside your home? Tell m"
+    },
+    {
+      "id": "RST_ADV_COM_Q14_01",
+      "topic": "음식점",
+      "preview": "There is a growing trend in the restaurant industry to offer healthier menu options to attract health-conscious consumer"
+    },
+    {
+      "id": "RST_ADV_COM_Q14_02",
+      "topic": "음식점",
+      "preview": "What kinds of changes in the restaurant industry or dining-out culture have you noticed over the last few years? How was"
+    },
+    {
+      "id": "RST_ADV_COM_Q14_03",
+      "topic": "음식점",
+      "preview": "Many fast-food joints and delivery restaurants are now offering much healthier menu choices. Why do you think this shift"
+    },
+    {
+      "id": "RST_ADV_COM_Q15_04",
+      "topic": "음식점",
+      "preview": "The main advantage of massive chain restaurants like McDonald's is that consumers always know exactly what to expect reg"
+    },
+    {
+      "id": "RST_ADV_COM_Q15_05",
+      "topic": "음식점",
+      "preview": "When your friends or family members debate over restaurants they love or hate, what specific characteristics do they usu"
+    },
+    {
+      "id": "RST_ADV_COM_Q15_06",
+      "topic": "음식점",
+      "preview": "What are the latest trends people are talking about when it comes to takeout or food delivery services? It could involve"
+    },
+    {
+      "id": "RST_GEN_COM_CHILD_11",
+      "topic": "음식점",
+      "preview": "Tell me about how you first discovered a very special grocery store or food market. It could be a local farmer's market "
+    },
+    {
+      "id": "RST_GEN_COM_CMP_10",
+      "topic": "음식점",
+      "preview": "Describe for me a specific dining place you remember visiting when you were young. What was the atmosphere and food like"
+    },
+    {
+      "id": "RST_GEN_COM_DESC_01",
+      "topic": "음식점",
+      "preview": "Tell me about a dining spot located near your house. What specific dishes are on the menu, and how reasonable are their "
+    },
+    {
+      "id": "RST_GEN_COM_DESC_02",
+      "topic": "음식점",
+      "preview": "Do you have a preferred cuisine, like Italian, Korean, or Mexican? Tell me about your absolute favorite style of restaur"
+    },
+    {
+      "id": "RST_GEN_COM_DESC_03",
+      "topic": "음식점",
+      "preview": "Describe a restaurant you frequently visit that serves authentic international or ethnic cuisine. Tell me everything abo"
+    },
+    {
+      "id": "RST_GEN_COM_DESC_04",
+      "topic": "음식점",
+      "preview": "Tell me about the dining establishments in your country. What does a standard restaurant look like, and what kind of atm"
+    },
+    {
+      "id": "RST_GEN_COM_DESC_05",
+      "topic": "음식점",
+      "preview": "Do you have a go-to restaurant for take-out or food delivery? Tell me about the types of meals they offer and why you pr"
+    },
+    {
+      "id": "RST_GEN_COM_RCT_13",
+      "topic": "음식점",
+      "preview": "Tell me the story of the last time you had a chance to dine out at a restaurant. Which place did you choose, who accompa"
+    },
+    {
+      "id": "RST_GEN_COM_RTN_06",
+      "topic": "음식점",
+      "preview": "Tell me about your usual routine when dining out at a restaurant. Describe the entire process step by step, from the mom"
+    },
+    {
+      "id": "RST_GEN_COM_RTN_07",
+      "topic": "음식점",
+      "preview": "Tell me about your typical routine for getting take-out or delivery food. Do you usually use a smartphone app or call th"
+    },
+    {
+      "id": "RST_GEN_COM_RTN_08",
+      "topic": "음식점",
+      "preview": "How do busy professionals typically manage their meals during the workweek? Do they mostly dine out, order delivery, or "
+    },
+    {
+      "id": "RST_GEN_COM_RTN_09",
+      "topic": "음식점",
+      "preview": "What is your usual routine for dinner on a weekday? Do you cook for yourself, or do you prefer eating out or ordering de"
+    },
+    {
+      "id": "RST_GEN_COM_SPC_15",
+      "topic": "음식점",
+      "preview": "Have you ever ordered delivery or take-out food to cater a large gathering or special event? It could have been for a fa"
+    },
+    {
+      "id": "RST_GEN_COM_SPC_16",
+      "topic": "음식점",
+      "preview": "Tell me about a time when you were dining out and experienced something completely unexpected or out of the ordinary. Ta"
+    },
+    {
+      "id": "RST_RP_COM_Q11_02",
+      "topic": "음식점",
+      "preview": "I'd like to give you a situation and ask you to act it out. A friend has invited you out to dinner tomorrow night at a r"
+    },
+    {
+      "id": "RST_RP_COM_SPC_09",
+      "topic": "음식점",
+      "preview": "That's the end of the situation. Tell me about a time when you went out for a special dining experience with your family"
+    },
+    {
+      "id": "RST_RP_COM_SPC_10",
+      "topic": "음식점",
+      "preview": "That's the end of the situation. Have you ever had a highly memorable or unexpected experience while heading out to a re"
+    },
+    {
+      "id": "RST_RP_COM_SPC_11",
+      "topic": "음식점",
+      "preview": "That's the end of the situation. Tell me about a truly memorable experience you had while dining at a restaurant. Perhap"
+    },
+    {
+      "id": "RST_RP_COM_SPC_12",
+      "topic": "음식점",
+      "preview": "That's the end of the situation. Has a similar situation ever happened to you? Have you ever accidentally left a valuabl"
+    },
+    {
+      "id": "SAL_GEN_COM_CMP_07",
+      "topic": "미용실",
+      "preview": "How have the overall hairstyles and salon trends in your country changed over recent years? What specific haircuts are p"
+    },
+    {
+      "id": "SAL_GEN_COM_DESC_01",
+      "topic": "미용실",
+      "preview": "Describe the specific hair salon or barbershop you regularly visit. What does the interior look like, how is the overall"
+    },
+    {
+      "id": "SAL_GEN_COM_DESC_02",
+      "topic": "미용실",
+      "preview": "Why do you prefer going to a particular hair salon? Describe the establishment in detail and explain the unique treatmen"
+    },
+    {
+      "id": "SAL_GEN_COM_DESC_03",
+      "topic": "미용실",
+      "preview": "How do you decide which hair salon to patronize? Describe the stylist who normally cuts your hair and explain what makes"
+    },
+    {
+      "id": "SAL_GEN_COM_DESC_04",
+      "topic": "미용실",
+      "preview": "What specific criteria matter most when you select a hair salon? Do you prioritize the cost of the haircut, the skill le"
+    },
+    {
+      "id": "SAL_GEN_COM_DESC_05",
+      "topic": "미용실",
+      "preview": "What are the typical worries customers face when trying to find a new hair salon? Describe the main elements they evalua"
+    },
+    {
+      "id": "SAL_GEN_COM_RTN_06",
+      "topic": "미용실",
+      "preview": "Can you describe your routine when visiting a hair salon? Take me through the entire process, from walking in and intera"
+    },
+    {
+      "id": "SAL_GEN_COM_SPC_08",
+      "topic": "미용실",
+      "preview": "Tell me about a memorable experience you had when going in for a haircut. What exactly happened at the salon, why does i"
+    },
+    {
+      "id": "SAL_GEN_COM_SPC_09",
+      "topic": "미용실",
+      "preview": "Tell me about a time when you left a hair salon completely unsatisfied with your new hairstyle. What exactly went wrong "
+    },
+    {
+      "id": "SHP_ADV_SEL_Q14_01",
+      "topic": "쇼핑",
+      "preview": "You indicated in the survey that you go shopping. The way people shop has definitely changed a great deal over the years"
+    },
+    {
+      "id": "SHP_ADV_SEL_Q15_02",
+      "topic": "쇼핑",
+      "preview": "What specific kinds of products or retail services are shoppers talking about the most these days? Why do you think thes"
+    },
+    {
+      "id": "SHP_GEN_SEL_CHILD_05",
+      "topic": "쇼핑",
+      "preview": "Tell me about your earliest memories of shopping and how you first started to enjoy it. Who did you usually go with, and"
+    },
+    {
+      "id": "SHP_GEN_SEL_CHILD_06",
+      "topic": "쇼핑",
+      "preview": "Think back to your early memories of shopping. Is there a specific store or market from your childhood that stands out? "
+    },
+    {
+      "id": "SHP_GEN_SEL_DESC_02",
+      "topic": "쇼핑",
+      "preview": "Where do you typically head to when you need to purchase new items? What specific goods do you look for, and what makes "
+    },
+    {
+      "id": "SHP_GEN_SEL_RTN_04",
+      "topic": "쇼핑",
+      "preview": "Describe your usual routine when you go out for a day of shopping. Tell me everything you do from the moment you leave y"
+    },
+    {
+      "id": "SHP_GEN_SEL_SPC_07",
+      "topic": "쇼핑",
+      "preview": "Sometimes, funny or unexpected situations occur while we are out shopping. Tell me the story of a highly memorable shopp"
+    },
+    {
+      "id": "SHP_GEN_SEL_SPC_08",
+      "topic": "쇼핑",
+      "preview": "You have likely had various interesting experiences while shopping—some pleasant, some amusing, and some problematic. Te"
+    },
+    {
+      "id": "SLF_SYS_SYS_UNK_01",
+      "topic": "자기소개",
+      "preview": "Let's start the interview now. Tell me something about yourself."
+    },
+    {
+      "id": "STR_RP_SEL_Q11_03",
+      "topic": "상점문의",
+      "preview": "I'd like to give you a situation and ask you to act it out. A friend just told you about an amazing sale going on at one"
+    },
+    {
+      "id": "STR_RP_SEL_Q11_04",
+      "topic": "상점문의",
+      "preview": "I'd like to give you a situation and ask you to act it out. A brand new store just opened up in your neighborhood, and y"
+    },
+    {
+      "id": "STR_RP_SEL_Q12_05",
+      "topic": "상점문의",
+      "preview": "I'm sorry, but there is a problem which I'll need you to resolve. After returning home with a newly purchased item, you "
+    },
+    {
+      "id": "STR_RP_SEL_Q12_06",
+      "topic": "상점문의",
+      "preview": "I'm sorry, but there is a problem which I'll need you to resolve. After checking your receipt at home, you realize you w"
+    },
+    {
+      "id": "STR_RP_SEL_Q12_07",
+      "topic": "상점문의",
+      "preview": "I'm sorry, but there is a problem which I'll need you to resolve. You bought several items during a big sale, but upon a"
+    },
+    {
+      "id": "STR_RP_SEL_Q12_08",
+      "topic": "상점문의",
+      "preview": "I'm sorry, but there is a problem which I'll need you to resolve. You accidentally left your wallet behind at the checko"
+    },
+    {
+      "id": "STR_RP_SEL_SPC_09",
+      "topic": "상점문의",
+      "preview": "That's the end of the situation. Have you ever spent money on a product that turned out to be completely damaged or simp"
+    },
+    {
+      "id": "STR_RP_SEL_SPC_10",
+      "topic": "상점문의",
+      "preview": "That's the end of the situation. Have you ever encountered an unexpected problem while shopping? For instance, maybe a s"
+    },
+    {
+      "id": "STR_RP_SEL_SPC_11",
+      "topic": "상점문의",
+      "preview": "That's the end of the situation. I'd like to now hear about a shopping experience of yours that was particularly memorab"
+    },
+    {
+      "id": "STR_RP_SEL_SPC_12",
+      "topic": "상점문의",
+      "preview": "That's the end of the situation. Have you ever accidentally left a personal belonging behind at a restaurant or a retail"
+    },
+    {
+      "id": "STV_ADV_SEL_Q15_02",
+      "topic": "집에서 보내는 휴가",
+      "preview": "Experts constantly state that taking vacations is crucial for everyone's well-being. Take a minute to explain the major "
+    },
+    {
+      "id": "STV_GEN_SEL_RTN_02",
+      "topic": "집에서 휴가",
+      "preview": "Describe your typical routine when you spend your vacation at home. What kinds of activities do you usually enjoy doing "
+    },
+    {
+      "id": "STV_GEN_SEL_SPC_04",
+      "topic": "집에서 휴가",
+      "preview": "Could you tell me about a highly unusual or surprisingly satisfying experience you had while spending your vacation at h"
+    },
+    {
+      "id": "TEC_GEN_COM_CMP_03",
+      "topic": "기술",
+      "preview": "Technology has definitely changed over time. Tell me about one of your earliest memories of using a technological device"
+    },
+    {
+      "id": "TEC_GEN_COM_DESC_01",
+      "topic": "기술",
+      "preview": "What types of modern devices are widely utilized by the people in your country? Do they primarily rely on laptops, smart"
+    },
+    {
+      "id": "TEC_GEN_COM_DESC_02",
+      "topic": "기술",
+      "preview": "Tell me about a specific electronic device that you rely on daily. What are its main functions, and how exactly does it "
+    },
+    {
+      "id": "TEC_GEN_COM_SPC_04",
+      "topic": "기술",
+      "preview": "Our reliance on technology often leads to unexpected problems. Think about a time when you experienced a major issue bec"
+    },
+    {
+      "id": "TIR_RP_COM_Q12_02",
+      "topic": "기술산업 보고서",
+      "preview": "I'm sorry, but there is a problem which I'll need you to resolve. You were supposed to meet a friend to learn about thei"
+    },
+    {
+      "id": "TIR_RP_COM_SPC_03",
+      "topic": "기술산업 보고서",
+      "preview": "Tell me about a memorable time when you first discovered an exciting new product, such as a cutting-edge smartphone, a v"
+    },
+    {
+      "id": "TRN_GEN_COM_CMP_03",
+      "topic": "교통",
+      "preview": "How did you usually travel when you were a child? Were the available modes of transportation different back then compare"
+    },
+    {
+      "id": "TRN_GEN_COM_DESC_01",
+      "topic": "교통",
+      "preview": "Tell me about the public transportation system and commuting habits in your country. Do most citizens prefer driving the"
+    },
+    {
+      "id": "TRN_GEN_COM_RTN_02",
+      "topic": "교통",
+      "preview": "Tell me about the modes of transportation you rely on in your daily life. What places do you frequently commute to, and "
+    },
+    {
+      "id": "TRN_GEN_COM_SPC_04",
+      "topic": "교통",
+      "preview": "Unexpected problems often arise when commuting, such as car breakdowns, delayed trains, or massive traffic jams. Tell me"
+    },
+    {
+      "id": "TRP_RP_SEL_Q12_04",
+      "topic": "여행",
+      "preview": "I'm sorry, but there is a problem which I'll need you to resolve. You previously booked a non-refundable flight, but an "
+    },
+    {
+      "id": "TRP_RP_SEL_Q12_05",
+      "topic": "여행",
+      "preview": "I'm sorry, but there is a problem which I'll need you to resolve. Your travel agent just informed you that the vacation "
+    },
+    {
+      "id": "TRP_RP_SEL_Q12_06",
+      "topic": "여행",
+      "preview": "I'm sorry, but there is a problem which I'll need you to resolve. You just arrived at the airport only to find out that "
+    },
+    {
+      "id": "TRP_RP_SEL_SPC_07",
+      "topic": "여행",
+      "preview": "That's the end of the situation. Sometimes, things don't go as planned when we travel. Have you ever experienced anythin"
+    },
+    {
+      "id": "TRP_RP_SEL_SPC_08",
+      "topic": "여행",
+      "preview": "That's the end of the situation. Think about a time when you encountered major difficulties while trying to set up your "
+    },
+    {
+      "id": "TRP_RP_SEL_SPC_09",
+      "topic": "여행",
+      "preview": "That's the end of the situation. Have you ever had to personally deal with the headache of a canceled flight? Describe t"
+    },
+    {
+      "id": "TRR_RP_COM_Q11_01",
+      "topic": "기차표",
+      "preview": "I'd like to give you a situation and ask you to act it out. You are planning to visit a friend this weekend and need a t"
+    },
+    {
+      "id": "TRR_RP_COM_Q12_02",
+      "topic": "기차표",
+      "preview": "I'm sorry, but there is a problem which I'll need you to resolve. When you arrive at the train station, you realize you "
+    },
+    {
+      "id": "TRR_RP_COM_SPC_03",
+      "topic": "기차표",
+      "preview": "That's the end of the situation. Have you ever missed a crucial flight, train, or bus while traveling? Tell me about a t"
+    },
+    {
+      "id": "TV_ADV_SEL_Q14_01",
+      "topic": "텔레비전",
+      "preview": "Have advancements in audiovisual technology, like massive smart TVs, streaming services, and mobile devices, changed the"
+    },
+    {
+      "id": "TV_ADV_SEL_Q15_02",
+      "topic": "텔레비전",
+      "preview": "What are some of the newest trends you've noticed regarding TV broadcasting, streaming platforms, or viewing technology?"
+    },
+    {
+      "id": "TV_GEN_SEL_CHILD_05",
+      "topic": "텔레비전",
+      "preview": "Tell me how you first became interested in watching TV shows or movies. Do you remember when and where it started, and w"
+    },
+    {
+      "id": "TV_GEN_SEL_CMP_04",
+      "topic": "텔레비전",
+      "preview": "Television programs have definitely changed over time. Describe for me the kinds of TV shows you used to watch during yo"
+    },
+    {
+      "id": "TV_GEN_SEL_DESC_01",
+      "topic": "텔레비전",
+      "preview": "Tell me more about the specific types of television programs or series you prefer to watch. What is your favorite genre "
+    },
+    {
+      "id": "TV_GEN_SEL_DESC_02",
+      "topic": "텔레비전",
+      "preview": "Pick a television or film character that you really like, and tell me about everything they typically do on screen. What"
+    },
+    {
+      "id": "TV_GEN_SEL_RTN_03",
+      "topic": "텔레비전",
+      "preview": "Tell me about your typical routine when watching TV shows or movies at home. When and where do you usually watch them, a"
+    },
+    {
+      "id": "TV_RP_SEL_Q11_01",
+      "topic": "텔레비전",
+      "preview": "I'd like to give you a situation and ask you to act it out. You are hosting a movie night at your place and invited a gr"
+    },
+    {
+      "id": "TV_RP_SEL_Q12_02",
+      "topic": "텔레비전",
+      "preview": "I'm sorry, but there is a problem which I'll need you to resolve. You invited guests over to watch a movie, but when you"
+    },
+    {
+      "id": "TV_RP_SEL_SPC_03",
+      "topic": "텔레비전",
+      "preview": "That's the end of the situation. Have you ever planned to watch a highly anticipated movie or a live TV broadcast, but s"
+    },
+    {
+      "id": "WKI_RP_COM_Q11_01",
+      "topic": "주말초대",
+      "preview": "I'd like to give you a situation and ask you to act it out. Your friend wants to invite you over to their place this wee"
+    },
+    {
+      "id": "WKI_RP_COM_Q12_02",
+      "topic": "주말초대",
+      "preview": "I'm sorry, but there is a problem which I'll need you to resolve. On the very day you were supposed to visit your friend"
+    },
+    {
+      "id": "WKI_RP_COM_SPC_03",
+      "topic": "주말초대",
+      "preview": "That's the end of the situation. Have you ever planned to visit family or friends, but ultimately couldn't make it? Perh"
+    },
+    {
+      "id": "WRK_GEN_COM_CMP_02",
+      "topic": "직장",
+      "preview": "How have the typical workplaces or jobs in your country changed compared to the past? What are the major differences bet"
+    },
+    {
+      "id": "WRK_GEN_COM_DESC_01",
+      "topic": "직장",
+      "preview": "Describe the standard office buildings or workplaces in your country. What is the physical layout usually like, and what"
+    },
+    {
+      "id": "WRK_GEN_COM_SPC_03",
+      "topic": "직장",
+      "preview": "Can you tell me about one of the very first jobs you ever had? What were your main responsibilities, who were your colle"
+    },
+    {
+      "id": "WTH_GEN_COM_CMP_03",
+      "topic": "날씨",
+      "preview": "How has the climate or weather in your country changed over time? What were the seasons generally like when you were gro"
+    },
+    {
+      "id": "WTH_GEN_COM_DESC_01",
+      "topic": "날씨",
+      "preview": "Tell me about the general climate in your region. Do you experience distinct seasonal changes throughout the year, and w"
+    },
+    {
+      "id": "WTH_GEN_COM_DESC_02",
+      "topic": "날씨",
+      "preview": "Tell me about the current weather conditions outside right now. Is it raining, sunny, or windy where you are located tod"
+    },
+    {
+      "id": "WTH_GEN_COM_SPC_04",
+      "topic": "날씨",
+      "preview": "Severe weather conditions can often cause serious disruptions. Tell me about a time when extreme weather created a major"
+    }
+  ],
+  "soridam_only": [
+    {
+      "question_id": "COM_APP_N_C1_01",
+      "topic": "약속",
+      "preview": "What kinds of places you go to for different kinds of appointments."
+    },
+    {
+      "question_id": "COM_APP_N_C1_02",
+      "topic": "약속",
+      "preview": "What types of appointments do you usually schedule? Who do you typically schedule appointments with? It could be a denta"
+    },
+    {
+      "question_id": "COM_APP_N_C1_03",
+      "topic": "약속",
+      "preview": "What kinds of things do you usually do when you have an appointment? Tell me what a typical appointment is like for you."
+    },
+    {
+      "question_id": "COM_APP_N_C1_04",
+      "topic": "약속",
+      "preview": "What steps are taken when making an appointment? What things do you need to consider when scheduling an appointment? Wha"
+    },
+    {
+      "question_id": "COM_APP_N_C1_05",
+      "topic": "약속",
+      "preview": "Tell me about an appointment you remember from your childhood. Maybe you visited a doctor, the dentist, or a new school."
+    },
+    {
+      "question_id": "COM_APP_N_C1_06",
+      "topic": "약속",
+      "preview": "Discuss the last appointment that you had and the circumstances surrounding it. What was the reason for this appointment"
+    },
+    {
+      "question_id": "COM_APP_N_C1_07",
+      "topic": "약속",
+      "preview": "Tell me about a time when you couldn’t keep an appointment with your family or friends. What happened, and how did you d"
+    },
+    {
+      "question_id": "COM_APP_N_C1_08",
+      "topic": "약속",
+      "preview": "Sometimes, funny or surprising things happen during an appointment. Tell me about an appointment that you remember for s"
+    },
+    {
+      "question_id": "COM_APP_N_C1_09",
+      "topic": "약속",
+      "preview": "How have appointments with professionals, like doctors or dentists, changed over time? What similarities and differences"
+    },
+    {
+      "question_id": "COM_BAN_N_C2_01",
+      "topic": "은행",
+      "preview": "Tell me about the banks in your country. What do they typically look like? Where are they usually located?"
+    },
+    {
+      "question_id": "COM_BAN_N_C2_02",
+      "topic": "은행",
+      "preview": "Tell me about the kinds of things you usually do when you go to the bank."
+    },
+    {
+      "question_id": "COM_BAN_N_C2_03",
+      "topic": "은행",
+      "preview": "Banks have definitely changed over time. Tell me about a bank you remember from your childhood. What was the bank like? "
+    },
+    {
+      "question_id": "COM_BAN_N_C2_04",
+      "topic": "은행",
+      "preview": "Sometimes, problems arise when dealing with the bank. Tell me in detail about a problem you had that involved your bank."
+    },
+    {
+      "question_id": "COM_BAN_RP_C1_05",
+      "topic": "은행 계좌 개설",
+      "preview": "That's the end of the situation. Have you ever had any problems with your bank card when you were using an ATM? Perhaps,"
+    },
+    {
+      "question_id": "COM_BAN_RP_C1_06",
+      "topic": "은행 계좌 개설",
+      "preview": "That's the end of the situation. Can you remember an experience you had with a bank account, a credit card, or an ATM ca"
+    },
+    {
+      "question_id": "COM_BIC_RP_C1_03",
+      "topic": "자전거 대여",
+      "preview": "That's the end of the situation. Now, tell me about a time when you had a problem while using a bike or any other type o"
+    },
+    {
+      "question_id": "COM_CAR_RP_C1_03",
+      "topic": "자동차 고장",
+      "preview": "That's the end of the situation. Tell me about the last time you had trouble with your car. What was the problem and how"
+    },
+    {
+      "question_id": "COM_CEL_RP_C1_01",
+      "topic": "친구 초대 행사",
+      "preview": "A friend of yours invites you to attend a celebration in the area which she lives. Ask your friend three or four questio"
+    },
+    {
+      "question_id": "COM_CEL_RP_C1_02",
+      "topic": "친구 초대 행사",
+      "preview": "On the day of the celebration, a water pipe breaks in your home and you have to stay there until it is repaired. Call yo"
+    },
+    {
+      "question_id": "COM_CEL_RP_C1_03",
+      "topic": "친구 초대 행사",
+      "preview": "Has anything interesting or unusual ever happened in the area which you live? Tell me in detail about the memorable even"
+    },
+    {
+      "question_id": "COM_CLO_RP_C1_05",
+      "topic": "옷 구매",
+      "preview": "That's the end of the situation. Have you ever bought a piece of clothing that did not like after you bought it? Have yo"
+    },
+    {
+      "question_id": "COM_CLO_RP_C1_06",
+      "topic": "옷 구매",
+      "preview": "That's the end of the situation. Have you ever bought a piece of clothing and found out that there was a problem with it"
+    },
+    {
+      "question_id": "COM_COF_RP_C1_01",
+      "topic": "카페 이용",
+      "preview": "Requesting information about a coffee shop I’d like to give you a situation and ask you to act it out. You heard about a"
+    },
+    {
+      "question_id": "COM_COF_RP_C1_02",
+      "topic": "카페 이용",
+      "preview": "Resolving issues with incorrect drinks There is a problem I need you to act it out. You placed an order at the coffee sh"
+    },
+    {
+      "question_id": "COM_COF_RP_C1_03",
+      "topic": "카페 이용",
+      "preview": "Experiences with dissatisfaction at a coffee shop That’s the end of the situation. Have you ever had an unsatisfactory e"
+    },
+    {
+      "question_id": "COM_DEN_N_C2_01",
+      "topic": "치과",
+      "preview": "Describe a local dentist office in your neighborhood. What does it look like, what is it like, and how is the service?"
+    },
+    {
+      "question_id": "COM_DEN_N_C2_02",
+      "topic": "치과",
+      "preview": "Tell me about the activities you usually do at a dentist office. What do you do there, and why?"
+    },
+    {
+      "question_id": "COM_DEN_N_C2_04",
+      "topic": "치과",
+      "preview": "How was the dentist office you went to when you were a child different from the dentist offices you go to now? What has "
+    },
+    {
+      "question_id": "COM_DEN_N_C2_05",
+      "topic": "치과",
+      "preview": "Tell me about one of the memorable experiences you had at a dentist office. What happened from beginning to end? Tell me"
+    },
+    {
+      "question_id": "COM_FAM_A_C6_01",
+      "topic": "가족/친구",
+      "preview": "Describe two different friends or family members. Describe each in as much detail as you can. Then, tell me what similar"
+    },
+    {
+      "question_id": "COM_FAM_A_C6_02",
+      "topic": "가족/친구",
+      "preview": "When you get together with friends and family, what are some of the topics of interests that are discussed. Why are thes"
+    },
+    {
+      "question_id": "COM_FAM_N_C3_01",
+      "topic": "가족/친구",
+      "preview": "Can you describe a friend or a family member you see often? Who is he or she? What is he or she like?"
+    },
+    {
+      "question_id": "COM_FAM_N_C3_02",
+      "topic": "가족/친구",
+      "preview": "Tell me about a family or friends you like to visit? Who are these people? What are they like?"
+    },
+    {
+      "question_id": "COM_FAM_N_C3_03",
+      "topic": "가족/친구",
+      "preview": "Tell me about the kinds of things you typically do when you visit friends or family? Do you eat? Talk? Or play together?"
+    },
+    {
+      "question_id": "COM_FAM_N_C3_04",
+      "topic": "가족/친구",
+      "preview": "When you get together with friends or family, what kinds of things do you like to do together and why?"
+    },
+    {
+      "question_id": "COM_FAM_N_C3_05",
+      "topic": "가족/친구",
+      "preview": "Tell me about the last time when you got together with your friends or family. Who was there and when was it? Tell me ev"
+    },
+    {
+      "question_id": "COM_FAM_N_C3_06",
+      "topic": "가족/친구",
+      "preview": "Talk about a time when you visited a friend or a family member. What did you do when you visited them? What was memorabl"
+    },
+    {
+      "question_id": "COM_FAM_N_C3_07",
+      "topic": "가족/친구",
+      "preview": "Could you tell me about a special event or a holiday you celebrated with your family or friends? Tell me all about that "
+    },
+    {
+      "question_id": "COM_FAM_N_C3_08",
+      "topic": "가족/친구",
+      "preview": "Tell me about an early memory you had when you visited friends or family. Describe your impression for me. Where did you"
+    },
+    {
+      "question_id": "COM_FAS_N_C4_01",
+      "topic": "패션",
+      "preview": "What kinds of clothes do people in your country typically wear? Are there different clothes for work and for play? Tell "
+    },
+    {
+      "question_id": "COM_FAS_N_C4_02",
+      "topic": "패션",
+      "preview": "What kinds of clothes do you like to wear personally? What are you wearing today? What kind of fashion style do you like"
+    },
+    {
+      "question_id": "COM_FAS_N_C4_03",
+      "topic": "패션",
+      "preview": "What do you usually do when you go shopping for new clothes? Where do you go and what do you look for? Tell me about a t"
+    },
+    {
+      "question_id": "COM_FAS_N_C4_04",
+      "topic": "패션",
+      "preview": "Tell me about the last time you bought a new piece of clothing. Give me all the details of the story. What did you need?"
+    },
+    {
+      "question_id": "COM_FAS_N_C4_05",
+      "topic": "패션",
+      "preview": "Fashions are always changing. Tell me about the kinds of clothes that were popular when you were younger. What did the s"
+    },
+    {
+      "question_id": "COM_FOO_A_C6_01",
+      "topic": "음식",
+      "preview": "How has food shopping changed over the last 20 years? What have been some of the trends or changes you have noticed when"
+    },
+    {
+      "question_id": "COM_FOO_A_C6_02",
+      "topic": "음식",
+      "preview": "There have been many stories in the news of foods that have been contaminated or that contained dangerous bacteria. Tell"
+    },
+    {
+      "question_id": "COM_FOO_N_C2_01",
+      "topic": "음식",
+      "preview": "Many people try to eat healthy these days. What kinds of foods are healthy and why are they healthy for us?"
+    },
+    {
+      "question_id": "COM_FOO_N_C2_02",
+      "topic": "음식",
+      "preview": "What are some of the typical foods in your country? What dishes are popular?"
+    },
+    {
+      "question_id": "COM_FOO_N_C2_03",
+      "topic": "음식",
+      "preview": "Tell me about the kinds of foods you eat on a regular day. When and where do you usually eat?"
+    },
+    {
+      "question_id": "COM_FOO_N_C2_04",
+      "topic": "음식",
+      "preview": "How do you shop for healthy food? What kinds of things do you have to do to cook healthy food?"
+    },
+    {
+      "question_id": "COM_FOO_N_C2_05",
+      "topic": "음식",
+      "preview": "Tell me about a memory you have about a special food or a dish from your childhood. Tell me where and when you had this "
+    },
+    {
+      "question_id": "COM_FOO_N_C2_06",
+      "topic": "음식",
+      "preview": "Tell me how you found out about eating healthy. Did your family eat healthy when you were growing up? Did you learn abou"
+    },
+    {
+      "question_id": "COM_FOO_N_C2_07",
+      "topic": "음식",
+      "preview": "When was the last time you had some healthy food? Who was it with and how did you feel? What was special about that expe"
+    },
+    {
+      "question_id": "COM_FOO_N_C2_08",
+      "topic": "음식",
+      "preview": "Tell me about a memorable experience you had while eating something. It could have been something good or bad. What happ"
+    },
+    {
+      "question_id": "COM_FOO_N_C2_09",
+      "topic": "음식",
+      "preview": "Sometimes when we plan a meal, things do not work out. Reservations at restaurants get lost or meals delivered to office"
+    },
+    {
+      "question_id": "COM_FOO_RP_C1_01",
+      "topic": "식료품점 이용",
+      "preview": "Your friend has told you about a great food store. Call your friend and ask two or three questions about the food store "
+    },
+    {
+      "question_id": "COM_FOO_RP_C1_02",
+      "topic": "식료품점 이용",
+      "preview": "A new food store has opened in your neighborhood. You visited that store and purchased some items. However, when you got"
+    },
+    {
+      "question_id": "COM_FOO_RP_C1_03",
+      "topic": "식료품점 이용",
+      "preview": "Tell me about how you found a food store. Where is it located and why do you like going there? What do you like to shop "
+    },
+    {
+      "question_id": "COM_FRE_N2_01",
+      "topic": "여가시간",
+      "preview": "Tell me about some places people in your country like to spend their free time. Do they visit parks, beaches or other pl"
+    },
+    {
+      "question_id": "COM_FRE_N2_02",
+      "topic": "여가시간",
+      "preview": "What do people in your country like to do in their free time? What are some popular free time activities?"
+    },
+    {
+      "question_id": "COM_FRE_N2_03",
+      "topic": "여가시간",
+      "preview": "Do you have more or less free time now than you did in the past? Describe for me how your free time has changed over tim"
+    },
+    {
+      "question_id": "COM_FRE_N2_04",
+      "topic": "여가시간",
+      "preview": "Tell me about the last time you had some free time. What did you do? Who did you spend your free time with? Tell me ever"
+    },
+    {
+      "question_id": "COM_FUR_N_C2_01",
+      "topic": "가구",
+      "preview": "Tell me about the furniture you have in your home. Is there a piece that is your favorite?"
+    },
+    {
+      "question_id": "COM_FUR_N_C2_02",
+      "topic": "가구",
+      "preview": "Tell me about how you use your furniture on a typical day. What kinds of things do you do with your furniture?"
+    },
+    {
+      "question_id": "COM_FUR_N_C2_03",
+      "topic": "가구",
+      "preview": "Tell me about the furniture that you had in your childhood home. Was there anything different from the furniture that yo"
+    },
+    {
+      "question_id": "COM_FUR_N_C2_04",
+      "topic": "가구",
+      "preview": "Sometimes, problems arise when it comes to furniture. Things might break, the fabric might get stained or ripped. Tell m"
+    },
+    {
+      "question_id": "COM_FUR_RP_C1_02",
+      "topic": "가구 구매",
+      "preview": "I'm sorry, but there is a problem I need you to resolve. When you get the piece of furniture at home, you don't like the"
+    },
+    {
+      "question_id": "COM_FUR_RP_C1_03",
+      "topic": "가구 구매",
+      "preview": "I'm sorry, but there is a problem I need you to resolve. When you get your new furniture at your home, you realize that "
+    },
+    {
+      "question_id": "COM_FUR_RP_C1_04",
+      "topic": "가구 구매",
+      "preview": "That's the end of the situation. Have you ever bought furniture that wasn't what you had expected? Maybe you got the wro"
+    },
+    {
+      "question_id": "COM_FUR_RP_C1_05",
+      "topic": "가구 구매",
+      "preview": "That's the end of the situation. Has anything like that ever happened to you? Have you ever bought something for your ho"
+    },
+    {
+      "question_id": "COM_GAT_A_C4_01",
+      "topic": "지역 축제/행사",
+      "preview": "How have celebrations and gatherings in your country changed since you were a child? Are there more of these events now "
+    },
+    {
+      "question_id": "COM_GAT_A_C4_02",
+      "topic": "지역 축제/행사",
+      "preview": "Gatherings and celebrations in small towns are often different from those in big cities. Tell me about some of the simil"
+    },
+    {
+      "question_id": "COM_GAT_A_C4_03",
+      "topic": "지역 축제/행사",
+      "preview": "When the celebrations and gatherings may be important to people in a city or town, it takes a lot of work, organization "
+    },
+    {
+      "question_id": "COM_GAT_A_C4_04",
+      "topic": "지역 축제/행사",
+      "preview": "What kinds of concerns do you hear people express when they have gatherings and celebrations in your area? Do people com"
+    },
+    {
+      "question_id": "COM_GAT_N_C1_01",
+      "topic": "모임",
+      "preview": "Tell me about some of the gatherings or celebrations that happen at where you live."
+    },
+    {
+      "question_id": "COM_GAT_N_C1_02",
+      "topic": "모임",
+      "preview": "Where do people usually have celebrations or parties in the area where you live or work? Is it at someone's home, or a p"
+    },
+    {
+      "question_id": "COM_GAT_N_C1_03",
+      "topic": "모임",
+      "preview": "Pick a major holiday that people celebrate in your country. What do people do to celebrate the holiday? Where do they go"
+    },
+    {
+      "question_id": "COM_GAT_N_C1_04",
+      "topic": "모임",
+      "preview": "Tell me about the last holiday party or celebration that you attended. Give me lots of details about what happened, who "
+    },
+    {
+      "question_id": "COM_GAT_N_C1_05",
+      "topic": "모임",
+      "preview": "Tell me about a time when you helped with a party or a celebration. Perhaps you helped invite people, or you helped deco"
+    },
+    {
+      "question_id": "COM_GAT_N_C1_06",
+      "topic": "모임",
+      "preview": "Sometimes when people get together for celebrations or gatherings, unexpected things can happen. Tell me all about somet"
+    },
+    {
+      "question_id": "COM_GAT_N_C1_07",
+      "topic": "모임",
+      "preview": "Tell me about a gathering or a celebration that was held in the area in which you live. Describe where the gathering was"
+    },
+    {
+      "question_id": "COM_GEO_A_C5_01",
+      "topic": "지형(인접국가)",
+      "preview": "Think about a country that is geographically close to your home country. In what ways has this country changed over the "
+    },
+    {
+      "question_id": "COM_GEO_A_C5_02",
+      "topic": "지형(인접국가)",
+      "preview": "Tell me in detail about changes you have observed concerning the relationship between your country and other countries. "
+    },
+    {
+      "question_id": "COM_GEO_A_C5_03",
+      "topic": "지형(인접국가)",
+      "preview": "Tell me in detail about a news item you read or heard recently about a country near your country. What was the news stor"
+    },
+    {
+      "question_id": "COM_GEO_A_C5_04",
+      "topic": "지형(인접국가)",
+      "preview": "I’d like you to think about a specific historic event that has affected the relationship between your country and one of"
+    },
+    {
+      "question_id": "COM_GEO_N_C4_01",
+      "topic": "지형",
+      "preview": "Tell me a little bit about a country close to your own country. Tell me what the country looks like, about its people, a"
+    },
+    {
+      "question_id": "COM_GEO_N_C4_02",
+      "topic": "지형",
+      "preview": "Describe your country’s geography for me. Are there mountains, lakes, or rivers? What is your country like?"
+    },
+    {
+      "question_id": "COM_GEO_N_C4_03",
+      "topic": "지형",
+      "preview": "Tell me about the kinds of outdoor activities that are popular in your country. Do people hike, bike or swim? What do pe"
+    },
+    {
+      "question_id": "COM_GEO_N_C4_04",
+      "topic": "지형",
+      "preview": "Please tell me about what kinds of free time activities people in your country do?"
+    },
+    {
+      "question_id": "COM_GEO_N_C4_05",
+      "topic": "지형",
+      "preview": "I’d like you to pick a favorite place in your country from your childhood and describe that place for me. What are your "
+    },
+    {
+      "question_id": "COM_GEO_N_C4_06",
+      "topic": "지형",
+      "preview": "Describe for me an early memory that you have of your country’s geography. Perhaps, you visited a special place or went "
+    },
+    {
+      "question_id": "COM_GEO_N_C4_07",
+      "topic": "지형",
+      "preview": "People often have memorable and moving experiences when they explore their country’s geography. You might climb a famous"
+    },
+    {
+      "question_id": "COM_GEO_N_C4_08",
+      "topic": "지형",
+      "preview": "How has your country changed in the past decade? Choose one area of change and provide a lot of details about urban deve"
+    },
+    {
+      "question_id": "COM_HAP_N_C1_01",
+      "topic": "가전제품",
+      "preview": "Please describe a home appliance that you recently purchased. Talk about what it does, what features it has, and how it "
+    },
+    {
+      "question_id": "COM_HAP_N_C1_02",
+      "topic": "가전제품",
+      "preview": "Compare an appliance you used when you were younger with one you use today. How were they different in terms of features"
+    },
+    {
+      "question_id": "COM_HAP_N_C1_03",
+      "topic": "가전제품",
+      "preview": "Have you ever experienced any inconvenience because of a broken or malfunctioning appliance? Describe what happened, how"
+    },
+    {
+      "question_id": "COM_HAP_N_C1_04",
+      "topic": "가전제품",
+      "preview": "How have appliances changed over the past few years due to advancements in technology? Give examples of specific changes"
+    },
+    {
+      "question_id": "COM_HAP_N_C1_05",
+      "topic": "가전제품",
+      "preview": "Are there any current issues related to home appliances in your country? For example, you may talk about environmental c"
+    },
+    {
+      "question_id": "COM_HAR_N_C1_01",
+      "topic": "미용실",
+      "preview": "Describe the place where you usually get your hair cut. What does it look like? What kind of atmosphere does it have? Wh"
+    },
+    {
+      "question_id": "COM_HAR_N_C1_02",
+      "topic": "미용실",
+      "preview": "Why do you prefer to visit a particular salon? Describe the place and the specific services they offer that make it your"
+    },
+    {
+      "question_id": "COM_HAR_N_C1_03",
+      "topic": "미용실",
+      "preview": "How do you choose a hair salon? Describe your regular hairdresser and why you would recommend this person to others."
+    },
+    {
+      "question_id": "COM_HAR_N_C1_04",
+      "topic": "미용실",
+      "preview": "Explain your routine when you go to get a haircut. What steps do you follow from the moment you enter the salon to the m"
+    },
+    {
+      "question_id": "COM_HAR_N_C1_05",
+      "topic": "미용실",
+      "preview": "Tell me about a memorable experience related to getting a haircut. What happened? Why was it memorable? How did you feel"
+    },
+    {
+      "question_id": "COM_HAR_N_C1_06",
+      "topic": "미용실",
+      "preview": "Tell me about a time when you were not satisfied with your hairstyle after visiting a salon. What was wrong, and how did"
+    },
+    {
+      "question_id": "COM_HAR_N_C1_07",
+      "topic": "미용실",
+      "preview": "How have hair trends in your country changed over recent years? Do you notice any popular styles? "
+    },
+    {
+      "question_id": "COM_HAR_N_C1_08",
+      "topic": "미용실",
+      "preview": "What factors are important to you when choosing a hair salon, such as price, quality, or atmosphere? "
+    },
+    {
+      "question_id": "COM_HAR_N_C1_09",
+      "topic": "미용실",
+      "preview": "What are some common concerns people have when choosing a hair salon? Describe the factors people usually consider, such"
+    },
+    {
+      "question_id": "COM_HEA_A_C6_01",
+      "topic": "건강",
+      "preview": "Different generations have different views on what is healthy. Some generations think people have to be skinny in order "
+    },
+    {
+      "question_id": "COM_HEA_A_C6_03",
+      "topic": "건강",
+      "preview": "There are often health related news stories. Tell me about a recent news story related to health issues. Describe what h"
+    },
+    {
+      "question_id": "COM_HEA_A_C6_04",
+      "topic": "건강",
+      "preview": "Describe a recent event in your area that involved health issues. Perhaps, something happened in the food or medical ind"
+    },
+    {
+      "question_id": "COM_HEA_N_C2_01",
+      "topic": "건강",
+      "preview": "Tell me about the kinds of foods healthy people eat. What foods are they? Where do they buy these foods?"
+    },
+    {
+      "question_id": "COM_HEA_N_C2_02",
+      "topic": "건강",
+      "preview": "Tell me about a local health food store in your neighborhood. What does this place like?"
+    },
+    {
+      "question_id": "COM_HEA_N_C2_03",
+      "topic": "건강",
+      "preview": "Tell me about someone you know who is very healthy. What is this person like?"
+    },
+    {
+      "question_id": "COM_HEA_N_C2_04",
+      "topic": "건강",
+      "preview": "Tell me about all the things you do in order to stay healthy."
+    },
+    {
+      "question_id": "COM_HEA_N_C2_05",
+      "topic": "건강",
+      "preview": "What are the eating habits of healthy people? What do they usually eat during the week, for breakfast, lunch, dinner, sn"
+    },
+    {
+      "question_id": "COM_HEA_N_C2_06",
+      "topic": "건강",
+      "preview": "Tell me about a time when you or someone you know did something new to become healthier. Maybe it was playing a sport or"
+    },
+    {
+      "question_id": "COM_HEA_N_C2_07",
+      "topic": "건강",
+      "preview": "How have the eating habits of healthy people changed since you were a child? Was the healthy diet same as it is now? Des"
+    },
+    {
+      "question_id": "COM_HEA_N_C2_08",
+      "topic": "건강",
+      "preview": "Tell me about a specific incident related to being healthy that happened to you. Maybe you went to hunt for a restaurant"
+    },
+    {
+      "question_id": "COM_HEA_N_C2_09",
+      "topic": "건강",
+      "preview": "Ideas about what good health is and how to maintain it change frequently. What did people do to maintain good health whe"
+    },
+    {
+      "question_id": "COM_HEA_N_C2_10",
+      "topic": "건강",
+      "preview": "Tell me about a specific time when you learned something about how to maintain good health. It might have been a class y"
+    },
+    {
+      "question_id": "COM_HEA_N_C2_11",
+      "topic": "건강",
+      "preview": "People do a lot of things to try to be healthy. They might join a healthy cooking class or join a new exercise program. "
+    },
+    {
+      "question_id": "COM_HEA_RP_C1_01",
+      "topic": "건강식품 구매",
+      "preview": "There is a new health food store in your town. Call the store and ask three or four questions to learn more about the st"
+    },
+    {
+      "question_id": "COM_HEA_RP_C1_02",
+      "topic": "건강식품 구매",
+      "preview": "After purchasing a food item at the store, you have discovered that something is wrong with the item. Call the store and"
+    },
+    {
+      "question_id": "COM_HEA_RP_C1_03",
+      "topic": "건강식품 구매",
+      "preview": "We sometimes have interesting experiences when we have meals with family, friends or co-workers. Tell me about a memorab"
+    },
+    {
+      "question_id": "COM_HEA_RP_C2_05",
+      "topic": "헬스장 이용",
+      "preview": "That's the end of the situation. Maintaining one's health can be a challenge. Tell me in detail about a particular chall"
+    },
+    {
+      "question_id": "COM_HIK_A_C1_01",
+      "topic": "하이킹",
+      "preview": "Compared to the past, are people in your country hiking more or less frequently? Why have people started hiking more or "
+    },
+    {
+      "question_id": "COM_HIK_A_C1_02",
+      "topic": "하이킹",
+      "preview": "Hiking is considered a healthy activity. Describe the social, physical, and mental benefits of hiking compared to other "
+    },
+    {
+      "question_id": "COM_HIK_A_C1_03",
+      "topic": "하이킹",
+      "preview": "Can you tell me about the similarities and differences between trekking and hiking? How do these two activities compare "
+    },
+    {
+      "question_id": "COM_HIK_A_C1_04",
+      "topic": "하이킹",
+      "preview": "n terms of hiking, how has the use of equipment or gear changed over time? What differences have you noticed in the type"
+    },
+    {
+      "question_id": "COM_HIK_RP_C1_02",
+      "topic": "하이킹",
+      "preview": "There is a problem I need you to act it out. During the hike, you realize that you’ve lost your phone and need assistanc"
+    },
+    {
+      "question_id": "COM_HIK_RP_C1_03",
+      "topic": "하이킹",
+      "preview": "That’s the end of the situation. Have you ever had a memorable experience while hiking? Describe what happened, who you "
+    },
+    {
+      "question_id": "COM_HOL_A_C3_01",
+      "topic": "명절",
+      "preview": "What are some holidays in your country? What do people do during these holidays? What is special about them?"
+    },
+    {
+      "question_id": "COM_HOL_A_C3_02",
+      "topic": "명절",
+      "preview": "What are some issues or concerns people have regarding holidays? What do people do to address those issues or concerns."
+    },
+    {
+      "question_id": "COM_HOL_N_C1_01",
+      "topic": "휴일/명절 (Holiday)",
+      "preview": "Tell me about some of the popular holidays in your country. Where do people typically celebrate these holidays? What kin"
+    },
+    {
+      "question_id": "COM_HOL_N_C1_02",
+      "topic": "휴일/명절 (Holiday)",
+      "preview": "Choose one of the holidays you just told me about. Tell me about all the things people typically do to celebrate this ho"
+    },
+    {
+      "question_id": "COM_HOL_N_C1_03",
+      "topic": "휴일/명절 (Holiday)",
+      "preview": "Describe for me a special holiday memory that you have from your childhood. Tell me where you were and what the place lo"
+    },
+    {
+      "question_id": "COM_HOL_N_C1_04",
+      "topic": "휴일/명절 (Holiday)",
+      "preview": "Tell me in detail about the last holiday that you celebrated. Did anything special or memorable happen? Tell me everythi"
+    },
+    {
+      "question_id": "COM_HOM_A2_02",
+      "topic": "가전/전자제품",
+      "preview": "Think about a specific modern appliance or device that people consider as useful or convenient at home. What do people s"
+    },
+    {
+      "question_id": "COM_HOM_A2_03",
+      "topic": "가전/전자제품",
+      "preview": "How have home appliances changed our lives? How was life before the appliances different from life now? What is the bigg"
+    },
+    {
+      "question_id": "COM_HOS_N_C1_01",
+      "topic": "병원",
+      "preview": "What are hospitals like in your country? Describe the general atmosphere and facilities available in most hospitals."
+    },
+    {
+      "question_id": "COM_HOS_N_C1_02",
+      "topic": "병원",
+      "preview": "What kinds of tasks do doctors usually perform? Describe the typical responsibilities and roles doctors have in hospital"
+    },
+    {
+      "question_id": "COM_HOS_N_C1_03",
+      "topic": "병원",
+      "preview": "Have you recently visited a hospital? Share what the experience was like, including the reason for your visit and how it"
+    },
+    {
+      "question_id": "COM_HOS_N_C1_04",
+      "topic": "병원",
+      "preview": "Do you remember visiting a hospital as a child? Describe any memorable experiences you had and how you felt at the time."
+    },
+    {
+      "question_id": "COM_HOS_N_C1_05",
+      "topic": "병원",
+      "preview": "Have you had any memorable experiences involving a hospital visit? Explain what happened and why it stands out in your m"
+    },
+    {
+      "question_id": "COM_HOT_N_C2_01",
+      "topic": "호텔",
+      "preview": "Tell me about the hotels in your country. What are those places like?"
+    },
+    {
+      "question_id": "COM_HOT_N_C2_02",
+      "topic": "호텔",
+      "preview": "Tell me what you typically do when you go to a hotel. What do you do first, second, et cetera? When do you usually stay "
+    },
+    {
+      "question_id": "COM_HOT_N_C2_03",
+      "topic": "호텔",
+      "preview": "People often have memories of special, beautiful or interesting hotels. Tell me about a hotel that you remember for some"
+    },
+    {
+      "question_id": "COM_HOT_N_C2_04",
+      "topic": "호텔",
+      "preview": "When was the last time you stayed in a hotel? Tell me the whole story of where you were, why you were there, and what yo"
+    },
+    {
+      "question_id": "COM_HOT_RP1_02",
+      "topic": "호텔 이용",
+      "preview": "You are planning a business trip outside of your country. Call the hotel you will stay at and ask three or four question"
+    },
+    {
+      "question_id": "COM_HOT_RP1_09",
+      "topic": "호텔 이용",
+      "preview": "That's the end of the situation. Sometimes, surprising or unexpected things can happen when you stay at a hotel. Tell me"
+    },
+    {
+      "question_id": "COM_HOT_RP1_10",
+      "topic": "호텔 이용",
+      "preview": "That's the end of the situation. Have you ever had a problem regarding traveling outside of your country for work or ple"
+    },
+    {
+      "question_id": "COM_HOT_RP1_11",
+      "topic": "호텔 이용",
+      "preview": "That's the end of the situation. Think about a time when your travel plans did not work out as expected. What happened? "
+    },
+    {
+      "question_id": "COM_HOT_RP1_12",
+      "topic": "호텔 이용",
+      "preview": "That's the end of the situation. Has anything like that ever happened to you? Have you ever forgotten something somewher"
+    },
+    {
+      "question_id": "COM_HW_RP1_03",
+      "topic": "해외여행 날씨",
+      "preview": "That's the end of the situation. Was there ever a time when the weather was really not what you had expected? Maybe it s"
+    },
+    {
+      "question_id": "COM_IND_A_C5_01",
+      "topic": "산업",
+      "preview": "Can you tell me about an industry that you follow? Maybe you are interested in the food industry, energy, mobile computi"
+    },
+    {
+      "question_id": "COM_IND_A_C5_02",
+      "topic": "산업",
+      "preview": "How do people prepare for future work in your country's industries? Do they get general education first or receive speci"
+    },
+    {
+      "question_id": "COM_IND_A_C5_03",
+      "topic": "산업",
+      "preview": "Tell me about a time when a product did NOT meet the expectations of the public. Maybe the gaming industry produced a ne"
+    },
+    {
+      "question_id": "COM_IND_A_C5_04",
+      "topic": "산업",
+      "preview": "What is an industry or a company that people in your country are talking about nowadays? Tell me why people are interest"
+    },
+    {
+      "question_id": "COM_IND_N_C2_01",
+      "topic": "산업",
+      "preview": "Tell me about one industry in your country that is well-known. You can talk about any industry such as the entertainment"
+    },
+    {
+      "question_id": "COM_IND_N_C2_02",
+      "topic": "산업",
+      "preview": "What are some of the companies that young people want to work for these days? Why do young people want to work for these"
+    },
+    {
+      "question_id": "COM_IND_N_C2_03",
+      "topic": "산업",
+      "preview": "What do people usually do to prepare for their future careers? How do they learn about the different types of industries"
+    },
+    {
+      "question_id": "COM_IND_N_C2_04",
+      "topic": "산업",
+      "preview": "Can you tell me about one promising or famous company in this particular industry? Tell me how the company started, and "
+    },
+    {
+      "question_id": "COM_IND_N_C2_05",
+      "topic": "산업",
+      "preview": "Describe a company or industry in your country that is attractive to workers. When did this company or industry start an"
+    },
+    {
+      "question_id": "COM_IND_N_C2_06",
+      "topic": "산업",
+      "preview": "When this company introduced its most important products, were they successful right away? Describe to me the challenges"
+    },
+    {
+      "question_id": "COM_IND_N_C2_07",
+      "topic": "산업",
+      "preview": "How did this industry help you in your life? Tell me about what this industry does and how you use its products or servi"
+    },
+    {
+      "question_id": "COM_IND_N_C2_08",
+      "topic": "산업",
+      "preview": "Tell me a specific story about something you did to prepare for your work or career. Tell me specifically what happened "
+    },
+    {
+      "question_id": "COM_INT_A_C7_01",
+      "topic": "인터넷",
+      "preview": "What kinds of concerns do people have about internet use regarding security, privacy or safety? How have these concerns "
+    },
+    {
+      "question_id": "COM_INT_A_C7_02",
+      "topic": "인터넷",
+      "preview": "How has surfing the internet changed since you first began doing it? What is similar and what are some of the difference"
+    },
+    {
+      "question_id": "COM_INT_A_C7_03",
+      "topic": "인터넷",
+      "preview": "How does internet use vary among people with different ages from old to young? Why do they use the internet? What do the"
+    },
+    {
+      "question_id": "COM_INT_A_C7_04",
+      "topic": "인터넷",
+      "preview": "What kinds of problems or concerns do people have concerning the internet? Give me some background on one of these issue"
+    },
+    {
+      "question_id": "COM_INT_N_C1_01",
+      "topic": "인터넷",
+      "preview": "What do the people you know, friends and family et cetera usually use the internet to do? Do they use the internet for w"
+    },
+    {
+      "question_id": "COM_INT_N_C1_02",
+      "topic": "인터넷",
+      "preview": "Tell me about what you do when you surf the internet. What kinds of sites do you usually visit? Do you usually share vid"
+    },
+    {
+      "question_id": "COM_INT_N_C1_03",
+      "topic": "인터넷",
+      "preview": "What kinds of videos do you like to watch online for fun, for work or for school? Tell me more about the kinds of videos"
+    },
+    {
+      "question_id": "COM_INT_N_C1_04",
+      "topic": "인터넷",
+      "preview": "Tell me about your favorite website or type of website you visit. Why do you like it? Give me as many details as you can"
+    },
+    {
+      "question_id": "COM_INT_N_C1_05",
+      "topic": "인터넷",
+      "preview": "Tell me about your typical routine when you get online at work. What about in your free time? Tell me about your online "
+    },
+    {
+      "question_id": "COM_INT_N_C1_07",
+      "topic": "인터넷",
+      "preview": "When did you first become interesting in surfing the internet? Tell me about your first experience or experiences of sur"
+    },
+    {
+      "question_id": "COM_INT_N_C1_08",
+      "topic": "인터넷",
+      "preview": "Tell me about a project that you worked on that involved doing research on the internet. Start with giving me some backg"
+    },
+    {
+      "question_id": "COM_INT_N_C1_09",
+      "topic": "인터넷",
+      "preview": "We all have things that we remember on the internet. Talk about the memorable things that you have seen on the internet."
+    },
+    {
+      "question_id": "COM_INT_N_C1_10",
+      "topic": "인터넷",
+      "preview": "Describe something memorable you saw online for work or for leisure. Maybe it was impressive, unusual, humorous or meani"
+    },
+    {
+      "question_id": "COM_INT_N_C1_11",
+      "topic": "인터넷",
+      "preview": "Tell me all about what you did online yesterday for work, school, or fun? How did you get online? What website did you v"
+    },
+    {
+      "question_id": "COM_INT_RP_C1_04",
+      "topic": "웹사이트 정보",
+      "preview": "That's the end of the situation. Have you ever had a problem while you were surfing the internet? Maybe the site you wer"
+    },
+    {
+      "question_id": "COM_INT_RP_C1_05",
+      "topic": "웹사이트 정보",
+      "preview": "That's the end of the situation. How did you use the internet to get a project done in the past? What was the project ab"
+    },
+    {
+      "question_id": "COM_INV_RP_C1_01",
+      "topic": "취업 면접",
+      "preview": "I'd like to give you a situation and ask you to act it out. Imagine that you have an interview for a job at a very impor"
+    },
+    {
+      "question_id": "COM_INV_RP_C1_03",
+      "topic": "취업 면접",
+      "preview": "That's the end of the situation. Have you ever had to miss a class, a meeting or an interview at school or for work? Tel"
+    },
+    {
+      "question_id": "COM_MED_RP_C1_03",
+      "topic": "병원 예약",
+      "preview": "That's the end of the situation. Have you ever had an important appointment that you had to miss for some reason or perh"
+    },
+    {
+      "question_id": "COM_MOD_RP_C1_05",
+      "topic": "친구 만남 계획",
+      "preview": "That's the end of the situation. Have you ever had a time when you were supposed to visit family or friends, but you wer"
+    },
+    {
+      "question_id": "COM_MOD_RP_C1_06",
+      "topic": "친구 만남 계획",
+      "preview": "That's the end of the situation. Was there a time when you had some free time and had some plans? But maybe the weather "
+    },
+    {
+      "question_id": "COM_MOV_RP_C1_05",
+      "topic": "영화 관람 계획",
+      "preview": "That's the end of the situation. Has this ever happened to you? Have you ever bought tickets or had reservations and som"
+    },
+    {
+      "question_id": "COM_MOV_RP_C1_06",
+      "topic": "영화 관람 계획",
+      "preview": "That's the end of the situation. Have you ever tried to watch a boring movie? If so, what did you do? Did you watch the "
+    },
+    {
+      "question_id": "COM_MP3_RP_C1_03",
+      "topic": "MP3 Player 구매",
+      "preview": "That's the end of the situation. Tell me about a situation you've had with some sort of equipment which broke or did not"
+    },
+    {
+      "question_id": "COM_NUT_RP_C1_01",
+      "topic": "영양 상담 예약",
+      "preview": "You read about a professional nutritionist that helps people improve their diet. Call the nutritionist's office and ask "
+    },
+    {
+      "question_id": "COM_NUT_RP_C1_02",
+      "topic": "영양 상담 예약",
+      "preview": "You have an appointment to meet with a nutritionist who can help you make your diet healthier. However, on the day of th"
+    },
+    {
+      "question_id": "COM_NUT_RP_C1_03",
+      "topic": "영양 상담 예약",
+      "preview": "Describe a time when you made a significant change to your diet or exercise routine. What led to this change? How did it"
+    },
+    {
+      "question_id": "COM_PAK_RP_C1_02",
+      "topic": "공원 방문",
+      "preview": "Suggesting alternatives when the park is closed You just found out the park you and your friend plan to visit this weeke"
+    },
+    {
+      "question_id": "COM_PAK_RP_C1_03",
+      "topic": "공원 방문",
+      "preview": "Resolving delays when visiting a park There is a problem I need you to act it out. You had planned to pick up your frien"
+    },
+    {
+      "question_id": "COM_PAK_RP_C1_04",
+      "topic": "공원 방문",
+      "preview": "Memorable experience at a park Have you ever had a memorable experience while visiting a park? Describe something intere"
+    },
+    {
+      "question_id": "COM_PAR_RP_C1_09",
+      "topic": "파티 초대 및 준비",
+      "preview": "That's the end of the situation. Can you tell me about a memorable visit you made to your family or friends? Pick one of"
+    },
+    {
+      "question_id": "COM_PAR_RP_C1_10",
+      "topic": "파티 초대 및 준비",
+      "preview": "That's the end of the situation. Have you ever made plans for trip or a party but had to cancel at the last minute becau"
+    },
+    {
+      "question_id": "COM_PER_RP_C1_03",
+      "topic": "공연 예매",
+      "preview": "That's the end of the situation. Have you ever had plans or tickets, then found out that you could not attend the perfor"
+    },
+    {
+      "question_id": "COM_PHA_N_C2_01",
+      "topic": "약국",
+      "preview": "Describe a local pharmacy in your neighborhood. What does it look like, what is it like, and how is the service?"
+    },
+    {
+      "question_id": "COM_PHA_N_C2_02",
+      "topic": "약국",
+      "preview": "Tell me about the activities you usually do at a pharmacy. What do you do there, and why?"
+    },
+    {
+      "question_id": "COM_PHA_N_C2_03",
+      "topic": "약국",
+      "preview": "Can you tell me about a recent experience you had at a pharmacy? What did you do there, and how was the service?"
+    },
+    {
+      "question_id": "COM_PHA_N_C2_04",
+      "topic": "약국",
+      "preview": "How was the pharmacy you went to when you were a child different from the pharmacies you go to now? What has changed, an"
+    },
+    {
+      "question_id": "COM_PHA_N_C2_05",
+      "topic": "약국",
+      "preview": "Tell me about one of the memorable experiences you had at a pharmacy. What happened from beginning to end? Tell me every"
+    },
+    {
+      "question_id": "COM_PHO_A_C3_01",
+      "topic": "휴대폰",
+      "preview": "Describe how people used cell phones 5 years ago. What could they do with their phone functions and applications? What a"
+    },
+    {
+      "question_id": "COM_PHO_A_C3_02",
+      "topic": "휴대폰",
+      "preview": "How have phones changed over the years? What were they like when you were younger? How were they different from the phon"
+    },
+    {
+      "question_id": "COM_PHO_A_C3_03",
+      "topic": "휴대폰",
+      "preview": "We can use phones to do more now than before, like finding travel directions, reading restaurant reviews, and doing othe"
+    },
+    {
+      "question_id": "COM_PHO_A_C3_04",
+      "topic": "휴대폰",
+      "preview": "In some societies, there is a concern that young people are not developing face-to-face communication skills because the"
+    },
+    {
+      "question_id": "COM_PHO_A_C3_05",
+      "topic": "휴대폰",
+      "preview": "What kinds of concerns or problems come up when people discuss the use of cell phones? Give me some background about thi"
+    },
+    {
+      "question_id": "COM_PHO_A_C3_06",
+      "topic": "휴대폰",
+      "preview": "Many people use their phones to find out about current events in their countries. They can find information about everyt"
+    },
+    {
+      "question_id": "COM_PHO_N_C1_01",
+      "topic": "전화기",
+      "preview": "What kinds of things do you and your friends usually do on your phones besides talking to each other over the phone? Do "
+    },
+    {
+      "question_id": "COM_PHO_N_C1_02",
+      "topic": "전화기",
+      "preview": "What is the best thing about your phone? Is it the camera? Is it applications or games on the phone? Tell me what you li"
+    },
+    {
+      "question_id": "COM_PHO_N_C1_03",
+      "topic": "전화기",
+      "preview": "Tell me about the kinds of things you and your friends talk talk about on the phone."
+    },
+    {
+      "question_id": "COM_PHO_N_C1_04",
+      "topic": "전화기",
+      "preview": "I’d like to know about your routine of talking on the phone. Who do you talk with, when do you usually talk on the phone"
+    },
+    {
+      "question_id": "COM_PHO_N_C1_05",
+      "topic": "전화기",
+      "preview": "Describe the first phone you remember were using. What did it look like? What feature did it have? How was it different "
+    },
+    {
+      "question_id": "COM_PHO_N_C1_06",
+      "topic": "전화기",
+      "preview": "Some features, applications, services on phones are easy to use, but you may have to get help from friends, family membe"
+    },
+    {
+      "question_id": "COM_PHO_N_C1_07",
+      "topic": "전화기",
+      "preview": "Can you tell me about a memorable phone conversation you had using your phone? Maybe your friend or your relative told y"
+    },
+    {
+      "question_id": "COM_PHO_N_C1_08",
+      "topic": "전화기",
+      "preview": "How did you choose the phone that you currently use? How did you hear about it? Did you do research? Tell me everything "
+    },
+    {
+      "question_id": "COM_PHO_RP_C1_07",
+      "topic": "휴대폰 구매",
+      "preview": "That's the end of the situation. Have you ever had an issue or a problem with your cell phone? Tell me about one of thos"
+    },
+    {
+      "question_id": "COM_PHO_RP_C1_08",
+      "topic": "휴대폰 구매",
+      "preview": "That's the end of the situation. People sometimes have difficulties with their phones when they are travelling, commutin"
+    },
+    {
+      "question_id": "COM_PHO_RP_C1_09",
+      "topic": "휴대폰 구매",
+      "preview": "That's the end of the situation. Have you ever had to set up a new phone? Tell me about a specific time when you had to "
+    },
+    {
+      "question_id": "COM_PHO_RP_C1_10",
+      "topic": "휴대폰 구매",
+      "preview": "That's the end of the situation. Have you ever bought a piece of technology which was not what you had wanted or differe"
+    },
+    {
+      "question_id": "COM_PRE_N_C2_01",
+      "topic": "선호회사",
+      "preview": "Describe one of the companies that young people prefer to work for. What is the company, what does it look like, and wha"
+    },
+    {
+      "question_id": "COM_PRE_N_C2_02",
+      "topic": "선호회사",
+      "preview": "Tell me about the company that you mentioned earlier in the previous question. What products or services does it offer? "
+    },
+    {
+      "question_id": "COM_PRE_N_C2_03",
+      "topic": "선호회사",
+      "preview": "What activities did you do to get your current job? How did you prepare for it, what steps did you take before you got h"
+    },
+    {
+      "question_id": "COM_REA_RP_C1_03",
+      "topic": "부동산 (새 집 찾기)",
+      "preview": "That's the end of the situation. Have you ever been surprised to discover something broken at home? Tell me the story of"
+    },
+    {
+      "question_id": "COM_REC_A_C6_01",
+      "topic": "재활용",
+      "preview": "The handling of recycling materials has changed over the years. Tell me how the collection of recycling materials used t"
+    },
+    {
+      "question_id": "COM_REC_A_C6_02",
+      "topic": "재활용",
+      "preview": "Describe what the attitude was toward recycling when you were a child. Did people recycle then? Did they throw everythin"
+    },
+    {
+      "question_id": "COM_REC_A_C6_03",
+      "topic": "재활용",
+      "preview": "Stories about recycling are often in the media. Tell me about one news story that you have heard related to recycling or"
+    },
+    {
+      "question_id": "COM_REC_A_C6_04",
+      "topic": "재활용",
+      "preview": "What are some of the stories in the news with respect to recycling or the environment today? Describe what the current n"
+    },
+    {
+      "question_id": "COM_REC_N_C2_01",
+      "topic": "재활용",
+      "preview": "I'd like to know about how recycling is practiced in your country. What do people specifically do? Tell me how things ar"
+    },
+    {
+      "question_id": "COM_REC_N_C2_02",
+      "topic": "재활용",
+      "preview": "Recycling is a common practice. Tell me about all the different kinds of things that you recycle."
+    },
+    {
+      "question_id": "COM_REC_N_C2_03",
+      "topic": "재활용",
+      "preview": "How do you go about recycling? What do you do first, second, and next until you complete the process? Tell me everything"
+    },
+    {
+      "question_id": "COM_REC_N_C2_04",
+      "topic": "재활용",
+      "preview": "Tell me what recycling was like when you were a child. Was there a particular place to throw away the recyclables? Did y"
+    },
+    {
+      "question_id": "COM_REC_N_C2_05",
+      "topic": "재활용",
+      "preview": "Can you tell me about a story or an experience you had related to recycling? Maybe something went wrong with recycling, "
+    },
+    {
+      "question_id": "COM_REC_N_C2_06",
+      "topic": "재활용",
+      "preview": "Problems sometimes occur when recycling. Perhaps, the pick-up service does not come as planned. Or the items are too big"
+    },
+    {
+      "question_id": "COM_REC_RP_C1_01",
+      "topic": "재활용 규정",
+      "preview": "Suppose you have moved into a new building and you want to know how recycling works. Ask the building manager three or f"
+    },
+    {
+      "question_id": "COM_REC_RP_C1_02",
+      "topic": "재활용 규정",
+      "preview": "Suppose you just moved to a big apartment building. Call the person at the front desk and ask three to four questions ab"
+    },
+    {
+      "question_id": "COM_REC_RP_C1_03",
+      "topic": "재활용 규정",
+      "preview": "A person from abroad has recently rented an apartment in your building. It seems that he is not familiar with recycling "
+    },
+    {
+      "question_id": "COM_REC_RP_C1_04",
+      "topic": "재활용 규정",
+      "preview": "You often host large parties and take out most of the recycling and garbage the next day. However, other residents in yo"
+    },
+    {
+      "question_id": "COM_REC_RP_C1_05",
+      "topic": "재활용 규정",
+      "preview": "Do you remember the first time you heard about recycling? Tell me how it happened, how old you were, where you were and "
+    },
+    {
+      "question_id": "COM_REC_RP_C1_06",
+      "topic": "재활용 규정",
+      "preview": "Describe a specific time in which you had trouble with recycling. It may have been a situation in which you moved to a n"
+    },
+    {
+      "question_id": "COM_REL_RP_C3_01",
+      "topic": "가족 집 돌봐주기",
+      "preview": "I'd like to give you a situation and ask you to act it out. Someone in your family is going on a vacation and you have a"
+    },
+    {
+      "question_id": "COM_REL_RP_C3_03",
+      "topic": "가족 집 돌봐주기",
+      "preview": "That's the end of the situation. Have you ever been in a situation where you agreed to do something for friends or famil"
+    },
+    {
+      "question_id": "COM_REN_RP_C2_06",
+      "topic": "차량 렌트",
+      "preview": "That's the end of the situation. Have you ever rented a car? Tell me about when you had to rent a car. When and where wa"
+    },
+    {
+      "question_id": "COM_REN_RP_C2_07",
+      "topic": "차량 렌트",
+      "preview": "That's the end of the situation. Can you now tell me the story of an experience that you had while you were on one of yo"
+    },
+    {
+      "question_id": "COM_RES_A_C7_01",
+      "topic": "외식/배달 문화",
+      "preview": "There is a trend in the restaurant industry to offer healthier choices designed to attract the health-conscious consumer"
+    },
+    {
+      "question_id": "COM_RES_A_C7_02",
+      "topic": "외식/배달 문화",
+      "preview": "What kinds of changes in restaurants or eating out have you noticed over the last few years? How was eating out differen"
+    },
+    {
+      "question_id": "COM_RES_A_C7_03",
+      "topic": "외식/배달 문화",
+      "preview": "Many fast-food, take-out or delivery restaurants are now offering healthier choices. Why do you think this change has co"
+    },
+    {
+      "question_id": "COM_RES_A_C7_04",
+      "topic": "외식/배달 문화",
+      "preview": "The advantage of chain restaurants such as McDonald's is that the consumer knows what to expect in terms of menu, prices"
+    },
+    {
+      "question_id": "COM_RES_A_C7_05",
+      "topic": "외식/배달 문화",
+      "preview": "When your friends or family discuss restaurants they like or dislike, what are some of the characteristics they discuss "
+    },
+    {
+      "question_id": "COM_RES_A_C7_06",
+      "topic": "외식/배달 문화",
+      "preview": "What are the latest trends people are talking about related to take-out or delivery food options? Perhaps, it has to do "
+    },
+    {
+      "question_id": "COM_RES_N_C2_01",
+      "topic": "음식점",
+      "preview": "Tell me about a restaurant near where you live. What kind of food does it serve? How are the prices? How often do you go"
+    },
+    {
+      "question_id": "COM_RES_N_C2_02",
+      "topic": "음식점",
+      "preview": "Tell me about the restaurants in your country. What is a typical restaurant like?"
+    },
+    {
+      "question_id": "COM_RES_N_C2_03",
+      "topic": "음식점",
+      "preview": "Do you have a favorite take-out or delivery restaurant you use? Tell me about it."
+    },
+    {
+      "question_id": "COM_RES_N_C2_04",
+      "topic": "음식점",
+      "preview": "How do busy working people usually get their meals during the workweek? Do they order food from restaurants, go out to e"
+    },
+    {
+      "question_id": "COM_RES_N_C2_05",
+      "topic": "음식점",
+      "preview": "Do you have a favorite type of food such as American, Chinese or Japanese? Tell me about your favorite type of restauran"
+    },
+    {
+      "question_id": "COM_RES_N_C2_06",
+      "topic": "음식점",
+      "preview": "Describe your favorite restaurant with an ethnic or international menu. Tell me all about that place in as much detail a"
+    },
+    {
+      "question_id": "COM_RES_N_C2_07",
+      "topic": "음식점",
+      "preview": "Tell me about what you usually do when you eat at a restaurant. What do you do first, second, etc? Take me through a typ"
+    },
+    {
+      "question_id": "COM_RES_N_C2_08",
+      "topic": "음식점",
+      "preview": "Tell me about your favorite take-out or delivery routine. Do you order it at a counter, by phone, or on the internet? Do"
+    },
+    {
+      "question_id": "COM_RES_N_C2_09",
+      "topic": "음식점",
+      "preview": "What do you usually do for dinner during the week? Do you order food or go out to eat? Do you make your own meals or doe"
+    },
+    {
+      "question_id": "COM_RES_N_C2_10",
+      "topic": "음식점",
+      "preview": "Describe for me a restaurant that you remember from your childhood. What was the restaurant like? Was it different from "
+    },
+    {
+      "question_id": "COM_RES_N_C2_12",
+      "topic": "음식점",
+      "preview": "Tell me the story of the last time you had a chance to eat out at a restaurant. Where did you go? Who was with you? What"
+    },
+    {
+      "question_id": "COM_RES_N_C2_13",
+      "topic": "음식점",
+      "preview": "Have you ever used the delivery or take-out service for a special occasion for a large group of people? It may have been"
+    },
+    {
+      "question_id": "COM_RES_N_C2_15",
+      "topic": "음식점",
+      "preview": "Tell me about a time when you were having a meal and something unusual or unexpected happened. Tell me the whole story i"
+    },
+    {
+      "question_id": "COM_RES_N_C2_16",
+      "topic": "음식점",
+      "preview": "Tell me about how you found out about a very special food or grocery store. Maybe a new specialty store opened in your c"
+    },
+    {
+      "question_id": "COM_RES_RP_C1_05",
+      "topic": "식당 방문",
+      "preview": "I'm sorry, but there is a problem I need you to resolve. When you get to the store, you realize that you left your walle"
+    },
+    {
+      "question_id": "COM_RES_RP_C1_09",
+      "topic": "식당 방문",
+      "preview": "That's the end of the situation. Has anything like that ever happened to you? Have you ever forgotten something somewher"
+    },
+    {
+      "question_id": "COM_RES_RP_C1_10",
+      "topic": "식당 방문",
+      "preview": "That's the end of the situation. Have you ever had anything memorable happen to you when you were going to a restaurant?"
+    },
+    {
+      "question_id": "COM_RES_RP_C1_11",
+      "topic": "식당 방문",
+      "preview": "That's the end of the situation. Tell me about a memorable experience you had at a restaurant. Maybe you did not like th"
+    },
+    {
+      "question_id": "COM_SHO_RP_C1_01",
+      "topic": "쇼핑 정보 문의",
+      "preview": "I'd like to know about a great sale happening at one of your favorite stores. Call your friend and ask three or four que"
+    },
+    {
+      "question_id": "COM_SHO_RP_C1_02",
+      "topic": "쇼핑 정보 문의",
+      "preview": "I'd like to give you a situation and ask you to act it out. There is a newly opened store. Call your friend who knows ab"
+    },
+    {
+      "question_id": "COM_SHO_RP_C1_05",
+      "topic": "쇼핑 정보 문의",
+      "preview": "I'd like to now know about your shopping experience that was particularly memorable. It might have been about a special "
+    },
+    {
+      "question_id": "COM_SHO_RP_C1_06",
+      "topic": "쇼핑 정보 문의",
+      "preview": "That's the end of the situation. Have you ever left something behind at a restaurant or at a store? It can be your walle"
+    },
+    {
+      "question_id": "COM_SHO_RP_C3_05",
+      "topic": "세일 상품 구매",
+      "preview": "That's the end of the situation. Have you ever had a problem while you were shopping? Perhaps, a store did not have an i"
+    },
+    {
+      "question_id": "COM_SHO_RP_C3_06",
+      "topic": "세일 상품 구매",
+      "preview": "That's the end of the situation. Have you ever bought something that did not work or was damaged? Tell me about the item"
+    },
+    {
+      "question_id": "COM_TEC_N_C2_01",
+      "topic": "기술",
+      "preview": "What kind of technology do people typically use in your country? Do people use computers, cell phones, or hand-held devi"
+    },
+    {
+      "question_id": "COM_TEC_N_C2_02",
+      "topic": "기술",
+      "preview": "Tell me about a piece of technology that you use every day? What kind of things do you use it for?"
+    },
+    {
+      "question_id": "COM_TEC_N_C2_03",
+      "topic": "기술",
+      "preview": "Technology has definitely changed over time. Tell me about an early memory that you have about a piece of technology. It"
+    },
+    {
+      "question_id": "COM_TEC_N_C2_04",
+      "topic": "기술",
+      "preview": "Problems often come up because of our dependence on technology. Think about a time when you experienced a problem becaus"
+    },
+    {
+      "question_id": "COM_TEC_RP_C1_02",
+      "topic": "기술 산업 정보 조사",
+      "preview": "Your friend offers to meet you, so that you can learn more about the industry which she works in. However, a few days be"
+    },
+    {
+      "question_id": "COM_TEC_RP_C1_03",
+      "topic": "기술 산업 정보 조사",
+      "preview": "That's the end of the situation. Tell me about a time you learned about an exciting new product. It might have been the "
+    },
+    {
+      "question_id": "COM_TRA_N_C2_01",
+      "topic": "교통",
+      "preview": "Tell me about how people typically GET AROUND in your country. Do people drive their own cars or do they use trains or b"
+    },
+    {
+      "question_id": "COM_TRA_N_C2_02",
+      "topic": "교통",
+      "preview": "Tell me about the kinds of transportation you use on a typical day. Where do you usually go and how do you get there?"
+    },
+    {
+      "question_id": "COM_TRA_N_C2_03",
+      "topic": "교통",
+      "preview": "How did you travel when you were a child? Were the types of transportation different back then? Describe for me how peop"
+    },
+    {
+      "question_id": "COM_TRA_N_C2_04",
+      "topic": "교통",
+      "preview": "Problems often arise related to transportation. Cars break down, trains run late, or there are traffic jams. Tell me abo"
+    },
+    {
+      "question_id": "COM_TRA_RP_C1_03",
+      "topic": "기차표 예매",
+      "preview": "That's the end of the situation. Have you ever traveled somewhere and missed a bus, a train or a plane? Tell me about an"
+    },
+    {
+      "question_id": "COM_TRI_RP_C1_07",
+      "topic": "여행 계획",
+      "preview": "That's the end of the situation. There are times when something out of the ordinary happens while traveling. I wonder if"
+    },
+    {
+      "question_id": "COM_TRI_RP_C1_08",
+      "topic": "여행 계획",
+      "preview": "That's the end of the situation. Think about a time when you had difficulty making vacation plans. Tell me all the detai"
+    },
+    {
+      "question_id": "COM_TRI_RP_C1_09",
+      "topic": "여행 계획",
+      "preview": "That's the end of the situation. Have you ever had to deal with problems caused by a cancelled flight yourself? Describe"
+    },
+    {
+      "question_id": "COM_TRI_RP_C4_03",
+      "topic": "해외 친구 방문 / 지리",
+      "preview": "That's the end of the situation. Have you ever visited another country or region whose geography was very different from"
+    },
+    {
+      "question_id": "COM_TRI_RP_C5_03",
+      "topic": "친구의 미국 여행",
+      "preview": "That's the end of the situation. Tell me about a memorable trip that you took. When was it? Where did you go? Tell me ev"
+    },
+    {
+      "question_id": "COM_TRI_RP_C6_01",
+      "topic": "외국인의 방문 지원",
+      "preview": "I want to visit your country. You want to help me, but you need more information. Ask me three of four questions to lear"
+    },
+    {
+      "question_id": "COM_TRI_RP_C6_02",
+      "topic": "외국인의 방문 지원",
+      "preview": "I am arriving for visiting your country today. You are going to meet me at the airport, but you have some emergency and "
+    },
+    {
+      "question_id": "COM_TRI_RP_C6_03",
+      "topic": "외국인의 방문 지원",
+      "preview": "Tell me in detail about the time when you learned or realized something interesting about your country. Maybe you watche"
+    },
+    {
+      "question_id": "COM_TRI_RP_C7_03",
+      "topic": "공항 (비행 지연)",
+      "preview": "That's the end of the situation. Have you ever encountered any difficulties during a trip? Tell me about that experience"
+    },
+    {
+      "question_id": "COM_TV_RP_C1_03",
+      "topic": "친구들과 영화 관람 준비",
+      "preview": "That's the end of the situation. Have you ever gone to a movie or wanted to watch a special TV event, and then something"
+    },
+    {
+      "question_id": "COM_WEA_N_C3_01",
+      "topic": "날씨",
+      "preview": "Tell me about the weather in your country. Are there different seasons? What is the weather typically like?"
+    },
+    {
+      "question_id": "COM_WEA_N_C3_02",
+      "topic": "날씨",
+      "preview": "Tell me more about the weather at where you are today. What is happening right now?"
+    },
+    {
+      "question_id": "COM_WEA_N_C3_03",
+      "topic": "날씨",
+      "preview": "How has the weather in your country changed over time? What was the weather typically like when you were a child? How wa"
+    },
+    {
+      "question_id": "COM_WEA_N_C3_04",
+      "topic": "날씨",
+      "preview": "Severe weather can often cause serious problems. Tell me about an experience you had when the weather created some kind "
+    },
+    {
+      "question_id": "COM_WOR_N_C2_01",
+      "topic": "직장",
+      "preview": "Describe the typical workplaces in your country. What do they look like, what kinds of jobs do people usually do there, "
+    },
+    {
+      "question_id": "COM_WOR_N_C2_02",
+      "topic": "직장",
+      "preview": "How have workplaces in your country changed compared to the past? What are the major differences between workplaces in t"
+    },
+    {
+      "question_id": "COM_WOR_N_C2_03",
+      "topic": "직장",
+      "preview": "Can you tell me about an early job you had? What kind of work did you do, who did you work with, and what did you learn "
+    },
+    {
+      "question_id": "SEL_CAF_A_C1_01",
+      "topic": "카페",
+      "preview": "Sometimes, unexpected things can occur when you're at a café. Have you experienced something like that? What happened? W"
+    },
+    {
+      "question_id": "SEL_CAF_A_C1_02",
+      "topic": "카페",
+      "preview": "How have cafes changed over the past few years? How were they in the past, and how are they now? Is there anything speci"
+    },
+    {
+      "question_id": "SEL_CAF_A_C1_03",
+      "topic": "카페",
+      "preview": "Tell me about the issues or news related to the cafes in your community. What are they, and tell me everything in detail"
+    },
+    {
+      "question_id": "SEL_CAF_N_C1_01",
+      "topic": "카페",
+      "preview": "You indicated in the survey that you go to cafes or coffee shops. Tell me about the café you often go to. Where is it lo"
+    },
+    {
+      "question_id": "SEL_CAF_N_C1_02",
+      "topic": "카페",
+      "preview": "What is your favorite item to order at a cafe? Describe the menu item and explain why you like it. Is there anything spe"
+    },
+    {
+      "question_id": "SEL_CAF_N_C1_03",
+      "topic": "카페",
+      "preview": "What do you normally do when you go to a café? Do you read, eat, or have meetings? Please tell me in detail what you lik"
+    },
+    {
+      "question_id": "SEL_CAF_N_C1_04",
+      "topic": "카페",
+      "preview": "Talk about the first coffee shop you went to. What was special about that place? What do you remember most?"
+    },
+    {
+      "question_id": "SEL_CAF_N_C1_05",
+      "topic": "카페",
+      "preview": "Tell me about a recent visit to a cafe. Who did you go with, and what did you do there? Describe the atmosphere and what"
+    },
+    {
+      "question_id": "SEL_CAF_N_C1_06",
+      "topic": "카페",
+      "preview": "Please tell me about a memorable experience you have had at a café. When was it? Who were you with? What made this exper"
+    },
+    {
+      "question_id": "SEL_HIK_N_C1_01",
+      "topic": "하이킹",
+      "preview": "Where do you often go hiking? Where is it located? What does it look like? Describe your favorite place for these activi"
+    },
+    {
+      "question_id": "SEL_HIK_N_C1_02",
+      "topic": "하이킹",
+      "preview": "You mentioned you like to go hiking. Can you tell me about the social, physical, and mental benefits? What are the advan"
+    },
+    {
+      "question_id": "SEL_HIK_N_C1_03",
+      "topic": "하이킹",
+      "preview": "How often do you go hiking? Describe where and when you usually go, and whether you prefer to go alone or with someone e"
+    },
+    {
+      "question_id": "SEL_HIK_N_C1_04",
+      "topic": "하이킹",
+      "preview": "What do you do to prepare for hiking? Describe any equipment, clothing, or routines you use, and explain any precautions"
+    },
+    {
+      "question_id": "SEL_HIK_N_C1_05",
+      "topic": "하이킹",
+      "preview": "Tell me about the first time you went hiking? How old were you, and who taught you? How have you developed your hiking s"
+    },
+    {
+      "question_id": "SEL_HIK_N_C1_06",
+      "topic": "하이킹",
+      "preview": "What made you start hiking as part of your routine? Describe any specific events or motivations that led you to include "
+    },
+    {
+      "question_id": "SEL_HIK_N_C1_07",
+      "topic": "하이킹",
+      "preview": "Tell me about the most interesting place you've ever visited for hiking. Where was it, and why was it so interesting? Wh"
+    },
+    {
+      "question_id": "SEL_HIK_N_C1_08",
+      "topic": "하이킹",
+      "preview": "Have you ever injured yourself while hiking? What kind of injury was it? What do you do to avoid injuries, and what safe"
+    },
+    {
+      "question_id": "SEL_HIK_N_C1_09",
+      "topic": "하이킹",
+      "preview": "How has your physical condition changed over time since you started hiking? How was your condition before, and how is it"
+    },
+    {
+      "question_id": "SEL_HOM_A1_02",
+      "topic": "집",
+      "preview": "I would like to now talk about where you live. How has the style of homes changed over the past 5 or 10 years at where y"
+    },
+    {
+      "question_id": "SEL_HOM_A1_03",
+      "topic": "집",
+      "preview": "What are the major problems most people have when they rent a home or an apartment? How do people deal with these issues"
+    },
+    {
+      "question_id": "SEL_HOM_A1_04",
+      "topic": "집",
+      "preview": "Sometimes the issues of too many new homes or not enough new homes can create a controversy in a community. Think of a t"
+    },
+    {
+      "question_id": "SEL_HOM_N6_03",
+      "topic": "집",
+      "preview": "What is your normal routine at home? What do you usually do during the weekdays? What kinds of things do you do on the w"
+    },
+    {
+      "question_id": "SEL_HOM_N6_04",
+      "topic": "집",
+      "preview": "Tell me what you do to keep your home clean and comfortable. What kinds of housework do you do around your home?"
+    },
+    {
+      "question_id": "SEL_HOM_N6_05",
+      "topic": "집",
+      "preview": "Describe the home you lived in as a child. How was that home different from the home you live in now?"
+    },
+    {
+      "question_id": "SEL_HOM_N6_06",
+      "topic": "집",
+      "preview": "Tell me about a house or apartment where you grew up. What did your home and the surrounding area look like when you wer"
+    },
+    {
+      "question_id": "SEL_HOM_N6_07",
+      "topic": "집",
+      "preview": "There are always problems which happen in any home. Things break, projects do not go as planned, or people you live with"
+    },
+    {
+      "question_id": "SEL_HOM_N6_08",
+      "topic": "집",
+      "preview": "Sometimes we want to change something in our home, maybe get new furniture or do some painting or decorating. Tell me ab"
+    },
+    {
+      "question_id": "SEL_HOM_N6_09",
+      "topic": "집",
+      "preview": "Talk about a special memory you had with your family members at home. Maybe it was something funny, surprising, or impor"
+    },
+    {
+      "question_id": "SEL_HOM_N6_10",
+      "topic": "집",
+      "preview": "Pick one of those problems you just mentioned and explain to me everything that happened. Start with when it happened an"
+    },
+    {
+      "question_id": "SEL_MOV_A_C4_02",
+      "topic": "영화",
+      "preview": "When your friends or family talk about movies, what topics or issues regarding movies do you discuss? Why are these issu"
+    },
+    {
+      "question_id": "SEL_MOV_N_C3_02",
+      "topic": "영화",
+      "preview": "Tell me what you usually do when you go to see movies. Who do you like to go with? What do you do before and after the m"
+    },
+    {
+      "question_id": "SEL_MOV_N_C3_04",
+      "topic": "영화",
+      "preview": "What was a memorable movie you watched in the past? What was it about? What was special about that movie? Would you reco"
+    },
+    {
+      "question_id": "SEL_MOV_N_C3_05",
+      "topic": "영화",
+      "preview": "Who is one of your favorite actors? Tell me a specific story about something this actor did that you heard about in the "
+    },
+    {
+      "question_id": "SEL_MUS_A_C3_02",
+      "topic": "음악",
+      "preview": "What new electronic gadgets or equipment are people who like music interested in these days? What are they talking about"
+    },
+    {
+      "question_id": "SEL_MUS_N_C2_01",
+      "topic": "음악",
+      "preview": "You indicated in the survey that you listen to music. What kinds of music do you listen to? Who are some of your favorit"
+    },
+    {
+      "question_id": "SEL_MUS_N_C2_02",
+      "topic": "음악",
+      "preview": "When and where do you usually go to listen to music? Do you listen to radio? Do you go to concerts? Tell me about the di"
+    },
+    {
+      "question_id": "SEL_MUS_N_C2_03",
+      "topic": "음악",
+      "preview": "When did you first become interested in music? What kinds of music did you like first? Tell me how your interest in musi"
+    },
+    {
+      "question_id": "SEL_OTR_A_C5_02",
+      "topic": "해외여행",
+      "preview": "When people discuss traveling to other countries, what are the things that they are most interested in doing or seeing? "
+    },
+    {
+      "question_id": "SEL_OTR_N_C2_02",
+      "topic": "해외여행",
+      "preview": "Tell me about a popular place tourists like to go to when traveling outside your country."
+    },
+    {
+      "question_id": "SEL_OTR_N_C2_03",
+      "topic": "해외여행",
+      "preview": "Tell me about what tourists usually do when they visit another country. Where do they go? What do they do there?"
+    },
+    {
+      "question_id": "SEL_OTR_N_C2_03_1",
+      "topic": "해외여행",
+      "preview": "Tell me about your most recent overseas trip. What did you do, and why did you go there? Who did you go with? Please sha"
+    },
+    {
+      "question_id": "SEL_OTR_N_C2_04",
+      "topic": "해외여행",
+      "preview": "Can you tell me about the things you like to do when visiting another country?"
+    },
+    {
+      "question_id": "SEL_OTR_N_C2_05",
+      "topic": "해외여행",
+      "preview": "Describe for me your first trip to another country. When was the trip? Where did you go? Who did you go with and what di"
+    },
+    {
+      "question_id": "SEL_OTR_N_C2_05_1",
+      "topic": "해외여행",
+      "preview": "What is the most memorable experience you’ve had while traveling? When and where did you go? What happened, and why was "
+    },
+    {
+      "question_id": "SEL_OTR_N_C2_06",
+      "topic": "해외여행",
+      "preview": "Think about another country that you visited when you were young. Describe what this other country was like with lots of"
+    },
+    {
+      "question_id": "SEL_OTR_N_C2_07",
+      "topic": "해외여행",
+      "preview": "Sometimes, something out of the ordinary happens while traveling. I wonder if you have ever experienced anything surpris"
+    },
+    {
+      "question_id": "SEL_OTR_N_C2_08",
+      "topic": "해외여행",
+      "preview": "Tell me a specific story about a time that you or someone you know travelled outside of your country. Perhaps, something"
+    },
+    {
+      "question_id": "SEL_PAR_A_C1_01",
+      "topic": "공원",
+      "preview": "Please compare two popular parks that you know. What are the similarities and differences between them? Which one do you"
+    },
+    {
+      "question_id": "SEL_PAR_A_C1_02",
+      "topic": "공원",
+      "preview": "Compare the activities that children and adults typically do at parks. How do their activities differ? Also, talk about "
+    },
+    {
+      "question_id": "SEL_PAR_A_C1_03",
+      "topic": "공원",
+      "preview": "Talk about some issues that parks in your country are facing these days. What is the biggest challenge, and what should "
+    },
+    {
+      "question_id": "SEL_PAR_N_C1_01",
+      "topic": "공원",
+      "preview": "You indicated in the survey that you like going to parks. Which Park do you like to go to? Where is it located? What doe"
+    },
+    {
+      "question_id": "SEL_PAR_N_C1_02",
+      "topic": "공원",
+      "preview": "When you go to a park, what activities do you usually enjoy? Describe what you like to do there, whether it’s for relaxa"
+    },
+    {
+      "question_id": "SEL_PAR_N_C1_03",
+      "topic": "공원",
+      "preview": "Recent experience in a park) Tell me about the last time you went to a park recently. When was it? Which Park did you go"
+    },
+    {
+      "question_id": "SEL_PAR_N_C1_04",
+      "topic": "공원",
+      "preview": "How you became interested in going to parks) How did you first become interested in going to parks? When and where did y"
+    },
+    {
+      "question_id": "SEL_PAR_N_C1_05",
+      "topic": "공원",
+      "preview": "Memorable experience in a park) Tell me about a memorable or unforgettable experience you had at a park. Who were you wi"
+    },
+    {
+      "question_id": "SEL_SHO_A_C7_01",
+      "topic": "쇼핑",
+      "preview": "You indicated in the survey that you go shopping. Going shopping has changed a great deal over the years. Talk about the"
+    },
+    {
+      "question_id": "SEL_SHO_A_C7_02",
+      "topic": "쇼핑",
+      "preview": "What kinds of products and services do you hear shoppers are talking about the most these days? Why do you think they ar"
+    },
+    {
+      "question_id": "SEL_SHO_N_C3_03",
+      "topic": "쇼핑",
+      "preview": "Where do you go when you go shopping for something? What do you buy when you go there? What is special about that place?"
+    },
+    {
+      "question_id": "SEL_SHO_N_C3_04",
+      "topic": "쇼핑",
+      "preview": "Describe a typical shopping day for you. Tell me everything you do from the moment you leave home until you return."
+    },
+    {
+      "question_id": "SEL_SHO_N_C3_05",
+      "topic": "쇼핑",
+      "preview": "Tell me about your early memories of shopping and how you came to enjoy it so much. You might include information about "
+    },
+    {
+      "question_id": "SEL_SHO_N_C3_06",
+      "topic": "쇼핑",
+      "preview": "Think about your early memories of shopping. Is there a store or a market that you remember from your childhood? Describ"
+    },
+    {
+      "question_id": "SEL_SHO_N_C3_07",
+      "topic": "쇼핑",
+      "preview": "Sometimes, funny or unexpected things happen while shopping. Tell me the story of a memorable shopping experience you ha"
+    },
+    {
+      "question_id": "SEL_SHO_N_C3_08",
+      "topic": "쇼핑",
+      "preview": "You have probably had many interesting experiences while shopping, some good, some funny, some problematic. Tell me abou"
+    },
+    {
+      "question_id": "SEL_TRI_A1_02",
+      "topic": "국내여행",
+      "preview": "When people talk about traveling, what are the main issues or concerns they typically raise or discuss? What has caused "
+    },
+    {
+      "question_id": "SEL_TRI_N3_02",
+      "topic": "국내여행",
+      "preview": "Can you tell me all the things you do in order to prepare to take trips?"
+    },
+    {
+      "question_id": "SEL_TRI_N3_03",
+      "topic": "국내여행",
+      "preview": "Tell me about some of the trips you took in your youth. Where did you go? Who did you go with? And what did you see or d"
+    },
+    {
+      "question_id": "SEL_TRI_N3_04",
+      "topic": "국내여행",
+      "preview": "Traveling can lead to many kinds of interesting, funny and unexpected experiences. Tell me about one travel experience y"
+    },
+    {
+      "question_id": "SEL_TV_A_C5_01",
+      "topic": "TV",
+      "preview": "Have changes in audio visual technology such as cable TV, big screen TVs, computers, tablets, phones and video formats c"
+    },
+    {
+      "question_id": "SEL_TV_A_C5_02",
+      "topic": "TV",
+      "preview": "What are some of the new trends that you have noticed regarding TV, movie viewing, shows or technology? What are people "
+    },
+    {
+      "question_id": "SEL_TV_N_C4_01",
+      "topic": "TV",
+      "preview": "Tell me more about the kinds of TV shows or movies that you like to watch."
+    },
+    {
+      "question_id": "SEL_TV_N_C4_02",
+      "topic": "TV",
+      "preview": "Tell me what you usually do when you watch TV shows or movies. When do you watch it? Who do you watch it with? Where do "
+    },
+    {
+      "question_id": "SEL_TV_N_C4_03",
+      "topic": "TV",
+      "preview": "Pick your favorite TV or movie character and tell me all the things that character does in the show or movie."
+    },
+    {
+      "question_id": "SEL_TV_N_C4_04",
+      "topic": "TV",
+      "preview": "TV shows have definitely changed over time. Describe for me the TV shows that you remember from your childhood. What was"
+    },
+    {
+      "question_id": "SEL_TV_N_C4_05",
+      "topic": "TV",
+      "preview": "Tell me how you first became interested in watching TV or movies, and how that interest has changed or developed from wh"
+    },
+    {
+      "question_id": "SEL_VAC_A_C3_02",
+      "topic": "집에서 보내는 휴가",
+      "preview": "Experts state that vacations are important for every individual. Take a minute and report for me the important benefits "
+    },
+    {
+      "question_id": "SEL_VAC_N_C2_02",
+      "topic": "집에서 보내는 휴가",
+      "preview": "Describe some of the things that you would like to do with the people you visit or see during your vacation."
+    },
+    {
+      "question_id": "SEL_VAC_N_C2_04",
+      "topic": "집에서 보내는 휴가",
+      "preview": "Could you tell me about an unusual, unexpected, or satisfying experience you had while at home on vacation? Tell me all "
+    }
+  ]
+}

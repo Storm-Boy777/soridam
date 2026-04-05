@@ -49,7 +49,7 @@ const modules = [
   },
   {
     icon: ClipboardList,
-    iconBg: "bg-accent-50 text-accent-500",
+    iconBg: "bg-primary-50 text-primary-500",
     title: "모의고사",
     desc: "실전 모의고사 응시 · 평가 리포트 · 나의 이력",
     href: "/mock-exam",
@@ -222,14 +222,7 @@ function SidePanelContent({ targetGrade, currentGrade, examDate }: { targetGrade
 /* ── 서버 사전 조회 ── */
 
 async function DashboardStatsLoader({ userId }: { userId: string }) {
-  const supabase = await createServerSupabaseClient();
-  const { data: credits } = await supabase
-    .from("user_credits")
-    .select("current_plan, plan_mock_exam_credits, mock_exam_credits, plan_script_credits, script_credits, plan_tutoring_credits, tutoring_credits, plan_expires_at")
-    .eq("user_id", userId)
-    .single();
-
-  return <DashboardStats userId={userId} initialCredits={credits ?? undefined} />;
+  return <DashboardStats userId={userId} />;
 }
 
 /* ── 베타 섹션 서버 로더 ── */
@@ -273,7 +266,7 @@ export default async function DashboardPage() {
       <div>
         <h1 className="text-xl font-bold text-foreground sm:text-2xl">대시보드</h1>
         <p className="mt-0.5 text-sm text-foreground-secondary sm:mt-1 sm:text-base">
-          하루오픽과 함께 OPIc 목표 등급을 달성해 보세요.
+          소리담과 함께 OPIc 목표 등급을 달성해 보세요.
         </p>
       </div>
 

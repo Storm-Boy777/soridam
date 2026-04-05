@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>만능패턴 — 묘사 유형 (하루오픽)</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Pretendard Variable', -apple-system, sans-serif;
+    background: #FAF6F1;
+    color: #3A2E25;
+    line-height: 1.6;
+    padding: 0 0 60px;
+  }
+
+  /* ── 헤더 ── */
+  .header {
+    background: linear-gradient(135deg, #D4835E 0%, #A5603F 100%);
+    color: white;
+    padding: 32px 20px 28px;
+    text-align: center;
+  }
+  .header h1 { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
+  .header .subtitle { font-size: 14px; opacity: 0.85; }
+  .header .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 12px; padding: 6px 16px;
+    background: rgba(255,255,255,0.2); border-radius: 999px;
+    font-size: 13px; font-weight: 600;
+  }
+
+  .container { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+
+  /* ── Phase 섹션 ── */
+  .phase-section { margin-top: 32px; }
+
+  .phase-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 16px; padding-bottom: 12px;
+    border-bottom: 2px solid #EAE0D5;
+  }
+  .phase-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 12px; border-radius: 999px;
+    font-size: 12px; font-weight: 700;
+    white-space: nowrap;
+  }
+  .phase-badge.green { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+  .phase-badge.blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+  .phase-badge.orange { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+  .phase-badge.red { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+  .phase-title { font-size: 18px; font-weight: 800; }
+  .phase-count { font-size: 12px; color: #8B7E72; }
+  .phase-desc { font-size: 13px; color: #8B7E72; margin-top: -8px; margin-bottom: 16px; }
+
+  /* ── 패턴 카드 ── */
+  .pattern-card {
+    border-radius: 16px; overflow: hidden;
+    border: 1px solid #EAE0D5;
+    background: #FFFCF8;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+    margin-bottom: 16px;
+    transition: box-shadow 0.2s;
+  }
+  .pattern-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.08); }
+
+  /* 상단 다크 영역 */
+  .card-top { padding: 20px; position: relative; }
+  .card-top.green { background: linear-gradient(135deg, #064e3b, #065f46, #0f766e); }
+  .card-top.blue { background: linear-gradient(135deg, #1e3a5f, #1e40af, #312e81); }
+  .card-top.orange { background: linear-gradient(135deg, #7c2d12, #92400e, #78350f); }
+  .card-top.red { background: linear-gradient(135deg, #7f1d1d, #9f1239, #831843); }
+
+  .card-number {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 50%;
+    font-size: 13px; font-weight: 700;
+    margin-right: 10px; flex-shrink: 0;
+    vertical-align: top;
+  }
+  .card-number.green { background: rgba(16,185,129,0.3); color: #6ee7b7; }
+  .card-number.blue { background: rgba(59,130,246,0.3); color: #93c5fd; }
+  .card-number.orange { background: rgba(249,115,22,0.3); color: #fdba74; }
+  .card-number.red { background: rgba(239,68,68,0.3); color: #fca5a5; }
+
+  .card-template {
+    display: inline;
+    color: white; font-size: 17px; font-weight: 700;
+    line-height: 1.5;
+  }
+  .card-template .var { color: #34d399; font-weight: 800; }
+
+  .card-meta {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 14px; padding-left: 38px;
+  }
+  .tts-btn {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: rgba(255,255,255,0.1); border: none;
+    color: rgba(255,255,255,0.7); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .tts-btn:hover { background: rgba(255,255,255,0.2); color: white; }
+  .tts-btn.playing { background: rgba(255,255,255,0.2); color: white; }
+
+  .card-translation {
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.7);
+    padding: 6px 14px; border-radius: 999px;
+    font-size: 12px; line-height: 1.4;
+  }
+
+  /* 예시 토글 */
+  .examples-toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 20px;
+    font-size: 12px; font-weight: 500; color: #8B7E72;
+    cursor: pointer; border: none; background: none; width: 100%;
+    transition: background 0.2s;
+  }
+  .examples-toggle:hover { background: #F3ECE4; }
+  .examples-toggle svg { transition: transform 0.2s; }
+  .examples-toggle.open svg { transform: rotate(180deg); }
+
+  /* 예시 목록 */
+  .examples { border-top: 1px solid #EAE0D540; display: none; }
+  .examples.show { display: block; }
+
+  .example-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 20px;
+    border-bottom: 1px solid #EAE0D540;
+  }
+  .example-row:last-child { border-bottom: none; }
+
+  .topic-tag {
+    flex-shrink: 0; margin-top: 2px;
+    padding: 2px 10px; border-radius: 999px;
+    background: #FDF5F0; color: #A5603F;
+    font-size: 11px; font-weight: 600;
+  }
+  .example-sentence { font-size: 14px; color: #3A2E25; line-height: 1.5; }
+  .example-sentence .hl {
+    color: #C07350; text-decoration: underline;
+    text-decoration-color: #D4835E80;
+    text-underline-offset: 3px; font-weight: 600;
+  }
+
+  /* ── 푸터 ── */
+  .footer {
+    margin-top: 48px; padding: 24px 20px;
+    background: #3A2E25; color: #B5A99D;
+    text-align: center; font-size: 12px; border-radius: 16px 16px 0 0;
+  }
+  .footer strong { color: #EAE0D5; }
+
+  /* ── 반응형 ── */
+  @media (min-width: 768px) {
+    .header { padding: 48px 20px 40px; }
+    .header h1 { font-size: 36px; }
+    .container { padding: 0 24px; }
+    .card-template { font-size: 19px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>만능패턴</h1>
+  <div class="subtitle">어떤 주제에도 바로 쓸 수 있는 OPIc 필수 패턴</div>
+  <div class="badge">📝 묘사 유형 · 30개 패턴</div>
+</div>
+
+<div class="container">
+
+  <!-- Phase 1 -->
+  <div class="phase-section">
+    <div class="phase-header">
+      <span class="phase-badge green">🟢 Phase 1</span>
+      <span class="phase-title">도입부 패턴</span>
+      <span class="phase-count">5개</span>
+    </div>
+    <p class="phase-desc">질문을 듣고 당황하지 않고, 자연스럽게 주제를 던지며 시간을 버는 마법의 문장들</p>
+
+    <!-- 1 -->
+    <div class="pattern-card">
+      <div class="card-top green">
+        <span class="card-number green">1</span>
+        <span class="card-template">When it comes to <span class="var">[주제]</span>, I'd have to say my favorite is <span class="var">[구체적 대상]</span>.</span>
+        <div class="card-meta">
+          <button class="tts-btn" onclick="speak(this)" data-text="When it comes to something, I'd have to say my favorite is something.">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+          </button>
+          <span class="card-translation">[주제]에 대해 말하자면, 제가 가장 좋아하는 건 [구체적 대상]이에요.</span>
+        </div>
+      </div>
+      <button class="examples-toggle" onclick="toggleExamples(this)">
+        <span>예시 보기 (3개 주제)</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="examples">
+        <div class="example-row"><span class="topic-tag">음악</span><p class="example-sentence">When it comes to <span class="hl">music</span>, I'd have to say my favorite is <span class="hl">K-pop</span>.</p></div>
+        <div class="example-row"><span class="topic-tag">음식점</span><p class="example-sentence">When it comes to <span class="hl">restaurants</span>, I'd have to say my favorite is <span class="hl">the one near my office</span>.</p></div>
+        <div class="example-row"><span class="topic-tag">국내여행</span><p class="example-sentence">When it comes to <span class="hl">domestic travel</span>, I'd have to say my favorite is <span class="hl">Jeju Island</span>.</p></div>
+      </div>
+    </div>
+
+    <!-- 2 -->
+    <div class="pattern-card">
+      <div class="card-top green">
+        <span class="card-number green">2</span>
+        <span class="card-template">I'm going to tell you about <span class="var">[대상]</span>. It's a place/thing I really love.</span>
+        <div class="card-meta">
+          <button class="tts-btn" onclick="speak(this)" data-text="I'm going to tell you about something. It's a place I really love.">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+          </button>
+          <span class="card-translation">[대상]에 대해 말해볼게요. 제가 정말 좋아하는 곳/것이거든요.</span>
+        </div>
+      </div>
+      <button class="examples-toggle" onclick="toggleExamples(this)">
+        <span>예시 보기 (3개 주제)</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="examples">
+        <div class="example-row"><span class="topic-tag">헬스클럽</span><p class="example-sentence">I'm going to tell you about <span class="hl">my gym</span>. It's a place I really love.</p></div>
+        <div class="example-row"><span class="topic-tag">집</span><p class="example-sentence">I'm going to tell you about <span class="hl">my house</span>. It's a place I really love.</p></div>
+        <div class="example-row"><span class="topic-tag">영화</span><p class="example-sentence">I'm going to tell you about <span class="hl">movies</span>. It's a thing I really love.</p></div>
+      </div>
+    </div>
+
+    <!-- 3 -->
+    <div class="pattern-card">
+      <div class="card-top green">
+        <span class="card-number green">3</span>
+        <span class="card-template">Actually, there are many <span class="var">[주제]</span> in my country, but I usually go to <span class="var">[대상]</span>.</span>
+        <div class="card-meta">
+          <button class="tts-btn" onclick="speak(this)" data-text="Actually, there are many options in my country, but I usually go to my favorite place.">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+          </button>
+          <span class="card-translation">사실 우리나라엔 많은 [주제]가 있지만, 전 주로 [대상]에 가요.</span>
+        </div>
+      </div>
+      <button class="examples-toggle" onclick="toggleExamples(this)">
+        <span>예시 보기 (3개 주제)</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="examples">
+        <div class="example-row"><span class="topic-tag">해외여행</span><p class="example-sentence">Actually, there are many <span class="hl">travel options</span>, but I usually go to <span class="hl">Japan</span>.</p></div>
+        <div class="example-row"><span class="topic-tag">공연</span><p class="example-sentence">Actually, there are many <span class="hl">concerts</span> in my country, but I usually go to <span class="hl">K-pop shows</span>.</p></div>
+        <div class="example-row"><span class="topic-tag">쇼핑</span><p class="example-sentence">Actually, there are many <span class="hl">shopping malls</span> in my country, but I usually go to <span class="hl">Gangnam</span>.</p></div>
+      </div>
+    </div>
+
+    <!-- 4 -->
+    <div class="pattern-card">
+      <div class="card-top green">
+        <span class="card-number green">4</span>
+        <span class="card-template">Let me tell you about my favorite <span class="var">[대상]</span>. It is located in <span class="var">[장소]</span>.</span>
+        <div class="card-meta">
+          <button class="tts-btn" onclick="speak(this)" data-text="Let me tell you about my favorite place. It is located near my apartment.">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+          </button>
+          <span class="card-translation">제가 가장 좋아하는 [대상]을 말해볼게요. 거긴 [장소]에 위치해 있어요.</span>
+        </div>
+      </div>
+      <button class="examples-toggle" onclick="toggleExamples(this)">
+        <span>예시 보기 (3개 주제)</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="examples">
+        <div class="example-row"><span class="topic-tag">음식점</span><p class="example-sentence">Let me tell you about my favorite <span class="hl">restaurant</span>. It is located in <span class="hl">Hongdae</span>.</p></div>
+        <div class="example-row"><span class="topic-tag">헬스클럽</span><p class="example-sentence">Let me tell you about my favorite <span class="hl">gym</span>. It is located <span class="hl">near my apartment</span>.</p></div>
+        <div class="example-row"><span class="topic-tag">직장</span><p class="example-sentence">Let me tell you about my <span class="hl">workplace</span>. It is located in <span class="hl">Seoul</span>.</p></div>
+      </div>
+    </div>
+
+    <!-- 5 -->
+    <div class="pattern-card">
+      <div class="card-top green">
+        <span class="card-number green">5</span>
+        <span class="card-template">I frequently visit/use <span class="var">[대상]</span> whenever I have free time.</span>
+        <div class="card-meta">
+          <button class="tts-btn" onclick="speak(this)" data-text="I frequently visit cafes whenever I have free time.">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+          </button>
+          <span class="card-translation">전 시간 날 때마다 [대상]을 자주 방문해요/사용해요.</span>
+        </div>
+      </div>
+      <button class="examples-toggle" onclick="toggleExamples(this)">
+        <span>예시 보기 (3개 주제)</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="examples">
+        <div class="example-row"><span class="topic-tag">자유시간</span><p class="example-sentence">I frequently visit <span class="hl">cafes</span> whenever I have free time.</p></div>
+        <div class="example-row"><span class="topic-tag">인터넷</span><p class="example-sentence">I frequently use <span class="hl">the internet</span> whenever I have free time.</p></div>
+        <div class="example-row"><span class="topic-tag">텔레비전</span><p class="example-sentence">I frequently <span class="hl">watch TV</span> whenever I have free time.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 2 -->
+  <div class="phase-section">
+    <div class="phase-header">
+      <span class="phase-badge blue">🔵 Phase 2</span>
+      <span class="phase-title">전개 패턴</span>
+      <span class="phase-count">10개</span>
+    </div>
+    <p class="phase-desc">본격적으로 외관, 시설, 분위기, 그리고 거기서 내가 주로 하는 행동을 묘사하는 템플릿</p>
+
+    <div class="pattern-card"><div class="card-top blue"><span class="card-number blue">1</span><span class="card-template">The first thing you notice is that it is very <span class="var">[형용사]</span>.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="The first thing you notice is that it is very cozy."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">딱 처음 보면 거기가 아주 [넓은/아늑한/현대적인 등]하다는 걸 알 수 있어요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">집</span><p class="example-sentence">The first thing you notice is that it is very <span class="hl">cozy</span>.</p></div><div class="example-row"><span class="topic-tag">헬스클럽</span><p class="example-sentence">The first thing you notice is that it is very <span class="hl">spacious</span>.</p></div><div class="example-row"><span class="topic-tag">호텔</span><p class="example-sentence">The first thing you notice is that it is very <span class="hl">modern</span>.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top blue"><span class="card-number blue">2</span><span class="card-template">It has a great atmosphere, so many people visit there to <span class="var">[동사]</span>.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="It has a great atmosphere, so many people visit there to enjoy the food."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">분위기가 엄청 좋아서, 많은 사람들이 [~하러] 거길 찾아요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">음식점</span><p class="example-sentence">It has a great atmosphere, so many people visit there to <span class="hl">enjoy Korean food</span>.</p></div><div class="example-row"><span class="topic-tag">공연</span><p class="example-sentence">It has a great atmosphere, so many people visit there to <span class="hl">enjoy live music</span>.</p></div><div class="example-row"><span class="topic-tag">지형</span><p class="example-sentence">It has a great atmosphere, so many people visit there to <span class="hl">take pictures</span>.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top blue"><span class="card-number blue">3</span><span class="card-template">What I like most about this <span class="var">[대상]</span> is <span class="var">[명사/동명사]</span>.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="What I like most about this place is the beautiful view."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">이 [대상]에서 제가 가장 좋아하는 점은 [~라는 것]이에요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">집</span><p class="example-sentence">What I like most about this house is <span class="hl">the view from the window</span>.</p></div><div class="example-row"><span class="topic-tag">직장</span><p class="example-sentence">What I like most about this company is <span class="hl">the flexible work hours</span>.</p></div><div class="example-row"><span class="topic-tag">가전제품</span><p class="example-sentence">What I like most about this appliance is <span class="hl">its convenience</span>.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top blue"><span class="card-number blue">4</span><span class="card-template">Inside the <span class="var">[장소]</span>, you can see <span class="var">[명사]</span> everywhere.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="Inside the building, you can see decorations everywhere."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">[장소] 안에 들어가면, 어디서나 [~]을 볼 수 있어요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">쇼핑</span><p class="example-sentence">Inside the shopping mall, you can see <span class="hl">various brands</span> everywhere.</p></div><div class="example-row"><span class="topic-tag">호텔</span><p class="example-sentence">Inside the hotel, you can see <span class="hl">beautiful decorations</span> everywhere.</p></div><div class="example-row"><span class="topic-tag">헬스클럽</span><p class="example-sentence">Inside the gym, you can see <span class="hl">exercise equipment</span> everywhere.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top blue"><span class="card-number blue">5</span><span class="card-template">They offer a wide variety of <span class="var">[명사]</span>.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="They offer a wide variety of programs."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">거긴 아주 다양한 [메뉴/서비스/시설 등]을 제공해요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">음식점</span><p class="example-sentence">They offer a wide variety of <span class="hl">Korean dishes</span>.</p></div><div class="example-row"><span class="topic-tag">헬스클럽</span><p class="example-sentence">They offer a wide variety of <span class="hl">fitness programs</span>.</p></div><div class="example-row"><span class="topic-tag">호텔</span><p class="example-sentence">They offer a wide variety of <span class="hl">room types</span>.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top blue"><span class="card-number blue">6</span><span class="card-template">As for the exterior/interior, it looks very <span class="var">[형용사]</span>.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="As for the interior, it looks very stylish."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">외관/내부에 대해 말하자면, 굉장히 [깔끔해/전통적이어] 보여요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">집</span><p class="example-sentence">As for the interior, it looks very <span class="hl">clean and organized</span>.</p></div><div class="example-row"><span class="topic-tag">미용실</span><p class="example-sentence">As for the interior, it looks very <span class="hl">stylish</span>.</p></div><div class="example-row"><span class="topic-tag">은행</span><p class="example-sentence">As for the exterior, it looks very <span class="hl">modern</span>.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top blue"><span class="card-number blue">7</span><span class="card-template">It takes about <span class="var">[숫자]</span> minutes to get there from my house.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="It takes about 30 minutes to get there from my house."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">우리 집에서 거기까지 가는 데 한 [숫자]분 정도 걸려요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">직장</span><p class="example-sentence">It takes about <span class="hl">30 minutes</span> to get there from my house.</p></div><div class="example-row"><span class="topic-tag">헬스클럽</span><p class="example-sentence">It takes about <span class="hl">10 minutes</span> to get there from my house.</p></div><div class="example-row"><span class="topic-tag">병원</span><p class="example-sentence">It takes about <span class="hl">15 minutes</span> to get there from my house.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top blue"><span class="card-number blue">8</span><span class="card-template">I usually go there with <span class="var">[사람]</span>.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="I usually go there with my friends."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">전 보통 거길 [친구들/가족]이랑 같이 가요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">영화</span><p class="example-sentence">I usually go there with <span class="hl">my friends</span>.</p></div><div class="example-row"><span class="topic-tag">가족/친구</span><p class="example-sentence">I usually go there with <span class="hl">my family</span>.</p></div><div class="example-row"><span class="topic-tag">모임</span><p class="example-sentence">I usually go there with <span class="hl">my coworkers</span>.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top blue"><span class="card-number blue">9</span><span class="card-template">Whenever I am there, I normally <span class="var">[동사]</span>.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="Whenever I am there, I normally read a book."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">거기 갈 때마다, 전 보통 [~해요].</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">자유시간</span><p class="example-sentence">Whenever I am there, I normally <span class="hl">read a book and drink coffee</span>.</p></div><div class="example-row"><span class="topic-tag">헬스클럽</span><p class="example-sentence">Whenever I am there, I normally <span class="hl">do weight training for an hour</span>.</p></div><div class="example-row"><span class="topic-tag">국내여행</span><p class="example-sentence">Whenever I am there, I normally <span class="hl">try the local food</span>.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top blue"><span class="card-number blue">10</span><span class="card-template">It is fully equipped with <span class="var">[명사]</span>.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="It is fully equipped with modern facilities."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">거긴 [~]이 아주 잘 갖춰져 있어요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">헬스클럽</span><p class="example-sentence">It is fully equipped with <span class="hl">modern exercise machines</span>.</p></div><div class="example-row"><span class="topic-tag">집</span><p class="example-sentence">It is fully equipped with <span class="hl">the latest home appliances</span>.</p></div><div class="example-row"><span class="topic-tag">호텔</span><p class="example-sentence">It is fully equipped with <span class="hl">comfortable furniture and free Wi-Fi</span>.</p></div></div></div>
+  </div>
+
+  <!-- Phase 3 -->
+  <div class="phase-section">
+    <div class="phase-header">
+      <span class="phase-badge orange">🟠 Phase 3</span>
+      <span class="phase-title">감정 패턴</span>
+      <span class="phase-count">10개</span>
+    </div>
+    <p class="phase-desc">OPIc 채점관이 AL/IH를 줄 때 가장 중요하게 보는 '나의 감정과 이유'를 덧붙이는 치트키 문장들</p>
+
+    <div class="pattern-card"><div class="card-top orange"><span class="card-number orange">1</span><span class="card-template">I really love this <span class="var">[대상]</span> because it helps me relieve my stress.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="I really love this because it helps me relieve my stress."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">제가 이 [대상]을 정말 좋아하는 이유는 제 스트레스를 풀어주기 때문이에요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">음악</span><p class="example-sentence">I really love <span class="hl">music</span> because it helps me relieve my stress.</p></div><div class="example-row"><span class="topic-tag">자전거</span><p class="example-sentence">I really love <span class="hl">cycling</span> because it helps me relieve my stress.</p></div><div class="example-row"><span class="topic-tag">영화</span><p class="example-sentence">I really love <span class="hl">watching movies</span> because it helps me relieve my stress.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top orange"><span class="card-number orange">2</span><span class="card-template">The staff/people there are always kind and welcoming.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="The staff there are always kind and welcoming."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">거기 직원들/사람들은 항상 친절하고 반갑게 맞아줘요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">미용실</span><p class="example-sentence">The staff at <span class="hl">the hair salon</span> are always kind and welcoming.</p></div><div class="example-row"><span class="topic-tag">병원</span><p class="example-sentence">The staff at <span class="hl">the hospital</span> are always kind and welcoming.</p></div><div class="example-row"><span class="topic-tag">음식점</span><p class="example-sentence">The people at <span class="hl">the restaurant</span> are always kind and welcoming.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top orange"><span class="card-number orange">3</span><span class="card-template">It makes me feel <span class="var">[감정]</span> whenever I use/visit it.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="It makes me feel relaxed whenever I visit it."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">그걸 사용할/방문할 때마다 전 [편안한/활기찬] 기분이 들어요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">건강</span><p class="example-sentence">It makes me feel <span class="hl">energetic</span> whenever I work out.</p></div><div class="example-row"><span class="topic-tag">음악</span><p class="example-sentence">It makes me feel <span class="hl">relaxed</span> whenever I listen to music.</p></div><div class="example-row"><span class="topic-tag">국내여행</span><p class="example-sentence">It makes me feel <span class="hl">refreshed</span> whenever I travel.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top orange"><span class="card-number orange">4</span><span class="card-template">To be honest, I can't imagine my life without <span class="var">[대상]</span>.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="To be honest, I can't imagine my life without it."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">솔직히 말해서, [대상] 없는 제 삶은 상상할 수가 없네요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">인터넷</span><p class="example-sentence">To be honest, I can't imagine my life without <span class="hl">the internet</span>.</p></div><div class="example-row"><span class="topic-tag">전화기</span><p class="example-sentence">To be honest, I can't imagine my life without <span class="hl">my smartphone</span>.</p></div><div class="example-row"><span class="topic-tag">음악</span><p class="example-sentence">To be honest, I can't imagine my life without <span class="hl">music</span>.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top orange"><span class="card-number orange">5</span><span class="card-template">It's totally worth the time and money.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="It's totally worth the time and money."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">시간과 돈을 투자할 가치가 충분해요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">헬스클럽</span><p class="example-sentence"><span class="hl">The gym membership</span> is totally worth the time and money.</p></div><div class="example-row"><span class="topic-tag">해외여행</span><p class="example-sentence"><span class="hl">Traveling abroad</span> is totally worth the time and money.</p></div><div class="example-row"><span class="topic-tag">공연</span><p class="example-sentence"><span class="hl">Going to concerts</span> is totally worth the time and money.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top orange"><span class="card-number orange">6</span><span class="card-template">For these reasons, it has become a huge part of my daily routine.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="For these reasons, it has become a huge part of my daily routine."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">이런 이유들 때문에, 그건 제 일상생활의 아주 큰 부분이 되었어요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">건강</span><p class="example-sentence">For these reasons, <span class="hl">working out</span> has become a huge part of my daily routine.</p></div><div class="example-row"><span class="topic-tag">음식</span><p class="example-sentence">For these reasons, <span class="hl">cooking</span> has become a huge part of my daily routine.</p></div><div class="example-row"><span class="topic-tag">인터넷</span><p class="example-sentence">For these reasons, <span class="hl">browsing the internet</span> has become a huge part of my daily routine.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top orange"><span class="card-number orange">7</span><span class="card-template">I feel so refreshed after I finish <span class="var">[동명사]</span>.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="I feel so refreshed after I finish exercising."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">[~을] 끝내고 나면 기분이 정말 상쾌해져요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">건강</span><p class="example-sentence">I feel so refreshed after I finish <span class="hl">exercising</span>.</p></div><div class="example-row"><span class="topic-tag">쇼핑</span><p class="example-sentence">I feel so refreshed after I finish <span class="hl">shopping</span>.</p></div><div class="example-row"><span class="topic-tag">자전거</span><p class="example-sentence">I feel so refreshed after I finish <span class="hl">cycling</span>.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top orange"><span class="card-number orange">8</span><span class="card-template">It's the perfect place/way to take a break from my busy life.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="It's the perfect way to take a break from my busy life."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">제 바쁜 일상 속에서 휴식을 취하기에 완벽한 곳/방법이에요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">국내여행</span><p class="example-sentence">Traveling is the perfect <span class="hl">way</span> to take a break from my busy life.</p></div><div class="example-row"><span class="topic-tag">자유시간</span><p class="example-sentence">Going to a cafe is the perfect <span class="hl">way</span> to take a break from my busy life.</p></div><div class="example-row"><span class="topic-tag">집에서 보내는 휴가</span><p class="example-sentence">Staying home is the perfect <span class="hl">way</span> to take a break from my busy life.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top orange"><span class="card-number orange">9</span><span class="card-template">I was really impressed by its <span class="var">[명사]</span>.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="I was really impressed by its quality."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">전 그것의 [퀄리티/서비스]에 정말 깊은 인상을 받았어요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">음식점</span><p class="example-sentence">I was really impressed by its <span class="hl">food quality</span>.</p></div><div class="example-row"><span class="topic-tag">호텔</span><p class="example-sentence">I was really impressed by its <span class="hl">customer service</span>.</p></div><div class="example-row"><span class="topic-tag">가전제품</span><p class="example-sentence">I was really impressed by its <span class="hl">performance</span>.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top orange"><span class="card-number orange">10</span><span class="card-template">It totally fits my personal taste.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="It totally fits my personal taste."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">그건 완전 제 개인적인 취향에 딱 맞아요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">패션</span><p class="example-sentence"><span class="hl">This brand's style</span> totally fits my personal taste.</p></div><div class="example-row"><span class="topic-tag">음악</span><p class="example-sentence"><span class="hl">This genre of music</span> totally fits my personal taste.</p></div><div class="example-row"><span class="topic-tag">가구</span><p class="example-sentence"><span class="hl">This kind of furniture</span> totally fits my personal taste.</p></div></div></div>
+  </div>
+
+  <!-- Phase 4 -->
+  <div class="phase-section">
+    <div class="phase-header">
+      <span class="phase-badge red">🔴 Phase 4</span>
+      <span class="phase-title">마무리 패턴</span>
+      <span class="phase-count">5개</span>
+    </div>
+    <p class="phase-desc">말문이 막혀서 정적이 흐르기 전에, '내 답변은 여기까지야'라고 깔끔하게 치고 빠지는 문장들</p>
+
+    <div class="pattern-card"><div class="card-top red"><span class="card-number red">1</span><span class="card-template">So, this is everything I can say about <span class="var">[대상]</span>.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="So, this is everything I can say about it."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">그래서, 이게 제가 [대상]에 대해 말할 수 있는 전부예요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">집</span><p class="example-sentence">So, this is everything I can say about <span class="hl">my house</span>.</p></div><div class="example-row"><span class="topic-tag">음식점</span><p class="example-sentence">So, this is everything I can say about <span class="hl">my favorite restaurant</span>.</p></div><div class="example-row"><span class="topic-tag">직장</span><p class="example-sentence">So, this is everything I can say about <span class="hl">my workplace</span>.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top red"><span class="card-number red">2</span><span class="card-template">Overall, I highly recommend this <span class="var">[대상]</span> to everyone.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="Overall, I highly recommend this to everyone."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">전반적으로, 전 이 [대상]을 모두에게 강력히 추천해요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">음식점</span><p class="example-sentence">Overall, I highly recommend this <span class="hl">restaurant</span> to everyone.</p></div><div class="example-row"><span class="topic-tag">헬스클럽</span><p class="example-sentence">Overall, I highly recommend this <span class="hl">gym</span> to everyone.</p></div><div class="example-row"><span class="topic-tag">가전제품</span><p class="example-sentence">Overall, I highly recommend this <span class="hl">product</span> to everyone.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top red"><span class="card-number red">3</span><span class="card-template">If you have a chance, you should definitely check it out.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="If you have a chance, you should definitely check it out."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">기회가 된다면, 꼭 한 번 가보세요/써보세요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">국내여행</span><p class="example-sentence">If you have a chance, you should definitely <span class="hl">visit Busan</span>.</p></div><div class="example-row"><span class="topic-tag">공연</span><p class="example-sentence">If you have a chance, you should definitely <span class="hl">see a K-pop concert</span>.</p></div><div class="example-row"><span class="topic-tag">음식</span><p class="example-sentence">If you have a chance, you should definitely <span class="hl">try Korean BBQ</span>.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top red"><span class="card-number red">4</span><span class="card-template">To sum up, <span class="var">[대상]</span> is my absolute favorite.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="To sum up, this is my absolute favorite."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">요약하자면, [대상]은 제 최애예요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">음악</span><p class="example-sentence">To sum up, <span class="hl">K-pop</span> is my absolute favorite.</p></div><div class="example-row"><span class="topic-tag">음식</span><p class="example-sentence">To sum up, <span class="hl">Korean BBQ</span> is my absolute favorite.</p></div><div class="example-row"><span class="topic-tag">영화</span><p class="example-sentence">To sum up, <span class="hl">action movies</span> are my absolute favorite.</p></div></div></div>
+
+    <div class="pattern-card"><div class="card-top red"><span class="card-number red">5</span><span class="card-template">I'm looking forward to going/using there again soon.</span><div class="card-meta"><button class="tts-btn" onclick="speak(this)" data-text="I'm looking forward to going there again soon."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button><span class="card-translation">조만간 또 거기 가길/그걸 쓰길 기대하고 있어요.</span></div></div><button class="examples-toggle" onclick="toggleExamples(this)"><span>예시 보기 (3개 주제)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="examples"><div class="example-row"><span class="topic-tag">해외여행</span><p class="example-sentence">I'm looking forward to <span class="hl">traveling abroad</span> again soon.</p></div><div class="example-row"><span class="topic-tag">공연</span><p class="example-sentence">I'm looking forward to <span class="hl">going to a concert</span> again soon.</p></div><div class="example-row"><span class="topic-tag">헬스클럽</span><p class="example-sentence">I'm looking forward to <span class="hl">going to the gym</span> again soon.</p></div></div></div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <strong>하루오픽</strong> · 만능패턴 묘사 유형 · 총 30개 패턴<br>
+  어떤 주제에도 바로 쓸 수 있는 OPIc 필수 패턴
+</div>
+
+<script>
+function toggleExamples(btn) {
+  const examples = btn.nextElementSibling;
+  examples.classList.toggle('show');
+  btn.classList.toggle('open');
+}
+
+let currentUtterance = null;
+function speak(btn) {
+  if (currentUtterance) {
+    speechSynthesis.cancel();
+    document.querySelectorAll('.tts-btn.playing').forEach(b => b.classList.remove('playing'));
+    if (currentUtterance._btn === btn) { currentUtterance = null; return; }
+  }
+  const text = btn.getAttribute('data-text');
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-US'; u.rate = 0.85; u.pitch = 1;
+  u._btn = btn;
+  btn.classList.add('playing');
+  u.onend = () => { btn.classList.remove('playing'); currentUtterance = null; };
+  u.onerror = () => { btn.classList.remove('playing'); currentUtterance = null; };
+  currentUtterance = u;
+  speechSynthesis.speak(u);
+}
+</script>
+
+</body>
+</html>

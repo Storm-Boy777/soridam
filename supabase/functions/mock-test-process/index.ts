@@ -14,6 +14,7 @@ import {
   getCheckboxType,
   TYPE_CHECKLISTS,
 } from "../_shared/question-type-map.ts";
+import { logApiUsage, estimateAudioDuration } from "../_shared/api-usage-logger.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -216,19 +217,43 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── 세션 user_id 조회 (로깅용) ──
+    const { data: sessionData } = await supabase
+      .from("mock_test_sessions")
+      .select("user_id")
+      .eq("session_id", session_id)
+      .single();
+    const userId = sessionData?.user_id || "";
+
     // ── 오디오 다운로드 ──
     const audioResp = await fetch(audio_url);
     if (!audioResp.ok) {
       throw new Error(`오디오 다운로드 실패 (${audioResp.status})`);
     }
     const audioBuffer = await audioResp.arrayBuffer();
+    const audioFileSize = audioBuffer.byteLength;
 
     // ── Whisper STT ──
+    const whisperStart = Date.now();
     const transcript = await withRetry(
       () => whisperSTT(audioBuffer),
       3,
       "Whisper STT",
     );
+    const whisperTimeMs = Date.now() - whisperStart;
+
+    // Whisper 사용량 로깅 (실패해도 메인 로직 중단 안 함)
+    logApiUsage(supabase, {
+      user_id: userId,
+      session_type: "mock_exam",
+      session_id: session_id,
+      feature: "mock_stt",
+      service: "openai_whisper",
+      model: "whisper-1",
+      ef_name: "mock-test-process",
+      audio_duration_sec: estimateAudioDuration(audioFileSize, "wav"),
+      processing_time_ms: whisperTimeMs,
+    }).catch((err) => console.error("[process] Whisper 로깅 실패:", err?.message));
 
     // 단어 수 / 필러 / WPM 계산
     const words = transcript.split(/\s+/).filter((w: string) => w.length > 0);
@@ -316,6 +341,7 @@ Deno.serve(async (req) => {
 
     // ── Azure 발음 평가 ──
     let pronunciationAssessment = null;
+    const azureStart = Date.now();
     try {
       pronunciationAssessment = await withRetry(
         () =>
@@ -328,6 +354,20 @@ Deno.serve(async (req) => {
         3,
         "Azure 발음 평가",
       );
+      const azureTimeMs = Date.now() - azureStart;
+
+      // Azure 사용량 로깅 (실패해도 메인 로직 중단 안 함)
+      logApiUsage(supabase, {
+        user_id: userId,
+        session_type: "mock_exam",
+        session_id: session_id,
+        feature: "mock_pronunciation",
+        service: "azure_speech",
+        model: "azure-pronunciation",
+        ef_name: "mock-test-process",
+        audio_duration_sec: audio_duration || estimateAudioDuration(audioFileSize, "wav"),
+        processing_time_ms: azureTimeMs,
+      }).catch((err) => console.error("[process] Azure 로깅 실패:", err?.message));
     } catch (azureErr) {
       // Azure 실패해도 GPT 평가는 진행 (발음 데이터 없이)
       console.error("Azure 발음 평가 실패 (계속 진행):", azureErr);

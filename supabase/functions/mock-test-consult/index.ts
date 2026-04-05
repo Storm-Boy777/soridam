@@ -14,12 +14,13 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logApiUsage } from "../_shared/api-usage-logger.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
 
-const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "https://haruopic.com,http://localhost:3001").split(",");
+const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "https://soridamhub.com,http://localhost:3001").split(",");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": ALLOWED_ORIGINS[0],
@@ -121,7 +122,7 @@ async function callGptConsult(
   userPrompt: string,
   responseFormat: Record<string, unknown>,
   model: string,
-): Promise<{ result: ConsultResult; tokensUsed: number }> {
+): Promise<{ result: ConsultResult; tokensUsed: number; promptTokens: number; completionTokens: number }> {
   const resp = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -148,8 +149,10 @@ async function callGptConsult(
   const json = await resp.json();
   const content = json.choices?.[0]?.message?.content || "{}";
   const tokensUsed = json.usage?.total_tokens || 0;
+  const promptTokens = json.usage?.prompt_tokens || 0;
+  const completionTokens = json.usage?.completion_tokens || 0;
 
-  return { result: JSON.parse(content) as ConsultResult, tokensUsed };
+  return { result: JSON.parse(content) as ConsultResult, tokensUsed, promptTokens, completionTokens };
 }
 
 // ── 메인 핸들러 ──
@@ -373,7 +376,7 @@ Deno.serve(async (req: Request) => {
 
     const responseFormat = JSON.parse(promptMap["consult_schema"]);
 
-    const { result, tokensUsed } = await withRetry(
+    const { result, tokensUsed, promptTokens, completionTokens } = await withRetry(
       () =>
         callGptConsult(
           promptMap["consult"],
@@ -386,6 +389,20 @@ Deno.serve(async (req: Request) => {
     );
 
     const processingTimeMs = Date.now() - startTime;
+
+    // API 사용량 로깅 (실패해도 메인 로직 중단 안 함)
+    logApiUsage(supabase, {
+      user_id: session.user_id,
+      session_type: "mock_exam",
+      session_id: session_id,
+      feature: "mock_consult",
+      service: "openai_chat",
+      model: model,
+      ef_name: "mock-test-consult",
+      tokens_in: promptTokens,
+      tokens_out: completionTokens,
+      processing_time_ms: processingTimeMs,
+    }).catch((err) => console.error("[consult] API 로깅 실패:", err?.message));
 
     console.log(
       `[consult] Q${question_number} (${questionType}): ` +

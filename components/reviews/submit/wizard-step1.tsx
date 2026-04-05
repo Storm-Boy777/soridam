@@ -630,11 +630,11 @@ export function WizardStep1({ onComplete, submissionId }: WizardStep1Props) {
             <div className="flex items-center gap-2">
               <ClipboardList size={16} className="text-primary-600" />
               <p className="text-sm font-semibold text-primary-800">
-                하루오픽 추천 서베이
+                소리담 추천 서베이
               </p>
             </div>
             <p className="mt-1.5 text-xs text-primary-600">
-              하루오픽의 모든 서비스는 이 서베이를 기반으로 설계되어 있어, 최소 노력으로 최대 성과를 낼 수 있습니다
+              소리담의 모든 서비스는 이 서베이를 기반으로 설계되어 있어, 최소 노력으로 최대 성과를 낼 수 있습니다
             </p>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">
               {/* 좌측: 기본 정보 (라디오 4개) */}
@@ -677,7 +677,7 @@ export function WizardStep1({ onComplete, submissionId }: WizardStep1Props) {
           {/* 추천 서베이 사용 여부 */}
           <div>
             <p className="mb-2.5 text-[13px] font-medium text-foreground">
-              하루오픽 추천 서베이를 사용했나요? <span className="text-accent-500">*</span>
+              소리담 추천 서베이를 사용했나요? <span className="text-accent-500">*</span>
             </p>
             {errors.used_recommended_survey?.message && (
               <p className="mb-2 text-xs text-accent-500">

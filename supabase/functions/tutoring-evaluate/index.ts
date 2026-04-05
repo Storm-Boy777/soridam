@@ -4,6 +4,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { loadPromptSet, buildMessages } from "../_shared/tutoring-prompts.ts";
+import { logApiUsage, extractChatUsage, estimateAudioDuration } from "../_shared/api-usage-logger.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -72,7 +73,7 @@ Deno.serve(async (req: Request) => {
     // 1. 드릴 데이터 조회
     const { data: drill } = await supabase
       .from("tutoring_drills")
-      .select("*, tutoring_focuses!inner(focus_code, session_id)")
+      .select("*, tutoring_focuses!inner(focus_code, session_id, tutoring_sessions!inner(user_id))")
       .eq("id", drill_id)
       .single();
     if (!drill) throw new Error("드릴을 찾을 수 없습니다");
@@ -106,6 +107,20 @@ Deno.serve(async (req: Request) => {
     const sttResult = await sttResponse.json();
     const transcript = sttResult.text ?? "";
     console.log(`[tutoring-evaluate] STT 완료: ${transcript.length}자`);
+
+    // API 사용량 로깅 (Whisper STT)
+    const tutoringUserId = drill.tutoring_focuses.tutoring_sessions.user_id;
+    const tutoringSessionId = drill.tutoring_focuses.session_id;
+    await logApiUsage(supabase, {
+      user_id: tutoringUserId,
+      session_type: "tutoring",
+      session_id: tutoringSessionId,
+      feature: "tutoring_evaluate_stt",
+      service: "openai_whisper",
+      model: "whisper-1",
+      ef_name: "tutoring-evaluate",
+      audio_duration_sec: estimateAudioDuration(audioBlob.size, "webm"),
+    });
 
     // 3. Speech meta
     const words = transcript.split(/\s+/).filter(Boolean);
@@ -152,8 +167,22 @@ Deno.serve(async (req: Request) => {
       };
 
       const messages = buildMessages(promptF, promptFInput);
-      layer2Result = await callGPT(messages, promptF.model);
+      const { content: layer2Content, usage: promptFUsage } = await callGPT(messages, promptF.model);
+      layer2Result = layer2Content;
       console.log(`[tutoring-evaluate] Layer 2 완료`);
+
+      // API 사용량 로깅 (Prompt F)
+      await logApiUsage(supabase, {
+        user_id: tutoringUserId,
+        session_type: "tutoring",
+        session_id: tutoringSessionId,
+        feature: "tutoring_evaluate_f",
+        service: "openai_chat",
+        model: promptF.model,
+        ef_name: "tutoring-evaluate",
+        tokens_in: promptFUsage.prompt_tokens,
+        tokens_out: promptFUsage.completion_tokens,
+      });
     }
 
     // 6. DB 업데이트
@@ -272,5 +301,5 @@ async function callGPT(messages: { role: string; content: string }[], model = "g
   });
   if (!response.ok) throw new Error(`GPT 에러: ${response.status}`);
   const data = await response.json();
-  return JSON.parse(data.choices?.[0]?.message?.content ?? "{}");
+  return { content: JSON.parse(data.choices?.[0]?.message?.content ?? "{}"), usage: extractChatUsage(data) };
 }

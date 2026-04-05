@@ -15,12 +15,12 @@ export const SurveyIntro = memo(function SurveyIntro({
       {/* 타이틀 */}
       <div className="mb-6 border-b border-border pb-4 lg:mb-8 lg:pb-6">
         <h1 className="text-2xl font-bold text-foreground lg:text-3xl">
-          하루오픽 서베이 (Background Survey)
+          소리담 서베이 (Background Survey)
         </h1>
         <p className="mt-2 text-sm text-foreground-secondary lg:text-base">
           실제 OPIc 시험의 서베이 항목입니다.{" "}
           <span className="font-semibold text-primary-500">
-            하루오픽 추천 항목을 동일하게 선택하세요!
+            소리담 추천 항목을 동일하게 선택하세요!
           </span>
         </p>
       </div>
@@ -193,12 +193,12 @@ export const SurveyIntro = memo(function SurveyIntro({
                 </div>
               </div>
               <p className="text-center text-xs font-semibold text-foreground">
-                하루오픽 권장 난이도
+                소리담 권장 난이도
               </p>
             </div>
             <p className="mt-3 text-xs leading-relaxed text-foreground-secondary">
               OPIc 시험은 시작 전 자신의 영어 수준을 1~6단계 중 선택하고, 7번
-              문제 이후 난이도를 상향·유지·하향 중 재조정합니다. 하루오픽의 모든
+              문제 이후 난이도를 상향·유지·하향 중 재조정합니다. 소리담의 모든
               콘텐츠는{" "}
               <span className="font-semibold text-foreground">5-5 기준</span>
               으로 구성되어 있으므로 실제 시험에서도 동일하게 선택하세요.
@@ -212,12 +212,12 @@ export const SurveyIntro = memo(function SurveyIntro({
                 <span className="text-sm">💡</span>
               </div>
               <h3 className="text-sm font-bold text-white lg:text-base">
-                하루오픽 OPIc 전략
+                소리담 OPIc 전략
               </h3>
             </div>
             <p className="mb-4 text-xs leading-relaxed text-border lg:text-sm">
               OPIc은 배경 설문과 난이도에 따라 출제 문제가 달라집니다.
-              하루오픽은{" "}
+              소리담은{" "}
               <span className="font-semibold text-secondary-500">
                 위 배경 설문 + 난이도 5-5 조합의 기출문제를 모두 수집
               </span>
@@ -232,7 +232,7 @@ export const SurveyIntro = memo(function SurveyIntro({
                   <span className="font-semibold text-white">
                     동일 선택 시
                   </span>{" "}
-                  — 하루오픽에서 연습한 문제가 실제 시험에 그대로 출제
+                  — 소리담에서 연습한 문제가 실제 시험에 그대로 출제
                 </p>
               </div>
               <div className="flex items-center gap-2.5 rounded-lg bg-white/10 p-3">
@@ -243,7 +243,7 @@ export const SurveyIntro = memo(function SurveyIntro({
                   <span className="font-semibold text-white">
                     다른 항목 선택 시
                   </span>{" "}
-                  — 하루오픽에서 훈련하지 못한 주제가 출제될 수 있음
+                  — 소리담에서 훈련하지 못한 주제가 출제될 수 있음
                 </p>
               </div>
             </div>

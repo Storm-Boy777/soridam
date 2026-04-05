@@ -47,7 +47,7 @@ const LEVEL_LABELS: Record<number, string> = { 1: "NH", 2: "IL", 3: "IM1", 4: "I
 function YAxisTick({ x, y, payload }: { x?: number; y?: number; payload?: { value: number } }) {
   const label = LEVEL_LABELS[payload?.value ?? 0] || "";
   return (
-    <text x={14} y={y} dy={4} fontSize={11} fill="var(--color-foreground-secondary, #8B7E72)" textAnchor="middle">
+    <text x={14} y={y} dy={4} fontSize={11} fill="var(--color-foreground-secondary, #6B6B7B)" textAnchor="middle">
       {label}
     </text>
   );
@@ -150,10 +150,10 @@ export function GradeProgressChart({ data }: GradeProgressChartProps) {
         <div className="min-h-0 flex-1" style={{ width: "100%", minHeight: 200 }}>
           <ResponsiveContainer>
             <ComposedChart data={chartDataWithMA} margin={{ top: 5, right: 15, bottom: 0, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border, #EAE0D5)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border, #E8E6E1)" vertical={false} />
               <XAxis
                 dataKey="label"
-                tick={{ fontSize: 11, fill: "var(--color-foreground-muted, #B5A99D)" }}
+                tick={{ fontSize: 11, fill: "var(--color-foreground-muted, #A0A0AF)" }}
                 axisLine={false}
                 tickLine={false}
               />
@@ -172,10 +172,10 @@ export function GradeProgressChart({ data }: GradeProgressChartProps) {
               <Line
                 type="stepAfter"
                 dataKey="levelY"
-                stroke="#D4835E"
+                stroke="#3A5BC7"
                 strokeWidth={2.5}
-                dot={{ r: 4, fill: "#D4835E", stroke: "#fff", strokeWidth: 2 }}
-                activeDot={{ r: 6, fill: "#D4835E", stroke: "#fff", strokeWidth: 2 }}
+                dot={{ r: 4, fill: "#3A5BC7", stroke: "#fff", strokeWidth: 2 }}
+                activeDot={{ r: 6, fill: "#3A5BC7", stroke: "#fff", strokeWidth: 2 }}
               />
 
               {/* 3회 이동 평균 (점선) */}
@@ -183,7 +183,7 @@ export function GradeProgressChart({ data }: GradeProgressChartProps) {
                 <Line
                   type="monotone"
                   dataKey="ma3"
-                  stroke="#D4835E"
+                  stroke="#3A5BC7"
                   strokeWidth={1}
                   strokeDasharray="4 4"
                   dot={false}

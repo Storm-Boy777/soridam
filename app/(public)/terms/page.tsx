@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "이용약관",
-  description: "하루오픽 서비스 이용약관",
+  description: "소리담 서비스 이용약관",
 };
 
 export default function TermsPage() {
@@ -21,7 +21,7 @@ export default function TermsPage() {
           </h2>
           <p className="mt-2">
             이 약관은 스투스 OPIc(이하 &quot;회사&quot;)이 제공하는
-            하루오픽(HaruOPIc) 서비스(이하 &quot;서비스&quot;)의 이용 조건 및
+            소리담(HaruOPIc) 서비스(이하 &quot;서비스&quot;)의 이용 조건 및
             절차, 회사와 회원 간의 권리·의무 및 책임사항을 규정함을 목적으로
             합니다.
           </p>
@@ -279,12 +279,12 @@ export default function TermsPage() {
           <p className="font-medium text-foreground">사업자 정보</p>
           <ul className="mt-2 space-y-0.5">
             <li>상호: 스투스 OPIc</li>
-            <li>대표자: 전다영</li>
+            <li>대표: 전다영</li>
             <li>사업자등록번호: 757-18-02318</li>
             <li>
               소재지: 경상북도 구미시 해마루공원로 80, 104동 1903호
             </li>
-            <li>이메일: haruopic@gmail.com</li>
+            <li>이메일: soridamhub@gmail.com</li>
           </ul>
         </section>
       </div>

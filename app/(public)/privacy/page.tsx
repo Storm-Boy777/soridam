@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "개인정보처리방침",
-  description: "하루오픽 개인정보처리방침",
+  description: "소리담 개인정보처리방침",
 };
 
 export default function PrivacyPage() {
@@ -203,7 +203,7 @@ export default function PrivacyPage() {
             <li>처리 정지 요구</li>
           </ul>
           <p className="mt-2">
-            권리 행사는 서비스 내 설정 또는 이메일(haruopic@gmail.com)로
+            권리 행사는 서비스 내 설정 또는 이메일(soridamhub@gmail.com)로
             요청할 수 있으며, 회사는 지체 없이 조치합니다.
           </p>
         </section>
@@ -233,7 +233,7 @@ export default function PrivacyPage() {
           <ul className="mt-2 space-y-0.5">
             <li>성명: 전다영</li>
             <li>직책: 대표</li>
-            <li>이메일: haruopic@gmail.com</li>
+            <li>이메일: soridamhub@gmail.com</li>
           </ul>
         </section>
 
@@ -254,12 +254,12 @@ export default function PrivacyPage() {
           <p className="font-medium text-foreground">사업자 정보</p>
           <ul className="mt-2 space-y-0.5">
             <li>상호: 스투스 OPIc</li>
-            <li>대표자: 전다영</li>
+            <li>대표: 전다영</li>
             <li>사업자등록번호: 757-18-02318</li>
             <li>
               소재지: 경상북도 구미시 해마루공원로 80, 104동 1903호
             </li>
-            <li>이메일: haruopic@gmail.com</li>
+            <li>이메일: soridamhub@gmail.com</li>
           </ul>
         </section>
       </div>

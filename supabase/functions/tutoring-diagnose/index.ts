@@ -5,6 +5,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { loadPromptSet, buildMessages } from "../_shared/tutoring-prompts.ts";
+import { logApiUsage, extractChatUsage } from "../_shared/api-usage-logger.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -144,8 +145,21 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[tutoring-diagnose] Prompt C 호출 중...`);
     const promptCMessages = buildMessages(promptC, promptCInput);
-    const promptCResult = await callGPT(promptCMessages, promptC.model);
+    const { content: promptCResult, usage: promptCUsage } = await callGPT(promptCMessages, promptC.model);
     console.log(`[tutoring-diagnose] Prompt C 완료: stable=${promptCResult.current_stable_level}`);
+
+    // API 사용량 로깅 (Prompt C)
+    await logApiUsage(supabase, {
+      user_id,
+      session_type: "tutoring",
+      session_id,
+      feature: "tutoring_diagnose_c",
+      service: "openai_chat",
+      model: promptC.model,
+      ef_name: "tutoring-diagnose",
+      tokens_in: promptCUsage.prompt_tokens,
+      tokens_out: promptCUsage.completion_tokens,
+    });
 
     // ============================================================
     // 4. Prompt D — 처방 생성
@@ -171,8 +185,21 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[tutoring-diagnose] Prompt D 호출 중...`);
     const promptDMessages = buildMessages(promptD, promptDInput);
-    const promptDResult = await callGPT(promptDMessages, promptD.model);
+    const { content: promptDResult, usage: promptDUsage } = await callGPT(promptDMessages, promptD.model);
     console.log(`[tutoring-diagnose] Prompt D 완료: focus ${promptDResult.weekly_focuses?.length}개`);
+
+    // API 사용량 로깅 (Prompt D)
+    await logApiUsage(supabase, {
+      user_id,
+      session_type: "tutoring",
+      session_id,
+      feature: "tutoring_diagnose_d",
+      service: "openai_chat",
+      model: promptD.model,
+      ef_name: "tutoring-diagnose",
+      tokens_in: promptDUsage.prompt_tokens,
+      tokens_out: promptDUsage.completion_tokens,
+    });
 
     // ============================================================
     // 5. DB 업데이트
@@ -277,5 +304,5 @@ async function callGPT(
   const data = await response.json();
   const content = data.choices?.[0]?.message?.content;
   if (!content) throw new Error("GPT 응답이 비어있습니다");
-  return JSON.parse(content);
+  return { content: JSON.parse(content), usage: extractChatUsage(data) };
 }

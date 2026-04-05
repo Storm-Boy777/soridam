@@ -43,7 +43,7 @@ export function EvalWaiting({
       hasNotifiedRef.current = true;
 
       // 브라우저 탭 제목 업데이트 (UX 4-2)
-      document.title = "🎯 평가 완료! — 하루오픽 모의고사";
+      document.title = "🎯 평가 완료! — 소리담 모의고사";
 
       // Notification API (UX 4-2)
       if (document.hidden && "Notification" in window && Notification.permission === "granted") {
@@ -59,9 +59,9 @@ export function EvalWaiting({
 
   // 평가 대기 중 탭 제목 업데이트
   useEffect(() => {
-    document.title = "평가 진행 중... — 하루오픽 모의고사";
+    document.title = "평가 진행 중... — 소리담 모의고사";
     return () => {
-      document.title = "모의고사 | 하루오픽";
+      document.title = "모의고사 | 소리담";
     };
   }, []);
 

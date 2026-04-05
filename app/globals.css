@@ -6,59 +6,59 @@
     system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo",
     "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji",
     "Segoe UI Symbol", sans-serif;
-  --font-display: var(--font-jua);
-  --font-serif: var(--font-fraunces), var(--font-noto-serif-kr);
+  --font-display: var(--font-pretendard);
+  --font-serif: var(--font-pretendard);
 
-  /* Primary - 테라코타 */
-  --color-primary-50: #FDF5F0;
-  --color-primary-100: #FAEADD;
-  --color-primary-200: #F0D0B8;
-  --color-primary-300: #E0B08A;
-  --color-primary-400: #D4935E;
-  --color-primary-500: #D4835E;
-  --color-primary-600: #C07350;
-  --color-primary-700: #A5603F;
-  --color-primary-800: #8A4E32;
-  --color-primary-900: #6E3D27;
+  /* Primary - 딥 블루 */
+  --color-primary-50: #EBF0FF;
+  --color-primary-100: #D6E0FF;
+  --color-primary-200: #B0C4FF;
+  --color-primary-300: #8AA5F0;
+  --color-primary-400: #5E7FDB;
+  --color-primary-500: #3A5BC7;
+  --color-primary-600: #2A4399;
+  --color-primary-700: #1E3378;
+  --color-primary-800: #142456;
+  --color-primary-900: #0C1636;
 
-  /* Secondary - 웜 앰버 */
-  --color-secondary-50: #FBF6EE;
-  --color-secondary-100: #F5EBDA;
-  --color-secondary-200: #EBDAC0;
-  --color-secondary-300: #DCC5A0;
-  --color-secondary-400: #C9AB7C;
-  --color-secondary-500: #B8945A;
-  --color-secondary-600: #9E7D4A;
-  --color-secondary-700: #83663C;
-  --color-secondary-800: #694F30;
-  --color-secondary-900: #4F3A24;
+  /* Secondary - 딥 블루 (Primary와 통일) */
+  --color-secondary-50: #EBF0FF;
+  --color-secondary-100: #D6E0FF;
+  --color-secondary-200: #B0C4FF;
+  --color-secondary-300: #8AA5F0;
+  --color-secondary-400: #5E7FDB;
+  --color-secondary-500: #3A5BC7;
+  --color-secondary-600: #2A4399;
+  --color-secondary-700: #1E3378;
+  --color-secondary-800: #142456;
+  --color-secondary-900: #0C1636;
 
-  /* Accent - 웜 로즈 */
-  --color-accent-50: #FDF2EF;
-  --color-accent-100: #FADDDA;
-  --color-accent-200: #F0BAB1;
-  --color-accent-300: #E09585;
-  --color-accent-400: #D07560;
-  --color-accent-500: #BF5B43;
-  --color-accent-600: #A64D38;
-  --color-accent-700: #8D402F;
-  --color-accent-800: #743426;
-  --color-accent-900: #5C291E;
+  /* Accent - 웜 코랄 */
+  --color-accent-50: #FFF0EB;
+  --color-accent-100: #FFDDD2;
+  --color-accent-200: #F5B8A5;
+  --color-accent-300: #EB9A80;
+  --color-accent-400: #E58A6D;
+  --color-accent-500: #E07A5F;
+  --color-accent-600: #C4613F;
+  --color-accent-700: #A34E33;
+  --color-accent-800: #833D28;
+  --color-accent-900: #632E1E;
 
   /* Background & Surface */
-  --color-background: #FAF6F1;
-  --color-surface: #FFFCF8;
-  --color-surface-secondary: #F3ECE4;
-  --color-surface-hover: #F8F4EE;
+  --color-background: #FAFAF7;
+  --color-surface: #FFFFFF;
+  --color-surface-secondary: #F3F2EF;
+  --color-surface-hover: #F0EEEA;
 
   /* Foreground */
-  --color-foreground: #3A2E25;
-  --color-foreground-secondary: #8B7E72;
-  --color-foreground-muted: #B5A99D;
+  --color-foreground: #1A1A2E;
+  --color-foreground-secondary: #6B6B7B;
+  --color-foreground-muted: #A0A0AF;
 
   /* Border */
-  --color-border: #EAE0D5;
-  --color-border-hover: #D4C4B0;
+  --color-border: #E8E6E1;
+  --color-border-hover: #D0CEC8;
 
   /* OPIc 등급 컬러 */
   --color-opic-al: #9333EA;
@@ -76,7 +76,7 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
   --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.04);
   --shadow-card-hover: 0 8px 32px rgba(0, 0, 0, 0.08);
-  --shadow-primary: 0 8px 32px rgba(212, 131, 94, 0.19);
+  --shadow-primary: 0 8px 32px rgba(58, 91, 199, 0.19);
 
   /* Radius */
   --radius-sm: 0.375rem;
@@ -122,15 +122,15 @@ body {
   color: var(--color-primary-500);
 }
 
-/* Hero 따뜻한 그라디언트 배경 */
+/* Hero 그라디언트 배경 */
 .hero-gradient {
   background: linear-gradient(
     180deg,
-    #FAF6F1 0%,
-    #F3ECE4 25%,
-    #FAEADD 50%,
-    #F3ECE4 75%,
-    #FAF6F1 100%
+    #FAFAF7 0%,
+    #F3F2EF 25%,
+    #EBF0FF 50%,
+    #F3F2EF 75%,
+    #FAFAF7 100%
   );
 }
 
@@ -149,13 +149,13 @@ body {
   gap: 8px;
   padding: 0 16px;
   height: 44px;
-  background: #F8F4EE;
+  background: #F3F2EF;
   border-bottom: 1px solid var(--color-border);
 }
 
 /* CTA 그라디언트 배경 */
 .cta-gradient {
-  background: linear-gradient(180deg, #FAF6F1 0%, #FAEADD 50%, #FAF6F1 100%);
+  background: linear-gradient(180deg, #FAFAF7 0%, #EBF0FF 50%, #FAFAF7 100%);
 }
 
 /* 모던 카드 */
@@ -195,7 +195,7 @@ body {
   color: white;
   font-size: 1.125rem;
   font-weight: 700;
-  box-shadow: 0 4px 12px rgba(212, 131, 94, 0.3);
+  box-shadow: 0 4px 12px rgba(58, 91, 199, 0.3);
 }
 
 /* 프라이싱 하이라이트 카드 */
@@ -271,17 +271,17 @@ details.faq-item .faq-answer {
 
 /* 다크 풋터 */
 .footer-dark {
-  background-color: #3A2E25;
-  color: #B5A99D;
+  background-color: #12121F;
+  color: #A0A0AF;
 }
 
 .footer-dark a {
-  color: #B5A99D;
+  color: #A0A0AF;
   transition: color 0.15s;
 }
 
 .footer-dark a:hover {
-  color: #FAEADD;
+  color: #D6E0FF;
 }
 
 /* 랜딩 스크린샷 무한 슬라이드 */

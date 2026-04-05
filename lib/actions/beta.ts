@@ -48,7 +48,7 @@ export async function applyBeta(kakaoNickname: string) {
     return { error: "신청 중 오류가 발생했습니다" };
   }
 
-  // 하루오픽 닉네임 통일 (오픈채팅 = 네비바 = profiles = 관리자 표시)
+  // 소리담 닉네임 통일 (오픈채팅 = 네비바 = profiles = 관리자 표시)
   await supabase
     .from("profiles")
     .update({ display_name: trimmed })
