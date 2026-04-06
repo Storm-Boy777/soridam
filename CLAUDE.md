@@ -759,6 +759,13 @@ PGPASSWORD='soridam2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/16
   -c "SQL문"
 ```
 
+### v2_ 테이블 접두사 (DB 이전 중)
+- 현재 소리담 DB에 v1 테이블과 v2_ 테이블이 공존
+- 코드에서 모든 테이블명은 `lib/constants/tables.ts`의 `T.테이블명`으로 참조
+- **전환 시**: `lib/constants/tables.ts`의 `PREFIX = "v2_"` → `PREFIX = ""`로 1줄만 변경하면 끝
+- **전환 전 체크리스트**: v1 테이블 DROP → v2_ 테이블 RENAME → PREFIX 변경
+- 상세 계획: `docs/DB이전계획.md`
+
 > 상세 진행 상황은 `docs/실행계획.md`의 "현재 진행 상태" 참조
 > 의사결정 기록은 `docs/의사결정.md` 참조
 
