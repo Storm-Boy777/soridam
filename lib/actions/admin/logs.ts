@@ -1,6 +1,7 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth";
+import { T } from "@/lib/constants/tables";
 import type { AuditLogEntry, PaginatedResult } from "@/lib/types/admin";
 
 export async function getAuditLogs(params: {
@@ -16,7 +17,7 @@ export async function getAuditLogs(params: {
   const offset = (page - 1) * pageSize;
 
   let query = supabase
-    .from("admin_audit_log")
+    .from(T.admin_audit_log)
     .select("*", { count: "exact" });
 
   if (params.action && params.action !== "all") {

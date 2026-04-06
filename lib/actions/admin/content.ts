@@ -1,6 +1,7 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth";
+import { T } from "@/lib/constants/tables";
 import type { PaginatedResult } from "@/lib/types/admin";
 
 // ── 질문 DB 목록 ──
@@ -17,7 +18,7 @@ export async function getAdminQuestions(params: {
   const offset = (page - 1) * pageSize;
 
   let query = supabase
-    .from("questions")
+    .from(T.questions)
     .select("id, topic, category, question_short, question_type_kor, survey_type", { count: "exact" });
 
   if (params.topic) query = query.eq("topic", params.topic);
@@ -36,7 +37,7 @@ export async function getAdminQuestions(params: {
 export async function getPromptTemplates() {
   const { supabase } = await requireAdmin();
   const { data } = await supabase
-    .from("ai_prompt_templates")
+    .from(T.ai_prompt_templates)
     .select("id, template_id, prompt_name, system_prompt, user_template, model, temperature, max_tokens, is_active")
     .order("id");
   // PromptEditor에 맞게 변환: system_prompt + user_template를 각각 편집 가능하게
@@ -63,20 +64,20 @@ export async function updatePromptTemplate(id: string, content: string) {
 
   // 변경 전 값 저장
   const { data: before } = await supabase
-    .from("ai_prompt_templates")
+    .from(T.ai_prompt_templates)
     .select(column)
     .eq("id", realId)
     .single();
 
   const { error } = await supabase
-    .from("ai_prompt_templates")
+    .from(T.ai_prompt_templates)
     .update({ [column]: content, updated_at: new Date().toISOString() })
     .eq("id", realId);
 
   if (error) return { success: false, error: error.message };
 
   // 감사 로그
-  await supabase.from("admin_audit_log").insert({
+  await supabase.from(T.admin_audit_log).insert({
     admin_id: userId,
     admin_email: userEmail,
     action: "prompt_update",
@@ -104,7 +105,7 @@ export async function getOpicTips(params: {
   const offset = (page - 1) * pageSize;
 
   const { data, count } = await supabase
-    .from("opic_tips")
+    .from(T.opic_tips)
     .select("*", { count: "exact" })
     .order("category")
     .order("question_type")
@@ -117,13 +118,13 @@ export async function updateOpicTip(id: string, updates: { title?: string; conte
   const { supabase, userId, userEmail } = await requireAdmin();
 
   const { error } = await supabase
-    .from("opic_tips")
+    .from(T.opic_tips)
     .update(updates)
     .eq("id", id);
 
   if (error) return { success: false, error: error.message };
 
-  await supabase.from("admin_audit_log").insert({
+  await supabase.from(T.admin_audit_log).insert({
     admin_id: userId,
     admin_email: userEmail,
     action: "tip_update",
@@ -140,7 +141,7 @@ export async function updateOpicTip(id: string, updates: { title?: string; conte
 export async function getEvalPrompts() {
   const { supabase } = await requireAdmin();
   const { data } = await supabase
-    .from("evaluation_prompts")
+    .from(T.evaluation_prompts)
     .select("id, key, prompt_text, description")
     .not("key", "like", "tutoring_%")
     .order("key");
@@ -154,7 +155,7 @@ export async function getEvalPrompts() {
 export async function getTutoringPrompts() {
   const { supabase } = await requireAdmin();
   const { data } = await supabase
-    .from("evaluation_prompts")
+    .from(T.evaluation_prompts)
     .select("id, key, prompt_text, description")
     .like("key", "tutoring_%")
     .order("key");
@@ -169,13 +170,13 @@ export async function updateEvalPrompt(id: string, content: string) {
   const { supabase, userId, userEmail } = await requireAdmin();
 
   const { error } = await supabase
-    .from("evaluation_prompts")
+    .from(T.evaluation_prompts)
     .update({ prompt_text: content, updated_at: new Date().toISOString() })
     .eq("id", id);
 
   if (error) return { success: false, error: error.message };
 
-  await supabase.from("admin_audit_log").insert({
+  await supabase.from(T.admin_audit_log).insert({
     admin_id: userId,
     admin_email: userEmail,
     action: "eval_prompt_update",
@@ -199,7 +200,7 @@ export async function getScriptSpecs(params: {
   const offset = (page - 1) * pageSize;
 
   const { data, count } = await supabase
-    .from("script_specs")
+    .from(T.script_specs)
     .select("*", { count: "exact" })
     .order("target_grade")
     .order("question_type")
@@ -213,7 +214,7 @@ export async function getScriptSpecs(params: {
 export async function getEvalSettings() {
   const { supabase } = await requireAdmin();
   const { data } = await supabase
-    .from("mock_test_eval_settings")
+    .from(T.mock_test_eval_settings)
     .select("*")
     .limit(1)
     .single();
@@ -231,7 +232,7 @@ export async function getPromptHistory(promptId: string): Promise<Array<{
   const { supabase } = await requireAdmin();
 
   const { data } = await supabase
-    .from("admin_audit_log")
+    .from(T.admin_audit_log)
     .select("id, admin_id, details, created_at")
     .eq("action", "prompt_update")
     .eq("target_id", promptId)
@@ -260,7 +261,7 @@ export async function updateEvalSettings(updates: Record<string, unknown>) {
   const { supabase, userId, userEmail } = await requireAdmin();
 
   const { data: current } = await supabase
-    .from("mock_test_eval_settings")
+    .from(T.mock_test_eval_settings)
     .select("*")
     .limit(1)
     .single();
@@ -268,13 +269,13 @@ export async function updateEvalSettings(updates: Record<string, unknown>) {
   if (!current) return { success: false, error: "설정 레코드 없음" };
 
   const { error } = await supabase
-    .from("mock_test_eval_settings")
+    .from(T.mock_test_eval_settings)
     .update(updates)
     .eq("id", current.id);
 
   if (error) return { success: false, error: error.message };
 
-  await supabase.from("admin_audit_log").insert({
+  await supabase.from(T.admin_audit_log).insert({
     admin_id: userId,
     admin_email: userEmail,
     action: "eval_settings_update",

@@ -1,6 +1,7 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth";
+import { T } from "@/lib/constants/tables";
 import type { AdminOrder, RevenueStats, PaginatedResult } from "@/lib/types/admin";
 
 // ── 주문 목록 조회 (polar_orders) ──
@@ -16,7 +17,7 @@ export async function getOrders(params: {
   const offset = (page - 1) * pageSize;
 
   let query = supabase
-    .from("polar_orders")
+    .from(T.polar_orders)
     .select("*", { count: "exact" });
 
   if (params.status && params.status !== "all") {
@@ -81,10 +82,10 @@ export async function getRevenueStats(): Promise<RevenueStats> {
   const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999).toISOString();
 
   const [allPaidRes, thisMonthRes, lastMonthRes, allPaidForDist] = await Promise.all([
-    supabase.from("polar_orders").select("amount").eq("status", "paid"),
-    supabase.from("polar_orders").select("amount").eq("status", "paid").gte("created_at", thisMonthStart),
-    supabase.from("polar_orders").select("amount").eq("status", "paid").gte("created_at", lastMonthStart).lte("created_at", lastMonthEnd),
-    supabase.from("polar_orders").select("product_type, amount").eq("status", "paid"),
+    supabase.from(T.polar_orders).select("amount").eq("status", "paid"),
+    supabase.from(T.polar_orders).select("amount").eq("status", "paid").gte("created_at", thisMonthStart),
+    supabase.from(T.polar_orders).select("amount").eq("status", "paid").gte("created_at", lastMonthStart).lte("created_at", lastMonthEnd),
+    supabase.from(T.polar_orders).select("product_type, amount").eq("status", "paid"),
   ]);
 
   const totalRevenue = (allPaidRes.data || []).reduce((sum, o) => sum + (o.amount || 0), 0);
@@ -125,7 +126,7 @@ export async function refundOrder(params: {
   const { supabase, userId, userEmail } = await requireAdmin();
 
   const { data: order, error: orderErr } = await supabase
-    .from("polar_orders")
+    .from(T.polar_orders)
     .select("*")
     .eq("id", params.orderId)
     .single();
@@ -141,7 +142,7 @@ export async function refundOrder(params: {
   // Polar는 대시보드에서 수동 환불 → 웹훅으로 자동 처리
   // 여기서는 DB 상태만 변경하고 감사 로그 기록
   const { error: updateErr } = await supabase
-    .from("polar_orders")
+    .from(T.polar_orders)
     .update({ status: "refunded" })
     .eq("id", params.orderId);
 
@@ -160,7 +161,7 @@ export async function refundOrder(params: {
   }
 
   // 감사 로그
-  await supabase.from("admin_audit_log").insert({
+  await supabase.from(T.admin_audit_log).insert({
     admin_id: userId,
     admin_email: userEmail,
     action: "refund",

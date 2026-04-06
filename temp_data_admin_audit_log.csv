@@ -1,0 +1,48 @@
+id,admin_id,action,target_type,target_id,details,ip_address,created_at,admin_email
+1,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,exam_approve,submission,410,"{""action"": ""approved""}",,2026-03-17 22:26:12.448941+09,admin@haruopic.com
+2,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,beta_approve,beta_application,b4a2d3f4-076d-4e2e-8f2d-d04087ae80eb,"{""user_id"": ""92377f15-a71a-49ec-813f-eed5126c38a5"", ""remaining"": 99}",,2026-03-31 19:02:29.793368+09,admin@haruopic.com
+3,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,419,"{""question_count"": 14}",,2026-03-31 20:18:35.336+09,admin@haruopic.com
+4,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,420,"{""question_count"": 14}",,2026-03-31 20:19:43.690081+09,admin@haruopic.com
+5,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,421,"{""question_count"": 14}",,2026-03-31 20:22:40.466993+09,admin@haruopic.com
+6,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,422,"{""question_count"": 14}",,2026-03-31 20:23:18.397497+09,admin@haruopic.com
+7,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,423,"{""question_count"": 14}",,2026-03-31 20:28:49.629153+09,admin@haruopic.com
+8,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,424,"{""question_count"": 14}",,2026-03-31 20:29:44.910089+09,admin@haruopic.com
+9,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,425,"{""question_count"": 14}",,2026-03-31 20:37:59.223445+09,admin@haruopic.com
+10,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,426,"{""question_count"": 14}",,2026-03-31 20:39:21.88782+09,admin@haruopic.com
+11,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,427,"{""question_count"": 14}",,2026-03-31 20:40:36.141275+09,admin@haruopic.com
+12,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,428,"{""question_count"": 14}",,2026-03-31 20:41:35.23072+09,admin@haruopic.com
+13,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,429,"{""question_count"": 14}",,2026-03-31 20:42:15.537159+09,admin@haruopic.com
+14,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,430,"{""question_count"": 14}",,2026-03-31 20:43:29.79732+09,admin@haruopic.com
+15,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,431,"{""question_count"": 14}",,2026-03-31 20:44:29.211611+09,admin@haruopic.com
+16,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,432,"{""question_count"": 14}",,2026-03-31 20:45:50.772513+09,admin@haruopic.com
+17,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,433,"{""question_count"": 14}",,2026-03-31 20:47:51.144369+09,admin@haruopic.com
+18,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,434,"{""question_count"": 14}",,2026-03-31 20:48:27.300275+09,admin@haruopic.com
+19,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,435,"{""question_count"": 14}",,2026-03-31 20:49:27.807609+09,admin@haruopic.com
+20,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,436,"{""question_count"": 14}",,2026-03-31 20:50:02.630288+09,admin@haruopic.com
+21,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,437,"{""question_count"": 14}",,2026-03-31 20:51:12.335847+09,admin@haruopic.com
+22,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,438,"{""question_count"": 14}",,2026-03-31 20:52:34.110355+09,admin@haruopic.com
+23,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,439,"{""question_count"": 14}",,2026-03-31 20:52:59.128729+09,admin@haruopic.com
+24,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,440,"{""question_count"": 14}",,2026-03-31 20:53:58.376362+09,admin@haruopic.com
+25,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,441,"{""question_count"": 14}",,2026-03-31 20:53:58.691153+09,admin@haruopic.com
+26,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,442,"{""question_count"": 14}",,2026-03-31 20:57:55.555225+09,admin@haruopic.com
+27,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,443,"{""question_count"": 14}",,2026-03-31 20:58:49.665277+09,admin@haruopic.com
+28,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,444,"{""question_count"": 14}",,2026-03-31 21:10:36.773595+09,admin@haruopic.com
+30,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,446,"{""question_count"": 14}",,2026-03-31 21:12:56.239884+09,admin@haruopic.com
+31,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,447,"{""question_count"": 14}",,2026-03-31 21:13:29.564081+09,admin@haruopic.com
+32,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,448,"{""question_count"": 14}",,2026-03-31 21:14:04.328468+09,admin@haruopic.com
+33,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,449,"{""question_count"": 14}",,2026-03-31 21:14:48.23279+09,admin@haruopic.com
+34,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,450,"{""question_count"": 14}",,2026-03-31 21:15:26.964875+09,admin@haruopic.com
+35,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,451,"{""question_count"": 14}",,2026-03-31 21:17:00.134281+09,admin@haruopic.com
+36,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,import_review,submission,452,"{""question_count"": 14}",,2026-03-31 21:17:32.482042+09,admin@haruopic.com
+37,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,eval_retrigger,mock_session,mt_up3u5mx2,{},,2026-03-31 23:26:41.303993+09,admin@haruopic.com
+38,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,beta_approve,beta_application,2be6c9b5-393e-4856-a63b-95b2dc62b022,"{""user_id"": ""f0a326ad-ae87-46be-81db-3162b67a40f8"", ""remaining"": 98}",,2026-03-31 23:33:47.329439+09,admin@haruopic.com
+39,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,beta_approve,beta_application,653d044c-2519-469f-b5d6-f02125908d4e,"{""user_id"": ""27a91dad-df49-47d1-889e-505aa793dd12"", ""remaining"": 97}",,2026-04-01 10:11:02.802743+09,admin@haruopic.com
+40,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,beta_approve,beta_application,8eb7e766-128f-4e6d-842a-947878a4430e,"{""user_id"": ""e60b6fd2-9777-41ee-8c96-93f657a7eb5f"", ""remaining"": 96}",,2026-04-01 10:23:31.509964+09,admin@haruopic.com
+41,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,beta_approve,beta_application,89315cb7-5856-434e-81f5-f6fd61b0c5a0,"{""user_id"": ""ad653b6a-c24f-4b1b-a8c9-5bf0ef516d14"", ""remaining"": 95}",,2026-04-01 19:25:44.21733+09,admin@haruopic.com
+42,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,beta_approve,beta_application,4b468cfb-6447-4532-a334-1c043330f492,"{""user_id"": ""f68503f2-a390-4706-8eda-4f6baff1938d"", ""remaining"": 94}",,2026-04-01 21:13:34.033599+09,admin@haruopic.com
+43,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,beta_approve,beta_application,02777c08-c3a9-4433-abf9-12ad9ef03c27,"{""user_id"": ""becc2e69-1d3b-4aff-8256-1240de5f86d8"", ""remaining"": 93}",,2026-04-03 11:03:22.356957+09,admin@haruopic.com
+44,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,beta_approve,beta_application,a3ebdb8a-bdb3-472d-8230-1fe4b8fd791a,"{""user_id"": ""e49ba14d-e966-49ac-830e-01b21c0adccb"", ""remaining"": 92}",,2026-04-03 16:54:18.699076+09,admin@haruopic.com
+45,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,beta_approve,beta_application,1d4dadc9-ad9d-4bad-a683-f1aaaccc6aba,"{""user_id"": ""abda8a5b-7222-49a4-a431-fee4d13aaddf"", ""remaining"": 91}",,2026-04-03 16:54:24.75039+09,admin@haruopic.com
+46,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,plan_change,user,ad2297d7-ccfc-4832-aba0-61e543c7485a,"{""reason"": ""로그인을 열심히 해서?"", ""new_plan"": ""beta"", ""old_plan"": ""free"", ""new_credits"": {""mock"": 3, ""script"": 15}, ""old_credits"": {""mock"": 0, ""script"": 0}, ""expires_in_months"": 1}",,2026-04-03 20:08:33.45592+09,admin@haruopic.com
+47,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,beta_approve,beta_application,de68912d-c497-4230-8b9a-067d8867155b,"{""user_id"": ""fa045574-bd4f-409f-a9f1-f68cbbf3e184"", ""remaining"": 90}",,2026-04-04 15:43:48.756569+09,admin@haruopic.com
+48,8fa2479b-35a1-42d6-9ce6-d5ae409feb7f,plan_change,user,ad653b6a-c24f-4b1b-a8c9-5bf0ef516d14,"{""reason"": ""카톡 오픈 챗방 탈퇴"", ""new_plan"": ""free"", ""old_plan"": ""beta"", ""new_credits"": {""mock"": 0, ""script"": 0}, ""old_credits"": {""mock"": 3, ""script"": 15}, ""expires_in_months"": 0}",,2026-04-04 15:58:38.993797+09,admin@haruopic.com

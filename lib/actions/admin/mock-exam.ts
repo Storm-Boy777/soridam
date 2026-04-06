@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
+import { T } from "@/lib/constants/tables";
 import type { AdminMockSession, MockExamStats, PaginatedResult } from "@/lib/types/admin";
 import type {
   MockTestSession,
@@ -14,23 +15,23 @@ export async function getMockExamStats(): Promise<MockExamStats> {
   const { supabase } = await requireAdmin();
 
   const [totalRes, completedRes, pendingRes, failedRes, gradesRes, sessionsRes] = await Promise.all([
-    supabase.from("mock_test_sessions").select("*", { count: "exact", head: true }),
-    supabase.from("mock_test_sessions").select("*", { count: "exact", head: true }).eq("status", "completed"),
+    supabase.from(T.mock_test_sessions).select("*", { count: "exact", head: true }),
+    supabase.from(T.mock_test_sessions).select("*", { count: "exact", head: true }).eq("status", "completed"),
     supabase
-      .from("mock_test_answers")
+      .from(T.mock_test_answers)
       .select("*", { count: "exact", head: true })
       .not("eval_status", "in", '("completed","skipped")'),
     supabase
-      .from("mock_test_answers")
+      .from(T.mock_test_answers)
       .select("*", { count: "exact", head: true })
       .eq("eval_status", "error"),
     supabase
-      .from("mock_test_reports")
+      .from(T.mock_test_reports)
       .select("final_level")
       .not("final_level", "is", null)
       .limit(200),
     supabase
-      .from("mock_test_sessions")
+      .from(T.mock_test_sessions)
       .select("mode, status"),
   ]);
 
@@ -78,7 +79,7 @@ export async function getMockExamSessions(params: {
   const offset = (page - 1) * pageSize;
 
   let query = supabase
-    .from("mock_test_sessions")
+    .from(T.mock_test_sessions)
     .select("*", { count: "exact" });
 
   if (params.status && params.status !== "all") {
@@ -109,7 +110,7 @@ export async function getMockExamSessions(params: {
   const [emailResults, reportsRes] = await Promise.all([
     Promise.all(userIds.map((uid) => supabase.auth.admin.getUserById(uid))),
     supabase
-      .from("mock_test_reports")
+      .from(T.mock_test_reports)
       .select("session_id, final_level")
       .in("session_id", sessionIds),
   ]);
@@ -164,7 +165,7 @@ export async function deleteAdminSession(
 
   // 세션 존재 확인
   const { data: session } = await supabase
-    .from("mock_test_sessions")
+    .from(T.mock_test_sessions)
     .select("session_id, user_id, mode, status")
     .eq("session_id", sessionId)
     .single();
@@ -175,7 +176,7 @@ export async function deleteAdminSession(
 
   // Storage 파일 삭제: answers에서 audio_url 목록 조회
   const { data: answers } = await supabase
-    .from("mock_test_answers")
+    .from(T.mock_test_answers)
     .select("audio_url")
     .eq("session_id", sessionId);
 
@@ -197,14 +198,14 @@ export async function deleteAdminSession(
 
   // 수동 삭제 (CASCADE 아닌 테이블)
   await Promise.all([
-    supabase.from("mock_test_evaluations").delete().eq("session_id", sessionId),
-    supabase.from("mock_test_consults").delete().eq("session_id", sessionId),
-    supabase.from("mock_test_reports").delete().eq("session_id", sessionId),
+    supabase.from(T.mock_test_evaluations).delete().eq("session_id", sessionId),
+    supabase.from(T.mock_test_consults).delete().eq("session_id", sessionId),
+    supabase.from(T.mock_test_reports).delete().eq("session_id", sessionId),
   ]);
 
   // DB 삭제 (answers는 CASCADE로 자동 삭제)
   const { error } = await supabase
-    .from("mock_test_sessions")
+    .from(T.mock_test_sessions)
     .delete()
     .eq("session_id", sessionId);
 
@@ -213,7 +214,7 @@ export async function deleteAdminSession(
   }
 
   // 감사 로그 기록
-  await supabase.from("admin_audit_log").insert({
+  await supabase.from(T.admin_audit_log).insert({
     admin_id: userId,
     admin_email: userEmail,
     action: "delete_mock_session",
@@ -249,7 +250,7 @@ export async function retriggerEvaluation(sessionId: string): Promise<{
   }
 
   // 감사 로그
-  await supabase.from("admin_audit_log").insert({
+  await supabase.from(T.admin_audit_log).insert({
     admin_id: userId,
     admin_email: userEmail,
     action: "eval_retrigger",
@@ -266,7 +267,7 @@ export async function retriggerEvaluation(sessionId: string): Promise<{
 export async function getTaskChecklists() {
   const { supabase } = await requireAdmin();
   const { data } = await supabase
-    .from("task_fulfillment_checklists")
+    .from(T.task_fulfillment_checklists)
     .select("*")
     .order("question_type");
   return data || [];
@@ -281,14 +282,14 @@ export async function updateTaskChecklist(
   const { supabase, userId, userEmail } = await requireAdmin();
 
   const { error } = await supabase
-    .from("task_fulfillment_checklists")
+    .from(T.task_fulfillment_checklists)
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq("question_type", questionType);
 
   if (error) return { success: false, error: error.message };
 
   // 감사 로그
-  await supabase.from("admin_audit_log").insert({
+  await supabase.from(T.admin_audit_log).insert({
     admin_id: userId,
     admin_email: userEmail,
     action: "checklist_update",
@@ -320,13 +321,13 @@ export async function getEvalQualityStats(): Promise<EvalQualityStats> {
 
   const [reportsRes, recentReportsRes, answersRes, evalsRes] = await Promise.all([
     // 전체 등급 분포
-    supabase.from("mock_test_reports").select("final_level").not("final_level", "is", null),
+    supabase.from(T.mock_test_reports).select("final_level").not("final_level", "is", null),
     // 최근 30일 등급 분포
-    supabase.from("mock_test_reports").select("final_level").not("final_level", "is", null).gte("created_at", thirtyDaysIso),
+    supabase.from(T.mock_test_reports).select("final_level").not("final_level", "is", null).gte("created_at", thirtyDaysIso),
     // 답변 상태 분포
-    supabase.from("mock_test_answers").select("eval_status, created_at, updated_at").limit(10000),
+    supabase.from(T.mock_test_answers).select("eval_status, created_at, updated_at").limit(10000),
     // 체크박스 평가 (최근 200건)
-    supabase.from("mock_test_evaluations").select("checkboxes").limit(200),
+    supabase.from(T.mock_test_evaluations).select("checkboxes").limit(200),
   ]);
 
   // 등급 분포
@@ -411,7 +412,7 @@ export async function getAdminSessionDetail(sessionId: string): Promise<{
 
   // 세션 조회 (user_id 필터 없음)
   const { data: session, error: sessErr } = await supabase
-    .from("mock_test_sessions")
+    .from(T.mock_test_sessions)
     .select("*")
     .eq("session_id", sessionId)
     .single();
@@ -428,22 +429,22 @@ export async function getAdminSessionDetail(sessionId: string): Promise<{
     { data: questions },
   ] = await Promise.all([
     supabase
-      .from("mock_test_answers")
+      .from(T.mock_test_answers)
       .select("*")
       .eq("session_id", sessionId)
       .order("question_number"),
     supabase
-      .from("mock_test_evaluations")
+      .from(T.mock_test_evaluations)
       .select("*")
       .eq("session_id", sessionId)
       .order("question_number"),
     supabase
-      .from("mock_test_reports")
+      .from(T.mock_test_reports)
       .select("*")
       .eq("session_id", sessionId)
       .maybeSingle(),
     supabase
-      .from("questions")
+      .from(T.questions)
       .select("id, question_english, question_korean, question_short, question_type_eng, survey_type, topic, category, audio_url")
       .in("id", session.question_ids || []),
   ]);

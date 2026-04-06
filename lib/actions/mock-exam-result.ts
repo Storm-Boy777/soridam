@@ -2,6 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { T } from "@/lib/constants/tables";
 import {
   transformDiagnosisData,
   type DiagnosisTransformInput,
@@ -87,7 +88,7 @@ async function requireSessionAccess<TSession extends Record<string, unknown>>(
   const context = await requireViewer();
 
   let query = context.supabase
-    .from("mock_test_sessions")
+    .from(T.mock_test_sessions)
     .select(columns)
     .eq("session_id", sessionId);
 
@@ -118,7 +119,7 @@ export async function getOverviewData(
     }>(sessionId, "mode, started_at, total_questions");
 
     const { data: report, error } = await supabase
-      .from("mock_test_reports")
+      .from(T.mock_test_reports)
       .select("final_level, overview")
       .eq("session_id", sessionId)
       .single();
@@ -157,7 +158,7 @@ export async function getDiagnosisData(
     const { supabase } = await requireSessionAccess<SessionOwnerRow>(sessionId, "user_id");
 
     const { data: report, error } = await supabase
-      .from("mock_test_reports")
+      .from(T.mock_test_reports)
       .select("aggregated_checkboxes, final_level")
       .eq("session_id", sessionId)
       .single();
@@ -209,12 +210,12 @@ export async function getQuestionsData(
 
     const [consultsRes, reportRes] = await Promise.all([
       supabase
-        .from("mock_test_consults")
+        .from(T.mock_test_consults)
         .select("*")
         .eq("session_id", sessionId)
         .order("question_number"),
       supabase
-        .from("mock_test_reports")
+        .from(T.mock_test_reports)
         .select("final_level, target_grade")
         .eq("session_id", sessionId)
         .single(),
@@ -227,11 +228,11 @@ export async function getQuestionsData(
     const questionIds = consultsRes.data.map((consult: any) => consult.question_id);
     const [questionsRes, answersRes] = await Promise.all([
       supabase
-        .from("questions")
+        .from(T.questions)
         .select("id, question_short, question_type_eng, topic, category")
         .in("id", questionIds),
       supabase
-        .from("mock_test_answers")
+        .from(T.mock_test_answers)
         .select("*")
         .eq("session_id", sessionId)
         .order("question_number"),
@@ -296,7 +297,7 @@ export async function triggerEvalV2(
     const { supabase } = await requireSessionAccess<SessionOwnerRow>(sessionId, "user_id");
 
     const { data: answers } = await supabase
-      .from("mock_test_answers")
+      .from(T.mock_test_answers)
       .select("question_number, question_id, eval_status")
       .eq("session_id", sessionId)
       .gte("question_number", 2)
@@ -347,7 +348,7 @@ export async function triggerReportV2(
     const { supabase } = await requireSessionAccess<SessionOwnerRow>(sessionId, "user_id");
 
     const { data: existingReport } = await supabase
-      .from("mock_test_reports")
+      .from(T.mock_test_reports)
       .select("status")
       .eq("session_id", sessionId)
       .single();
@@ -357,7 +358,7 @@ export async function triggerReportV2(
     }
 
     const { count } = await supabase
-      .from("mock_test_evaluations")
+      .from(T.mock_test_evaluations)
       .select("id", { count: "exact", head: true })
       .eq("session_id", sessionId);
 
@@ -396,12 +397,12 @@ export async function getGrowthData(
 
     const [reportRes, allReportsRes] = await Promise.all([
       supabase
-        .from("mock_test_reports")
+        .from(T.mock_test_reports)
         .select("final_level, target_grade, growth")
         .eq("session_id", sessionId)
         .single(),
       supabase
-        .from("mock_test_reports")
+        .from(T.mock_test_reports)
         .select("session_id, final_level, completed_at")
         .eq("user_id", session.user_id)
         .eq("status", "completed")

@@ -1,6 +1,7 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth";
+import { T } from "@/lib/constants/tables";
 import type {
   AdminTutoringSession,
   AdminTutoringDetail,
@@ -14,8 +15,8 @@ export async function getTutoringStats(): Promise<TutoringStats> {
   const { supabase } = await requireAdmin();
 
   const [sessionsRes, focusesRes] = await Promise.all([
-    supabase.from("tutoring_sessions").select("status, current_stable_level, tokens_used"),
-    supabase.from("tutoring_focuses").select("status"),
+    supabase.from(T.tutoring_sessions).select("status, current_stable_level, tokens_used"),
+    supabase.from(T.tutoring_focuses).select("status"),
   ]);
 
   const sessions = sessionsRes.data || [];
@@ -63,7 +64,7 @@ export async function getTutoringSessions(params: {
 
   // 세션 목록 조회
   let query = supabase
-    .from("tutoring_sessions")
+    .from(T.tutoring_sessions)
     .select("id, user_id, status, current_stable_level, final_target_level, created_at, completed_at, tokens_used", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(offset, offset + pageSize - 1);
@@ -81,7 +82,7 @@ export async function getTutoringSessions(params: {
   // 사용자 이메일 조회
   const userIds = [...new Set(sessions.map((s) => s.user_id))];
   const { data: profiles } = await supabase
-    .from("profiles")
+    .from(T.profiles)
     .select("id, email")
     .in("id", userIds);
 
@@ -90,7 +91,7 @@ export async function getTutoringSessions(params: {
   // 포커스 수 조회
   const sessionIds = sessions.map((s) => s.id);
   const { data: focuses } = await supabase
-    .from("tutoring_focuses")
+    .from(T.tutoring_focuses)
     .select("session_id, status")
     .in("session_id", sessionIds);
 
@@ -132,7 +133,7 @@ export async function getTutoringSessionDetail(sessionId: string): Promise<{ dat
 
   // 세션 기본 정보
   const { data: session } = await supabase
-    .from("tutoring_sessions")
+    .from(T.tutoring_sessions)
     .select("id, user_id, status, current_stable_level, final_target_level, created_at, completed_at, tokens_used")
     .eq("id", sessionId)
     .single();
@@ -140,26 +141,26 @@ export async function getTutoringSessionDetail(sessionId: string): Promise<{ dat
   if (!session) return { data: null, error: "세션을 찾을 수 없습니다." };
 
   // 사용자 이메일
-  const { data: profile } = await supabase.from("profiles").select("email").eq("id", session.user_id).single();
+  const { data: profile } = await supabase.from(T.profiles).select("email").eq("id", session.user_id).single();
 
   // 포커스, 드릴, 시도, 재평가 병렬 조회
   const [focusesRes, drillsRes, retestsRes] = await Promise.all([
-    supabase.from("tutoring_focuses").select("id, label, focus_code, priority_rank, status, drill_pass_count, retest_pass_count").eq("session_id", sessionId).order("priority_rank"),
-    supabase.from("tutoring_drills").select("id, focus_id, question_number, question_english, status").in(
+    supabase.from(T.tutoring_focuses).select("id, label, focus_code, priority_rank, status, drill_pass_count, retest_pass_count").eq("session_id", sessionId).order("priority_rank"),
+    supabase.from(T.tutoring_drills).select("id, focus_id, question_number, question_english, status").in(
       "focus_id",
       // 서브쿼리 대신 2단계 조회
-      (await supabase.from("tutoring_focuses").select("id").eq("session_id", sessionId)).data?.map((f) => f.id) || []
+      (await supabase.from(T.tutoring_focuses).select("id").eq("session_id", sessionId)).data?.map((f) => f.id) || []
     ).order("question_number"),
-    supabase.from("tutoring_retests").select("id, focus_id, overall_result, created_at").in(
+    supabase.from(T.tutoring_retests).select("id, focus_id, overall_result, created_at").in(
       "focus_id",
-      (await supabase.from("tutoring_focuses").select("id").eq("session_id", sessionId)).data?.map((f) => f.id) || []
+      (await supabase.from(T.tutoring_focuses).select("id").eq("session_id", sessionId)).data?.map((f) => f.id) || []
     ).order("created_at", { ascending: false }),
   ]);
 
   // 드릴별 시도 횟수 조회
   const drillIds = (drillsRes.data || []).map((d) => d.id);
   const { data: attempts } = drillIds.length > 0
-    ? await supabase.from("tutoring_attempts").select("drill_id").in("drill_id", drillIds)
+    ? await supabase.from(T.tutoring_attempts).select("drill_id").in("drill_id", drillIds)
     : { data: [] };
 
   const attemptCountMap = new Map<string, number>();

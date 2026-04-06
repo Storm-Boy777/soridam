@@ -1,0 +1,2 @@
+id,user_id,product_id,order_name,amount,status,payment_id,pg_provider,pg_tx_id,pay_method,paid_at,receipt_url,created_at,updated_at
+f0d9b861-8756-4b1f-b85a-598f4f0e436e,ac8c6123-4802-4db8-8a94-538d0276a6da,basic_plan,베이직 플랜 (3회권),19900,cancelled,order_1773578149310_f642faed,KAKAOPAY,T9b6a7a54ac0659e441b,PaymentMethodEasyPay,2026-03-15 21:36:22.77487+09,https://pg-web.kakao.com/v1/confirmation/m/T9b6a7a54ac0659e441b/6837E3AE5EE6F93356438E45EE57A0A4C4FFA1D28DDE8E3CC0FB27C546855E9A,2026-03-15 21:36:25.751363+09,2026-03-15 21:39:58.185356+09

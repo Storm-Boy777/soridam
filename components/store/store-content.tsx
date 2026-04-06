@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition, useState } from "react";
+import { T } from "@/lib/constants/tables";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
@@ -20,7 +21,7 @@ import {
 async function fetchBalance(userId: string) {
   const supabase = createClient();
   const { data } = await supabase
-    .from("polar_balances")
+    .from(T.polar_balances)
     .select("balance_krw, total_charged, total_used")
     .eq("user_id", userId)
     .single();

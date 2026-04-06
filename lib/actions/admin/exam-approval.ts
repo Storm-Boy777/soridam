@@ -1,6 +1,7 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth";
+import { T } from "@/lib/constants/tables";
 
 // ── 상태별 건수 조회 ──
 
@@ -10,7 +11,7 @@ export async function getExamApprovalCounts() {
   const [pending, approved, rejected] = await Promise.all(
     (["pending", "approved", "rejected"] as const).map(async (status) => {
       const { count } = await supabase
-        .from("submissions")
+        .from(T.submissions)
         .select("id", { count: "exact", head: true })
         .eq("status", "complete")
         .eq("exam_approved", status);
@@ -35,7 +36,7 @@ export async function getExamApprovalList(params: {
   const offset = (page - 1) * pageSize;
 
   const { data, count } = await supabase
-    .from("submissions")
+    .from(T.submissions)
     .select("id, user_id, exam_date, achieved_level, submitted_at, one_line_review", {
       count: "exact",
     })
@@ -53,7 +54,7 @@ export async function getSubmissionForReview(submissionId: number) {
   const { supabase } = await requireAdmin();
 
   const { data: submission } = await supabase
-    .from("submissions")
+    .from(T.submissions)
     .select(
       "id, user_id, exam_date, achieved_level, submitted_at, one_line_review, tips, exam_approved"
     )
@@ -64,7 +65,7 @@ export async function getSubmissionForReview(submissionId: number) {
 
   // submission_questions + questions 조인 (survey_type, question_short 등)
   const { data: questions } = await supabase
-    .from("submission_questions")
+    .from(T.submission_questions)
     .select(
       "question_number, combo_type, topic, question_id, custom_question_text, is_not_remembered, questions(id, question_short, survey_type, question_type_kor)"
     )
@@ -83,7 +84,7 @@ export async function approveSubmission(submissionId: number) {
   const { supabase, userId, userEmail } = await requireAdmin();
 
   const { error } = await supabase
-    .from("submissions")
+    .from(T.submissions)
     .update({
       exam_approved: "approved",
       exam_approved_at: new Date().toISOString(),
@@ -93,7 +94,7 @@ export async function approveSubmission(submissionId: number) {
 
   if (error) return { success: false, error: error.message };
 
-  await supabase.from("admin_audit_log").insert({
+  await supabase.from(T.admin_audit_log).insert({
     admin_id: userId,
     admin_email: userEmail,
     action: "exam_approve",
@@ -111,7 +112,7 @@ export async function rejectSubmission(submissionId: number, reason?: string) {
   const { supabase, userId, userEmail } = await requireAdmin();
 
   const { error } = await supabase
-    .from("submissions")
+    .from(T.submissions)
     .update({
       exam_approved: "rejected",
       exam_approved_at: new Date().toISOString(),
@@ -121,7 +122,7 @@ export async function rejectSubmission(submissionId: number, reason?: string) {
 
   if (error) return { success: false, error: error.message };
 
-  await supabase.from("admin_audit_log").insert({
+  await supabase.from(T.admin_audit_log).insert({
     admin_id: userId,
     admin_email: userEmail,
     action: "exam_reject",

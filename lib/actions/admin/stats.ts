@@ -1,6 +1,7 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth";
+import { T } from "@/lib/constants/tables";
 import type {
   AdminDashboardStats,
   RecentActivity,
@@ -42,7 +43,7 @@ export async function getInactiveUsersStats(): Promise<InactiveUsersStats> {
 
   // 최근 로그인 10건 (활동 로그)
   const { data: recentLogs } = await supabase
-    .from("user_activity_log")
+    .from(T.user_activity_log)
     .select("user_id, created_at")
     .eq("action", "login")
     .order("created_at", { ascending: false })
@@ -74,7 +75,7 @@ export async function getUserActivityLog(userId: string, limit: number = 20) {
   const { supabase } = await requireAdmin();
 
   const { data } = await supabase
-    .from("user_activity_log")
+    .from(T.user_activity_log)
     .select("action, metadata, created_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
@@ -106,14 +107,14 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
 
   const [usersRes, dauRes, revenueRes, evalsRes] = await Promise.all([
     // 총 회원 수
-    supabase.from("user_credits").select("*", { count: "exact", head: true }),
+    supabase.from(T.user_credits).select("*", { count: "exact", head: true }),
     // 오늘 로그인한 사용자 (DAU RPC)
     supabase.rpc("get_dau_count", { target_date: today }),
     // 총 매출 (성공 결제)
-    supabase.from("orders").select("amount").eq("status", "paid"),
+    supabase.from(T.orders).select("amount").eq("status", "paid"),
     // 평가 대기 중인 모의고사 답변
     supabase
-      .from("mock_test_answers")
+      .from(T.mock_test_answers)
       .select("*", { count: "exact", head: true })
       .not("eval_status", "in", '("completed","skipped")'),
   ]);
@@ -145,12 +146,12 @@ export async function getRecentActivity(): Promise<RecentActivity[]> {
   // 최근 활동 — 여러 소스에서 모아 시간순 정렬
   const [ordersRes, sessionsRes] = await Promise.all([
     supabase
-      .from("orders")
+      .from(T.orders)
       .select("id, product_name, amount, status, created_at")
       .order("created_at", { ascending: false })
       .limit(5),
     supabase
-      .from("mock_test_sessions")
+      .from(T.mock_test_sessions)
       .select("id, mode, status, started_at")
       .order("started_at", { ascending: false })
       .limit(5),
@@ -196,20 +197,20 @@ export async function getConversionMetrics(): Promise<ConversionMetrics> {
     scriptUsersRes,
   ] = await Promise.all([
     // 전체 회원
-    supabase.from("user_credits").select("*", { count: "exact", head: true }),
+    supabase.from(T.user_credits).select("*", { count: "exact", head: true }),
     // 1회 이상 결제한 사용자 (DISTINCT user_id) — 최대 5000건
-    supabase.from("orders").select("user_id").eq("status", "paid").limit(5000),
+    supabase.from(T.orders).select("user_id").eq("status", "paid").limit(5000),
     // 현재 유료 플랜 사용자
     supabase
-      .from("user_credits")
+      .from(T.user_credits)
       .select("*", { count: "exact", head: true })
       .neq("current_plan", "free"),
     // 평균 주문 금액
-    supabase.from("orders").select("amount").eq("status", "paid"),
+    supabase.from(T.orders).select("amount").eq("status", "paid"),
     // 모의고사 1회+ 응시자 — 최대 5000건
-    supabase.from("mock_test_sessions").select("user_id").limit(5000),
+    supabase.from(T.mock_test_sessions).select("user_id").limit(5000),
     // 스크립트 1회+ 생성자 — 최대 5000건
-    supabase.from("scripts").select("user_id").limit(5000),
+    supabase.from(T.scripts).select("user_id").limit(5000),
   ]);
 
   const totalUsers = totalUsersRes.count || 0;
@@ -254,23 +255,23 @@ export async function getDailyTrends(days: number = 30): Promise<DailyTrend[]> {
   const [signupsRes, ordersRes, mockRes, scriptsRes] =
     await Promise.all([
       supabase
-        .from("user_credits")
+        .from(T.user_credits)
         .select("created_at")
         .gte("created_at", startIso)
         .limit(10000),
       supabase
-        .from("orders")
+        .from(T.orders)
         .select("amount, created_at")
         .eq("status", "paid")
         .gte("created_at", startIso)
         .limit(10000),
       supabase
-        .from("mock_test_sessions")
+        .from(T.mock_test_sessions)
         .select("started_at")
         .gte("started_at", startIso)
         .limit(10000),
       supabase
-        .from("scripts")
+        .from(T.scripts)
         .select("created_at")
         .gte("created_at", startIso)
         .limit(10000),
@@ -330,11 +331,11 @@ export async function getAICostStats(): Promise<AICostStats> {
   // 모듈별 토큰 사용량 병렬 조회
   const [tutoringRes, mockReportsRes, scriptsRes] = await Promise.all([
     // 튜터링 세션 토큰
-    supabase.from("tutoring_sessions").select("tokens_used, created_at"),
+    supabase.from(T.tutoring_sessions).select("tokens_used, created_at"),
     // 모의고사 리포트 (토큰 정보가 있으면)
-    supabase.from("mock_test_reports").select("created_at").limit(5000),
+    supabase.from(T.mock_test_reports).select("created_at").limit(5000),
     // 스크립트 생성 (토큰 추정: 1회 생성 ≈ 4000토큰)
-    supabase.from("scripts").select("created_at").limit(5000),
+    supabase.from(T.scripts).select("created_at").limit(5000),
   ]);
 
   const tutoringTokens = (tutoringRes.data || []).reduce((sum, s) => sum + (s.tokens_used || 0), 0);
@@ -385,7 +386,7 @@ export async function getSystemHealthStats(): Promise<SystemHealthStats> {
 
   // 파이프라인 상태별 답변 수
   const { data: answers } = await supabase
-    .from("mock_test_answers")
+    .from(T.mock_test_answers)
     .select("eval_status, created_at, updated_at")
     .limit(5000);
 
@@ -428,10 +429,10 @@ export async function getSystemHealthStats(): Promise<SystemHealthStats> {
 
   // Storage 버킷별 파일 수 (간접 추정)
   const [audioRes, mockAudioRes, tutoringAudioRes, scriptPkgRes] = await Promise.all([
-    supabase.from("shadowing_evaluations").select("*", { count: "exact", head: true }),
-    supabase.from("mock_test_answers").select("*", { count: "exact", head: true }).not("audio_url", "is", null),
-    supabase.from("tutoring_attempts").select("*", { count: "exact", head: true }).not("audio_url", "is", null),
-    supabase.from("script_packages").select("*", { count: "exact", head: true }),
+    supabase.from(T.shadowing_evaluations).select("*", { count: "exact", head: true }),
+    supabase.from(T.mock_test_answers).select("*", { count: "exact", head: true }).not("audio_url", "is", null),
+    supabase.from(T.tutoring_attempts).select("*", { count: "exact", head: true }).not("audio_url", "is", null),
+    supabase.from(T.script_packages).select("*", { count: "exact", head: true }),
   ]);
 
   return {

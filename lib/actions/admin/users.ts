@@ -1,6 +1,7 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth";
+import { T } from "@/lib/constants/tables";
 import type {
   AdminUser,
   AdminUserDetail,
@@ -47,7 +48,7 @@ export async function getUsers(params: {
   // user_credits 조인
   const userIds = users.map((u) => u.id);
   const { data: credits } = await supabase
-    .from("user_credits")
+    .from(T.user_credits)
     .select("user_id, plan_mock_exam_credits, plan_script_credits, mock_exam_credits, script_credits, current_plan")
     .in("user_id", userIds);
 
@@ -85,7 +86,7 @@ export async function getUserDetail(userId: string): Promise<AdminUser | null> {
 
   const u = authData.user;
   const { data: c } = await supabase
-    .from("user_credits")
+    .from(T.user_credits)
     .select("*")
     .eq("user_id", userId)
     .single();
@@ -123,36 +124,36 @@ export async function getAdminUserDetail(userId: string): Promise<AdminUserDetai
     // 1. 기본 정보
     supabase.auth.admin.getUserById(userId),
     // 2. 크레딧
-    supabase.from("user_credits").select("*").eq("user_id", userId).single(),
+    supabase.from(T.user_credits).select("*").eq("user_id", userId).single(),
     // 3. 최근 모의고사 5건
     supabase
-      .from("mock_test_sessions")
+      .from(T.mock_test_sessions)
       .select("session_id, mode, status, started_at", { count: "exact" })
       .eq("user_id", userId)
       .order("started_at", { ascending: false })
       .limit(5),
     // 4. 완료 모의고사 수
     supabase
-      .from("mock_test_sessions")
+      .from(T.mock_test_sessions)
       .select("*", { count: "exact", head: true })
       .eq("user_id", userId)
       .eq("status", "completed"),
     // 5. 최근 스크립트 5건
     supabase
-      .from("scripts")
+      .from(T.scripts)
       .select("id, question_korean, target_grade, question_type, status, created_at", { count: "exact" })
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(5),
     // 6. 확정 스크립트 수
     supabase
-      .from("scripts")
+      .from(T.scripts)
       .select("*", { count: "exact", head: true })
       .eq("user_id", userId)
       .eq("status", "confirmed"),
     // 7. 최근 결제 5건
     supabase
-      .from("orders")
+      .from(T.orders)
       .select("id, product_name, amount, status, created_at", { count: "exact" })
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
@@ -171,7 +172,7 @@ export async function getAdminUserDetail(userId: string): Promise<AdminUserDetai
   if (mockExams.length > 0) {
     const sessionIds = mockExams.map((m) => m.session_id);
     const { data: reports } = await supabase
-      .from("mock_test_reports")
+      .from(T.mock_test_reports)
       .select("session_id, final_level")
       .in("session_id", sessionIds);
 
@@ -259,7 +260,7 @@ export async function adjustCredit(
 
   // 현재 크레딧 조회
   const { data: current, error: fetchError } = await supabase
-    .from("user_credits")
+    .from(T.user_credits)
     .select(params.creditType)
     .eq("user_id", params.userId)
     .single();
@@ -272,7 +273,7 @@ export async function adjustCredit(
   const newValue = Math.max(0, oldValue + params.amount);
 
   const { error: updateError } = await supabase
-    .from("user_credits")
+    .from(T.user_credits)
     .update({ [params.creditType]: newValue })
     .eq("user_id", params.userId);
 
@@ -281,7 +282,7 @@ export async function adjustCredit(
   }
 
   // 감사 로그
-  await supabase.from("admin_audit_log").insert({
+  await supabase.from(T.admin_audit_log).insert({
     admin_id: adminId,
     admin_email: adminEmail,
     action: "credit_adjust",
@@ -307,7 +308,7 @@ export async function changePlan(
 
   // 현재 크레딧/플랜 조회 (변경 전 값 저장)
   const { data: current, error: fetchError } = await supabase
-    .from("user_credits")
+    .from(T.user_credits)
     .select("current_plan, plan_mock_exam_credits, plan_script_credits")
     .eq("user_id", params.userId)
     .single();
@@ -325,7 +326,7 @@ export async function changePlan(
   }
 
   const { error: updateError } = await supabase
-    .from("user_credits")
+    .from(T.user_credits)
     .update({
       current_plan: params.plan,
       plan_mock_exam_credits: params.mockExamCredits,
@@ -339,7 +340,7 @@ export async function changePlan(
   }
 
   // 감사 로그
-  await supabase.from("admin_audit_log").insert({
+  await supabase.from(T.admin_audit_log).insert({
     admin_id: adminId,
     admin_email: adminEmail,
     action: "plan_change",
@@ -385,7 +386,7 @@ export async function toggleUserBan(params: {
   }
 
   // 감사 로그
-  await supabase.from("admin_audit_log").insert({
+  await supabase.from(T.admin_audit_log).insert({
     admin_id: adminId,
     admin_email: adminEmail,
     action: params.ban ? "user_ban" : "user_unban",
@@ -426,56 +427,56 @@ export async function deleteUser(params: {
 
     // 2. DB 데이터 삭제 (깊은 의존 순서부터)
     // 튜터링 관련
-    const { data: tSessions } = await supabase.from("tutoring_sessions").select("id").eq("user_id", params.userId);
+    const { data: tSessions } = await supabase.from(T.tutoring_sessions).select("id").eq("user_id", params.userId);
     if (tSessions && tSessions.length > 0) {
       const tSessionIds = tSessions.map((s) => s.id);
-      const { data: focuses } = await supabase.from("tutoring_focuses").select("id").in("session_id", tSessionIds);
+      const { data: focuses } = await supabase.from(T.tutoring_focuses).select("id").in("session_id", tSessionIds);
       if (focuses && focuses.length > 0) {
         const focusIds = focuses.map((f) => f.id);
-        await supabase.from("tutoring_retests").delete().in("focus_id", focusIds);
-        const { data: drills } = await supabase.from("tutoring_drills").select("id").in("focus_id", focusIds);
+        await supabase.from(T.tutoring_retests).delete().in("focus_id", focusIds);
+        const { data: drills } = await supabase.from(T.tutoring_drills).select("id").in("focus_id", focusIds);
         if (drills && drills.length > 0) {
-          await supabase.from("tutoring_attempts").delete().in("drill_id", drills.map((d) => d.id));
+          await supabase.from(T.tutoring_attempts).delete().in("drill_id", drills.map((d) => d.id));
         }
-        await supabase.from("tutoring_drills").delete().in("focus_id", focusIds);
-        await supabase.from("tutoring_focuses").delete().in("id", focusIds);
+        await supabase.from(T.tutoring_drills).delete().in("focus_id", focusIds);
+        await supabase.from(T.tutoring_focuses).delete().in("id", focusIds);
       }
-      await supabase.from("tutoring_sessions").delete().in("id", tSessionIds);
+      await supabase.from(T.tutoring_sessions).delete().in("id", tSessionIds);
     }
 
     // 모의고사 관련
-    const { data: mockSessions } = await supabase.from("mock_test_sessions").select("session_id").eq("user_id", params.userId);
+    const { data: mockSessions } = await supabase.from(T.mock_test_sessions).select("session_id").eq("user_id", params.userId);
     if (mockSessions && mockSessions.length > 0) {
       const sessionIds = mockSessions.map((s) => s.session_id);
-      await supabase.from("mock_test_reports").delete().in("session_id", sessionIds);
-      await supabase.from("mock_test_consults").delete().in("session_id", sessionIds);
-      await supabase.from("mock_test_evaluations").delete().in("session_id", sessionIds);
-      await supabase.from("mock_test_answers").delete().in("session_id", sessionIds);
+      await supabase.from(T.mock_test_reports).delete().in("session_id", sessionIds);
+      await supabase.from(T.mock_test_consults).delete().in("session_id", sessionIds);
+      await supabase.from(T.mock_test_evaluations).delete().in("session_id", sessionIds);
+      await supabase.from(T.mock_test_answers).delete().in("session_id", sessionIds);
     }
-    await supabase.from("mock_test_sessions").delete().eq("user_id", params.userId);
+    await supabase.from(T.mock_test_sessions).delete().eq("user_id", params.userId);
 
     // 스크립트 관련
-    await supabase.from("shadowing_evaluations").delete().eq("user_id", params.userId);
-    await supabase.from("shadowing_sessions").delete().eq("user_id", params.userId);
-    const { data: scripts } = await supabase.from("scripts").select("id").eq("user_id", params.userId);
+    await supabase.from(T.shadowing_evaluations).delete().eq("user_id", params.userId);
+    await supabase.from(T.shadowing_sessions).delete().eq("user_id", params.userId);
+    const { data: scripts } = await supabase.from(T.scripts).select("id").eq("user_id", params.userId);
     if (scripts && scripts.length > 0) {
-      await supabase.from("script_packages").delete().in("script_id", scripts.map((s) => s.id));
+      await supabase.from(T.script_packages).delete().in("script_id", scripts.map((s) => s.id));
     }
-    await supabase.from("scripts").delete().eq("user_id", params.userId);
+    await supabase.from(T.scripts).delete().eq("user_id", params.userId);
 
     // 후기 관련
-    const { data: subs } = await supabase.from("submissions").select("id").eq("user_id", params.userId);
+    const { data: subs } = await supabase.from(T.submissions).select("id").eq("user_id", params.userId);
     if (subs && subs.length > 0) {
       const subIds = subs.map((s) => s.id);
-      await supabase.from("submission_questions").delete().in("submission_id", subIds);
-      await supabase.from("submission_combos").delete().in("submission_id", subIds);
+      await supabase.from(T.submission_questions).delete().in("submission_id", subIds);
+      await supabase.from(T.submission_combos).delete().in("submission_id", subIds);
     }
-    await supabase.from("submissions").delete().eq("user_id", params.userId);
+    await supabase.from(T.submissions).delete().eq("user_id", params.userId);
 
     // 결제 + 크레딧 + 프로필
-    await supabase.from("orders").delete().eq("user_id", params.userId);
-    await supabase.from("user_credits").delete().eq("user_id", params.userId);
-    await supabase.from("profiles").delete().eq("id", params.userId);
+    await supabase.from(T.orders).delete().eq("user_id", params.userId);
+    await supabase.from(T.user_credits).delete().eq("user_id", params.userId);
+    await supabase.from(T.profiles).delete().eq("id", params.userId);
 
     // 3. Supabase Auth 사용자 삭제
     const { error: authError } = await supabase.auth.admin.deleteUser(params.userId);
@@ -484,7 +485,7 @@ export async function deleteUser(params: {
     }
 
     // 4. 감사 로그
-    await supabase.from("admin_audit_log").insert({
+    await supabase.from(T.admin_audit_log).insert({
       admin_id: adminId,
       admin_email: adminEmail,
       action: "user_delete",

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { T } from "@/lib/constants/tables";
 import {
   generateScriptSchema,
   correctScriptSchema,
@@ -48,7 +49,7 @@ export async function checkScriptCredit(): Promise<ActionResult<CreditCheckResul
     const { supabase, userId } = await requireUser();
 
     const { data: balance } = await supabase
-      .from("polar_balances")
+      .from(T.polar_balances)
       .select("balance_krw")
       .eq("user_id", userId)
       .single();
@@ -93,7 +94,7 @@ export async function createScript(
 
     // 기존 스크립트 확인 (UPSERT용)
     const { data: existing } = await supabase
-      .from("scripts")
+      .from(T.scripts)
       .select("id")
       .eq("user_id", userId)
       .eq("question_id", parsed.data.question_id)
@@ -102,14 +103,14 @@ export async function createScript(
     if (existing) {
       // 기존 패키지 삭제 (스크립트 재생성 시)
       await supabase
-        .from("script_packages")
+        .from(T.script_packages)
         .delete()
         .eq("script_id", existing.id);
     }
 
     // 스크립트 레코드 UPSERT (draft 상태로 생성, AI 응답은 Edge Function이 채움)
     const { data, error } = await supabase
-      .from("scripts")
+      .from(T.scripts)
       .upsert(
         {
           user_id: userId,
@@ -187,7 +188,7 @@ export async function createCorrectScript(
 
     // 기존 스크립트 확인
     const { data: existing } = await supabase
-      .from("scripts")
+      .from(T.scripts)
       .select("id")
       .eq("user_id", userId)
       .eq("question_id", parsed.data.question_id)
@@ -195,13 +196,13 @@ export async function createCorrectScript(
 
     if (existing) {
       await supabase
-        .from("script_packages")
+        .from(T.script_packages)
         .delete()
         .eq("script_id", existing.id);
     }
 
     const { data, error } = await supabase
-      .from("scripts")
+      .from(T.scripts)
       .upsert(
         {
           user_id: userId,
@@ -272,7 +273,7 @@ export async function refineScript(
 
     // 스크립트 조회 + 수정 횟수 확인
     const { data: script, error: fetchError } = await supabase
-      .from("scripts")
+      .from(T.scripts)
       .select("id, refine_count, status")
       .eq("id", parsed.data.script_id)
       .eq("user_id", userId)
@@ -293,7 +294,7 @@ export async function refineScript(
     // refine_count 증가 + 텍스트 필드 초기화 (폴링 메커니즘 작동 위해)
     // EF가 AI 호출 후 새 결과로 채움
     const { error: updateError } = await supabase
-      .from("scripts")
+      .from(T.scripts)
       .update({
         refine_count: script.refine_count + 1,
         english_text: "",
@@ -350,7 +351,7 @@ export async function confirmScript(
     const { supabase, userId } = await requireUser();
 
     const { error } = await supabase
-      .from("scripts")
+      .from(T.scripts)
       .update({ status: "confirmed", updated_at: new Date().toISOString() })
       .eq("id", parsed.data.script_id)
       .eq("user_id", userId)
@@ -379,7 +380,7 @@ export async function deleteScript(
 
     // 연관 패키지 먼저 삭제 (CASCADE이지만 Storage 파일도 정리)
     const { data: packages } = await supabase
-      .from("script_packages")
+      .from(T.script_packages)
       .select("wav_file_path, json_file_path")
       .eq("script_id", scriptId);
 
@@ -396,7 +397,7 @@ export async function deleteScript(
     }
 
     const { error } = await supabase
-      .from("scripts")
+      .from(T.scripts)
       .delete()
       .eq("id", scriptId)
       .eq("user_id", userId);
@@ -421,7 +422,7 @@ export async function getMyScripts(): Promise<ActionResult<ScriptListItem[]>> {
     const { supabase, userId } = await requireUser();
 
     const { data, error } = await supabase
-      .from("scripts")
+      .from(T.scripts)
       .select(`
         id, question_id, source, title, english_text,
         topic, category, question_korean, question_english, target_grade,
@@ -466,7 +467,7 @@ export async function getScriptDetail(
     const { supabase, userId } = await requireUser();
 
     const { data, error } = await supabase
-      .from("scripts")
+      .from(T.scripts)
       .select(`
         *,
         script_packages(*)
@@ -481,7 +482,7 @@ export async function getScriptDetail(
 
     // questions 조회 (별도 쿼리)
     const { data: question } = await supabase
-      .from("questions")
+      .from(T.questions)
       .select("id, question_english, question_korean, topic, category, question_type_eng")
       .eq("id", data.question_id)
       .single();
@@ -512,7 +513,7 @@ export async function getScriptSpec(
     const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase
-      .from("script_specs")
+      .from(T.script_specs)
       .select("*")
       .eq("question_type", questionType)
       .eq("target_grade", targetLevel)
@@ -537,7 +538,7 @@ export async function getShadowingHistory(): Promise<ActionResult<ShadowingHisto
     const { supabase, userId } = await requireUser();
 
     const { data, error } = await supabase
-      .from("shadowing_sessions")
+      .from(T.shadowing_sessions)
       .select(`
         id, script_id, topic, question_korean, status,
         audio_duration, started_at, completed_at,
@@ -576,7 +577,7 @@ export async function getOpicTips(
     const supabase = await createServerSupabaseClient();
 
     let query = supabase
-      .from("opic_tips")
+      .from(T.opic_tips)
       .select("id, category, title, expression, description")
       .contains("applicable_levels", [targetLevel])
       .eq("is_active", true)
@@ -612,7 +613,7 @@ export async function createPackage(
 
     // 스크립트 확인 (confirmed + 본인 소유)
     const { data: script, error: fetchError } = await supabase
-      .from("scripts")
+      .from(T.scripts)
       .select("id, status")
       .eq("id", parsed.data.script_id)
       .eq("user_id", userId)
@@ -719,7 +720,7 @@ export async function getShadowingData(
     const { supabase, userId } = await requireUser();
 
     const { data: pkg, error: pkgError } = await supabase
-      .from("script_packages")
+      .from(T.script_packages)
       .select(`
         id, script_id, status, wav_file_path, json_file_path,
         timestamp_data, tts_voice
@@ -737,7 +738,7 @@ export async function getShadowingData(
     }
 
     const { data: script, error: scriptError } = await supabase
-      .from("scripts")
+      .from(T.scripts)
       .select("question_id, question_english, question_korean, topic, key_expressions, target_grade, paragraphs")
       .eq("id", pkg.script_id)
       .single();
@@ -763,7 +764,7 @@ export async function getShadowingData(
     let questionAudioUrl: string | null = null;
     if (script.question_id) {
       const { data: q } = await supabase
-        .from("questions")
+        .from(T.questions)
         .select("audio_url")
         .eq("id", script.question_id)
         .single();
@@ -811,13 +812,13 @@ export async function startShadowingSession(
 
     // 스크립트 정보 조회 (세션에 기록)
     const { data: script } = await supabase
-      .from("scripts")
+      .from(T.scripts)
       .select("question_english, question_korean, topic")
       .eq("id", parsed.data.script_id)
       .single();
 
     const { data: session, error } = await supabase
-      .from("shadowing_sessions")
+      .from(T.shadowing_sessions)
       .insert({
         user_id: userId,
         package_id: parsed.data.package_id,
@@ -864,7 +865,7 @@ export async function getShadowingSessionDetail(
     const { supabase, userId } = await requireUser();
 
     const { data, error } = await supabase
-      .from("shadowing_sessions")
+      .from(T.shadowing_sessions)
       .select(`
         id, script_id, package_id, topic,
         question_text, question_korean,
@@ -906,7 +907,7 @@ export async function getShadowingEvaluation(
     const { supabase, userId } = await requireUser();
 
     const { data, error } = await supabase
-      .from("shadowing_evaluations")
+      .from(T.shadowing_evaluations)
       .select("*")
       .eq("session_id", sessionId)
       .eq("user_id", userId)
@@ -933,7 +934,7 @@ export async function getShadowableScripts(): Promise<
     const { supabase, userId } = await requireUser();
 
     const { data, error } = await supabase
-      .from("scripts")
+      .from(T.scripts)
       .select(`
         id, question_id, source, title, english_text,
         topic, category, question_korean, question_english, target_grade,
@@ -980,16 +981,16 @@ export async function getScriptStats(): Promise<
 
     const [scriptsResult, confirmedResult, shadowingResult] = await Promise.all([
       supabase
-        .from("scripts")
+        .from(T.scripts)
         .select("id", { count: "exact", head: true })
         .eq("user_id", userId),
       supabase
-        .from("scripts")
+        .from(T.scripts)
         .select("id", { count: "exact", head: true })
         .eq("user_id", userId)
         .eq("status", "confirmed"),
       supabase
-        .from("shadowing_sessions")
+        .from(T.shadowing_sessions)
         .select("id", { count: "exact", head: true })
         .eq("user_id", userId),
     ]);

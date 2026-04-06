@@ -1,0 +1,523 @@
+table_name,column_name,data_type,is_nullable,column_default,character_maximum_length,numeric_precision,numeric_scale,udt_name
+admin_audit_log,id,bigint,NO,nextval('public.admin_audit_log_id_seq'::regclass),,64,0,int8
+admin_audit_log,admin_id,uuid,NO,,,,,uuid
+admin_audit_log,action,text,NO,,,,,text
+admin_audit_log,target_type,text,YES,,,,,text
+admin_audit_log,target_id,text,YES,,,,,text
+admin_audit_log,details,jsonb,YES,'{}'::jsonb,,,,jsonb
+admin_audit_log,ip_address,text,YES,,,,,text
+admin_audit_log,created_at,timestamp with time zone,YES,now(),,,,timestamptz
+admin_audit_log,admin_email,text,YES,,,,,text
+ai_prompt_templates,id,integer,NO,nextval('public.ai_prompt_templates_id_seq'::regclass),,32,0,int4
+ai_prompt_templates,template_id,text,NO,,,,,text
+ai_prompt_templates,prompt_name,text,YES,,,,,text
+ai_prompt_templates,system_prompt,text,NO,,,,,text
+ai_prompt_templates,user_template,text,YES,,,,,text
+ai_prompt_templates,model,text,YES,'gpt-4.1'::text,,,,text
+ai_prompt_templates,temperature,numeric,YES,0.8,,2,1,numeric
+ai_prompt_templates,max_tokens,integer,YES,4000,,32,0,int4
+ai_prompt_templates,response_format,text,YES,'json_schema'::text,,,,text
+ai_prompt_templates,is_active,boolean,YES,true,,,,bool
+ai_prompt_templates,created_at,timestamp with time zone,YES,now(),,,,timestamptz
+ai_prompt_templates,updated_at,timestamp with time zone,YES,now(),,,,timestamptz
+announcements,id,uuid,NO,gen_random_uuid(),,,,uuid
+announcements,title,text,NO,,,,,text
+announcements,content,text,NO,,,,,text
+announcements,type,text,NO,'notice'::text,,,,text
+announcements,target_audience,text,YES,'all'::text,,,,text
+announcements,is_active,boolean,YES,true,,,,bool
+announcements,start_at,timestamp with time zone,YES,now(),,,,timestamptz
+announcements,end_at,timestamp with time zone,YES,,,,,timestamptz
+announcements,created_by,uuid,YES,,,,,uuid
+announcements,created_at,timestamp with time zone,YES,now(),,,,timestamptz
+announcements,updated_at,timestamp with time zone,YES,now(),,,,timestamptz
+api_usage_logs,id,uuid,NO,gen_random_uuid(),,,,uuid
+api_usage_logs,user_id,uuid,NO,,,,,uuid
+api_usage_logs,session_type,text,NO,,,,,text
+api_usage_logs,session_id,text,YES,,,,,text
+api_usage_logs,feature,text,NO,,,,,text
+api_usage_logs,service,text,NO,,,,,text
+api_usage_logs,model,text,NO,,,,,text
+api_usage_logs,ef_name,text,NO,,,,,text
+api_usage_logs,tokens_in,integer,YES,,,32,0,int4
+api_usage_logs,tokens_out,integer,YES,,,32,0,int4
+api_usage_logs,audio_duration_sec,numeric,YES,,,10,2,numeric
+api_usage_logs,text_length,integer,YES,,,32,0,int4
+api_usage_logs,cost_usd,numeric,NO,0,,10,6,numeric
+api_usage_logs,processing_time_ms,integer,YES,,,32,0,int4
+api_usage_logs,created_at,timestamp with time zone,NO,now(),,,,timestamptz
+beta_applications,id,uuid,NO,gen_random_uuid(),,,,uuid
+beta_applications,user_id,uuid,NO,,,,,uuid
+beta_applications,kakao_nickname,text,NO,,,,,text
+beta_applications,status,text,NO,'pending'::text,,,,text
+beta_applications,rejected_reason,text,YES,,,,,text
+beta_applications,reviewed_by,uuid,YES,,,,,uuid
+beta_applications,reviewed_at,timestamp with time zone,YES,,,,,timestamptz
+beta_applications,created_at,timestamp with time zone,NO,now(),,,,timestamptz
+beta_applications,updated_at,timestamp with time zone,NO,now(),,,,timestamptz
+evaluation_criteria,id,uuid,NO,gen_random_uuid(),,,,uuid
+evaluation_criteria,target_grade,text,NO,,,,,text
+evaluation_criteria,question_type,text,NO,,,,,text
+evaluation_criteria,criteria_text,text,NO,,,,,text
+evaluation_criteria,created_at,timestamp with time zone,YES,now(),,,,timestamptz
+evaluation_criteria,updated_at,timestamp with time zone,YES,now(),,,,timestamptz
+evaluation_prompts,id,uuid,NO,gen_random_uuid(),,,,uuid
+evaluation_prompts,key,text,NO,,,,,text
+evaluation_prompts,prompt_text,text,NO,,,,,text
+evaluation_prompts,description,text,YES,,,,,text
+evaluation_prompts,model,text,YES,'gpt-4.1'::text,,,,text
+evaluation_prompts,prompt_version,text,YES,'v1'::text,,,,text
+evaluation_prompts,created_at,timestamp with time zone,YES,now(),,,,timestamptz
+evaluation_prompts,updated_at,timestamp with time zone,YES,now(),,,,timestamptz
+level_modifiers,level_code,text,NO,,,,,text
+level_modifiers,level_label,text,NO,,,,,text
+level_modifiers,target_text_type,text,YES,,,,,text
+level_modifiers,sentence_target,jsonb,YES,,,,,jsonb
+level_modifiers,word_count_target,jsonb,YES,,,,,jsonb
+level_modifiers,duration_target_sec,jsonb,YES,,,,,jsonb
+level_modifiers,required_discourse_features,ARRAY,YES,,,,,_text
+level_modifiers,feedback_policy,jsonb,YES,,,,,jsonb
+level_modifiers,pass_adjustments,jsonb,YES,,,,,jsonb
+level_modifiers,created_at,timestamp with time zone,NO,now(),,,,timestamptz
+master_questions,id,integer,NO,nextval('public.master_questions_id_seq'::regclass),,32,0,int4
+master_questions,question_id,text,NO,,,,,text
+master_questions,survey_type,USER-DEFINED,NO,,,,,survey_type
+master_questions,topic_category,USER-DEFINED,NO,,,,,topic_category
+master_questions,topic,text,NO,,,,,text
+master_questions,question_title,text,YES,,,,,text
+master_questions,question_english,text,NO,,,,,text
+master_questions,question_korean,text,NO,,,,,text
+master_questions,question_type,USER-DEFINED,YES,,,,,answer_type
+master_questions,audio_url,text,YES,,,,,text
+master_questions,audio_generated_at,timestamp with time zone,YES,,,,,timestamptz
+master_questions,audio_voice,text,YES,'Aoede'::text,,,,text
+master_questions,created_at,timestamp with time zone,YES,now(),,,,timestamptz
+master_questions,updated_at,timestamp with time zone,YES,now(),,,,timestamptz
+mock_test_answers,id,uuid,NO,gen_random_uuid(),,,,uuid
+mock_test_answers,session_id,text,NO,,,,,text
+mock_test_answers,question_number,smallint,NO,,,16,0,int2
+mock_test_answers,question_id,text,YES,,,,,text
+mock_test_answers,audio_url,text,YES,,,,,text
+mock_test_answers,audio_duration,numeric,YES,,,8,2,numeric
+mock_test_answers,transcript,text,YES,,,,,text
+mock_test_answers,word_count,integer,YES,,,32,0,int4
+mock_test_answers,filler_word_count,integer,YES,0,,32,0,int4
+mock_test_answers,long_pause_count,integer,YES,0,,32,0,int4
+mock_test_answers,pronunciation_assessment,jsonb,YES,,,,,jsonb
+mock_test_answers,eval_status,text,YES,'pending'::text,,,,text
+mock_test_answers,eval_retry_count,smallint,YES,0,,16,0,int2
+mock_test_answers,eval_error,text,YES,,,,,text
+mock_test_answers,skipped,boolean,YES,false,,,,bool
+mock_test_answers,created_at,timestamp with time zone,YES,now(),,,,timestamptz
+mock_test_answers,wpm,numeric,YES,,,6,2,numeric
+mock_test_answers,meta_only,boolean,YES,false,,,,bool
+mock_test_answers,unfinished_end,boolean,YES,false,,,,bool
+mock_test_answers,filler_ratio,numeric,YES,,,5,4,numeric
+mock_test_consults,id,uuid,NO,gen_random_uuid(),,,,uuid
+mock_test_consults,session_id,text,NO,,,,,text
+mock_test_consults,user_id,uuid,NO,,,,,uuid
+mock_test_consults,question_number,integer,NO,,,32,0,int4
+mock_test_consults,question_id,text,NO,,,,,text
+mock_test_consults,question_type,text,NO,,,,,text
+mock_test_consults,target_grade,text,NO,,,,,text
+mock_test_consults,fulfillment,text,NO,,,,,text
+mock_test_consults,task_checklist,jsonb,NO,'[]'::jsonb,,,,jsonb
+mock_test_consults,observation,text,NO,''::text,,,,text
+mock_test_consults,directions,jsonb,NO,'[]'::jsonb,,,,jsonb
+mock_test_consults,weak_points,jsonb,NO,'[]'::jsonb,,,,jsonb
+mock_test_consults,model,text,NO,'gpt-4.1'::text,,,,text
+mock_test_consults,tokens_used,integer,NO,0,,32,0,int4
+mock_test_consults,processing_time_ms,integer,NO,0,,32,0,int4
+mock_test_consults,skipped_by_preprocess,boolean,NO,false,,,,bool
+mock_test_consults,evaluated_at,timestamp with time zone,NO,now(),,,,timestamptz
+mock_test_eval_settings,id,integer,NO,1,,32,0,int4
+mock_test_eval_settings,re_checkbox_pass_threshold,numeric,NO,0.80,,,,numeric
+mock_test_eval_settings,re_floor_nh,numeric,NO,0.45,,,,numeric
+mock_test_eval_settings,re_floor_il,numeric,NO,0.65,,,,numeric
+mock_test_eval_settings,re_floor_im1,numeric,NO,0.75,,,,numeric
+mock_test_eval_settings,re_floor_im2,numeric,NO,0.95,,,,numeric
+mock_test_eval_settings,re_ceiling_broke_down,numeric,NO,0.70,,,,numeric
+mock_test_eval_settings,re_ceiling_respond,numeric,NO,0.90,,,,numeric
+mock_test_eval_settings,re_sympathetic_low,numeric,NO,50,,,,numeric
+mock_test_eval_settings,re_sympathetic_mid,numeric,NO,70,,,,numeric
+mock_test_eval_settings,re_sympathetic_at_times,numeric,NO,85,,,,numeric
+mock_test_eval_settings,re_sympathetic_pron_weight,numeric,NO,0.60,,,,numeric
+mock_test_eval_settings,re_al_pass_threshold,numeric,NO,0.70,,,,numeric
+mock_test_eval_settings,re_q12_gatekeeper_threshold,numeric,NO,0.50,,,,numeric
+mock_test_eval_settings,judge_model,text,NO,'gpt-4.1-mini'::text,,,,text
+mock_test_eval_settings,judge_temperature,numeric,NO,0.20,,,,numeric
+mock_test_eval_settings,judge_max_tokens,integer,NO,6000,,32,0,int4
+mock_test_eval_settings,coach_model,text,NO,'gpt-4.1'::text,,,,text
+mock_test_eval_settings,coach_temperature,numeric,NO,0.40,,,,numeric
+mock_test_eval_settings,coach_max_tokens,integer,NO,8000,,32,0,int4
+mock_test_eval_settings,report_model,text,NO,'gpt-4.1'::text,,,,text
+mock_test_eval_settings,report_temperature,numeric,NO,0.40,,,,numeric
+mock_test_eval_settings,report_max_tokens,integer,NO,12000,,32,0,int4
+mock_test_eval_settings,growth_model,text,NO,'gpt-4.1-mini'::text,,,,text
+mock_test_eval_settings,growth_temperature,numeric,NO,0.50,,,,numeric
+mock_test_eval_settings,growth_max_tokens,integer,NO,3000,,32,0,int4
+mock_test_eval_settings,enabled_description,boolean,NO,true,,,,bool
+mock_test_eval_settings,enabled_routine,boolean,NO,true,,,,bool
+mock_test_eval_settings,enabled_asking_questions,boolean,NO,true,,,,bool
+mock_test_eval_settings,enabled_comparison,boolean,NO,true,,,,bool
+mock_test_eval_settings,enabled_past_experience,boolean,NO,true,,,,bool
+mock_test_eval_settings,enabled_suggest_alternatives,boolean,NO,true,,,,bool
+mock_test_eval_settings,enabled_comparison_change,boolean,NO,true,,,,bool
+mock_test_eval_settings,enabled_social_issue,boolean,NO,true,,,,bool
+mock_test_eval_settings,updated_at,timestamp with time zone,NO,now(),,,,timestamptz
+mock_test_evaluations,id,uuid,NO,gen_random_uuid(),,,,uuid
+mock_test_evaluations,session_id,text,NO,,,,,text
+mock_test_evaluations,user_id,uuid,NO,,,,,uuid
+mock_test_evaluations,question_number,integer,NO,,,32,0,int4
+mock_test_evaluations,question_id,text,NO,,,,,text
+mock_test_evaluations,question_type,text,NO,,,,,text
+mock_test_evaluations,target_grade,text,NO,,,,,text
+mock_test_evaluations,model,text,NO,'gpt-4.1-mini'::text,,,,text
+mock_test_evaluations,tokens_used,integer,NO,0,,32,0,int4
+mock_test_evaluations,processing_time_ms,integer,NO,0,,32,0,int4
+mock_test_evaluations,skipped_by_preprocess,boolean,NO,false,,,,bool
+mock_test_evaluations,evaluated_at,timestamp with time zone,NO,now(),,,,timestamptz
+mock_test_evaluations,checkboxes,jsonb,NO,'{}'::jsonb,,,,jsonb
+mock_test_evaluations,checkbox_type,text,NO,'INT'::text,,,,text
+mock_test_evaluations,pass_count,integer,NO,0,,32,0,int4
+mock_test_evaluations,fail_count,integer,NO,0,,32,0,int4
+mock_test_evaluations,pass_rate,numeric,NO,0,,5,4,numeric
+mock_test_reports,id,uuid,NO,gen_random_uuid(),,,,uuid
+mock_test_reports,session_id,text,NO,,,,,text
+mock_test_reports,user_id,uuid,NO,,,,,uuid
+mock_test_reports,overview,jsonb,NO,'{}'::jsonb,,,,jsonb
+mock_test_reports,growth,jsonb,NO,'{}'::jsonb,,,,jsonb
+mock_test_reports,model,text,NO,'gpt-4.1'::text,,,,text
+mock_test_reports,tokens_used,integer,NO,0,,32,0,int4
+mock_test_reports,processing_time_ms,integer,NO,0,,32,0,int4
+mock_test_reports,status,text,NO,'pending'::text,,,,text
+mock_test_reports,created_at,timestamp with time zone,NO,now(),,,,timestamptz
+mock_test_reports,completed_at,timestamp with time zone,YES,,,,,timestamptz
+mock_test_reports,final_level,text,YES,,,,,text
+mock_test_reports,target_grade,text,YES,,,,,text
+mock_test_reports,rule_engine_result,jsonb,YES,'{}'::jsonb,,,,jsonb
+mock_test_reports,aggregated_checkboxes,jsonb,YES,'{}'::jsonb,,,,jsonb
+mock_test_sessions,id,uuid,NO,gen_random_uuid(),,,,uuid
+mock_test_sessions,session_id,text,NO,,,,,text
+mock_test_sessions,user_id,uuid,NO,,,,,uuid
+mock_test_sessions,submission_id,integer,NO,,,32,0,int4
+mock_test_sessions,mode,text,NO,,,,,text
+mock_test_sessions,status,text,NO,'active'::text,,,,text
+mock_test_sessions,question_ids,ARRAY,NO,,,,,_text
+mock_test_sessions,current_question,smallint,YES,1,,16,0,int2
+mock_test_sessions,total_questions,smallint,YES,15,,16,0,int2
+mock_test_sessions,holistic_status,text,YES,'pending'::text,,,,text
+mock_test_sessions,report_retry_count,smallint,YES,0,,16,0,int2
+mock_test_sessions,report_error,text,YES,,,,,text
+mock_test_sessions,started_at,timestamp with time zone,YES,now(),,,,timestamptz
+mock_test_sessions,completed_at,timestamp with time zone,YES,,,,,timestamptz
+mock_test_sessions,expires_at,timestamp with time zone,NO,,,,,timestamptz
+opic_tips,id,integer,NO,nextval('public.opic_tips_id_seq'::regclass),,32,0,int4
+opic_tips,category,text,NO,,,,,text
+opic_tips,question_type,text,YES,,,,,text
+opic_tips,applicable_levels,ARRAY,NO,"'{IL,IM1,IM2,IM3,IH,AL}'::text[]",,,,_text
+opic_tips,title,text,NO,,,,,text
+opic_tips,expression,text,NO,,,,,text
+opic_tips,description,text,YES,,,,,text
+opic_tips,display_order,smallint,YES,0,,16,0,int2
+opic_tips,is_active,boolean,YES,true,,,,bool
+opic_tips,created_at,timestamp with time zone,YES,now(),,,,timestamptz
+orders,id,uuid,NO,gen_random_uuid(),,,,uuid
+orders,user_id,uuid,NO,,,,,uuid
+orders,product_id,text,NO,,,,,text
+orders,order_name,text,NO,,,,,text
+orders,amount,integer,NO,,,32,0,int4
+orders,status,text,NO,'pending'::text,,,,text
+orders,payment_id,text,YES,,,,,text
+orders,pg_provider,text,YES,,,,,text
+orders,pg_tx_id,text,YES,,,,,text
+orders,pay_method,text,YES,,,,,text
+orders,paid_at,timestamp with time zone,YES,,,,,timestamptz
+orders,receipt_url,text,YES,,,,,text
+orders,created_at,timestamp with time zone,YES,now(),,,,timestamptz
+orders,updated_at,timestamp with time zone,YES,now(),,,,timestamptz
+polar_balances,user_id,uuid,NO,,,,,uuid
+polar_balances,balance_krw,integer,NO,0,,32,0,int4
+polar_balances,total_charged,integer,NO,0,,32,0,int4
+polar_balances,total_used,integer,NO,0,,32,0,int4
+polar_balances,updated_at,timestamp with time zone,NO,now(),,,,timestamptz
+polar_orders,id,uuid,NO,gen_random_uuid(),,,,uuid
+polar_orders,user_id,uuid,NO,,,,,uuid
+polar_orders,polar_checkout_id,text,NO,,,,,text
+polar_orders,polar_product_id,text,YES,,,,,text
+polar_orders,product_type,text,NO,,,,,text
+polar_orders,amount,integer,NO,,,32,0,int4
+polar_orders,credit_amount,integer,NO,0,,32,0,int4
+polar_orders,status,text,NO,'paid'::text,,,,text
+polar_orders,paid_at,timestamp with time zone,NO,now(),,,,timestamptz
+polar_orders,created_at,timestamp with time zone,NO,now(),,,,timestamptz
+polar_transactions,id,uuid,NO,gen_random_uuid(),,,,uuid
+polar_transactions,user_id,uuid,NO,,,,,uuid
+polar_transactions,type,text,NO,,,,,text
+polar_transactions,amount,integer,NO,,,32,0,int4
+polar_transactions,balance_after,integer,NO,,,32,0,int4
+polar_transactions,description,text,NO,,,,,text
+polar_transactions,ref_id,text,YES,,,,,text
+polar_transactions,created_at,timestamp with time zone,NO,now(),,,,timestamptz
+profiles,id,uuid,NO,,,,,uuid
+profiles,email,text,NO,,,,,text
+profiles,display_name,text,YES,,,,,text
+profiles,target_grade,text,YES,,,,,text
+profiles,avatar_url,text,YES,,,,,text
+profiles,created_at,timestamp with time zone,YES,now(),,,,timestamptz
+profiles,updated_at,timestamp with time zone,YES,now(),,,,timestamptz
+questions,id,text,NO,,,,,text
+questions,category,text,NO,,,,,text
+questions,sub_category,text,NO,'-'::text,,,,text
+questions,topic,text,NO,,,,,text
+questions,survey_type,text,NO,,,,,text
+questions,question_english,text,NO,''::text,,,,text
+questions,question_korean,text,NO,''::text,,,,text
+questions,question_short,text,NO,''::text,,,,text
+questions,question_type_kor,text,NO,''::text,,,,text
+questions,question_type_eng,text,NO,''::text,,,,text
+questions,tag,text,NO,''::text,,,,text
+questions,created_at,timestamp with time zone,NO,now(),,,,timestamptz
+questions,updated_at,timestamp with time zone,NO,now(),,,,timestamptz
+questions,audio_url,text,YES,''::text,,,,text
+script_packages,id,uuid,NO,gen_random_uuid(),,,,uuid
+script_packages,user_id,uuid,NO,,,,,uuid
+script_packages,script_id,uuid,NO,,,,,uuid
+script_packages,status,text,YES,'processing'::text,,,,text
+script_packages,progress,smallint,YES,0,,16,0,int2
+script_packages,wav_file_path,text,YES,,,,,text
+script_packages,json_file_path,text,YES,,,,,text
+script_packages,timestamp_data,jsonb,YES,,,,,jsonb
+script_packages,wav_file_size,integer,YES,,,32,0,int4
+script_packages,tts_voice,text,YES,'Mark'::text,,,,text
+script_packages,error_message,text,YES,,,,,text
+script_packages,created_at,timestamp with time zone,YES,now(),,,,timestamptz
+script_packages,completed_at,timestamp with time zone,YES,,,,,timestamptz
+script_specs,id,integer,NO,nextval('public.script_specs_id_seq'::regclass),,32,0,int4
+script_specs,guide_id,text,NO,,,,,text
+script_specs,question_type,text,NO,,,,,text
+script_specs,target_grade,text,NO,,,,,text
+script_specs,total_slots,smallint,NO,,,16,0,int2
+script_specs,level_constraints,text,NO,,,,,text
+script_specs,slot_structure,text,NO,,,,,text
+script_specs,example_output,jsonb,NO,,,,,jsonb
+script_specs,eval_criteria,text,NO,,,,,text
+script_specs,created_at,timestamp with time zone,YES,now(),,,,timestamptz
+script_specs,updated_at,timestamp with time zone,YES,now(),,,,timestamptz
+scripts,id,uuid,NO,gen_random_uuid(),,,,uuid
+scripts,user_id,uuid,NO,,,,,uuid
+scripts,question_id,text,NO,,,,,text
+scripts,source,text,NO,'generate'::text,,,,text
+scripts,title,text,YES,,,,,text
+scripts,english_text,text,NO,,,,,text
+scripts,korean_translation,text,YES,,,,,text
+scripts,paragraphs,jsonb,YES,,,,,jsonb
+scripts,total_slots,smallint,YES,,,16,0,int2
+scripts,category,text,YES,,,,,text
+scripts,topic,text,YES,,,,,text
+scripts,question_korean,text,YES,,,,,text
+scripts,question_english,text,YES,,,,,text
+scripts,user_story,text,YES,,,,,text
+scripts,user_original_answer,text,YES,,,,,text
+scripts,target_grade,text,YES,,,,,text
+scripts,question_type,text,YES,,,,,text
+scripts,ai_model,text,YES,'gpt-4.1'::text,,,,text
+scripts,word_count,integer,YES,,,32,0,int4
+scripts,generation_time,integer,YES,,,32,0,int4
+scripts,key_expressions,jsonb,YES,'[]'::jsonb,,,,jsonb
+scripts,highlighted_script,text,YES,,,,,text
+scripts,status,text,NO,'draft'::text,,,,text
+scripts,refine_count,smallint,NO,0,,16,0,int2
+scripts,created_at,timestamp with time zone,YES,now(),,,,timestamptz
+scripts,updated_at,timestamp with time zone,YES,now(),,,,timestamptz
+shadowing_evaluations,id,uuid,NO,gen_random_uuid(),,,,uuid
+shadowing_evaluations,session_id,uuid,NO,,,,,uuid
+shadowing_evaluations,user_id,uuid,NO,,,,,uuid
+shadowing_evaluations,transcript,text,NO,,,,,text
+shadowing_evaluations,word_count,integer,YES,,,32,0,int4
+shadowing_evaluations,pronunciation,numeric,YES,,,3,1,numeric
+shadowing_evaluations,fluency,numeric,YES,,,3,1,numeric
+shadowing_evaluations,grammar,numeric,YES,,,3,1,numeric
+shadowing_evaluations,vocabulary,numeric,YES,,,3,1,numeric
+shadowing_evaluations,content_score,numeric,YES,,,3,1,numeric
+shadowing_evaluations,overall_score,numeric,YES,,,5,1,numeric
+shadowing_evaluations,estimated_level,text,YES,,,,,text
+shadowing_evaluations,script_utilization,numeric,YES,,,5,1,numeric
+shadowing_evaluations,strengths,ARRAY,YES,,,,,_text
+shadowing_evaluations,weaknesses,ARRAY,YES,,,,,_text
+shadowing_evaluations,suggestions,ARRAY,YES,,,,,_text
+shadowing_evaluations,script_analysis,jsonb,YES,,,,,jsonb
+shadowing_evaluations,created_at,timestamp with time zone,YES,now(),,,,timestamptz
+shadowing_sessions,id,uuid,NO,gen_random_uuid(),,,,uuid
+shadowing_sessions,user_id,uuid,NO,,,,,uuid
+shadowing_sessions,package_id,uuid,NO,,,,,uuid
+shadowing_sessions,script_id,uuid,NO,,,,,uuid
+shadowing_sessions,question_text,text,YES,,,,,text
+shadowing_sessions,question_korean,text,YES,,,,,text
+shadowing_sessions,topic,text,YES,,,,,text
+shadowing_sessions,status,text,YES,'active'::text,,,,text
+shadowing_sessions,audio_duration,numeric,YES,,,8,2,numeric
+shadowing_sessions,started_at,timestamp with time zone,YES,now(),,,,timestamptz
+shadowing_sessions,completed_at,timestamp with time zone,YES,,,,,timestamptz
+submission_combos,id,integer,NO,nextval('public.submission_combos_id_seq'::regclass),,32,0,int4
+submission_combos,submission_id,integer,NO,,,32,0,int4
+submission_combos,combo_type,text,NO,,,,,text
+submission_combos,topic,text,NO,,,,,text
+submission_combos,question_ids,ARRAY,NO,,,,,_text
+submission_combos,created_at,timestamp with time zone,YES,now(),,,,timestamptz
+submission_questions,id,integer,NO,nextval('public.submission_questions_id_seq'::regclass),,32,0,int4
+submission_questions,submission_id,integer,NO,,,32,0,int4
+submission_questions,question_number,smallint,NO,,,16,0,int2
+submission_questions,combo_type,text,NO,,,,,text
+submission_questions,topic,text,NO,,,,,text
+submission_questions,question_id,text,YES,,,,,text
+submission_questions,custom_question_text,text,YES,,,,,text
+submission_questions,is_not_remembered,boolean,YES,false,,,,bool
+submission_questions,created_at,timestamp with time zone,YES,now(),,,,timestamptz
+submissions,id,integer,NO,nextval('public.submissions_id_seq'::regclass),,32,0,int4
+submissions,user_id,uuid,NO,,,,,uuid
+submissions,exam_date,date,NO,,,,,date
+submissions,achieved_level,text,YES,,,,,text
+submissions,exam_purpose,text,NO,,,,,text
+submissions,study_methods,ARRAY,NO,,,,,_text
+submissions,prep_duration,text,NO,,,,,text
+submissions,attempt_count,text,NO,,,,,text
+submissions,perceived_difficulty,text,NO,,,,,text
+submissions,actual_duration,text,NO,,,,,text
+submissions,one_line_review,character varying,YES,,100,,,varchar
+submissions,tips,character varying,YES,,300,,,varchar
+submissions,status,text,NO,'draft'::text,,,,text
+submissions,step_completed,smallint,NO,1,,16,0,int2
+submissions,submitted_at,timestamp with time zone,YES,,,,,timestamptz
+submissions,created_at,timestamp with time zone,YES,now(),,,,timestamptz
+submissions,updated_at,timestamp with time zone,YES,now(),,,,timestamptz
+submissions,pre_exam_level,text,NO,,,,,text
+submissions,used_recommended_survey,boolean,NO,true,,,,bool
+submissions,survey_occupation,text,YES,,,,,text
+submissions,survey_student,text,YES,,,,,text
+submissions,survey_course,text,YES,,,,,text
+submissions,survey_housing,text,YES,,,,,text
+submissions,survey_leisure,text,YES,,,,,text
+submissions,survey_hobbies,text,YES,,,,,text
+submissions,survey_sports,text,YES,,,,,text
+submissions,survey_travel,text,YES,,,,,text
+submissions,exam_difficulty,text,YES,,,,,text
+submissions,credit_granted,boolean,NO,false,,,,bool
+submissions,source,text,NO,'user'::text,,,,text
+submissions,exam_approved,text,YES,'pending'::text,,,,text
+submissions,exam_approved_at,timestamp with time zone,YES,,,,,timestamptz
+system_settings,key,text,NO,,,,,text
+system_settings,value,jsonb,NO,,,,,jsonb
+system_settings,updated_at,timestamp with time zone,YES,now(),,,,timestamptz
+task_fulfillment_checklists,question_type,text,NO,,,,,text
+task_fulfillment_checklists,label,text,NO,,,,,text
+task_fulfillment_checklists,required,jsonb,NO,'[]'::jsonb,,,,jsonb
+task_fulfillment_checklists,advanced,jsonb,NO,'[]'::jsonb,,,,jsonb
+task_fulfillment_checklists,ideal_flow,text,NO,''::text,,,,text
+task_fulfillment_checklists,common_mistakes,jsonb,NO,'[]'::jsonb,,,,jsonb
+task_fulfillment_checklists,core_prescription,text,NO,''::text,,,,text
+task_fulfillment_checklists,feedback_tone,text,NO,''::text,,,,text
+task_fulfillment_checklists,start_template,text,NO,''::text,,,,text
+task_fulfillment_checklists,updated_at,timestamp with time zone,YES,now(),,,,timestamptz
+tutoring_attempts,id,text,NO,,,,,text
+tutoring_attempts,drill_id,text,NO,,,,,text
+tutoring_attempts,attempt_number,integer,NO,,,32,0,int4
+tutoring_attempts,transcript,text,YES,,,,,text
+tutoring_attempts,audio_url,text,YES,,,,,text
+tutoring_attempts,audio_duration,numeric,YES,,,6,1,numeric
+tutoring_attempts,word_count,integer,YES,,,32,0,int4
+tutoring_attempts,wpm,numeric,YES,,,5,1,numeric
+tutoring_attempts,filler_word_count,integer,YES,,,32,0,int4
+tutoring_attempts,filler_ratio,numeric,YES,,,4,3,numeric
+tutoring_attempts,long_pause_count,integer,YES,,,32,0,int4
+tutoring_attempts,pronunciation_assessment,jsonb,YES,,,,,jsonb
+tutoring_attempts,layer1_result,jsonb,YES,,,,,jsonb
+tutoring_attempts,layer2_result,jsonb,YES,,,,,jsonb
+tutoring_attempts,result,text,NO,'pending'::text,,,,text
+tutoring_attempts,created_at,timestamp with time zone,NO,now(),,,,timestamptz
+tutoring_drills,id,text,NO,,,,,text
+tutoring_drills,focus_id,text,NO,,,,,text
+tutoring_drills,question_number,integer,NO,,,32,0,int4
+tutoring_drills,question_id,text,NO,,,,,text
+tutoring_drills,question_english,text,NO,,,,,text
+tutoring_drills,topic,text,YES,,,,,text
+tutoring_drills,goal,text,YES,,,,,text
+tutoring_drills,hint_level,text,NO,,,,,text
+tutoring_drills,frame_slots,jsonb,YES,,,,,jsonb
+tutoring_drills,sample_answer,text,YES,,,,,text
+tutoring_drills,pass_criteria,jsonb,YES,,,,,jsonb
+tutoring_drills,rule_only_hint,text,YES,,,,,text
+tutoring_drills,status,text,NO,'pending'::text,,,,text
+tutoring_drills,created_at,timestamp with time zone,NO,now(),,,,timestamptz
+tutoring_focuses,id,text,NO,,,,,text
+tutoring_focuses,session_id,text,NO,,,,,text
+tutoring_focuses,priority_rank,integer,NO,,,32,0,int4
+tutoring_focuses,focus_code,text,NO,,,,,text
+tutoring_focuses,label,text,NO,,,,,text
+tutoring_focuses,reason,text,YES,,,,,text
+tutoring_focuses,why_now_for_target,text,YES,,,,,text
+tutoring_focuses,selection_policy,jsonb,YES,,,,,jsonb
+tutoring_focuses,question_pool,jsonb,YES,,,,,jsonb
+tutoring_focuses,drill_session_plan,jsonb,YES,,,,,jsonb
+tutoring_focuses,status,text,NO,'pending'::text,,,,text
+tutoring_focuses,drill_pass_count,integer,NO,0,,32,0,int4
+tutoring_focuses,transfer_pass_count,integer,NO,0,,32,0,int4
+tutoring_focuses,retest_pass_count,integer,NO,0,,32,0,int4
+tutoring_focuses,created_at,timestamp with time zone,NO,now(),,,,timestamptz
+tutoring_retests,id,text,NO,,,,,text
+tutoring_retests,focus_id,text,NO,,,,,text
+tutoring_retests,retest_mode,text,NO,,,,,text
+tutoring_retests,questions,jsonb,NO,,,,,jsonb
+tutoring_retests,results,jsonb,YES,,,,,jsonb
+tutoring_retests,overall_result,text,YES,,,,,text
+tutoring_retests,created_at,timestamp with time zone,NO,now(),,,,timestamptz
+tutoring_sessions,id,text,NO,,,,,text
+tutoring_sessions,user_id,uuid,NO,,,,,uuid
+tutoring_sessions,analyzed_session_ids,ARRAY,NO,,,,,_text
+tutoring_sessions,current_stable_level,text,NO,,,,,text
+tutoring_sessions,ceiling_candidate_level,text,YES,,,,,text
+tutoring_sessions,next_step_level,text,NO,,,,,text
+tutoring_sessions,final_target_level,text,NO,,,,,text
+tutoring_sessions,stable_confidence,numeric,YES,,,3,2,numeric
+tutoring_sessions,floor_status,jsonb,YES,,,,,jsonb
+tutoring_sessions,target_gap_summary,jsonb,YES,,,,,jsonb
+tutoring_sessions,diagnosis_internal,jsonb,YES,,,,,jsonb
+tutoring_sessions,top_bottlenecks,jsonb,YES,,,,,jsonb
+tutoring_sessions,student_top_focuses,jsonb,YES,,,,,jsonb
+tutoring_sessions,student_summary,jsonb,YES,,,,,jsonb
+tutoring_sessions,prescription_json,jsonb,YES,,,,,jsonb
+tutoring_sessions,status,text,NO,'diagnosing'::text,,,,text
+tutoring_sessions,model,text,YES,,,,,text
+tutoring_sessions,tokens_used,integer,YES,,,32,0,int4
+tutoring_sessions,prompt_version,text,YES,,,,,text
+tutoring_sessions,created_at,timestamp with time zone,NO,now(),,,,timestamptz
+tutoring_sessions,completed_at,timestamp with time zone,YES,,,,,timestamptz
+type_templates,type_code,text,NO,,,,,text
+type_templates,type_label_ko,text,NO,,,,,text
+type_templates,db_question_types,ARRAY,NO,,,,,_text
+type_templates,purpose,text,YES,,,,,text
+type_templates,core_skill_targets,ARRAY,YES,,,,,_text
+type_templates,default_slot_order,ARRAY,YES,,,,,_text
+type_templates,slot_definitions,jsonb,YES,,,,,jsonb
+type_templates,default_pass_criteria,ARRAY,YES,,,,,_text
+type_templates,default_retest_criteria,ARRAY,YES,,,,,_text
+type_templates,layer1_markers,jsonb,YES,,,,,jsonb
+type_templates,graduation_relevance,text,YES,'medium'::text,,,,text
+type_templates,created_at,timestamp with time zone,NO,now(),,,,timestamptz
+user_activity_log,id,bigint,NO,nextval('public.user_activity_log_id_seq'::regclass),,64,0,int8
+user_activity_log,user_id,uuid,NO,,,,,uuid
+user_activity_log,action,text,NO,,,,,text
+user_activity_log,metadata,jsonb,YES,'{}'::jsonb,,,,jsonb
+user_activity_log,created_at,timestamp with time zone,YES,now(),,,,timestamptz
+user_credits,user_id,uuid,NO,,,,,uuid
+user_credits,current_plan,text,NO,'free'::text,,,,text
+user_credits,mock_exam_credits,integer,NO,0,,32,0,int4
+user_credits,script_credits,integer,NO,0,,32,0,int4
+user_credits,plan_expires_at,timestamp with time zone,YES,,,,,timestamptz
+user_credits,created_at,timestamp with time zone,YES,now(),,,,timestamptz
+user_credits,updated_at,timestamp with time zone,YES,now(),,,,timestamptz
+user_credits,plan_mock_exam_credits,integer,NO,0,,32,0,int4
+user_credits,plan_script_credits,integer,NO,0,,32,0,int4
+user_credits,plan_tutoring_credits,integer,NO,0,,32,0,int4
+user_credits,tutoring_credits,integer,NO,0,,32,0,int4
+user_credits,balance_krw,integer,NO,0,,32,0,int4

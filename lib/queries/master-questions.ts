@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { T } from "@/lib/constants/tables";
 import { FREQUENCY_COMBO_MAP, QUESTION_TYPE_ORDER } from "@/lib/types/reviews";
 
 // 카테고리 → combo_type 매핑
@@ -15,7 +16,7 @@ export async function getTopics() {
   const supabase = await createServerSupabaseClient();
 
   const { data, error } = await supabase
-    .from("questions")
+    .from(T.questions)
     .select("topic, category")
     .neq("topic", "자기소개");
 
@@ -39,7 +40,7 @@ export async function getQuestionsByCategory(category: string) {
   const supabase = await createServerSupabaseClient();
 
   const { data, error } = await supabase
-    .from("questions")
+    .from(T.questions)
     .select("id, question_short, question_english, question_korean, question_type_eng, topic, category")
     .eq("category", category)
     .neq("topic", "자기소개")
@@ -58,12 +59,12 @@ export async function getTopicsByCategory(category: "일반" | "롤플레이" | 
   // 주제 목록 + 해당 카테고리 빈도 데이터 병렬 조회
   const [topicResult, freqResult] = await Promise.all([
     supabase
-      .from("questions")
+      .from(T.questions)
       .select("topic")
       .eq("category", category)
       .neq("topic", "자기소개"),
     supabase
-      .from("submission_combos")
+      .from(T.submission_combos)
       .select("topic, combo_type")
       .in("combo_type", comboTypes),
   ]);
@@ -95,7 +96,7 @@ export async function getQuestionsByTopic(
   const supabase = await createServerSupabaseClient();
 
   const { data, error } = await supabase
-    .from("questions")
+    .from(T.questions)
     .select("id, question_short, question_english, question_korean, question_type_eng, topic")
     .eq("category", category)
     .eq("topic", topic)

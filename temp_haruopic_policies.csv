@@ -1,0 +1,110 @@
+tablename,policyname,permissive,roles,cmd,qual,with_check
+admin_audit_log,admin_audit_log_select,PERMISSIVE,{public},SELECT,(((auth.jwt() -> 'app_metadata'::text) ->> 'role'::text) = 'admin'::text),
+ai_prompt_templates,ai_prompt_templates_read,PERMISSIVE,{public},SELECT,true,
+announcements,admin_all,PERMISSIVE,{public},ALL,"(EXISTS ( SELECT 1
+   FROM auth.users
+  WHERE ((users.id = auth.uid()) AND ((users.raw_app_meta_data ->> 'role'::text) = 'admin'::text))))",
+announcements,anon_read_active,PERMISSIVE,{public},SELECT,((is_active = true) AND ((end_at IS NULL) OR (end_at > now()))),
+api_usage_logs,Admin can view all usage logs,PERMISSIVE,{public},SELECT,(((auth.jwt() -> 'app_metadata'::text) ->> 'role'::text) = 'admin'::text),
+api_usage_logs,Users can view own usage logs,PERMISSIVE,{public},SELECT,(auth.uid() = user_id),
+beta_applications,beta_insert_own,PERMISSIVE,{public},INSERT,,(auth.uid() = user_id)
+beta_applications,beta_select_own,PERMISSIVE,{public},SELECT,(auth.uid() = user_id),
+evaluation_criteria,evaluation_criteria_v2_select,PERMISSIVE,{authenticated},SELECT,true,
+evaluation_criteria,evaluation_criteria_v2_service,PERMISSIVE,{service_role},ALL,true,true
+evaluation_prompts,evaluation_prompts_v2_select,PERMISSIVE,{authenticated},SELECT,true,
+evaluation_prompts,evaluation_prompts_v2_service,PERMISSIVE,{service_role},ALL,true,true
+level_modifiers,level_modifiers_read_all,PERMISSIVE,{public},SELECT,true,
+master_questions,master_questions_select,PERMISSIVE,{authenticated},SELECT,true,
+mock_test_answers,mock_answers_insert_own,PERMISSIVE,{public},INSERT,,"(EXISTS ( SELECT 1
+   FROM mock_test_sessions s
+  WHERE ((s.session_id = mock_test_answers.session_id) AND (s.user_id = auth.uid()))))"
+mock_test_answers,mock_answers_select_own,PERMISSIVE,{public},SELECT,"((EXISTS ( SELECT 1
+   FROM mock_test_sessions s
+  WHERE ((s.session_id = mock_test_answers.session_id) AND (s.user_id = auth.uid())))) OR (((auth.jwt() -> 'app_metadata'::text) ->> 'role'::text) = 'admin'::text))",
+mock_test_answers,mock_answers_update_own,PERMISSIVE,{public},UPDATE,"(EXISTS ( SELECT 1
+   FROM mock_test_sessions s
+  WHERE ((s.session_id = mock_test_answers.session_id) AND (s.user_id = auth.uid()))))",
+mock_test_consults,service_role_full_access_consults,PERMISSIVE,{public},ALL,true,true
+mock_test_consults,user_select_own_consults,PERMISSIVE,{public},SELECT,(auth.uid() = user_id),
+mock_test_eval_settings,admin_select_eval_settings,PERMISSIVE,{public},SELECT,(((auth.jwt() -> 'app_metadata'::text) ->> 'role'::text) = 'admin'::text),
+mock_test_eval_settings,admin_update_eval_settings,PERMISSIVE,{public},UPDATE,(((auth.jwt() -> 'app_metadata'::text) ->> 'role'::text) = 'admin'::text),
+mock_test_evaluations,eval_v2_admin_select,PERMISSIVE,{public},SELECT,"(EXISTS ( SELECT 1
+   FROM auth.users
+  WHERE ((users.id = auth.uid()) AND ((users.raw_app_meta_data ->> 'role'::text) = 'admin'::text))))",
+mock_test_evaluations,eval_v2_select_own,PERMISSIVE,{public},SELECT,(auth.uid() = user_id),
+mock_test_evaluations,eval_v2_service_delete,PERMISSIVE,{public},DELETE,((current_setting('role'::text) = 'service_role'::text) OR (auth.uid() = user_id)),
+mock_test_evaluations,eval_v2_service_insert,PERMISSIVE,{public},INSERT,,((current_setting('role'::text) = 'service_role'::text) OR (auth.uid() = user_id))
+mock_test_reports,reports_v2_admin_select,PERMISSIVE,{public},SELECT,(( SELECT ((auth.jwt() -> 'app_metadata'::text) ->> 'role'::text) AS text) = 'admin'::text),
+mock_test_reports,reports_v2_select_own,PERMISSIVE,{public},SELECT,(auth.uid() = user_id),
+mock_test_reports,reports_v2_service_delete,PERMISSIVE,{public},DELETE,true,
+mock_test_reports,reports_v2_service_insert,PERMISSIVE,{public},INSERT,,true
+mock_test_reports,reports_v2_service_update,PERMISSIVE,{public},UPDATE,true,
+mock_test_sessions,mock_sessions_insert_own,PERMISSIVE,{public},INSERT,,(auth.uid() = user_id)
+mock_test_sessions,mock_sessions_select_own,PERMISSIVE,{public},SELECT,((auth.uid() = user_id) OR (((auth.jwt() -> 'app_metadata'::text) ->> 'role'::text) = 'admin'::text)),
+mock_test_sessions,mock_sessions_update_own,PERMISSIVE,{public},UPDATE,(auth.uid() = user_id),
+opic_tips,opic_tips_public_read,PERMISSIVE,{public},SELECT,true,
+orders,orders_select_own,PERMISSIVE,{public},SELECT,((auth.uid() = user_id) OR (((auth.jwt() -> 'app_metadata'::text) ->> 'role'::text) = 'admin'::text)),
+polar_balances,polar_balances_select_own,PERMISSIVE,{public},SELECT,(auth.uid() = user_id),
+polar_orders,polar_orders_select_own,PERMISSIVE,{public},SELECT,(auth.uid() = user_id),
+polar_transactions,polar_transactions_select_own,PERMISSIVE,{public},SELECT,(auth.uid() = user_id),
+profiles,profiles_insert,PERMISSIVE,{public},INSERT,,true
+profiles,본인 프로필 수정,PERMISSIVE,{public},UPDATE,(auth.uid() = id),
+profiles,본인 프로필 조회,PERMISSIVE,{public},SELECT,(auth.uid() = id),
+questions,questions_select_all,PERMISSIVE,{public},SELECT,true,
+script_packages,script_packages_delete_own,PERMISSIVE,{authenticated},DELETE,(auth.uid() = user_id),
+script_packages,script_packages_insert_own,PERMISSIVE,{authenticated},INSERT,,(auth.uid() = user_id)
+script_packages,script_packages_select_own,PERMISSIVE,{authenticated},SELECT,(auth.uid() = user_id),
+script_packages,script_packages_update_own,PERMISSIVE,{authenticated},UPDATE,(auth.uid() = user_id),(auth.uid() = user_id)
+script_specs,script_specs_read,PERMISSIVE,{public},SELECT,true,
+scripts,scripts_delete_own,PERMISSIVE,{authenticated},DELETE,(auth.uid() = user_id),
+scripts,scripts_insert_own,PERMISSIVE,{authenticated},INSERT,,(auth.uid() = user_id)
+scripts,scripts_select_own,PERMISSIVE,{authenticated},SELECT,(auth.uid() = user_id),
+scripts,scripts_update_own,PERMISSIVE,{authenticated},UPDATE,(auth.uid() = user_id),(auth.uid() = user_id)
+shadowing_evaluations,shadowing_evaluations_insert_own,PERMISSIVE,{authenticated},INSERT,,(auth.uid() = user_id)
+shadowing_evaluations,shadowing_evaluations_select_own,PERMISSIVE,{authenticated},SELECT,(auth.uid() = user_id),
+shadowing_sessions,shadowing_sessions_all_own,PERMISSIVE,{authenticated},ALL,(auth.uid() = user_id),(auth.uid() = user_id)
+submission_combos,sc_delete_own,PERMISSIVE,{authenticated},DELETE,"(EXISTS ( SELECT 1
+   FROM submissions s
+  WHERE ((s.id = submission_combos.submission_id) AND (s.user_id = auth.uid()))))",
+submission_combos,sc_insert_own,PERMISSIVE,{authenticated},INSERT,,"(EXISTS ( SELECT 1
+   FROM submissions s
+  WHERE ((s.id = submission_combos.submission_id) AND (s.user_id = auth.uid()))))"
+submission_combos,sc_select_anon,PERMISSIVE,{anon},SELECT,(combo_type = 'advance'::text),
+submission_combos,sc_select_authenticated,PERMISSIVE,{authenticated},SELECT,true,
+submission_questions,sq_delete_own,PERMISSIVE,{authenticated},DELETE,"(EXISTS ( SELECT 1
+   FROM submissions s
+  WHERE ((s.id = submission_questions.submission_id) AND (s.user_id = auth.uid()))))",
+submission_questions,sq_insert_own,PERMISSIVE,{authenticated},INSERT,,"(EXISTS ( SELECT 1
+   FROM submissions s
+  WHERE ((s.id = submission_questions.submission_id) AND (s.user_id = auth.uid()))))"
+submission_questions,sq_select,PERMISSIVE,{authenticated},SELECT,"(EXISTS ( SELECT 1
+   FROM submissions s
+  WHERE ((s.id = submission_questions.submission_id) AND ((s.user_id = auth.uid()) OR (s.status = 'complete'::text)))))",
+submissions,submissions_delete_own,PERMISSIVE,{authenticated},DELETE,(auth.uid() = user_id),
+submissions,submissions_insert_own,PERMISSIVE,{authenticated},INSERT,,(auth.uid() = user_id)
+submissions,submissions_select,PERMISSIVE,{public},SELECT,((auth.uid() = user_id) OR (status = 'complete'::text) OR (((auth.jwt() -> 'app_metadata'::text) ->> 'role'::text) = 'admin'::text)),
+submissions,submissions_update_own,PERMISSIVE,{authenticated},UPDATE,(auth.uid() = user_id),(auth.uid() = user_id)
+task_fulfillment_checklists,전체 읽기,PERMISSIVE,{public},SELECT,true,
+tutoring_attempts,tutoring_attempts_user_all,PERMISSIVE,{public},ALL,"(drill_id IN ( SELECT d.id
+   FROM ((tutoring_drills d
+     JOIN tutoring_focuses f ON ((f.id = d.focus_id)))
+     JOIN tutoring_sessions s ON ((s.id = f.session_id)))
+  WHERE (s.user_id = auth.uid())))",
+tutoring_drills,tutoring_drills_user_all,PERMISSIVE,{public},ALL,"(focus_id IN ( SELECT f.id
+   FROM (tutoring_focuses f
+     JOIN tutoring_sessions s ON ((s.id = f.session_id)))
+  WHERE (s.user_id = auth.uid())))",
+tutoring_focuses,tutoring_focuses_user_all,PERMISSIVE,{public},ALL,"(session_id IN ( SELECT tutoring_sessions.id
+   FROM tutoring_sessions
+  WHERE (tutoring_sessions.user_id = auth.uid())))",
+tutoring_retests,tutoring_retests_user_all,PERMISSIVE,{public},ALL,"(focus_id IN ( SELECT f.id
+   FROM (tutoring_focuses f
+     JOIN tutoring_sessions s ON ((s.id = f.session_id)))
+  WHERE (s.user_id = auth.uid())))",
+tutoring_sessions,tutoring_sessions_user_all,PERMISSIVE,{public},ALL,(auth.uid() = user_id),
+type_templates,type_templates_read_all,PERMISSIVE,{public},SELECT,true,
+user_activity_log,admin_read_activity,PERMISSIVE,{public},SELECT,"((EXISTS ( SELECT 1
+   FROM auth.users
+  WHERE ((users.id = auth.uid()) AND ((users.raw_app_meta_data ->> 'role'::text) = 'admin'::text)))) OR (auth.uid() = user_id))",
+user_activity_log,insert_own_activity,PERMISSIVE,{public},INSERT,,(auth.uid() = user_id)
+user_credits,user_credits_select_own,PERMISSIVE,{public},SELECT,((auth.uid() = user_id) OR (((auth.jwt() -> 'app_metadata'::text) ->> 'role'::text) = 'admin'::text)),

@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { T } from "@/lib/constants/tables";
 import {
   createSessionSchema,
   submitAnswerSchema,
@@ -45,7 +46,7 @@ export async function getExamPool(): Promise<ActionResult<ExamPoolPreview[]>> {
 
     // 사용자가 이미 사용한 기출(submission_id) 목록
     const { data: usedSessions } = await supabase
-      .from("mock_test_sessions")
+      .from(T.mock_test_sessions)
       .select("submission_id")
       .eq("user_id", userId)
       .neq("status", "expired");
@@ -54,7 +55,7 @@ export async function getExamPool(): Promise<ActionResult<ExamPoolPreview[]>> {
 
     // 승인된 기출 조회 (본인 후기 제외)
     let query = supabase
-      .from("submissions")
+      .from(T.submissions)
       .select("id, exam_date, achieved_level")
       .eq("status", "complete")
       .eq("exam_approved", "approved")
@@ -78,7 +79,7 @@ export async function getExamPool(): Promise<ActionResult<ExamPoolPreview[]>> {
     if (pool.length < 3) {
       // 전체 승인된 기출에서 랜덤 추출 (이력 무시)
       const { data: allCandidates } = await supabase
-        .from("submissions")
+        .from(T.submissions)
         .select("id, exam_date, achieved_level")
         .eq("status", "complete")
         .eq("exam_approved", "approved")
@@ -102,11 +103,11 @@ export async function getExamPool(): Promise<ActionResult<ExamPoolPreview[]>> {
 
     const [{ data: combos }, { data: subQuestionRows }] = await Promise.all([
       supabase
-        .from("submission_combos")
+        .from(T.submission_combos)
         .select("submission_id, combo_type, topic")
         .in("submission_id", submissionIds),
       supabase
-        .from("submission_questions")
+        .from(T.submission_questions)
         .select("submission_id, question_id, topic")
         .in("submission_id", submissionIds),
     ]);
@@ -118,7 +119,7 @@ export async function getExamPool(): Promise<ActionResult<ExamPoolPreview[]>> {
 
     const { data: questionTypes } = questionIds.length > 0
       ? await supabase
-          .from("questions")
+          .from(T.questions)
           .select("id, question_type_eng")
           .in("id", questionIds)
       : { data: [] };
@@ -197,7 +198,7 @@ export async function createSession(
 
     // 기존 활성 세션 확인 (동시 1개 제한)
     const { data: activeSessions } = await supabase
-      .from("mock_test_sessions")
+      .from(T.mock_test_sessions)
       .select("session_id, mode, current_question, started_at")
       .eq("user_id", userId)
       .eq("status", "active");
@@ -216,7 +217,7 @@ export async function createSession(
 
     // 기출 문제 ID 조회 (Q1~Q15, Q1 자기소개 포함)
     const { data: subQuestions, error: sqErr } = await supabase
-      .from("submission_questions")
+      .from(T.submission_questions)
       .select("question_id")
       .eq("submission_id", parsed.data.submission_id)
       .order("question_number", { ascending: true });
@@ -238,7 +239,7 @@ export async function createSession(
 
     // 세션 INSERT
     const { error: insertErr } = await supabase
-      .from("mock_test_sessions")
+      .from(T.mock_test_sessions)
       .insert({
         session_id: sessionId,
         user_id: userId,
@@ -278,7 +279,7 @@ export async function submitAnswer(
 
     // 세션 소유자 확인 + 상태 검증
     const { data: session, error: sessErr } = await supabase
-      .from("mock_test_sessions")
+      .from(T.mock_test_sessions)
       .select("user_id, status, mode, expires_at")
       .eq("session_id", parsed.data.session_id)
       .single();
@@ -296,7 +297,7 @@ export async function submitAnswer(
     // 만료 확인
     if (new Date(session.expires_at) < new Date()) {
       await supabase
-        .from("mock_test_sessions")
+        .from(T.mock_test_sessions)
         .update({ status: "expired" })
         .eq("session_id", parsed.data.session_id);
       return { error: "세션이 만료되었습니다" };
@@ -307,7 +308,7 @@ export async function submitAnswer(
 
     // 답변 UPSERT
     const { data: answer, error: ansErr } = await supabase
-      .from("mock_test_answers")
+      .from(T.mock_test_answers)
       .upsert(
         {
           session_id: parsed.data.session_id,
@@ -329,7 +330,7 @@ export async function submitAnswer(
 
     // 현재 문항 업데이트
     await supabase
-      .from("mock_test_sessions")
+      .from(T.mock_test_sessions)
       .update({
         current_question: parsed.data.question_number + 1,
       })
@@ -396,7 +397,7 @@ export async function getSession(
 
     // 세션 조회
     const { data: session, error: sessErr } = await supabase
-      .from("mock_test_sessions")
+      .from(T.mock_test_sessions)
       .select("*")
       .eq("session_id", parsed.data.session_id)
       .eq("user_id", userId)
@@ -412,13 +413,13 @@ export async function getSession(
       { data: questions },
     ] = await Promise.all([
       supabase
-        .from("mock_test_answers")
+        .from(T.mock_test_answers)
         .select("*")
         .eq("session_id", parsed.data.session_id)
         .order("question_number"),
       // 세션의 question_ids로 질문 정보 조회
       supabase
-        .from("questions")
+        .from(T.questions)
         .select("id, question_english, question_korean, question_short, question_type_eng, survey_type, topic, category, audio_url")
         .in("id", session.question_ids || []),
     ]);
@@ -452,7 +453,7 @@ export async function completeSession(
 
     // 세션 소유자 확인
     const { data: session } = await supabase
-      .from("mock_test_sessions")
+      .from(T.mock_test_sessions)
       .select("user_id, status")
       .eq("session_id", parsed.data.session_id)
       .single();
@@ -466,7 +467,7 @@ export async function completeSession(
 
     // 세션 완료 처리
     const { error: updateErr } = await supabase
-      .from("mock_test_sessions")
+      .from(T.mock_test_sessions)
       .update({
         status: "completed",
         completed_at: new Date().toISOString(),
@@ -481,7 +482,7 @@ export async function completeSession(
     // 모든 답변 평가가 이미 완료된 경우 → Stage C 즉시 트리거
     // (Stage B보다 completeSession이 늦게 호출되는 Case A 대응)
     const { data: pendingAnswers } = await supabase
-      .from("mock_test_answers")
+      .from(T.mock_test_answers)
       .select("question_number, eval_status")
       .eq("session_id", parsed.data.session_id)
       .not("eval_status", "in", '("completed","skipped","failed")');
@@ -524,7 +525,7 @@ export async function expireSession(
     const { supabase, userId } = await requireUser();
 
     const { error } = await supabase
-      .from("mock_test_sessions")
+      .from(T.mock_test_sessions)
       .update({ status: "expired" })
       .eq("session_id", parsed.data.session_id)
       .eq("user_id", userId)
@@ -552,7 +553,7 @@ export async function getHistory(): Promise<
 
     // 세션 + 리포트 조인 조회
     const { data: sessions, error: sessErr } = await supabase
-      .from("mock_test_sessions")
+      .from(T.mock_test_sessions)
       .select(`
         session_id,
         mode,
@@ -582,11 +583,11 @@ export async function getHistory(): Promise<
 
     const [{ data: reports }, { data: questionTopics }] = await Promise.all([
       supabase
-        .from("mock_test_reports")
+        .from(T.mock_test_reports)
         .select("session_id, final_level, overview")
         .in("session_id", sessionIds),
       uniqueIds.length > 0
-        ? supabase.from("questions").select("id, topic").in("id", uniqueIds)
+        ? supabase.from(T.questions).select("id, topic").in("id", uniqueIds)
         : Promise.resolve({ data: [] as { id: string; topic: string }[] }),
     ]);
 
@@ -654,7 +655,7 @@ export async function getActiveSession(): Promise<
     const { supabase, userId } = await requireUser();
 
     const { data: session } = await supabase
-      .from("mock_test_sessions")
+      .from(T.mock_test_sessions)
       .select("session_id, mode, current_question, started_at, expires_at")
       .eq("user_id", userId)
       .eq("status", "active")
@@ -667,7 +668,7 @@ export async function getActiveSession(): Promise<
     // 만료 확인
     if (new Date(session.expires_at) < new Date()) {
       await supabase
-        .from("mock_test_sessions")
+        .from(T.mock_test_sessions)
         .update({ status: "expired" })
         .eq("session_id", session.session_id);
       return { data: null };
@@ -700,14 +701,14 @@ export async function getEvaluation(input: {
     // consults + 답변 오디오 URL 병렬 조회
     const [consultRes, answerRes] = await Promise.all([
       supabase
-        .from("mock_test_consults")
+        .from(T.mock_test_consults)
         .select("*")
         .eq("session_id", input.session_id)
         .eq("question_number", input.question_number)
         .eq("user_id", userId)
         .maybeSingle(),
       supabase
-        .from("mock_test_answers")
+        .from(T.mock_test_answers)
         .select("audio_url")
         .eq("session_id", input.session_id)
         .eq("question_number", input.question_number)
@@ -745,7 +746,7 @@ export async function checkMockExamCredit(): Promise<
     const { supabase, userId } = await requireUser();
 
     const { data: balance } = await supabase
-      .from("polar_balances")
+      .from(T.polar_balances)
       .select("balance_krw")
       .eq("user_id", userId)
       .single();

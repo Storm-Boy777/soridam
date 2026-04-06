@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { T } from "@/lib/constants/tables";
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase";
 import { Wallet, TrendingDown, TrendingUp } from "lucide-react";
@@ -10,7 +11,7 @@ import { Wallet, TrendingDown, TrendingUp } from "lucide-react";
 async function fetchBalance(userId: string) {
   const supabase = createClient();
   const { data, error } = await supabase
-    .from("polar_balances")
+    .from(T.polar_balances)
     .select("balance_krw, total_charged, total_used")
     .eq("user_id", userId)
     .single();

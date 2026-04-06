@@ -3,6 +3,7 @@
 // 오픈 베타 관리자 Server Actions
 
 import { requireAdmin } from "@/lib/auth";
+import { T } from "@/lib/constants/tables";
 import type { BetaApplication, BetaStats, PaginatedResult } from "@/lib/types/admin";
 
 // ── 베타 통계 ──
@@ -27,7 +28,7 @@ export async function getBetaApplications(params: {
 
   // 신청 목록 조회
   let query = supabase
-    .from("beta_applications")
+    .from(T.beta_applications)
     .select("*", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(offset, offset + pageSize - 1);
@@ -44,7 +45,7 @@ export async function getBetaApplications(params: {
   // user 정보 매핑 (profiles 조인)
   const userIds = apps.map((a: { user_id: string }) => a.user_id);
   const { data: profiles } = await supabase
-    .from("profiles")
+    .from(T.profiles)
     .select("id, display_name")
     .in("id", userIds);
 
@@ -89,7 +90,7 @@ export async function approveBeta(applicationId: string) {
   }
 
   // 감사 로그
-  await supabase.from("admin_audit_log").insert({
+  await supabase.from(T.admin_audit_log).insert({
     admin_id: userId,
     admin_email: userEmail,
     action: "beta_approve",
@@ -107,7 +108,7 @@ export async function rejectBeta(applicationId: string, reason: string) {
   const { supabase, userId, userEmail } = await requireAdmin();
 
   const { error } = await supabase
-    .from("beta_applications")
+    .from(T.beta_applications)
     .update({
       status: "rejected",
       rejected_reason: reason,
@@ -122,7 +123,7 @@ export async function rejectBeta(applicationId: string, reason: string) {
   }
 
   // 감사 로그
-  await supabase.from("admin_audit_log").insert({
+  await supabase.from(T.admin_audit_log).insert({
     admin_id: userId,
     admin_email: userEmail,
     action: "beta_reject",

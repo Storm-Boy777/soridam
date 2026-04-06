@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { T } from "@/lib/constants/tables";
 import Link from "next/link";
 import {
   BarChart3,
@@ -231,12 +232,12 @@ async function BetaSectionLoader({ userId }: { userId: string }) {
   const supabase = await createServerSupabaseClient();
   const [{ data: credits }, { data: betaApp }, { data: stats }] = await Promise.all([
     supabase
-      .from("user_credits")
+      .from(T.user_credits)
       .select("current_plan, plan_expires_at")
       .eq("user_id", userId)
       .single(),
     supabase
-      .from("beta_applications")
+      .from(T.beta_applications)
       .select("status, rejected_reason")
       .eq("user_id", userId)
       .single(),

@@ -3,6 +3,7 @@
 // 설계서: docs/설계/튜터링.md — "Question Selection Engine의 역할"
 
 import { SupabaseClient } from "@supabase/supabase-js";
+import { T } from "@/lib/constants/tables";
 import type { SelectionPolicy, QuestionCandidate, QuestionPool } from "@/lib/types/tutoring";
 
 /**
@@ -100,7 +101,7 @@ async function queryQuestions(
   opts: QueryOptions
 ): Promise<QuestionCandidate[]> {
   let query = supabase
-    .from("questions")
+    .from(T.questions)
     .select("id, question_type_eng, topic, question_english")
     .eq("question_type_eng", opts.questionType);
 

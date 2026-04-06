@@ -1,6 +1,7 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth";
+import { T } from "@/lib/constants/tables";
 
 export interface Announcement {
   id: string;
@@ -19,7 +20,7 @@ export interface Announcement {
 export async function getAnnouncements(): Promise<Announcement[]> {
   const { supabase } = await requireAdmin();
   const { data } = await supabase
-    .from("announcements")
+    .from(T.announcements)
     .select("*")
     .order("created_at", { ascending: false });
   return (data || []) as Announcement[];
@@ -35,7 +36,7 @@ export async function createAnnouncement(params: {
 }): Promise<{ success: boolean; error?: string }> {
   const { supabase, userId } = await requireAdmin();
 
-  const { error } = await supabase.from("announcements").insert({
+  const { error } = await supabase.from(T.announcements).insert({
     title: params.title,
     content: params.content,
     type: params.type,
@@ -56,7 +57,7 @@ export async function updateAnnouncement(
   const { supabase } = await requireAdmin();
 
   const { error } = await supabase
-    .from("announcements")
+    .from(T.announcements)
     .update({ ...params, updated_at: new Date().toISOString() })
     .eq("id", id);
 
@@ -67,7 +68,7 @@ export async function updateAnnouncement(
 // 공지사항 삭제
 export async function deleteAnnouncement(id: string): Promise<{ success: boolean; error?: string }> {
   const { supabase } = await requireAdmin();
-  const { error } = await supabase.from("announcements").delete().eq("id", id);
+  const { error } = await supabase.from(T.announcements).delete().eq("id", id);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }

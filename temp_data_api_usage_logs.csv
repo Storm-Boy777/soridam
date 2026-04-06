@@ -1,0 +1,1 @@
+id,user_id,session_type,session_id,feature,service,model,ef_name,tokens_in,tokens_out,audio_duration_sec,text_length,cost_usd,processing_time_ms,created_at

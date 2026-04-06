@@ -244,7 +244,7 @@ docs/
 - **저장소**: `opictalkdoc/opictalkdoc-app`
 - **URL**: https://github.com/opictalkdoc/opictalkdoc-app
 
-### Supabase
+### Supabase (하루오픽 — 레거시)
 - **Project ID**: `rwdsyqnrrpwkureqfxwb`
 - **Project URL**: `https://rwdsyqnrrpwkureqfxwb.supabase.co`
 - **Region**: Northeast Asia (Seoul)
@@ -252,6 +252,16 @@ docs/
 - **DB Host (Pooler)**: `aws-1-ap-northeast-2.pooler.supabase.com`
 - **DB Port**: `6543` (Transaction) / `5432` (Session)
 - **DB User**: `postgres.rwdsyqnrrpwkureqfxwb`
+
+### Supabase (소리담 — 이전 대상)
+- **Project ID**: `fkkdbnebsaecjpqhhdvl`
+- **Project URL**: `https://fkkdbnebsaecjpqhhdvl.supabase.co`
+- **Region**: Northeast Asia (Seoul)
+- **DB Password**: `soridam2026`
+- **DB Host (Pooler)**: `aws-0-ap-northeast-2.pooler.supabase.com`
+- **DB Port**: `6543` (Transaction) / `5432` (Session)
+- **DB User**: `postgres.fkkdbnebsaecjpqhhdvl`
+- **Access Token**: `sbp_a586b7b80d9381508101d27a1bd93b9979e93637`
 
 ### Vercel
 - **팀**: OPIcTalkDoc (Pro)
@@ -726,11 +736,24 @@ Stage C: mock-test-report (평가엔진 7-Step + overview/growth GPT)
 - 일상적 DB 조회, 스키마 확인, 마이그레이션, 타입 생성 등 모든 DB 작업에 MCP 우선 사용
 
 **2순위 (폴백): psql 직접 실행** — MCP 연결 실패 또는 대량 데이터 작업 시
+
+하루오픽 DB (레거시):
 ```bash
 PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/16/bin/psql" \
   -h aws-1-ap-northeast-2.pooler.supabase.com \
   -p 6543 \
   -U postgres.rwdsyqnrrpwkureqfxwb \
+  -d postgres \
+  --set=sslmode=require \
+  -c "SQL문"
+```
+
+소리담 DB (이전 대상):
+```bash
+PGPASSWORD='soridam2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/16/bin/psql" \
+  -h aws-0-ap-northeast-2.pooler.supabase.com \
+  -p 6543 \
+  -U postgres.fkkdbnebsaecjpqhhdvl \
   -d postgres \
   --set=sslmode=require \
   -c "SQL문"

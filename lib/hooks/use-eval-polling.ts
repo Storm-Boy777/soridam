@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { T } from "@/lib/constants/tables";
 import { createClient } from "@/lib/supabase";
 import type { EvalStatus, HolisticStatus } from "@/lib/types/mock-exam";
 
@@ -50,11 +51,11 @@ export function useEvalPolling(
       const [{ data: answers, error: ansErr }, { data: session, error: sessErr }] =
         await Promise.all([
           supabase
-            .from("mock_test_answers")
+            .from(T.mock_test_answers)
             .select("question_number, eval_status")
             .eq("session_id", sessionId),
           supabase
-            .from("mock_test_sessions")
+            .from(T.mock_test_sessions)
             .select("holistic_status")
             .eq("session_id", sessionId)
             .single(),

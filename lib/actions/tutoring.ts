@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { T } from "@/lib/constants/tables";
 import type {
   TutoringSession,
   TutoringFocus,
@@ -39,7 +40,7 @@ const MAX_SESSIONS = 5; // 최대 분석 회수
 async function checkSessionCompletion(supabase: SupabaseClient, focusId: string) {
   // focus의 session_id 조회
   const { data: focus } = await supabase
-    .from("tutoring_focuses")
+    .from(T.tutoring_focuses)
     .select("session_id")
     .eq("id", focusId)
     .single();
@@ -48,7 +49,7 @@ async function checkSessionCompletion(supabase: SupabaseClient, focusId: string)
 
   // 해당 세션의 모든 focus 상태 조회
   const { data: allFocuses } = await supabase
-    .from("tutoring_focuses")
+    .from(T.tutoring_focuses)
     .select("status")
     .eq("session_id", focus.session_id);
 
@@ -61,7 +62,7 @@ async function checkSessionCompletion(supabase: SupabaseClient, focusId: string)
 
   if (allGraduated) {
     await supabase
-      .from("tutoring_sessions")
+      .from(T.tutoring_sessions)
       .update({
         status: "completed",
         completed_at: new Date().toISOString(),
@@ -70,14 +71,14 @@ async function checkSessionCompletion(supabase: SupabaseClient, focusId: string)
   } else {
     // 아직 active가 아니면 active로 전환
     const { data: session } = await supabase
-      .from("tutoring_sessions")
+      .from(T.tutoring_sessions)
       .select("status")
       .eq("id", focus.session_id)
       .single();
 
     if (session?.status === "diagnosed") {
       await supabase
-        .from("tutoring_sessions")
+        .from(T.tutoring_sessions)
         .update({ status: "active" })
         .eq("id", focus.session_id);
     }
@@ -98,7 +99,7 @@ export async function checkTutoringEligibility(): Promise<ActionResult<TutoringE
     // 가장 최근 **완료된** 튜터링 세션 조회
     // (diagnosing/diagnosed/active 중인 세션은 제외 — 현재 진행 중이므로)
     const { data: lastTutoring } = await supabase
-      .from("tutoring_sessions")
+      .from(T.tutoring_sessions)
       .select("id, analyzed_session_ids, created_at")
       .eq("user_id", userId)
       .eq("status", "completed")
@@ -111,7 +112,7 @@ export async function checkTutoringEligibility(): Promise<ActionResult<TutoringE
 
     // 완료된 모의고사 세션 조회 (이전 튜터링 세션 제외)
     let query = supabase
-      .from("mock_test_sessions")
+      .from(T.mock_test_sessions)
       .select("session_id, completed_at")
       .eq("user_id", userId)
       .eq("status", "completed")
@@ -154,7 +155,7 @@ export async function checkTutoringCredit(): Promise<ActionResult<TutoringCredit
     const { supabase, userId } = await requireUser();
 
     const { data: balance } = await supabase
-      .from("polar_balances")
+      .from(T.polar_balances)
       .select("balance_krw")
       .eq("user_id", userId)
       .single();
@@ -187,7 +188,7 @@ export async function getActiveSession(): Promise<
     const { supabase, userId } = await requireUser();
 
     const { data: session, error } = await supabase
-      .from("tutoring_sessions")
+      .from(T.tutoring_sessions)
       .select("*")
       .eq("user_id", userId)
       .in("status", ["diagnosing", "diagnosed", "active"])
@@ -223,7 +224,7 @@ export async function startDiagnosis(): Promise<ActionResult<{ session_id: strin
 
     // 2. 이미 진행 중인 세션 확인
     const { data: existing } = await supabase
-      .from("tutoring_sessions")
+      .from(T.tutoring_sessions)
       .select("id")
       .eq("user_id", userId)
       .in("status", ["diagnosing", "diagnosed", "active"])
@@ -245,7 +246,7 @@ export async function startDiagnosis(): Promise<ActionResult<{ session_id: strin
     const excludeIds: string[] = [];
     if (lastTutoring) {
       const { data: prev } = await supabase
-        .from("tutoring_sessions")
+        .from(T.tutoring_sessions)
         .select("analyzed_session_ids")
         .eq("id", lastTutoring)
         .single();
@@ -255,7 +256,7 @@ export async function startDiagnosis(): Promise<ActionResult<{ session_id: strin
     }
 
     let sessionQuery = supabase
-      .from("mock_test_sessions")
+      .from(T.mock_test_sessions)
       .select("session_id")
       .eq("user_id", userId)
       .eq("status", "completed")
@@ -282,7 +283,7 @@ export async function startDiagnosis(): Promise<ActionResult<{ session_id: strin
 
     // 7. 세션 생성
     const { error: insertErr } = await supabase
-      .from("tutoring_sessions")
+      .from(T.tutoring_sessions)
       .insert({
         id: sessionId,
         user_id: userId,
@@ -339,7 +340,7 @@ export async function getDiagnosisData(): Promise<
 
     // 가장 최근 세션 (진단 완료 이상)
     const { data: session, error: sessionErr } = await supabase
-      .from("tutoring_sessions")
+      .from(T.tutoring_sessions)
       .select("*")
       .eq("user_id", userId)
       .in("status", ["diagnosed", "active", "completed"])
@@ -357,7 +358,7 @@ export async function getDiagnosisData(): Promise<
 
     // 해당 세션의 focuses
     const { data: focuses, error: focusErr } = await supabase
-      .from("tutoring_focuses")
+      .from(T.tutoring_focuses)
       .select("*")
       .eq("session_id", session.id)
       .order("priority_rank", { ascending: true });
@@ -390,7 +391,7 @@ export async function startFocusDrill(
 
     // focus 존재 확인
     const { data: focus, error: focusErr } = await supabase
-      .from("tutoring_focuses")
+      .from(T.tutoring_focuses)
       .select("id, status, drill_session_plan")
       .eq("id", focusId)
       .single();
@@ -439,7 +440,7 @@ export async function getDrillData(
     const { supabase } = await requireUser();
 
     const { data: drills, error: drillErr } = await supabase
-      .from("tutoring_drills")
+      .from(T.tutoring_drills)
       .select("*")
       .eq("focus_id", focusId)
       .order("question_number", { ascending: true });
@@ -453,7 +454,7 @@ export async function getDrillData(
     let attempts: TutoringAttempt[] = [];
     if (drillIds.length > 0) {
       const { data: attData } = await supabase
-        .from("tutoring_attempts")
+        .from(T.tutoring_attempts)
         .select("*")
         .in("drill_id", drillIds)
         .order("created_at", { ascending: true });
@@ -485,7 +486,7 @@ export async function submitDrillAttempt(
 
     // 드릴 확인
     const { data: drill } = await supabase
-      .from("tutoring_drills")
+      .from(T.tutoring_drills)
       .select("id, focus_id, question_number")
       .eq("id", drillId)
       .single();
@@ -494,7 +495,7 @@ export async function submitDrillAttempt(
 
     // 시도 횟수 확인
     const { count } = await supabase
-      .from("tutoring_attempts")
+      .from(T.tutoring_attempts)
       .select("*", { count: "exact", head: true })
       .eq("drill_id", drillId);
 
@@ -513,7 +514,7 @@ export async function submitDrillAttempt(
 
     // attempt 레코드 생성
     const { error: insertErr } = await supabase
-      .from("tutoring_attempts")
+      .from(T.tutoring_attempts)
       .insert({
         id: attemptId,
         drill_id: drillId,
@@ -562,7 +563,7 @@ export async function getTutoringHistory(): Promise<ActionResult<TutoringHistory
     const { supabase, userId } = await requireUser();
 
     const { data: sessions, error } = await supabase
-      .from("tutoring_sessions")
+      .from(T.tutoring_sessions)
       .select(`
         id,
         current_stable_level,
@@ -624,12 +625,12 @@ export async function createMiniRetest(
     // focus 조회 + 기존 드릴 조회 병렬 실행
     const [focusRes, existingDrillsRes] = await Promise.all([
       supabase
-        .from("tutoring_focuses")
+        .from(T.tutoring_focuses)
         .select("id, focus_code, selection_policy")
         .eq("id", focusId)
         .single(),
       supabase
-        .from("tutoring_drills")
+        .from(T.tutoring_drills)
         .select("question_id")
         .eq("focus_id", focusId),
     ]);
@@ -645,7 +646,7 @@ export async function createMiniRetest(
 
     // 다른 topic에서 2문항 선택 (transfer 확인 목적)
     let query = supabase
-      .from("questions")
+      .from(T.questions)
       .select("id, question_type_eng, topic, question_english")
       .eq("question_type_eng", questionType);
 
@@ -670,7 +671,7 @@ export async function createMiniRetest(
     }));
 
     const { error: insertErr } = await supabase
-      .from("tutoring_retests")
+      .from(T.tutoring_retests)
       .insert({
         id: retestId,
         focus_id: focusId,
@@ -699,7 +700,7 @@ export async function getRetestData(
     const { supabase } = await requireUser();
 
     const { data, error } = await supabase
-      .from("tutoring_retests")
+      .from(T.tutoring_retests)
       .select("*")
       .eq("id", retestId)
       .single();
@@ -725,7 +726,7 @@ export async function submitRetestResult(
 
     // 재평가 조회
     const { data: retest } = await supabase
-      .from("tutoring_retests")
+      .from(T.tutoring_retests)
       .select("id, focus_id, questions")
       .eq("id", retestId)
       .single();
@@ -748,7 +749,7 @@ export async function submitRetestResult(
 
     // 재평가 업데이트
     await supabase
-      .from("tutoring_retests")
+      .from(T.tutoring_retests)
       .update({ results, overall_result: overallResult })
       .eq("id", retestId);
 
@@ -756,7 +757,7 @@ export async function submitRetestResult(
     if (overallResult === "graduated") {
       // 졸업: retest_pass_count 1 + status graduated
       await supabase
-        .from("tutoring_focuses")
+        .from(T.tutoring_focuses)
         .update({
           status: "graduated",
           retest_pass_count: 1,
@@ -765,11 +766,11 @@ export async function submitRetestResult(
 
       // 다음 pending focus를 active로 전환
       const { data: nextFocus } = await supabase
-        .from("tutoring_focuses")
+        .from(T.tutoring_focuses)
         .select("id")
         .eq("session_id", (
           await supabase
-            .from("tutoring_focuses")
+            .from(T.tutoring_focuses)
             .select("session_id")
             .eq("id", retest.focus_id)
             .single()
@@ -781,7 +782,7 @@ export async function submitRetestResult(
 
       if (nextFocus) {
         await supabase
-          .from("tutoring_focuses")
+          .from(T.tutoring_focuses)
           .update({ status: "active" })
           .eq("id", nextFocus.id);
       }
@@ -790,7 +791,7 @@ export async function submitRetestResult(
       await checkSessionCompletion(supabase, retest.focus_id);
     } else if (overallResult === "improving") {
       await supabase
-        .from("tutoring_focuses")
+        .from(T.tutoring_focuses)
         .update({ status: "improving" })
         .eq("id", retest.focus_id);
     }

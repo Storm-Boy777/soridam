@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { T } from "@/lib/constants/tables";
 import { ReviewsContent } from "@/components/reviews/reviews-content";
 import { getStatsAndFrequency, getMySubmissions, getPublicReviews, getSubmissionsWithQuestionsBatch } from "@/lib/actions/reviews";
 import { getUser } from "@/lib/auth";
@@ -24,7 +25,7 @@ async function ReviewsDataLoader() {
         if (user.app_metadata?.role === "admin") return true;
         const supabase = await createServerSupabaseClient();
         const { data } = await supabase
-          .from("user_credits")
+          .from(T.user_credits)
           .select("current_plan, plan_expires_at")
           .eq("user_id", user.id)
           .single();

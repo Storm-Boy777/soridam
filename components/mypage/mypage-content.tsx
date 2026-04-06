@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useCallback } from "react";
+import { T } from "@/lib/constants/tables";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
@@ -43,7 +44,7 @@ type CreditsData = {
 async function fetchUserCredits(userId: string): Promise<CreditsData> {
   const supabase = createClient();
   const { data, error } = await supabase
-    .from("user_credits")
+    .from(T.user_credits)
     .select("*")
     .eq("user_id", userId)
     .single();

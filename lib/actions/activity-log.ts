@@ -2,6 +2,7 @@
 
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { T } from "@/lib/constants/tables";
 
 // 사용자 활동 기록 (로그인/로그아웃/모듈 사용)
 export async function logUserActivity(action: string, metadata?: Record<string, unknown>) {
@@ -24,7 +25,7 @@ export async function logUserActivity(action: string, metadata?: Record<string, 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
-  await supabase.from("user_activity_log").insert({
+  await supabase.from(T.user_activity_log).insert({
     user_id: user.id,
     action,
     metadata: metadata || {},

@@ -5,6 +5,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { getUser } from "@/lib/auth";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { T } from "@/lib/constants/tables";
 
 // ── 베타 신청 ──
 
@@ -21,7 +22,7 @@ export async function applyBeta(kakaoNickname: string) {
 
   // 현재 플랜 확인 — free만 신청 가능
   const { data: credits } = await supabase
-    .from("user_credits")
+    .from(T.user_credits)
     .select("current_plan")
     .eq("user_id", user.id)
     .single();
@@ -38,7 +39,7 @@ export async function applyBeta(kakaoNickname: string) {
 
   // 신청 INSERT (UNIQUE 제약으로 중복 방지)
   const { error: insertErr } = await supabase
-    .from("beta_applications")
+    .from(T.beta_applications)
     .insert({ user_id: user.id, kakao_nickname: trimmed });
 
   if (insertErr) {
@@ -50,7 +51,7 @@ export async function applyBeta(kakaoNickname: string) {
 
   // 소리담 닉네임 통일 (오픈채팅 = 네비바 = profiles = 관리자 표시)
   await supabase
-    .from("profiles")
+    .from(T.profiles)
     .update({ display_name: trimmed })
     .eq("id", user.id);
 
@@ -74,7 +75,7 @@ export async function getBetaStatus() {
 
   const supabase = await createServerSupabaseClient();
   const { data } = await supabase
-    .from("beta_applications")
+    .from(T.beta_applications)
     .select("status, rejected_reason")
     .eq("user_id", user.id)
     .single();

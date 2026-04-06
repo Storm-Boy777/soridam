@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { T } from "@/lib/constants/tables";
 import {
   loginSchema,
   forgotPasswordSchema,
@@ -197,7 +198,7 @@ export async function updateProfile(formData: FormData): Promise<AuthResult> {
     // profiles 테이블 동기화
     if (user) {
       await supabase
-        .from("profiles")
+        .from(T.profiles)
         .update({ display_name: trimmed })
         .eq("id", user.id);
     }
@@ -235,7 +236,7 @@ export async function updateGoals(formData: FormData): Promise<AuthResult> {
     // profiles 테이블 동기화 (target_grade)
     if (user) {
       await supabase
-        .from("profiles")
+        .from(T.profiles)
         .update({ target_grade: targetGrade || null })
         .eq("id", user.id);
     }

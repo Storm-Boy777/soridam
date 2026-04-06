@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { T } from "@/lib/constants/tables";
 import { requireAdmin } from "@/lib/auth";
 import type { PaginatedResult } from "@/lib/types/admin";
 import type { ScriptDetail } from "@/lib/types/scripts";
@@ -46,21 +47,21 @@ export async function getAdminScriptStats(): Promise<AdminScriptStats> {
   todayStart.setHours(0, 0, 0, 0);
 
   const [totalRes, todayRes, confirmedRes, draftRes, distributionRes] = await Promise.all([
-    supabase.from("scripts").select("id", { count: "exact", head: true }),
+    supabase.from(T.scripts).select("id", { count: "exact", head: true }),
     supabase
-      .from("scripts")
+      .from(T.scripts)
       .select("id", { count: "exact", head: true })
       .gte("created_at", todayStart.toISOString()),
     supabase
-      .from("scripts")
+      .from(T.scripts)
       .select("id", { count: "exact", head: true })
       .eq("status", "confirmed"),
     supabase
-      .from("scripts")
+      .from(T.scripts)
       .select("id", { count: "exact", head: true })
       .eq("status", "draft"),
     supabase
-      .from("scripts")
+      .from(T.scripts)
       .select("target_grade, question_type, word_count"),
   ]);
 
@@ -109,7 +110,7 @@ export async function getAdminScripts(params: {
   const offset = (page - 1) * pageSize;
 
   let query = supabase
-    .from("scripts")
+    .from(T.scripts)
     .select("id, user_id, question_id, source, title, topic, category, question_korean, target_grade, question_type, word_count, status, refine_count, created_at", { count: "exact" });
 
   if (params.status && params.status !== "all") {
@@ -191,7 +192,7 @@ export async function deleteAdminScript(
 
   // 스크립트 존재 확인
   const { data: script } = await supabase
-    .from("scripts")
+    .from(T.scripts)
     .select("id, user_id, question_korean, topic")
     .eq("id", scriptId)
     .single();
@@ -202,7 +203,7 @@ export async function deleteAdminScript(
 
   // Storage 파일 정리
   const { data: packages } = await supabase
-    .from("script_packages")
+    .from(T.script_packages)
     .select("wav_file_path, json_file_path")
     .eq("script_id", scriptId);
 
@@ -218,7 +219,7 @@ export async function deleteAdminScript(
 
   // DB 삭제 (CASCADE로 packages도 삭제)
   const { error } = await supabase
-    .from("scripts")
+    .from(T.scripts)
     .delete()
     .eq("id", scriptId);
 
@@ -227,7 +228,7 @@ export async function deleteAdminScript(
   }
 
   // 감사 로그 기록
-  await supabase.from("admin_audit_log").insert({
+  await supabase.from(T.admin_audit_log).insert({
     admin_id: userId,
     action: "delete_script",
     target_type: "script",
@@ -251,7 +252,7 @@ export async function getAdminScriptDetail(
   const { supabase } = await requireAdmin();
 
   const { data, error } = await supabase
-    .from("scripts")
+    .from(T.scripts)
     .select(`
       *,
       script_packages(*)
@@ -265,7 +266,7 @@ export async function getAdminScriptDetail(
 
   // questions 조회
   const { data: question } = await supabase
-    .from("questions")
+    .from(T.questions)
     .select("id, question_english, question_korean, topic, category, question_type_eng")
     .eq("id", data.question_id)
     .single();

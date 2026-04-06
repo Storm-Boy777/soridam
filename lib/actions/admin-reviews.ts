@@ -6,6 +6,7 @@
 
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@supabase/supabase-js";
+import { T } from "@/lib/constants/tables";
 import {
   matchQuestionsGlobal,
   type DBQuestion,
@@ -55,7 +56,7 @@ export async function matchAdminQuestions(
     const supabase = createServiceClient();
 
     const { data: dbQuestions, error: dbError } = await supabase
-      .from("questions")
+      .from(T.questions)
       .select("id, topic, category, question_short, question_english, question_korean, question_type_eng, question_type_kor, survey_type");
 
     if (dbError || !dbQuestions) {
@@ -100,7 +101,7 @@ export async function getAdminQuestionCandidates(): Promise<{
     await requireAdmin();
     const supabase = createServiceClient();
     const { data, error } = await supabase
-      .from("questions")
+      .from(T.questions)
       .select("id, topic, category, question_short, question_english, question_korean, question_type_eng, question_type_kor, survey_type")
       .neq("topic", "자기소개")
       .order("topic")
@@ -136,7 +137,7 @@ export async function saveAdminReview(
 
     // 자기소개 question_id 조회
     const { data: selfIntroData } = await supabase
-      .from("questions")
+      .from(T.questions)
       .select("id")
       .eq("topic", "자기소개")
       .limit(1)
@@ -144,7 +145,7 @@ export async function saveAdminReview(
 
     // submissions 껍데기 INSERT
     const { data: submission, error: subError } = await supabase
-      .from("submissions")
+      .from(T.submissions)
       .insert({
         user_id: userId,
         exam_date: new Date().toISOString().split("T")[0],
@@ -204,7 +205,7 @@ export async function saveAdminReview(
     ];
 
     const { error: qError } = await supabase
-      .from("submission_questions")
+      .from(T.submission_questions)
       .insert(allQuestions);
 
     if (qError) {
@@ -246,7 +247,7 @@ export async function saveAdminReview(
 
     if (combos.length > 0) {
       const { error: comboError } = await supabase
-        .from("submission_combos")
+        .from(T.submission_combos)
         .insert(combos);
 
       if (comboError) {
@@ -255,7 +256,7 @@ export async function saveAdminReview(
     }
 
     // 감사 로그
-    await supabase.from("admin_audit_log").insert({
+    await supabase.from(T.admin_audit_log).insert({
       admin_id: userId,
       admin_email: userEmail,
       action: "import_review",

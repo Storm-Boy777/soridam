@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { T } from "@/lib/constants/tables";
 import {
   validateEvent,
   WebhookVerificationError,
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
 
       // 주문 상태 업데이트
       await supabase
-        .from("polar_orders")
+        .from(T.polar_orders)
         .update({ status: "refunded" })
         .eq("polar_checkout_id", order.checkoutId || "");
 

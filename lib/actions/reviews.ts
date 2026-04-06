@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { T } from "@/lib/constants/tables";
 import { step1Schema, step2Schema, step3Schema } from "@/lib/validations/reviews";
 import { extractCombos } from "@/lib/utils/combo-extractor";
 import {
@@ -77,14 +78,14 @@ export async function createDraft(
 
     // 기존 draft 삭제 (1개만 유지)
     await supabase
-      .from("submissions")
+      .from(T.submissions)
       .delete()
       .eq("user_id", userId)
       .eq("status", "draft");
 
     // 새 draft INSERT
     const { data, error } = await supabase
-      .from("submissions")
+      .from(T.submissions)
       .insert({
         user_id: userId,
         ...buildStep1Fields(parsed.data),
@@ -115,7 +116,7 @@ export async function getDraft(
     const { supabase, userId } = await requireUser();
 
     const { data, error } = await supabase
-      .from("submissions")
+      .from(T.submissions)
       .select("*")
       .eq("id", submissionId)
       .eq("user_id", userId)
@@ -148,7 +149,7 @@ export async function updateDraft(
     const { supabase, userId } = await requireUser();
 
     const { error } = await supabase
-      .from("submissions")
+      .from(T.submissions)
       .update(buildStep1Fields(parsed.data))
       .eq("id", submissionId)
       .eq("user_id", userId);
@@ -183,13 +184,13 @@ export async function saveQuestions(
     // 소유권 확인 + 자기소개 question id 병렬 조회
     const [ownerResult, selfIntroResult] = await Promise.all([
       supabase
-        .from("submissions")
+        .from(T.submissions)
         .select("id")
         .eq("id", submission_id)
         .eq("user_id", userId)
         .single(),
       supabase
-        .from("questions")
+        .from(T.questions)
         .select("id")
         .eq("topic", "자기소개")
         .order("id", { ascending: true })
@@ -201,7 +202,7 @@ export async function saveQuestions(
 
     // 기존 질문 삭제
     await supabase
-      .from("submission_questions")
+      .from(T.submission_questions)
       .delete()
       .eq("submission_id", submission_id);
 
@@ -228,14 +229,14 @@ export async function saveQuestions(
     ];
 
     const { error: insertError } = await supabase
-      .from("submission_questions")
+      .from(T.submission_questions)
       .insert(allQuestions);
 
     if (insertError) return { error: "질문 저장에 실패했습니다" };
 
     // step_completed 업데이트
     await supabase
-      .from("submissions")
+      .from(T.submissions)
       .update({ step_completed: 2 })
       .eq("id", submission_id);
 
@@ -267,7 +268,7 @@ export async function completeSubmission(
 
     // 소유권 + draft 상태 확인 (중복 완료 방지)
     const { data: submission } = await supabase
-      .from("submissions")
+      .from(T.submissions)
       .select("id, status")
       .eq("id", submission_id)
       .eq("user_id", userId)
@@ -279,7 +280,7 @@ export async function completeSubmission(
     // submissions 업데이트 (원자적: status='draft'인 경우에만 + 결과 확인)
     // exam_approved는 DB 기본값 'pending' 유지 → 콤보 추출 후 자격 확인
     const { data: updated, error: updateError } = await supabase
-      .from("submissions")
+      .from(T.submissions)
       .update({
         one_line_review,
         tips: tips || null,
@@ -297,7 +298,7 @@ export async function completeSubmission(
     // 콤보 추출 + 기출풀 자격 확인 (실패해도 후기는 저장됨)
     try {
       const { data: questions } = await supabase
-        .from("submission_questions")
+        .from(T.submission_questions)
         .select("*")
         .eq("submission_id", submission_id);
 
@@ -306,11 +307,11 @@ export async function completeSubmission(
 
         if (combos.length > 0) {
           await supabase
-            .from("submission_combos")
+            .from(T.submission_combos)
             .delete()
             .eq("submission_id", submission_id);
 
-          await supabase.from("submission_combos").insert(
+          await supabase.from(T.submission_combos).insert(
             combos.map((c) => ({
               submission_id,
               combo_type: c.combo_type,
@@ -359,14 +360,14 @@ async function checkExamApproval(
 
   if (validQIds.length < 14) {
     await supabase
-      .from("submissions")
+      .from(T.submissions)
       .update({ exam_approved: "not_applicable" })
       .eq("id", submissionId);
     return;
   }
 
   const { data: qDetails } = await supabase
-    .from("questions")
+    .from(T.questions)
     .select("id, survey_type")
     .in("id", validQIds);
 
@@ -385,7 +386,7 @@ async function checkExamApproval(
 
   if (sel !== 3 || com !== 2) {
     await supabase
-      .from("submissions")
+      .from(T.submissions)
       .update({ exam_approved: "not_applicable" })
       .eq("id", submissionId);
   }
@@ -404,7 +405,7 @@ async function processCredits(
 
   try {
     const { data: creditHistory } = await supabase
-      .from("submissions")
+      .from(T.submissions)
       .select("submitted_at")
       .eq("user_id", userId)
       .eq("status", "complete")
@@ -444,7 +445,7 @@ async function processCredits(
         creditGranted = false;
       } else {
         await supabase
-          .from("submissions")
+          .from(T.submissions)
           .update({ credit_granted: true })
           .eq("id", submissionId);
       }
@@ -467,7 +468,7 @@ export async function getSubmissionWithQuestions(
     const { supabase, userId } = await requireUser();
 
     const { data, error } = await supabase
-      .from("submissions")
+      .from(T.submissions)
       .select("*, submission_questions(*, questions(id, question_short, question_english, question_korean, question_type_eng, topic))")
       .eq("id", submissionId)
       .eq("user_id", userId)
@@ -501,7 +502,7 @@ export async function getSubmissionsWithQuestionsBatch(
     const { supabase, userId } = await requireUser();
 
     const { data, error } = await supabase
-      .from("submissions")
+      .from(T.submissions)
       .select("*, submission_questions(*, questions(id, question_short, question_english, question_korean, question_type_eng, topic))")
       .in("id", submissionIds)
       .eq("user_id", userId)
@@ -543,7 +544,7 @@ export async function getDraftQuestions(
 
     // 소유권 확인
     const { data: submission } = await supabase
-      .from("submissions")
+      .from(T.submissions)
       .select("id")
       .eq("id", submissionId)
       .eq("user_id", userId)
@@ -552,7 +553,7 @@ export async function getDraftQuestions(
     if (!submission) return { error: "후기를 찾을 수 없습니다" };
 
     const { data, error } = await supabase
-      .from("submission_questions")
+      .from(T.submission_questions)
       .select("combo_type, topic, question_id, custom_question_text, is_not_remembered, questions(question_short, question_korean)")
       .eq("submission_id", submissionId)
       .order("question_number");
@@ -594,7 +595,7 @@ export async function deleteSubmission(
 
     // 완료된 후기는 삭제 불가 (크레딧 악용 방지 + 빈도 분석 데이터 보존)
     const { data: submission } = await supabase
-      .from("submissions")
+      .from(T.submissions)
       .select("id, status")
       .eq("id", submissionId)
       .eq("user_id", userId)
@@ -604,7 +605,7 @@ export async function deleteSubmission(
     if (submission.status === "complete") return { error: "완료된 후기는 삭제할 수 없습니다" };
 
     const { error } = await supabase
-      .from("submissions")
+      .from(T.submissions)
       .delete()
       .eq("id", submissionId)
       .eq("user_id", userId)
@@ -631,7 +632,7 @@ export async function getMySubmissions(): Promise<ActionResult<Submission[]>> {
     const { supabase, userId } = await requireUser();
 
     const { data, error } = await supabase
-      .from("submissions")
+      .from(T.submissions)
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
@@ -652,8 +653,8 @@ async function fetchCombosAndSurveyTypes(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>
 ) {
   const [combosResult, surveyTypeResult] = await Promise.all([
-    supabase.from("submission_combos").select("topic, combo_type"),
-    supabase.from("questions").select("topic, survey_type"),
+    supabase.from(T.submission_combos).select("topic, combo_type"),
+    supabase.from(T.questions).select("topic, survey_type"),
   ]);
 
   const surveyTypeMap = new Map<string, string>();
@@ -707,7 +708,7 @@ export async function getQuestionFrequency(topic: string, category?: FrequencyCa
   const supabase = await createServerSupabaseClient();
 
   let query = supabase
-    .from("submission_questions")
+    .from(T.submission_questions)
     .select("question_id, combo_type, questions!inner(question_english, question_korean, question_type_eng)")
     .eq("topic", topic)
     .not("question_id", "is", null)
@@ -767,7 +768,7 @@ export async function getPublicReviews(params: {
   const offset = (page - 1) * limit;
 
   let query = supabase
-    .from("submissions")
+    .from(T.submissions)
     .select("*", { count: "exact" })
     .eq("status", "complete")
     .neq("source", "admin")
@@ -802,12 +803,12 @@ export async function getStatsAndFrequency(): Promise<{
   // 3개 병렬: 후기 수(admin 포함) + (콤보+survey_type) + 분석 질문 수
   const [reviewsResult, { combos, surveyTypeMap }, questionsResult] = await Promise.all([
     supabase
-      .from("submissions")
+      .from(T.submissions)
       .select("id", { count: "exact", head: true })
       .eq("status", "complete"),
     fetchCombosAndSurveyTypes(supabase),
     supabase
-      .from("submission_questions")
+      .from(T.submission_questions)
       .select("question_id, submissions!inner(status)")
       .eq("submissions.status", "complete"),
   ]);
