@@ -255,7 +255,7 @@ export async function getAdminScriptDetail(
     .from(T.scripts)
     .select(`
       *,
-      v2_script_packages(*)
+      script_packages(*)
     `)
     .eq("id", scriptId)
     .single();
@@ -273,8 +273,8 @@ export async function getAdminScriptDetail(
 
   const detail: ScriptDetail = {
     ...data,
-    package: Array.isArray(data.v2_script_packages) && data.v2_script_packages.length > 0
-      ? data.v2_script_packages[0]
+    package: Array.isArray(data.script_packages) && data.script_packages.length > 0
+      ? data.script_packages[0]
       : null,
     question_detail: question ?? undefined,
   };

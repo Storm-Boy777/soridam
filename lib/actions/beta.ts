@@ -5,7 +5,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { getUser } from "@/lib/auth";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
-import { T, RPC } from "@/lib/constants/tables";
+import { T } from "@/lib/constants/tables";
 
 // ── 베타 신청 ──
 
@@ -32,7 +32,7 @@ export async function applyBeta(kakaoNickname: string) {
   }
 
   // 잔여 자리 확인
-  const { data: stats } = await supabase.rpc(RPC.get_beta_stats);
+  const { data: stats } = await supabase.rpc("get_beta_stats");
   if (stats && stats.remaining <= 0) {
     return { error: "베타 정원(100명)이 마감되었습니다" };
   }
@@ -88,6 +88,6 @@ export async function getBetaStatus() {
 
 export async function getBetaRemainingSlots(): Promise<number> {
   const supabase = await createServerSupabaseClient();
-  const { data } = await supabase.rpc(RPC.get_beta_stats);
+  const { data } = await supabase.rpc("get_beta_stats");
   return data?.remaining ?? 0;
 }

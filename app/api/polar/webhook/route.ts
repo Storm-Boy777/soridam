@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { T, RPC } from "@/lib/constants/tables";
+import { T } from "@/lib/constants/tables";
 import {
   validateEvent,
   WebhookVerificationError,
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       }
 
       // 원자적 결제 처리: 주문 기록 + 크레딧 충전
-      const { data, error } = await supabase.rpc(RPC.process_polar_payment, {
+      const { data, error } = await supabase.rpc("process_polar_payment", {
         p_user_id: userId,
         p_polar_checkout_id: checkout.id,
         p_polar_product_id: checkout.productId || null,
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
 
       // 크레딧 차감 (충전분 회수)
       if (creditAmount > 0) {
-        await supabase.rpc(RPC.polar_deduct_balance, {
+        await supabase.rpc("polar_deduct_balance", {
           p_user_id: userId,
           p_cost_krw: creditAmount,
           p_description: "결제 환불에 따른 크레딧 회수",

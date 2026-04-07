@@ -1,7 +1,7 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth";
-import { T, RPC } from "@/lib/constants/tables";
+import { T } from "@/lib/constants/tables";
 import type {
   AdminDashboardStats,
   RecentActivity,
@@ -109,7 +109,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     // 총 회원 수
     supabase.from(T.user_credits).select("*", { count: "exact", head: true }),
     // 오늘 로그인한 사용자 (DAU RPC)
-    supabase.rpc(RPC.get_dau_count, { target_date: today }),
+    supabase.rpc("get_dau_count", { target_date: today }),
     // 총 매출 (성공 결제)
     supabase.from(T.orders).select("amount").eq("status", "paid"),
     // 평가 대기 중인 모의고사 답변

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
-import { T, RPC } from "@/lib/constants/tables";
+import { T } from "@/lib/constants/tables";
 import { step1Schema, step2Schema, step3Schema } from "@/lib/validations/reviews";
 import { extractCombos } from "@/lib/utils/combo-extractor";
 import {
@@ -436,7 +436,7 @@ async function processCredits(
     }
 
     if (creditGranted) {
-      const { error: rpcError } = await supabase.rpc(RPC.increment_script_credits, {
+      const { error: rpcError } = await supabase.rpc("increment_script_credits", {
         p_user_id: userId,
         p_amount: 2,
       });
@@ -469,16 +469,16 @@ export async function getSubmissionWithQuestions(
 
     const { data, error } = await supabase
       .from(T.submissions)
-      .select("*, v2_submission_v2_questions(*, v2_questions(id, question_short, question_english, question_korean, question_type_eng, topic))")
+      .select("*, submission_questions(*, questions(id, question_short, question_english, question_korean, question_type_eng, topic))")
       .eq("id", submissionId)
       .eq("user_id", userId)
-      .order("question_number", { referencedTable: "v2_submission_questions" })
+      .order("question_number", { referencedTable: "submission_questions" })
       .single();
 
     if (error || !data) return { error: "후기를 찾을 수 없습니다" };
     const item = data as SubmissionWithQuestions;
-    if (!Array.isArray(item.v2_submission_questions)) {
-      item.v2_submission_questions = [];
+    if (!Array.isArray(item.submission_questions)) {
+      item.submission_questions = [];
     }
     return { data: item };
   } catch (e) {
@@ -503,18 +503,18 @@ export async function getSubmissionsWithQuestionsBatch(
 
     const { data, error } = await supabase
       .from(T.submissions)
-      .select("*, v2_submission_v2_questions(*, v2_questions(id, question_short, question_english, question_korean, question_type_eng, topic))")
+      .select("*, submission_questions(*, questions(id, question_short, question_english, question_korean, question_type_eng, topic))")
       .in("id", submissionIds)
       .eq("user_id", userId)
-      .order("question_number", { referencedTable: "v2_submission_questions" });
+      .order("question_number", { referencedTable: "submission_questions" });
 
     if (error || !data) return {};
 
     const result: Record<number, SubmissionWithQuestions> = {};
     for (const row of data) {
       const item = row as SubmissionWithQuestions;
-      if (!Array.isArray(item.v2_submission_questions)) {
-        item.v2_submission_questions = [];
+      if (!Array.isArray(item.submission_questions)) {
+        item.submission_questions = [];
       }
       result[row.id] = item;
     }
@@ -554,7 +554,7 @@ export async function getDraftQuestions(
 
     const { data, error } = await supabase
       .from(T.submission_questions)
-      .select("combo_type, topic, question_id, custom_question_text, is_not_remembered, v2_questions(question_short, question_korean)")
+      .select("combo_type, topic, question_id, custom_question_text, is_not_remembered, questions(question_short, question_korean)")
       .eq("submission_id", submissionId)
       .order("question_number");
 

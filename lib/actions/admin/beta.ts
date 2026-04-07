@@ -3,14 +3,14 @@
 // 오픈 베타 관리자 Server Actions
 
 import { requireAdmin } from "@/lib/auth";
-import { T, RPC } from "@/lib/constants/tables";
+import { T } from "@/lib/constants/tables";
 import type { BetaApplication, BetaStats, PaginatedResult } from "@/lib/types/admin";
 
 // ── 베타 통계 ──
 
 export async function getBetaStats(): Promise<BetaStats> {
   const { supabase } = await requireAdmin();
-  const { data } = await supabase.rpc(RPC.get_beta_stats);
+  const { data } = await supabase.rpc("get_beta_stats");
   return data ?? { total: 0, approved: 0, pending: 0, rejected: 0, remaining: 100 };
 }
 
@@ -76,7 +76,7 @@ export async function getBetaApplications(params: {
 export async function approveBeta(applicationId: string) {
   const { supabase, userId, userEmail } = await requireAdmin();
 
-  const { data, error } = await supabase.rpc(RPC.approve_beta_application, {
+  const { data, error } = await supabase.rpc("approve_beta_application", {
     p_application_id: applicationId,
     p_admin_id: userId,
   });
