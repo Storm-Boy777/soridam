@@ -7,23 +7,31 @@ const protectedRoutes = ["/dashboard", "/profile", "/reviews", "/store", "/scrip
 // 인증된 사용자가 접근하면 리다이렉트할 라우트
 const authRoutes = ["/login", "/signup"];
 
-// 점검 모드: 프로덕션에서 모든 페이지를 점검 안내로 전환
-const MAINTENANCE_MODE = true;
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const host = request.headers.get("host") ?? "";
+  const isLocal = host.startsWith("localhost") || host.startsWith("127.0.0.1");
 
-  // 점검 모드: 프로덕션 환경에서만 점검 페이지로 리다이렉트
-  if (MAINTENANCE_MODE) {
-    const host = request.headers.get("host") ?? "";
-    const isLocal = host.startsWith("localhost") || host.startsWith("127.0.0.1");
-    // 점검 페이지 자체, API, 정적 리소스는 허용
-    const isAllowed = pathname === "/maintenance" || pathname.startsWith("/api") || pathname.startsWith("/_next");
+  // 점검 모드: 프로덕션에서만 DB 기반으로 체크
+  if (!isLocal) {
+    const isAllowed = pathname === "/maintenance"
+      || pathname.startsWith("/api")
+      || pathname.startsWith("/_next")
+      || pathname.startsWith("/admin");
 
-    if (!isLocal && !isAllowed) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/maintenance";
-      return NextResponse.rewrite(url);
+    if (!isAllowed) {
+      try {
+        const origin = request.nextUrl.origin;
+        const res = await fetch(`${origin}/api/maintenance`, { next: { revalidate: 60 } });
+        const data = await res.json();
+        if (data.maintenance) {
+          const url = request.nextUrl.clone();
+          url.pathname = "/maintenance";
+          return NextResponse.rewrite(url);
+        }
+      } catch {
+        // API 호출 실패 시 정상 접근 허용 (안전 모드)
+      }
     }
   }
 

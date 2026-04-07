@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState, useCallback } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -16,6 +17,7 @@ import {
   Sparkles,
   ScrollText,
   ArrowLeft,
+  Shield,
 } from "lucide-react";
 
 const menuItems = [
@@ -35,9 +37,42 @@ const menuItems = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const [maintenance, setMaintenance] = useState<boolean | null>(null);
+  const [toggling, setToggling] = useState(false);
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/maintenance");
+      const data = await res.json();
+      setMaintenance(data.maintenance);
+    } catch {
+      // 무시
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStatus();
+  }, [fetchStatus]);
+
+  const handleToggle = async () => {
+    if (toggling || maintenance === null) return;
+    setToggling(true);
+    try {
+      const res = await fetch("/api/maintenance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: !maintenance }),
+      });
+      const data = await res.json();
+      if (!res.ok) return;
+      setMaintenance(data.maintenance);
+    } finally {
+      setToggling(false);
+    }
+  };
 
   return (
-    <aside className="hidden w-56 shrink-0 border-r border-white/10 bg-foreground md:block">
+    <aside className="hidden w-56 shrink-0 border-r border-white/10 bg-foreground md:flex md:flex-col">
       <div className="flex h-14 items-center justify-between border-b border-white/10 px-4">
         <span className="font-display text-lg text-white">관리자</span>
         <Link
@@ -48,9 +83,8 @@ export function AdminSidebar() {
           나가기
         </Link>
       </div>
-      <nav className="flex flex-col gap-0.5 p-2">
+      <nav className="flex flex-1 flex-col gap-0.5 p-2">
         {menuItems.map((item) => {
-          // /admin 정확 매칭, 나머지는 prefix 매칭
           const isActive =
             item.href === "/admin"
               ? pathname === "/admin"
@@ -71,6 +105,34 @@ export function AdminSidebar() {
           );
         })}
       </nav>
+
+      {/* 점검 모드 토글 */}
+      <div className="border-t border-white/10 p-3">
+        <button
+          onClick={handleToggle}
+          disabled={toggling || maintenance === null}
+          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-white/10 disabled:opacity-50"
+        >
+          <Shield size={16} className={maintenance ? "text-red-400" : "text-emerald-400"} />
+          <span className="flex-1 text-left text-white/70">점검 모드</span>
+          <span
+            className={`flex h-5 w-9 items-center rounded-full px-0.5 transition-colors ${
+              maintenance ? "bg-red-500/80" : "bg-white/20"
+            }`}
+          >
+            <span
+              className={`h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                maintenance ? "translate-x-3.5" : "translate-x-0"
+              }`}
+            />
+          </span>
+        </button>
+        {maintenance !== null && (
+          <p className={`mt-1 px-3 text-[10px] ${maintenance ? "text-red-400/70" : "text-emerald-400/70"}`}>
+            {maintenance ? "프로덕션 접근 차단 중" : "정상 운영 중"}
+          </p>
+        )}
+      </div>
     </aside>
   );
 }
