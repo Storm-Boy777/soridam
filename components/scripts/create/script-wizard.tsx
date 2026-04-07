@@ -146,7 +146,7 @@ export function ScriptWizard({
   const { data: creditInfo } = useQuery({
     queryKey: isTrialMode ? ["script-credit-trial"] : ["script-credit"],
     queryFn: async () => {
-      if (isTrialMode) return { hasCredit: true, planCredits: 0, permanentCredits: 1, totalCredits: 1 };
+      if (isTrialMode) return { hasCredit: true, planCredits: 0, permanentCredits: 1, totalCredits: 1, balanceKrw: 0 };
       const result = await checkScriptCredit();
       if (result.error) throw new Error(result.error);
       return result.data;

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
-import { T } from "@/lib/constants/tables";
+import { T, RPC } from "@/lib/constants/tables";
 import { step1Schema, step2Schema, step3Schema } from "@/lib/validations/reviews";
 import { extractCombos } from "@/lib/utils/combo-extractor";
 import {
@@ -436,7 +436,7 @@ async function processCredits(
     }
 
     if (creditGranted) {
-      const { error: rpcError } = await supabase.rpc("increment_script_credits", {
+      const { error: rpcError } = await supabase.rpc(RPC.increment_script_credits, {
         p_user_id: userId,
         p_amount: 2,
       });

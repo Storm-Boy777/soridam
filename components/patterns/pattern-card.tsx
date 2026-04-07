@@ -43,7 +43,7 @@ function renderExample(sentence: string, highlight: string) {
     const trimmed = part.trim();
     if (!trimmed) return;
 
-    const newResult: (string | JSX.Element)[] = [];
+    const newResult: (string | ReactElement)[] = [];
     result.forEach((segment) => {
       if (typeof segment !== "string") {
         newResult.push(segment);
