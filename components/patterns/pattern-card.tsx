@@ -1,4 +1,5 @@
 
+import type { ReactElement } from "react";
 import type { UniversalPattern } from "@/lib/types/patterns";
 import { PatternTtsButton } from "./pattern-tts-button";
 
@@ -36,7 +37,7 @@ function renderExample(sentence: string, highlight: string) {
   if (!highlight) return sentence;
 
   const highlightParts = highlight.split(/,?\s*\.\.\.\s*/);
-  let result: (string | JSX.Element)[] = [sentence];
+  let result: (string | ReactElement)[] = [sentence];
 
   highlightParts.forEach((part, partIdx) => {
     const trimmed = part.trim();
