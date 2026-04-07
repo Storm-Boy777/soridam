@@ -1,7 +1,7 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth";
-import { T } from "@/lib/constants/tables";
+import { T, RPC } from "@/lib/constants/tables";
 import type { AdminOrder, RevenueStats, PaginatedResult } from "@/lib/types/admin";
 
 // ── 주문 목록 조회 (polar_orders) ──
@@ -152,7 +152,7 @@ export async function refundOrder(params: {
 
   // 크레딧 회수
   if (order.credit_amount > 0) {
-    await supabase.rpc("polar_deduct_balance", {
+    await supabase.rpc(RPC.polar_deduct_balance, {
       p_user_id: order.user_id,
       p_cost_krw: order.credit_amount,
       p_description: `관리자 환불: ${params.reason}`,

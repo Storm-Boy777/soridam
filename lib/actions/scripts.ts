@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
-import { T } from "@/lib/constants/tables";
+import { T, RPC } from "@/lib/constants/tables";
 import {
   generateScriptSchema,
   correctScriptSchema,
@@ -87,7 +87,7 @@ export async function createScript(
     const { supabase, userId } = await requireUser();
 
     // 크레딧 잔액 확인 (실비용은 EF에서 API 호출 시 자동 차감)
-    const { data: balance } = await supabase.rpc("polar_get_balance", { p_user_id: userId });
+    const { data: balance } = await supabase.rpc(RPC.polar_get_balance, { p_user_id: userId });
     if (!balance || balance <= 0) {
       return { error: "크레딧이 부족합니다. 스토어에서 충전해주세요." };
     }
@@ -181,7 +181,7 @@ export async function createCorrectScript(
     const { supabase, userId } = await requireUser();
 
     // 크레딧 잔액 확인 (실비용은 EF에서 API 호출 시 자동 차감)
-    const { data: balance } = await supabase.rpc("polar_get_balance", { p_user_id: userId });
+    const { data: balance } = await supabase.rpc(RPC.polar_get_balance, { p_user_id: userId });
     if (!balance || balance <= 0) {
       return { error: "크레딧이 부족합니다. 스토어에서 충전해주세요." };
     }
@@ -428,8 +428,8 @@ export async function getMyScripts(): Promise<ActionResult<ScriptListItem[]>> {
         topic, category, question_korean, question_english, target_grade,
         question_type, word_count, status, refine_count,
         created_at, updated_at,
-        script_packages(id, status, progress),
-        questions(question_short)
+        v2_script_packages(id, status, progress),
+        v2_questions(question_short)
       `)
       .eq("user_id", userId)
       .order("updated_at", { ascending: false });
@@ -440,12 +440,12 @@ export async function getMyScripts(): Promise<ActionResult<ScriptListItem[]>> {
 
     // script_packages는 1:N이지만 최신 1개만 사용, questions nested → 플랫
     const items: ScriptListItem[] = (data ?? []).map((s) => {
-      const { questions, script_packages, ...rest } = s as typeof s & { questions: { question_short: string } | null };
+      const { v2_questions, v2_script_packages, ...rest } = s as typeof s & { v2_questions: { question_short: string } | null; v2_script_packages: any[] | null };
       return {
         ...rest,
-        question_short: questions?.question_short ?? null,
-        package: Array.isArray(script_packages) && script_packages.length > 0
-          ? script_packages[0]
+        question_short: v2_questions?.question_short ?? null,
+        package: Array.isArray(v2_script_packages) && v2_script_packages.length > 0
+          ? v2_script_packages[0]
           : null,
       };
     });
@@ -470,7 +470,7 @@ export async function getScriptDetail(
       .from(T.scripts)
       .select(`
         *,
-        script_packages(*)
+        v2_script_packages(*)
       `)
       .eq("id", scriptId)
       .eq("user_id", userId)
@@ -489,8 +489,8 @@ export async function getScriptDetail(
 
     const detail: ScriptDetail = {
       ...data,
-      package: Array.isArray(data.script_packages) && data.script_packages.length > 0
-        ? data.script_packages[0]
+      package: Array.isArray(data.v2_script_packages) && data.v2_script_packages.length > 0
+        ? data.v2_script_packages[0]
         : null,
       question_detail: question ?? undefined,
     };
@@ -542,7 +542,7 @@ export async function getShadowingHistory(): Promise<ActionResult<ShadowingHisto
       .select(`
         id, script_id, topic, question_korean, status,
         audio_duration, started_at, completed_at,
-        shadowing_evaluations(overall_score, estimated_level, pronunciation, fluency)
+        v2_shadowing_evaluations(overall_score, estimated_level, pronunciation, fluency)
       `)
       .eq("user_id", userId)
       .order("started_at", { ascending: false })
@@ -554,8 +554,8 @@ export async function getShadowingHistory(): Promise<ActionResult<ShadowingHisto
 
     const items: ShadowingHistoryItem[] = (data ?? []).map((s) => ({
       ...s,
-      evaluation: Array.isArray(s.shadowing_evaluations) && s.shadowing_evaluations.length > 0
-        ? s.shadowing_evaluations[0]
+      evaluation: Array.isArray(s.v2_shadowing_evaluations) && s.v2_shadowing_evaluations.length > 0
+        ? s.v2_shadowing_evaluations[0]
         : null,
     }));
 
@@ -870,7 +870,7 @@ export async function getShadowingSessionDetail(
         id, script_id, package_id, topic,
         question_text, question_korean,
         audio_duration, started_at, completed_at,
-        shadowing_evaluations (*)
+        v2_shadowing_evaluations (*)
       `)
       .eq("id", sessionId)
       .eq("user_id", userId)
@@ -880,7 +880,7 @@ export async function getShadowingSessionDetail(
       return { error: "세션을 찾을 수 없습니다" };
     }
 
-    const evalArr = data.shadowing_evaluations as unknown as ShadowingEvaluation[];
+    const evalArr = data.v2_shadowing_evaluations as unknown as ShadowingEvaluation[];
     return {
       data: {
         id: data.id,
@@ -940,11 +940,11 @@ export async function getShadowableScripts(): Promise<
         topic, category, question_korean, question_english, target_grade,
         question_type, word_count, status, refine_count,
         created_at, updated_at,
-        script_packages!inner(id, status, progress)
+        v2_script_packages!inner(id, status, progress)
       `)
       .eq("user_id", userId)
       .eq("status", "confirmed")
-      .in("script_packages.status", ["completed", "partial"])
+      .in("v2_script_packages.status", ["completed", "partial"])
       .order("updated_at", { ascending: false });
 
     if (error) {
@@ -954,8 +954,8 @@ export async function getShadowableScripts(): Promise<
     const items: ScriptListItem[] = (data ?? []).map((s: any) => ({
       ...s,
       package:
-        Array.isArray(s.script_packages) && s.script_packages.length > 0
-          ? s.script_packages[0]
+        Array.isArray(s.v2_script_packages) && s.v2_script_packages.length > 0
+          ? s.v2_script_packages[0]
           : null,
     }));
 

@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { T } from "@/lib/constants/tables";
+import { T, RPC } from "@/lib/constants/tables";
 import Link from "next/link";
 import {
   BarChart3,
@@ -241,7 +241,7 @@ async function BetaSectionLoader({ userId }: { userId: string }) {
       .select("status, rejected_reason")
       .eq("user_id", userId)
       .single(),
-    supabase.rpc("get_beta_stats"),
+    supabase.rpc(RPC.get_beta_stats),
   ]);
 
   return (

@@ -1,7 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase-server";
-import { T } from "@/lib/constants/tables";
+import { T, RPC } from "@/lib/constants/tables";
 import {
   createSessionSchema,
   submitAnswerSchema,
@@ -210,7 +210,7 @@ export async function createSession(
     }
 
     // 크레딧 잔액 확인 (실비용은 EF에서 API 호출 시 자동 차감)
-    const { data: balance } = await supabase.rpc("polar_get_balance", { p_user_id: userId });
+    const { data: balance } = await supabase.rpc(RPC.polar_get_balance, { p_user_id: userId });
     if (!balance || balance <= 0) {
       return { error: "크레딧이 부족합니다. 스토어에서 충전해주세요." };
     }
