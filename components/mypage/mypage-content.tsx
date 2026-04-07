@@ -39,6 +39,7 @@ type CreditsData = {
   plan_tutoring_credits: number;
   tutoring_credits: number;
   plan_expires_at: string | null;
+  balance_krw: number;
 };
 
 async function fetchUserCredits(userId: string): Promise<CreditsData> {
