@@ -136,7 +136,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
+    // 환불
+    case "refund.created": {
+      const refund = eventData;
+      const metadata = refund.metadata || null;
+      const userId = metadata?.user_id;
+      const creditAmount = Number(metadata?.credit_amount || "0");
+
+      console.log("[creem-webhook] refund.created:", { userId, creditAmount, refundAmount: refund.refund_amount });
+
+      if (userId && creditAmount > 0) {
+        // 주문 상태 업데이트
+        await supabase
+          .from(T.polar_orders)
+          .update({ status: "refunded" })
+          .like("polar_checkout_id", `creem_%`)
+          .eq("user_id", userId);
+
+        // 크레딧 회수
+        await supabase.rpc("polar_deduct_balance", {
+          p_user_id: userId,
+          p_cost_cents: creditAmount,
+          p_description: "Creem refund",
+          p_ref_id: refund.id,
+        });
+      }
+
+      return NextResponse.json({ received: true });
+    }
+
     default:
+      console.log("[creem-webhook] Unhandled event:", eventType);
       return NextResponse.json({ received: true });
   }
 }
