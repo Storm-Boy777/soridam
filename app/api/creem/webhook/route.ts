@@ -26,17 +26,23 @@ export async function POST(request: NextRequest) {
 
   // 서명 검증 (HMAC-SHA256)
   const secret = process.env.CREEM_WEBHOOK_SECRET;
-  const signature = request.headers.get("creem-signature");
+  // 헤더명 확인: creem-signature 또는 x-creem-signature
+  const signature = request.headers.get("x-creem-signature") || request.headers.get("creem-signature");
+
+  // 디버그: 실제 헤더 확인
+  const allHeaders = Object.fromEntries(request.headers);
+  const sigHeaders = Object.keys(allHeaders).filter(k => k.includes("creem") || k.includes("signature"));
+  console.log("[creem-webhook] Signature headers found:", sigHeaders);
 
   if (!secret || !signature) {
     console.error("[creem-webhook] Missing secret or signature");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Buffer 기반 HMAC 계산
-  const computed = createHmac("sha256", secret).update(rawBuffer).digest("hex");
+  // raw text 기반 HMAC 계산 (Creem 공식 예제 방식)
+  const computed = createHmac("sha256", secret).update(rawBody).digest("hex");
   const signatureValid = computed === signature;
-  console.log("[creem-webhook] Signature check:", { valid: signatureValid });
+  console.log("[creem-webhook] Signature check:", { valid: signatureValid, headerUsed: request.headers.has("x-creem-signature") ? "x-creem-signature" : "creem-signature" });
   if (!signatureValid) {
     console.warn("[creem-webhook] Signature mismatch — proceeding (verification pending)");
   }
