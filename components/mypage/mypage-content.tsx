@@ -22,10 +22,12 @@ import {
   ClipboardList,
   Flame,
   Zap,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { updateProfile, updateGoals } from "@/lib/actions/auth";
+import { getCustomerPortalUrl } from "@/lib/actions/billing";
 import { serverSignOut } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase";
 
@@ -35,6 +37,7 @@ type BalanceData = {
   balance_cents: number;
   total_charged: number;
   total_used: number;
+  creem_customer_id?: string | null;
 };
 
 type TransactionData = {
@@ -56,7 +59,7 @@ async function fetchUserCredits(userId: string): Promise<CreditsData> {
   const [balanceRes, txRes] = await Promise.all([
     supabase
       .from(T.polar_balances)
-      .select("balance_cents, total_charged, total_used")
+      .select("balance_cents, total_charged, total_used, creem_customer_id")
       .eq("user_id", userId)
       .single(),
     supabase
@@ -360,6 +363,7 @@ const TX_TYPE_COLOR: Record<string, string> = {
 function PlanTab({ credits }: { user: UserData; credits?: CreditsData }) {
   const balance = credits?.balance ?? { balance_cents: 0, total_charged: 0, total_used: 0 };
   const transactions = credits?.transactions ?? [];
+  const hasCreemCustomer = !!credits?.balance?.creem_customer_id;
 
   return (
     <div className="space-y-6">
@@ -392,6 +396,19 @@ function PlanTab({ credits }: { user: UserData; credits?: CreditsData }) {
           </Button>
         </Link>
       </div>
+
+      {/* 후원 관리 — Creem 결제 이력이 있을 때만 */}
+      {hasCreemCustomer && (
+        <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-4 sm:p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-foreground">후원 관리</h3>
+              <p className="mt-0.5 text-xs text-foreground-muted">정기 후원 취소 및 결제 수단을 관리할 수 있습니다.</p>
+            </div>
+            <BillingPortalButton />
+          </div>
+        </div>
+      )}
 
       {/* 최근 이용 내역 */}
       <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-4 sm:p-6">
@@ -429,6 +446,35 @@ function PlanTab({ credits }: { user: UserData; credits?: CreditsData }) {
         )}
       </div>
     </div>
+  );
+}
+
+/* ── 후원 관리 버튼 ── */
+function BillingPortalButton() {
+  const [loading, setLoading] = useState(false);
+
+  const handleClick = async () => {
+    setLoading(true);
+    try {
+      const result = await getCustomerPortalUrl();
+      if (result.url) {
+        window.open(result.url, "_blank");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleClick}
+      disabled={loading}
+    >
+      {loading ? "로딩..." : "관리하기"}
+      {!loading && <ExternalLink size={14} className="ml-1" />}
+    </Button>
   );
 }
 

@@ -82,6 +82,15 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // creem_customer_id 저장 (Customer Portal 용)
+      const creemCustomerId = checkout.customer?.id || order?.customer;
+      if (creemCustomerId && userId) {
+        await supabase
+          .from(T.polar_balances)
+          .update({ creem_customer_id: creemCustomerId })
+          .eq("user_id", userId);
+      }
+
       // 동일한 process_polar_payment RPC 사용 (DB 경로 통일)
       const { data, error } = await supabase.rpc("process_polar_payment", {
         p_user_id: userId,
