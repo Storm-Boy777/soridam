@@ -39,7 +39,7 @@ const PRODUCT_CARDS = [
     buttonClass: "bg-primary-500 hover:bg-primary-700 text-white",
     labelClass: "text-primary-600",
     checkClass: "text-primary-500",
-    features: ["크레딧 $10.00 충전", "사용량에 따라 차감", "모의고사 · 스크립트 · 튜터링"],
+    features: ["AI 사용량 $10.00 충전", "사용한 만큼만 차감", "모의고사 · 스크립트 · 튜터링 · 쉐도잉"],
   },
   {
     key: "credit_sponsor" as const,
@@ -50,7 +50,7 @@ const PRODUCT_CARDS = [
     buttonClass: "bg-secondary-500 hover:bg-secondary-600 text-white",
     labelClass: "text-secondary-600",
     checkClass: "text-secondary-500",
-    features: ["크레딧 $10.00 충전", "서버 후원 $5.00 포함", "소리담을 지속가능하게"],
+    features: ["AI 사용량 $10.00 충전", "서버 운영 후원 $5.00 포함", "소리담의 지속가능한 운영을 응원"],
   },
   {
     key: "sponsor" as const,
@@ -61,7 +61,7 @@ const PRODUCT_CARDS = [
     buttonClass: "bg-accent-500 hover:bg-accent-600 text-white",
     labelClass: "text-accent-600",
     checkClass: "text-accent-500",
-    features: ["크레딧 미포함", "서버운영비 후원", "☕ 커피 한 잔의 응원"],
+    features: ["월 $5.00 정기 후원", "서버 및 인프라 운영 지원", "언제든 해지 가능"],
   },
 ] as const;
 
@@ -166,6 +166,9 @@ export function StoreContent({ userId }: { userId: string }) {
                 <span className="text-3xl font-extrabold text-foreground">
                   {formatUsd(product.priceUsd)}
                 </span>
+                {card.key === "sponsor" && (
+                  <span className="ml-1 text-sm text-foreground-muted">/월</span>
+                )}
               </div>
 
               <ul className="mt-4 w-full space-y-1.5 text-xs text-foreground/80 sm:text-sm">

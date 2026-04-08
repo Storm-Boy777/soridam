@@ -1,7 +1,7 @@
 // 상품 정의 (USD 센트 기준)
 export const PRODUCTS = {
   credit: {
-    name: "크레딧 충전",
+    name: "AI 사용량 충전",
     priceUsd: 1000,     // $10.00
     creditCents: 1000,  // $10.00 충전
     type: "credit" as const,
@@ -13,9 +13,9 @@ export const PRODUCTS = {
     type: "credit_sponsor" as const,
   },
   sponsor: {
-    name: "후원",
-    priceUsd: 500,      // $5.00
-    creditCents: 0,     // 충전 없음
+    name: "월간 후원",
+    priceUsd: 500,      // $5.00/월
+    creditCents: 0,     // 충전 없음 (순수 후원)
     type: "sponsor" as const,
   },
 } as const;

@@ -36,6 +36,7 @@ export const T = {
   orders: "orders",
   beta_applications: "beta_applications",
   announcements: "announcements",
+  system_settings: "system_settings",
   sponsorships: "sponsorships",
   admin_audit_log: "admin_audit_log",
   user_activity_log: "user_activity_log",

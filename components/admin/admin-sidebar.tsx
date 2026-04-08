@@ -18,6 +18,7 @@ import {
   ScrollText,
   ArrowLeft,
   Shield,
+  Settings,
 } from "lucide-react";
 
 const menuItems = [
@@ -33,6 +34,7 @@ const menuItems = [
   { label: "튜터링", href: "/admin/tutoring", icon: Stethoscope },
   { label: "공지사항", href: "/admin/announcements", icon: Megaphone },
   { label: "감사 로그", href: "/admin/logs", icon: ScrollText },
+  { label: "설정", href: "/admin/settings", icon: Settings },
 ];
 
 export function AdminSidebar() {

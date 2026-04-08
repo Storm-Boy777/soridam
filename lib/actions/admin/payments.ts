@@ -55,14 +55,14 @@ export async function getOrders(params: {
     user_id: o.user_id,
     user_email: userMap.get(o.user_id)?.email || "-",
     user_name: userMap.get(o.user_id)?.name || null,
-    product_name: o.product_type || "-",
+    product_name: o.product_type || "-",  // UI에서 PRODUCT_TYPE_LABELS로 매핑
     product_id: o.polar_product_id || "-",
     amount: o.amount || 0,
     status: o.status || "unknown",
     payment_id: o.polar_checkout_id || null,
-    pg_provider: "polar",
+    pg_provider: (o.polar_checkout_id || "").startsWith("creem_") ? "creem" : "polar",
     pg_tx_id: null,
-    pay_method: "polar",
+    pay_method: null,
     paid_at: o.paid_at || null,
     receipt_url: null,
     created_at: o.created_at,
@@ -152,9 +152,9 @@ export async function refundOrder(params: {
 
   // 크레딧 회수
   if (order.credit_amount > 0) {
-    await supabase.rpc("polar_deduct_balance", {
+    await supabase.rpc("polar_reverse_charge", {
       p_user_id: order.user_id,
-      p_cost_cents: order.credit_amount,
+      p_amount_cents: order.credit_amount,
       p_description: `관리자 환불: ${params.reason}`,
       p_ref_id: order.id,
     });

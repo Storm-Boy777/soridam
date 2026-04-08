@@ -33,19 +33,21 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }>
   refunded: { label: "환불", bg: "bg-orange-50", text: "text-orange-600" },
 };
 
-const PAY_METHOD_LABELS: Record<string, string> = {
-  CARD: "신용카드",
-  EASY_PAY: "간편결제",
-  VIRTUAL_ACCOUNT: "가상계좌",
-  TRANSFER: "계좌이체",
-  MOBILE: "휴대폰결제",
+const PRODUCT_TYPE_LABELS: Record<string, string> = {
+  credit: "AI 사용량 충전",
+  credit_sponsor: "충전 + 후원",
+  sponsor: "월간 후원",
+};
+
+const PROVIDER_LABELS: Record<string, string> = {
+  creem: "Creem",
+  polar: "Polar",
 };
 
 // ── 유틸 ──
 
-function formatAmount(amount: number) {
-  if (amount >= 10000) return `${(amount / 10000).toFixed(1)}만원`;
-  return `${amount.toLocaleString()}원`;
+function formatAmount(cents: number) {
+  return `$${(cents / 100).toFixed(2)}`;
 }
 
 function formatDate(dateStr: string) {
@@ -290,14 +292,14 @@ export default function AdminPaymentsPage() {
                     <div className="mt-0.5 flex items-center gap-2 text-xs text-foreground-muted">
                       <span>{formatDate(order.created_at)}</span>
                       <span className="text-border">|</span>
-                      <span>{order.product_name}</span>
+                      <span>{PRODUCT_TYPE_LABELS[order.product_name] || order.product_name}</span>
                     </div>
                   </div>
 
                   {/* 금액 + 상태 */}
                   <div className="flex shrink-0 items-center gap-3">
                     <span className="text-sm font-semibold tabular-nums text-foreground">
-                      {order.amount.toLocaleString()}원
+                      {formatAmount(order.amount)}
                     </span>
                     <StatusBadge status={order.status} />
                     {isExpanded ? (
@@ -319,21 +321,23 @@ export default function AdminPaymentsPage() {
                         </p>
                       </div>
                       <div>
-                        <span className="text-xs text-foreground-muted">PG사</span>
+                        <span className="text-xs text-foreground-muted">결제 Provider</span>
                         <p className="mt-0.5 text-xs text-foreground-secondary">
-                          {order.pg_provider || "-"}
+                          {PROVIDER_LABELS[order.pg_provider] || order.pg_provider || "-"}
                         </p>
                       </div>
                       <div>
-                        <span className="text-xs text-foreground-muted">PG 거래번호</span>
-                        <p className="mt-0.5 truncate font-mono text-xs text-foreground-secondary">
-                          {order.pg_tx_id || "-"}
+                        <span className="text-xs text-foreground-muted">상품 유형</span>
+                        <p className="mt-0.5 text-xs text-foreground-secondary">
+                          {PRODUCT_TYPE_LABELS[order.product_name] || order.product_name || "-"}
                         </p>
                       </div>
                       <div>
-                        <span className="text-xs text-foreground-muted">결제수단</span>
+                        <span className="text-xs text-foreground-muted">충전 크레딧</span>
                         <p className="mt-0.5 text-xs text-foreground-secondary">
-                          {order.pay_method ? (PAY_METHOD_LABELS[order.pay_method] || order.pay_method) : "-"}
+                          {(order as unknown as { credit_amount?: number }).credit_amount
+                            ? formatAmount((order as unknown as { credit_amount: number }).credit_amount)
+                            : "-"}
                         </p>
                       </div>
                       <div>
