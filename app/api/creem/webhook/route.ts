@@ -27,7 +27,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!verifySignature(rawBody, signature, secret)) {
+  const computed = createHmac("sha256", secret).update(rawBody).digest("hex");
+  console.log("[creem-webhook] DEBUG signature:", { received: signature, computed, secretPrefix: secret.substring(0, 10), bodyLength: rawBody.length });
+
+  if (computed !== signature) {
     console.error("[creem-webhook] Invalid signature");
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
