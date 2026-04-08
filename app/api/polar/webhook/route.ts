@@ -5,7 +5,6 @@ import {
   WebhookVerificationError,
 } from "@polar-sh/sdk/webhooks";
 import { createClient } from "@supabase/supabase-js";
-import { POLAR_PRODUCT_BY_ID } from "@/lib/constants/pricing";
 
 // Supabase service client (RLS 우회)
 function getServiceClient() {
