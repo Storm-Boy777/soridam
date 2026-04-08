@@ -1,7 +1,7 @@
 "use server";
 
 import { getUser } from "@/lib/auth";
-import { createClient } from "@/lib/supabase";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { T } from "@/lib/constants/tables";
 
 // Creem Customer Portal URL 생성 (정기 후원 관리용)
@@ -9,7 +9,7 @@ export async function getCustomerPortalUrl(): Promise<{ url?: string; error?: st
   const user = await getUser();
   if (!user) return { error: "Login required" };
 
-  const supabase = createClient();
+  const supabase = await createServerSupabaseClient();
   const { data } = await supabase
     .from(T.polar_balances)
     .select("creem_customer_id")

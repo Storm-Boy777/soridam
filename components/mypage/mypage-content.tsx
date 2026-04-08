@@ -452,29 +452,40 @@ function PlanTab({ credits }: { user: UserData; credits?: CreditsData }) {
 /* ── 후원 관리 버튼 ── */
 function BillingPortalButton() {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleClick = async () => {
     setLoading(true);
+    setError(null);
     try {
       const result = await getCustomerPortalUrl();
-      if (result.url) {
-        window.open(result.url, "_blank");
+      if (result.error) {
+        setError(result.error);
+        return;
       }
+      if (result.url) {
+        window.location.href = result.url;
+      }
+    } catch (e) {
+      setError("오류가 발생했습니다");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={handleClick}
-      disabled={loading}
-    >
-      {loading ? "로딩..." : "관리하기"}
-      {!loading && <ExternalLink size={14} className="ml-1" />}
-    </Button>
+    <div className="flex items-center gap-2">
+      {error && <p className="text-xs text-red-500">{error}</p>}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleClick}
+        disabled={loading}
+      >
+        {loading ? "로딩..." : "관리하기"}
+        {!loading && <ExternalLink size={14} className="ml-1" />}
+      </Button>
+    </div>
   );
 }
 
