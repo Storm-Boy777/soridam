@@ -205,12 +205,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
-    // 구독 취소
+    // 즉시 취소 (당일 취소 — 바로 해지)
     case "subscription.canceled": {
       const sub = eventData;
       const subscriptionId = sub.id || sub.subscription_id;
 
-      console.log("[creem-webhook] subscription.canceled:", { subscriptionId, canceledAt: sub.canceled_at });
+      console.log("[creem-webhook] subscription.canceled (즉시):", { subscriptionId, canceledAt: sub.canceled_at });
 
       if (subscriptionId) {
         await supabase
@@ -218,6 +218,29 @@ export async function POST(request: NextRequest) {
           .update({
             status: "cancelled",
             cancelled_at: sub.canceled_at || new Date().toISOString(),
+            current_period_end: null, // 즉시 취소 — 기간 무효
+            updated_at: new Date().toISOString(),
+          })
+          .eq("creem_subscription_id", subscriptionId);
+      }
+
+      return NextResponse.json({ received: true });
+    }
+
+    // 예약 취소 (기간 중간 취소 — period_end까지 유지)
+    case "subscription.scheduled_cancel": {
+      const sub = eventData;
+      const subscriptionId = sub.id || sub.subscription_id;
+
+      console.log("[creem-webhook] subscription.scheduled_cancel:", { subscriptionId, periodEnd: sub.current_period_end_date });
+
+      if (subscriptionId) {
+        await supabase
+          .from("sponsorships")
+          .update({
+            status: "scheduled_cancel",
+            cancelled_at: sub.canceled_at || new Date().toISOString(),
+            current_period_end: sub.current_period_end_date || null,
             updated_at: new Date().toISOString(),
           })
           .eq("creem_subscription_id", subscriptionId);

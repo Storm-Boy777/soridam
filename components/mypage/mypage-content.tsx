@@ -50,9 +50,10 @@ type TransactionData = {
 };
 
 type SponsorshipData = {
-  status: "active" | "cancelled" | "expired" | "paused";
+  status: "active" | "cancelled" | "scheduled_cancel" | "expired" | "paused";
   started_at: string;
   cancelled_at: string | null;
+  current_period_end: string | null;
 };
 
 type CreditsData = {
@@ -77,7 +78,7 @@ async function fetchUserCredits(userId: string): Promise<CreditsData> {
       .limit(20),
     supabase
       .from(T.sponsorships)
-      .select("status, started_at, cancelled_at")
+      .select("status, started_at, cancelled_at, current_period_end")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -424,6 +425,9 @@ function PlanTab({ credits }: { user: UserData; credits?: CreditsData }) {
                   {sponsorship?.status === "active" && (
                     <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700">후원 중 💛</span>
                   )}
+                  {sponsorship?.status === "scheduled_cancel" && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">취소 예정</span>
+                  )}
                   {sponsorship?.status === "cancelled" && (
                     <span className="rounded-full bg-foreground-muted/10 px-2 py-0.5 text-[11px] font-semibold text-foreground-muted">취소됨</span>
                   )}
@@ -434,9 +438,11 @@ function PlanTab({ credits }: { user: UserData; credits?: CreditsData }) {
                 <p className="mt-0.5 text-xs text-foreground-muted">
                   {sponsorship?.status === "active"
                     ? `${new Date(sponsorship.started_at).toLocaleDateString("ko-KR")}부터 후원 중`
-                    : sponsorship?.status === "cancelled"
-                      ? `${new Date(sponsorship.cancelled_at!).toLocaleDateString("ko-KR")}에 취소됨`
-                      : "결제 수단 및 후원을 관리할 수 있습니다."}
+                    : sponsorship?.status === "scheduled_cancel"
+                      ? `${new Date(sponsorship.current_period_end!).toLocaleDateString("ko-KR")}까지 유지 후 해지`
+                      : sponsorship?.status === "cancelled"
+                        ? `${new Date(sponsorship.cancelled_at!).toLocaleDateString("ko-KR")}에 취소됨`
+                        : "결제 수단 및 후원을 관리할 수 있습니다."}
                 </p>
               </div>
             </div>

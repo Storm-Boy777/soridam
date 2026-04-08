@@ -90,15 +90,18 @@ export function StoreContent({ userId }: { userId: string }) {
         .from("sponsorships")
         .select("status, current_period_end")
         .eq("user_id", userId)
-        .in("status", ["active", "cancelled"])
+        .in("status", ["active", "scheduled_cancel"])
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      // cancelled도 기간 내이면 활성으로 간주
-      if (data?.status === "cancelled" && data.current_period_end) {
+      if (!data) return null;
+      // active → 비활성화
+      if (data.status === "active") return data;
+      // scheduled_cancel → period_end까지만 비활성화
+      if (data.status === "scheduled_cancel" && data.current_period_end) {
         return new Date(data.current_period_end) > new Date() ? data : null;
       }
-      return data?.status === "active" ? data : null;
+      return null;
     },
     staleTime: 60 * 1000,
   });
