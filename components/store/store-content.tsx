@@ -78,7 +78,29 @@ export function StoreContent({ userId }: { userId: string }) {
     queryKey: ["polar-balance", userId],
     queryFn: () => fetchBalance(userId),
     staleTime: 30 * 1000,
-    refetchInterval: isSuccess ? 3000 : false, // 결제 성공 시 폴링
+    refetchInterval: isSuccess ? 3000 : false,
+  });
+
+  // 활성 구독 확인 (중복 후원 방지)
+  const { data: activeSponsor } = useQuery({
+    queryKey: ["active-sponsorship", userId],
+    queryFn: async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("sponsorships")
+        .select("status, current_period_end")
+        .eq("user_id", userId)
+        .in("status", ["active", "cancelled"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      // cancelled도 기간 내이면 활성으로 간주
+      if (data?.status === "cancelled" && data.current_period_end) {
+        return new Date(data.current_period_end) > new Date() ? data : null;
+      }
+      return data?.status === "active" ? data : null;
+    },
+    staleTime: 60 * 1000,
   });
 
   const handleCheckout = (productKey: keyof typeof PRODUCTS) => {
@@ -152,16 +174,22 @@ export function StoreContent({ userId }: { userId: string }) {
                 ))}
               </ul>
 
-              <button
-                onClick={() => handleCheckout(card.key)}
-                disabled={isLoading}
-                className={`mt-5 w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold transition-colors ${card.buttonClass} disabled:opacity-60`}
-              >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : null}
-                {product.creditCents > 0 ? "충전하기" : "후원하기"}
-              </button>
+              {card.key === "sponsor" && activeSponsor ? (
+                <div className="mt-5 w-full rounded-xl bg-foreground-muted/10 py-2.5 text-center text-sm font-bold text-foreground-muted">
+                  이미 후원 중입니다 💛
+                </div>
+              ) : (
+                <button
+                  onClick={() => handleCheckout(card.key)}
+                  disabled={isLoading}
+                  className={`mt-5 w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold transition-colors ${card.buttonClass} disabled:opacity-60`}
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : null}
+                  {product.creditCents > 0 ? "충전하기" : "후원하기"}
+                </button>
+              )}
             </div>
           );
         })}
