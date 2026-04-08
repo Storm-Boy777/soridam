@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import crypto from "node:crypto";
+import { NextResponse } from "next/server";
+import { headers } from "next/headers";
 import { T } from "@/lib/constants/tables";
 import { createClient } from "@supabase/supabase-js";
-import { createHmac } from "crypto";
 
 function getServiceClient() {
   return createClient(
@@ -10,42 +11,26 @@ function getServiceClient() {
   );
 }
 
-function verifySignature(rawBody: string, signature: string, secret: string): boolean {
-  const computed = createHmac("sha256", secret).update(rawBody).digest("hex");
-  const a = Buffer.from(computed, "hex");
-  const b = Buffer.from(signature, "hex");
-  if (a.length !== b.length) return false;
-  return require("crypto").timingSafeEqual(a, b);
-}
-
-export async function POST(request: NextRequest) {
-  // arrayBuffer로 원본 바이트 보존 (Next.js 미들웨어 body 변조 방지)
-  const arrayBuffer = await request.arrayBuffer();
-  const rawBuffer = Buffer.from(arrayBuffer);
-  const rawBody = rawBuffer.toString("utf-8");
-
-  // 서명 검증 (HMAC-SHA256)
+export async function POST(req: Request) {
+  // Creem 공식 예제 방식: req.text() + headers()
+  const payload = await req.text();
+  const headerList = await headers();
+  const signature = headerList.get("x-creem-signature") || headerList.get("creem-signature");
   const secret = process.env.CREEM_WEBHOOK_SECRET;
-  // 헤더명 확인: creem-signature 또는 x-creem-signature
-  const signature = request.headers.get("x-creem-signature") || request.headers.get("creem-signature");
-
-  // 디버그: 실제 헤더 확인
-  const allHeaders = Object.fromEntries(request.headers);
-  const sigHeaders = Object.keys(allHeaders).filter(k => k.includes("creem") || k.includes("signature"));
-  console.log("[creem-webhook] Signature headers found:", sigHeaders);
 
   if (!secret || !signature) {
     console.error("[creem-webhook] Missing secret or signature");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // raw text 기반 HMAC 계산 (Creem 공식 예제 방식)
-  const computed = createHmac("sha256", secret).update(rawBody).digest("hex");
-  const signatureValid = computed === signature;
-  console.log("[creem-webhook] Signature check:", { valid: signatureValid, headerUsed: request.headers.has("x-creem-signature") ? "x-creem-signature" : "creem-signature" });
+  const digest = crypto.createHmac("sha256", secret).update(payload).digest("hex");
+  const signatureValid = digest === signature;
+  console.log("[creem-webhook] Signature check:", { valid: signatureValid });
   if (!signatureValid) {
     console.warn("[creem-webhook] Signature mismatch — proceeding (verification pending)");
   }
+
+  const rawBody = payload;
 
   const body = JSON.parse(rawBody);
   // 전체 이벤트 구조 로깅 (디버그)
