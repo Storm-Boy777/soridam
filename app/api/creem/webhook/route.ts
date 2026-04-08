@@ -19,7 +19,10 @@ function verifySignature(rawBody: string, signature: string, secret: string): bo
 }
 
 export async function POST(request: NextRequest) {
-  const rawBody = await request.text();
+  // arrayBuffer로 원본 바이트 보존 (Next.js 미들웨어 body 변조 방지)
+  const arrayBuffer = await request.arrayBuffer();
+  const rawBuffer = Buffer.from(arrayBuffer);
+  const rawBody = rawBuffer.toString("utf-8");
 
   // 서명 검증 (HMAC-SHA256)
   const secret = process.env.CREEM_WEBHOOK_SECRET;
@@ -30,8 +33,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // 서명 검증 (테스트 이벤트에서 불일치 확인됨 — 실결제 후 재검증 예정)
-  const computed = createHmac("sha256", secret).update(rawBody).digest("hex");
+  // Buffer 기반 HMAC 계산
+  const computed = createHmac("sha256", secret).update(rawBuffer).digest("hex");
   const signatureValid = computed === signature;
   console.log("[creem-webhook] Signature check:", { valid: signatureValid });
   if (!signatureValid) {
