@@ -19,6 +19,7 @@ import {
   Coins,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { formatUsd } from "@/lib/constants/pricing";
 import dynamic from "next/dynamic";
 
 const GradeProgressChart = dynamic(
@@ -300,7 +301,7 @@ function StartTab({
             {credit && (
               <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700">
                 <Coins size={11} />
-                크레딧 : ₩{(credit.balanceKrw ?? 0).toLocaleString()}
+                크레딧 : {formatUsd(credit.balanceCents ?? 0)}
               </span>
             )}
           </div>
@@ -372,7 +373,7 @@ function StartTab({
         <div className="flex items-center gap-2 text-sm">
           <span className="text-foreground-secondary">크레딧 잔액:</span>
           <span className="font-bold text-foreground">
-            ₩{(credit.balanceKrw ?? 0).toLocaleString()}
+            {formatUsd(credit.balanceCents ?? 0)}
           </span>
         </div>
       )}
@@ -386,7 +387,7 @@ function StartTab({
             hasCredit={false}
           />
           <div className="mt-4">
-            <NoCreditCard type="mock-exam" credits={credit?.balanceKrw ?? 0} />
+            <NoCreditCard type="mock-exam" credits={credit?.balanceCents ?? 0} />
           </div>
         </div>
       )}

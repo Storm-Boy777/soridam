@@ -30,6 +30,7 @@ import {
   Coins,
   type LucideIcon,
 } from "lucide-react";
+import { formatUsd } from "@/lib/constants/pricing";
 import { TOPIC_ICONS } from "@/components/reviews/submit/topic-pagination";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -160,7 +161,7 @@ function CreateTab() {
             {creditInfo && (
               <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700">
                 <Coins size={11} />
-                크레딧 : ₩{(creditInfo.balanceKrw ?? creditInfo.totalCredits ?? 0).toLocaleString()}
+                크레딧 : {formatUsd(creditInfo.balanceCents ?? creditInfo.totalCredits ?? 0)}
               </span>
             )}
           </div>

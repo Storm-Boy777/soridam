@@ -34,6 +34,7 @@ import {
   GraduationCap,
   ArrowRight,
 } from "lucide-react";
+import { formatUsd } from "@/lib/constants/pricing";
 import { TopicPagination } from "@/components/reviews/submit/topic-pagination";
 import {
   QuestionSelector,
@@ -146,7 +147,7 @@ export function ScriptWizard({
   const { data: creditInfo } = useQuery({
     queryKey: isTrialMode ? ["script-credit-trial"] : ["script-credit"],
     queryFn: async () => {
-      if (isTrialMode) return { hasCredit: true, planCredits: 0, permanentCredits: 1, totalCredits: 1, balanceKrw: 0 };
+      if (isTrialMode) return { hasCredit: true, planCredits: 0, permanentCredits: 1, totalCredits: 1, balanceCents: 0 };
       const result = await checkScriptCredit();
       if (result.error) throw new Error(result.error);
       return result.data;
@@ -560,7 +561,7 @@ export function ScriptWizard({
         <div className="border-b border-border bg-surface-secondary/50 px-4 py-2 text-center text-xs text-foreground-muted">
           크레딧 잔액:{" "}
           <span className="font-semibold text-primary-500">
-            ₩{(creditInfo.balanceKrw ?? creditInfo.totalCredits ?? 0).toLocaleString()}
+            {formatUsd(creditInfo.balanceCents ?? creditInfo.totalCredits ?? 0)}
           </span>
         </div>
       )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { formatUsd } from "@/lib/constants/pricing";
 import {
   Timer,
   AlertCircle,
@@ -219,7 +220,7 @@ export function StepSpeak() {
         <span className="text-amber-700">
           크레딧이 사용량에 따라 차감됩니다
           {creditData && (
-            <span className="ml-1 font-semibold">· 잔액 ₩{(creditData.balanceKrw ?? creditData.totalCredits ?? 0).toLocaleString()}</span>
+            <span className="ml-1 font-semibold">· 잔액 {formatUsd(creditData.balanceCents ?? creditData.totalCredits ?? 0)}</span>
           )}
         </span>
       </div>

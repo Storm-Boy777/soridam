@@ -32,7 +32,7 @@ export function NoCreditCard({ type, credits = 0 }: NoCreditCardProps) {
       {/* 크레딧 현황 */}
       <div className="flex items-center justify-center gap-2">
         <span className="text-sm text-foreground-secondary">크레딧 잔액:</span>
-        <span className="text-sm font-bold text-foreground">₩{credits.toLocaleString()}</span>
+        <span className="text-sm font-bold text-foreground">${(credits / 100).toFixed(2)}</span>
         {credits <= 0 && (
           <span className="text-xs text-accent-500">(크레딧이 부족합니다)</span>
         )}

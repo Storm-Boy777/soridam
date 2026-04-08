@@ -32,9 +32,9 @@ function formatDate(dateStr: string | null) {
   return new Date(dateStr).toLocaleDateString("ko-KR");
 }
 
-// 금액 포맷
+// 금액 포맷 (센트 → $X.XX)
 function formatCurrency(amount: number) {
-  return `₩${amount.toLocaleString("ko-KR")}`;
+  return `$${(amount / 100).toFixed(2)}`;
 }
 
 // 플랜 뱃지 색상

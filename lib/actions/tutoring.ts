@@ -156,19 +156,19 @@ export async function checkTutoringCredit(): Promise<ActionResult<TutoringCredit
 
     const { data: balance } = await supabase
       .from(T.polar_balances)
-      .select("balance_krw")
+      .select("balance_cents")
       .eq("user_id", userId)
       .single();
 
-    const balanceKrw = balance?.balance_krw ?? 0;
+    const balanceCents = balance?.balance_cents ?? 0;
 
     return {
       data: {
-        available: balanceKrw > 0,
-        balanceKrw,
+        available: balanceCents > 0,
+        balanceCents,
         // 하위 호환용
         plan_credits: 0,
-        credits: balanceKrw,
+        credits: balanceCents,
       },
     };
   } catch (err) {

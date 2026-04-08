@@ -50,20 +50,20 @@ export async function checkScriptCredit(): Promise<ActionResult<CreditCheckResul
 
     const { data: balance } = await supabase
       .from(T.polar_balances)
-      .select("balance_krw")
+      .select("balance_cents")
       .eq("user_id", userId)
       .single();
 
-    const balanceKrw = balance?.balance_krw ?? 0;
+    const balanceCents = balance?.balance_cents ?? 0;
 
     return {
       data: {
-        hasCredit: balanceKrw > 0,
-        balanceKrw,
+        hasCredit: balanceCents > 0,
+        balanceCents,
         // 하위 호환용 (기존 UI에서 참조)
         planCredits: 0,
         permanentCredits: 0,
-        totalCredits: balanceKrw,
+        totalCredits: balanceCents,
       },
     };
   } catch (err) {

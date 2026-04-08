@@ -5,8 +5,8 @@ import { T } from "@/lib/constants/tables";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import { createPolarCheckout } from "@/lib/actions/checkout";
-import { POLAR_PRODUCTS } from "@/lib/constants/pricing";
+import { createCheckout } from "@/lib/actions/checkout";
+import { PRODUCTS, formatUsd } from "@/lib/constants/pricing";
 import {
   Wallet,
   Loader2,
@@ -22,10 +22,10 @@ async function fetchBalance(userId: string) {
   const supabase = createClient();
   const { data } = await supabase
     .from(T.polar_balances)
-    .select("balance_krw, total_charged, total_used")
+    .select("balance_cents, total_charged, total_used")
     .eq("user_id", userId)
     .single();
-  return data ?? { balance_krw: 0, total_charged: 0, total_used: 0 };
+  return data ?? { balance_cents: 0, total_charged: 0, total_used: 0 };
 }
 
 /* ── 상품 카드 데이터 ── */
@@ -39,7 +39,7 @@ const PRODUCT_CARDS = [
     buttonClass: "bg-primary-500 hover:bg-primary-700 text-white",
     labelClass: "text-primary-600",
     checkClass: "text-primary-500",
-    features: ["크레딧 10,000원분", "사용량에 따라 차감", "모의고사 · 스크립트 · 튜터링"],
+    features: ["크레딧 $10.00 충전", "사용량에 따라 차감", "모의고사 · 스크립트 · 튜터링"],
   },
   {
     key: "credit_sponsor" as const,
@@ -50,7 +50,7 @@ const PRODUCT_CARDS = [
     buttonClass: "bg-secondary-500 hover:bg-secondary-600 text-white",
     labelClass: "text-secondary-600",
     checkClass: "text-secondary-500",
-    features: ["크레딧 10,000원분", "서버 후원 5,000원 포함", "소리담을 지속가능하게"],
+    features: ["크레딧 $10.00 충전", "서버 후원 $5.00 포함", "소리담을 지속가능하게"],
   },
   {
     key: "sponsor" as const,
@@ -81,18 +81,18 @@ export function StoreContent({ userId }: { userId: string }) {
     refetchInterval: isSuccess ? 3000 : false, // 결제 성공 시 폴링
   });
 
-  const handleCheckout = (productKey: keyof typeof POLAR_PRODUCTS) => {
+  const handleCheckout = (productKey: keyof typeof PRODUCTS) => {
     setLoadingProduct(productKey);
     startTransition(async () => {
       try {
-        await createPolarCheckout(productKey);
+        await createCheckout(productKey);
       } catch {
         setLoadingProduct(null);
       }
     });
   };
 
-  const balanceKrw = balance?.balance_krw ?? 0;
+  const balanceCents = balance?.balance_cents ?? 0;
 
   return (
     <div className="space-y-8">
@@ -115,7 +115,7 @@ export function StoreContent({ userId }: { userId: string }) {
         <div>
           <p className="text-xs font-medium text-foreground-secondary sm:text-sm">크레딧 잔액</p>
           <p className="text-2xl font-extrabold text-foreground">
-            ₩{balanceKrw.toLocaleString()}
+            {formatUsd(balanceCents)}
           </p>
         </div>
       </div>
@@ -123,7 +123,7 @@ export function StoreContent({ userId }: { userId: string }) {
       {/* ── 충전 카드 3종 ── */}
       <div className="grid gap-4 sm:grid-cols-3 sm:gap-5">
         {PRODUCT_CARDS.map((card) => {
-          const product = POLAR_PRODUCTS[card.key];
+          const product = PRODUCTS[card.key];
           const Icon = card.icon;
           const isLoading = loadingProduct === card.key && isPending;
 
@@ -139,9 +139,8 @@ export function StoreContent({ userId }: { userId: string }) {
               <p className={`text-sm font-bold ${card.labelClass}`}>{product.name}</p>
               <div className="mt-2">
                 <span className="text-3xl font-extrabold text-foreground">
-                  {product.price.toLocaleString()}
+                  {formatUsd(product.priceUsd)}
                 </span>
-                <span className="ml-1 text-sm text-foreground-secondary">원</span>
               </div>
 
               <ul className="mt-4 w-full space-y-1.5 text-xs text-foreground/80 sm:text-sm">
@@ -161,7 +160,7 @@ export function StoreContent({ userId }: { userId: string }) {
                 {isLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : null}
-                {product.creditAmount > 0 ? "충전하기" : "후원하기"}
+                {product.creditCents > 0 ? "충전하기" : "후원하기"}
               </button>
             </div>
           );
@@ -172,14 +171,20 @@ export function StoreContent({ userId }: { userId: string }) {
       <div className="rounded-2xl border border-border bg-surface p-4 sm:p-6">
         <h3 className="text-xs font-bold text-foreground sm:text-sm">왜 크레딧인가요?</h3>
         <p className="mt-2 text-xs leading-relaxed text-foreground/70 sm:text-sm">
-          소리담은 <span className="font-semibold text-primary-500">AI를 활용하여 분석·평가·생성을 수행</span>합니다.
-          이 과정에서 외부 AI 서비스 호출 비용이 발생하며, 크레딧은 여기에 사용됩니다.
+          소리담은 <span className="font-semibold text-primary-500">GPT, Gemini, Azure 등 외부 AI를 활용하여 분석·평가·생성을 수행</span>합니다.
+          보통 이런 AI 서비스를 직접 사용하려면 API 키 발급, 결제 설정 등 복잡한 과정이 필요하지만,
+          소리담에서는{" "}
+          <span className="font-semibold text-foreground">별도의 설정 없이 동일한 비용으로 바로 이용</span>할 수 있도록
+          크레딧 시스템을 개발 및 적용하였습니다.
+          AI를 활용할 때마다 실제 비용이 발생하기 때문에,{" "}
+          <span className="font-semibold text-foreground">사용한 만큼만 크레딧에서 차감</span>되는
+          종량제 방식으로 운영됩니다. 월정액이 아니므로 사용하지 않으면 비용이 들지 않습니다.
         </p>
 
         {/* AI 상세 토글 */}
         <button
           onClick={() => setShowDetail(!showDetail)}
-          className="mt-3 flex items-center gap-1.5 text-xs font-bold text-foreground/50 transition-colors hover:text-foreground sm:mt-4 sm:text-sm"
+          className="mt-3 ml-auto flex items-center gap-1.5 rounded-md border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-600 transition-colors hover:bg-primary-100 sm:mt-4 sm:text-sm"
         >
           사용하는 AI 상세 보기
           <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showDetail ? "rotate-180" : ""}`} />
@@ -263,13 +268,13 @@ export function StoreContent({ userId }: { userId: string }) {
 
               <div className="flex items-center justify-center border-b border-r border-border px-3 py-2.5 text-center font-medium text-foreground"><span>API 키 등록<br /><span className="text-xs text-foreground/50">OpenAI · Gemini · Azure</span></span></div>
               <div className="flex items-center justify-center border-b border-r border-border px-3 py-2.5 text-center text-foreground/50">3개 직접 등록</div>
-              <div className="flex items-center justify-center border-b border-r border-border px-3 py-2.5 text-center text-primary-500">필요 없음</div>
-              <div className="flex items-center justify-center border-b border-border px-3 py-2.5 text-center text-secondary-500">설정 없이 바로 사용</div>
+              <div className="flex items-center justify-center border-b border-r border-border px-3 py-2.5 text-center text-primary-500">소리담에서 제공</div>
+              <div className="flex items-center justify-center border-b border-border px-3 py-2.5 text-center text-secondary-500">복잡한 설정 불필요</div>
 
               <div className="flex items-center justify-center border-b border-r border-border px-3 py-2.5 text-center font-medium text-foreground">충전</div>
               <div className="flex items-center justify-center border-b border-r border-border px-3 py-2.5 text-center text-foreground/50">API별 개별 충전</div>
               <div className="flex items-center justify-center border-b border-r border-border px-3 py-2.5 text-center text-primary-500">1회 통합 충전</div>
-              <div className="flex items-center justify-center border-b border-border px-3 py-2.5 text-center text-secondary-500">한 번에 끝</div>
+              <div className="flex items-center justify-center border-b border-border px-3 py-2.5 text-center text-secondary-500">동일비용, 편의성 up ↑</div>
 
               <div className="flex items-center justify-center border-b border-r border-border px-3 py-2.5 text-center font-medium text-foreground">실사용률</div>
               <div className="flex items-center justify-center border-b border-r border-border px-3 py-2.5 text-center text-red-400">5% 미만</div>

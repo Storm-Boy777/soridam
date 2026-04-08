@@ -53,13 +53,12 @@ export async function getExamPool(): Promise<ActionResult<ExamPoolPreview[]>> {
 
     const usedIds = (usedSessions || []).map((s) => s.submission_id);
 
-    // 승인된 기출 조회 (본인 후기 제외)
+    // 승인된 기출 조회
     let query = supabase
       .from(T.submissions)
       .select("id, exam_date, achieved_level")
       .eq("status", "complete")
-      .eq("exam_approved", "approved")
-      .neq("user_id", userId);
+      .eq("exam_approved", "approved");
 
     if (usedIds.length > 0) {
       // Supabase에서 NOT IN → .not('id', 'in', `(${ids})`) 형태
@@ -83,7 +82,6 @@ export async function getExamPool(): Promise<ActionResult<ExamPoolPreview[]>> {
         .select("id, exam_date, achieved_level")
         .eq("status", "complete")
         .eq("exam_approved", "approved")
-        .neq("user_id", userId)
         .order("exam_date", { ascending: false })
         .limit(20);
 
@@ -739,7 +737,7 @@ export async function getEvaluation(input: {
 export async function checkMockExamCredit(): Promise<
   ActionResult<{
     available: boolean;
-    balanceKrw: number;
+    balanceCents: number;
   }>
 > {
   try {
@@ -747,16 +745,16 @@ export async function checkMockExamCredit(): Promise<
 
     const { data: balance } = await supabase
       .from(T.polar_balances)
-      .select("balance_krw")
+      .select("balance_cents")
       .eq("user_id", userId)
       .single();
 
-    const balanceKrw = balance?.balance_krw ?? 0;
+    const balanceCents = balance?.balance_cents ?? 0;
 
     return {
       data: {
-        available: balanceKrw > 0,
-        balanceKrw,
+        available: balanceCents > 0,
+        balanceCents,
       },
     };
   } catch (err) {

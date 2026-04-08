@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { formatUsd } from "@/lib/constants/pricing";
 import {
   AlertTriangle,
   ArrowRight,
@@ -174,7 +175,7 @@ export function DiagnosisTab({
             {credit && (
               <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700">
                 <Coins size={11} />
-                크레딧 : ₩{credit.balanceKrw.toLocaleString()}
+                크레딧 : {formatUsd(credit.balanceCents)}
               </span>
             )}
           </div>

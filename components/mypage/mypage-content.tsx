@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useCallback } from "react";
 import { T } from "@/lib/constants/tables";
+import { formatUsd } from "@/lib/constants/pricing";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
@@ -30,41 +31,46 @@ import { createClient } from "@/lib/supabase";
 
 /* ── 크레딧 조회 ── */
 
+type BalanceData = {
+  balance_cents: number;
+  total_charged: number;
+  total_used: number;
+};
+
+type TransactionData = {
+  id: string;
+  type: "charge" | "usage" | "refund" | "admin_adjust";
+  amount: number;
+  balance_after: number;
+  description: string;
+  created_at: string;
+};
+
 type CreditsData = {
-  current_plan: string;
-  mock_exam_credits: number;
-  script_credits: number;
-  plan_mock_exam_credits: number;
-  plan_script_credits: number;
-  plan_tutoring_credits: number;
-  tutoring_credits: number;
-  plan_expires_at: string | null;
-  balance_krw: number;
+  balance: BalanceData;
+  transactions: TransactionData[];
 };
 
 async function fetchUserCredits(userId: string): Promise<CreditsData> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from(T.user_credits)
-    .select("*")
-    .eq("user_id", userId)
-    .single();
-  if (error) throw error;
-  return data as CreditsData;
+  const [balanceRes, txRes] = await Promise.all([
+    supabase
+      .from(T.polar_balances)
+      .select("balance_cents, total_charged, total_used")
+      .eq("user_id", userId)
+      .single(),
+    supabase
+      .from(T.polar_transactions)
+      .select("id, type, amount, balance_after, description, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(20),
+  ]);
+  return {
+    balance: (balanceRes.data as BalanceData) ?? { balance_cents: 0, total_charged: 0, total_used: 0 },
+    transactions: (txRes.data as TransactionData[]) ?? [],
+  };
 }
-
-const PLAN_LABELS: Record<string, string> = {
-  free: "체험",
-  beta: "Beta",
-  standard: "실전",
-  allinone: "올인원",
-};
-
-const PLAN_PRICES: Record<string, string> = {
-  free: "무료",
-  standard: "₩19,900 / 3회권",
-  allinone: "₩49,900 / 10회권",
-};
 
 /* ── 타입 ── */
 
@@ -84,7 +90,7 @@ type UserData = {
 
 const tabs = [
   { id: "profile", label: "프로필", icon: User },
-  { id: "plan", label: "플랜", icon: CreditCard },
+  { id: "plan", label: "크레딧", icon: CreditCard },
   { id: "goal", label: "목표", icon: Target },
   { id: "account", label: "계정", icon: Shield },
 ] as const;
@@ -335,85 +341,93 @@ function ProfileTab({ user }: { user: UserData }) {
   );
 }
 
-/* ── 플랜 탭 ── */
+/* ── 크레딧 탭 ── */
 
-function PlanTab({ user, credits }: { user: UserData; credits?: CreditsData }) {
-  const planKey = credits?.current_plan || "free";
-  const planName = PLAN_LABELS[planKey] || "체험";
-  const planPrice = PLAN_PRICES[planKey] || "무료";
+const TX_TYPE_LABEL: Record<string, string> = {
+  charge: "충전",
+  usage: "사용",
+  refund: "환불",
+  admin_adjust: "관리자 조정",
+};
 
-  const mockCredits = credits
-    ? credits.plan_mock_exam_credits + credits.mock_exam_credits
-    : 0;
-  const scriptCredits = credits
-    ? credits.plan_script_credits + credits.script_credits
-    : 0;
-  const tutoringCredits = credits
-    ? (credits.plan_tutoring_credits ?? 0) + (credits.tutoring_credits ?? 0)
-    : 0;
+const TX_TYPE_COLOR: Record<string, string> = {
+  charge: "text-blue-600",
+  usage: "text-red-500",
+  refund: "text-green-600",
+  admin_adjust: "text-foreground-secondary",
+};
+
+function PlanTab({ credits }: { user: UserData; credits?: CreditsData }) {
+  const balance = credits?.balance ?? { balance_cents: 0, total_charged: 0, total_used: 0 };
+  const transactions = credits?.transactions ?? [];
 
   return (
     <div className="space-y-6">
-      {/* 현재 플랜 — 브랜드 강조 배경 */}
+      {/* 잔액 */}
       <div className="rounded-[var(--radius-xl)] border border-primary-200 bg-primary-50/50 p-4 sm:p-6">
-        <h3 className="mb-4 font-semibold text-foreground">크레딧 현황</h3>
-        <div className="grid grid-cols-3 gap-3">
+        <h3 className="mb-4 font-semibold text-foreground">크레딧 잔액</h3>
+        <div className="rounded-[var(--radius-lg)] bg-white p-5 text-center">
+          <p className="text-3xl font-bold text-primary-600">
+            {formatUsd(balance.balance_cents)}
+          </p>
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-3">
           <div className="rounded-[var(--radius-lg)] bg-white p-3 text-center">
-            <p className="text-xs text-foreground-muted">플랜</p>
-            <p className="mt-1 text-lg font-bold text-primary-600">{planName}</p>
-          </div>
-          <div className="rounded-[var(--radius-lg)] bg-white p-3 text-center">
-            <p className="text-xs text-foreground-muted">가격</p>
-            <p className="mt-1 text-sm font-bold text-foreground">{planPrice}</p>
-          </div>
-          <div className="rounded-[var(--radius-lg)] bg-white p-3 text-center">
-            <p className="text-xs text-foreground-muted">
-              {credits?.plan_expires_at ? "만료일" : "가입일"}
+            <p className="text-xs text-foreground-muted">총 충전</p>
+            <p className="mt-1 text-sm font-semibold text-blue-600">
+              {formatUsd(balance.total_charged)}
             </p>
-            <p className="mt-1 text-sm font-bold text-foreground">
-              {credits?.plan_expires_at
-                ? new Date(credits.plan_expires_at).toLocaleDateString("ko-KR")
-                : formatDate(user.createdAt)}
+          </div>
+          <div className="rounded-[var(--radius-lg)] bg-white p-3 text-center">
+            <p className="text-xs text-foreground-muted">총 사용</p>
+            <p className="mt-1 text-sm font-semibold text-red-500">
+              {formatUsd(balance.total_used)}
             </p>
           </div>
         </div>
+        <Link href="/store" className="mt-4 block">
+          <Button size="sm" className="w-full">
+            크레딧 충전하기
+            <ArrowRight size={14} className="ml-1" />
+          </Button>
+        </Link>
       </div>
 
-      {/* 남은 사용량 */}
+      {/* 최근 이용 내역 */}
       <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-4 sm:p-6">
-        <h3 className="mb-4 font-semibold text-foreground">남은 사용량</h3>
-        <div className="grid gap-4 sm:grid-cols-3">
-          {/* 모의고사 */}
-          <div className="col-span-full rounded-[var(--radius-lg)] bg-surface-secondary p-4 text-center">
-            <p className="text-sm text-foreground-secondary">크레딧 잔액</p>
-            <p className="mt-2 text-2xl font-bold text-foreground">
-              ₩{(credits?.balance_krw ?? 0).toLocaleString()}
-            </p>
-            <p className="mt-1 text-[11px] text-foreground-muted">
-              모의고사 · 스크립트 · 튜터링 사용 시 차감
-            </p>
-          </div>
-        </div>
+        <h3 className="mb-4 font-semibold text-foreground">최근 이용 내역</h3>
+        {transactions.length === 0 ? (
+          <p className="py-8 text-center text-sm text-foreground-muted">
+            아직 이용 내역이 없습니다.
+          </p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {transactions.map((tx) => (
+              <li key={tx.id} className="flex items-center justify-between py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {tx.description}
+                  </p>
+                  <p className="mt-0.5 text-xs text-foreground-muted">
+                    {new Date(tx.created_at).toLocaleDateString("ko-KR", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                    {" · "}
+                    {TX_TYPE_LABEL[tx.type] ?? tx.type}
+                  </p>
+                </div>
+                <p className={`ml-4 text-sm font-semibold whitespace-nowrap ${TX_TYPE_COLOR[tx.type] ?? ""}`}>
+                  {tx.type === "usage" ? "-" : "+"}{formatUsd(Math.abs(tx.amount))}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
-
-      {/* 업그레이드 CTA — 체험 플랜일 때만 */}
-      {planKey === "free" && (
-        <div className="rounded-[var(--radius-xl)] border border-primary-200 bg-gradient-to-br from-primary-50 to-primary-100/50 p-6">
-          <p className="font-semibold text-primary-700">
-            더 많은 학습이 필요하신가요?
-          </p>
-          <p className="mt-1 text-sm text-primary-600/80">
-            실전 플랜(₩19,900)으로 업그레이드하면 실전 모의고사 3회 +
-            스크립트 15회를 이용할 수 있어요.
-          </p>
-          <Link href="/store" className="mt-4 block">
-            <Button size="sm" className="w-full">
-              크레딧 충전하기
-              <ArrowRight size={14} className="ml-1" />
-            </Button>
-          </Link>
-        </div>
-      )}
     </div>
   );
 }

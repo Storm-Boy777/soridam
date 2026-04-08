@@ -1,35 +1,25 @@
 "use server";
 
-import { Polar } from "@polar-sh/sdk";
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
-import { POLAR_PRODUCTS } from "@/lib/constants/pricing";
+import { paymentProvider } from "@/lib/payment";
+import { PRODUCTS, type ProductKey } from "@/lib/constants/pricing";
 
-const polar = new Polar({
-  accessToken: process.env.POLAR_ACCESS_TOKEN!,
-});
-
-type ProductKey = keyof typeof POLAR_PRODUCTS;
-
-export async function createPolarCheckout(productKey: ProductKey) {
+export async function createCheckout(productKey: ProductKey) {
   const user = await getUser();
-  if (!user) throw new Error("로그인이 필요합니다.");
+  if (!user) throw new Error("Login required");
 
-  const product = POLAR_PRODUCTS[productKey];
-  if (!product) throw new Error("유효하지 않은 상품입니다.");
+  const product = PRODUCTS[productKey];
+  if (!product) throw new Error("Invalid product");
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://soridamhub.com";
+  const successUrl = `${siteUrl}/store?success=true&type=${product.type}`;
 
-  const checkout = await polar.checkouts.create({
-    products: [product.id],
-    successUrl: `${siteUrl}/store?success=true&type=${product.type}`,
-    customerEmail: user.email || undefined,
-    metadata: {
-      userId: user.id,
-      productType: product.type,
-      creditAmount: String(product.creditAmount),
-    },
-  });
+  const { url } = await paymentProvider.createCheckout(
+    productKey,
+    { id: user.id, email: user.email || "" },
+    successUrl
+  );
 
-  redirect(checkout.url);
+  redirect(url);
 }

@@ -5,6 +5,7 @@ import { T } from "@/lib/constants/tables";
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase";
 import { Wallet, TrendingDown, TrendingUp } from "lucide-react";
+import { formatUsd } from "@/lib/constants/pricing";
 
 /* ── 잔액 fetch ── */
 
@@ -12,11 +13,11 @@ async function fetchBalance(userId: string) {
   const supabase = createClient();
   const { data, error } = await supabase
     .from(T.polar_balances)
-    .select("balance_krw, total_charged, total_used")
+    .select("balance_cents, total_charged, total_used")
     .eq("user_id", userId)
     .single();
 
-  if (error) return { balance_krw: 0, total_charged: 0, total_used: 0 };
+  if (error) return { balance_cents: 0, total_charged: 0, total_used: 0 };
   return data;
 }
 
@@ -53,28 +54,28 @@ export function DashboardStats({
 
   if (isLoading && !balance) return <StatsPlaceholder />;
 
-  const balanceKrw = balance?.balance_krw ?? 0;
+  const balanceCents = balance?.balance_cents ?? 0;
   const totalCharged = balance?.total_charged ?? 0;
   const totalUsed = balance?.total_used ?? 0;
 
   const stats = [
     {
       label: "크레딧 잔액",
-      value: `₩${balanceKrw.toLocaleString()}`,
+      value: formatUsd(balanceCents),
       icon: Wallet,
       color: "bg-primary-50 text-primary-500",
       href: "/store",
     },
     {
       label: "누적 충전",
-      value: `₩${totalCharged.toLocaleString()}`,
+      value: formatUsd(totalCharged),
       icon: TrendingUp,
       color: "bg-emerald-50 text-emerald-500",
       href: null,
     },
     {
       label: "누적 사용",
-      value: `₩${totalUsed.toLocaleString()}`,
+      value: formatUsd(totalUsed),
       icon: TrendingDown,
       color: "bg-secondary-50 text-secondary-600",
       href: null,

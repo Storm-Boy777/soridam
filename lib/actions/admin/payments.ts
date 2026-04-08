@@ -154,7 +154,7 @@ export async function refundOrder(params: {
   if (order.credit_amount > 0) {
     await supabase.rpc("polar_deduct_balance", {
       p_user_id: order.user_id,
-      p_cost_krw: order.credit_amount,
+      p_cost_cents: order.credit_amount,
       p_description: `관리자 환불: ${params.reason}`,
       p_ref_id: order.id,
     });

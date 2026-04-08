@@ -182,7 +182,7 @@ export function DeviceTest({ onComplete, onBack }: DeviceTestProps) {
       <div className="flex flex-col gap-8 lg:grid lg:grid-cols-2 lg:gap-16">
         {/* 왼쪽: AVA 캐릭터 + Play 버튼 */}
         <div className="flex flex-col items-center gap-6 lg:justify-center">
-          <div className="relative mx-auto h-56 w-56 lg:h-80 lg:w-80">
+          <div className="relative mx-auto h-64 w-64 sm:h-72 sm:w-72 lg:h-80 lg:w-80">
             <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary-300/20 to-secondary-300/20 blur-xl" />
             <div className="relative h-full w-full overflow-hidden rounded-3xl shadow-2xl">
               <Image

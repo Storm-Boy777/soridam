@@ -110,7 +110,7 @@ async function ConversionStats() {
         <MetricCard
           icon={<BarChart3 size={16} className="text-teal-500" />}
           label="평균 주문액"
-          value={`₩${m.avgOrderValue.toLocaleString()}`}
+          value={`$${(m.avgOrderValue / 100).toFixed(2)}`}
         />
         <MetricCard
           icon={<Users size={16} className="text-blue-500" />}

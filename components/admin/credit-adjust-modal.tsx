@@ -5,7 +5,7 @@ import { X } from "lucide-react";
 import type { CreditAdjustParams } from "@/lib/types/admin";
 
 const CREDIT_TYPES = [
-  { value: "balance_krw", label: "크레딧 잔액 (원)" },
+  { value: "balance_cents", label: "크레딧 잔액 (센트)" },
 ] as const;
 
 interface CreditAdjustModalProps {

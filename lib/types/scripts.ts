@@ -398,7 +398,7 @@ export interface CreditCheckResult {
   planCredits: number;
   permanentCredits: number;
   totalCredits: number;
-  balanceKrw: number;
+  balanceCents: number;
 }
 
 // ── opic_tips 학습 콘텐츠 ──

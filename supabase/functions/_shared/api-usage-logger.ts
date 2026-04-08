@@ -92,13 +92,10 @@ export interface UsageLogParams {
   processing_time_ms?: number;
 }
 
-// USD → KRW 환율
-const USD_TO_KRW = 1400;
-
 export async function logApiUsage(
   supabase: SupabaseClient,
   params: UsageLogParams
-): Promise<{ cost_usd: number; cost_krw: number; balance_after?: number }> {
+): Promise<{ cost_usd: number; cost_cents: number; balance_after?: number }> {
   const cost_usd = calculateCost({
     service: params.service,
     model: params.model,
@@ -107,8 +104,8 @@ export async function logApiUsage(
     audio_duration_sec: params.audio_duration_sec,
   });
 
-  // KRW 환산 (소수점 올림 — 사용자에게 불리하지 않도록 최소 1원)
-  const cost_krw = Math.max(Math.ceil(cost_usd * USD_TO_KRW), cost_usd > 0 ? 1 : 0);
+  // USD → cents (소수점 올림, 최소 1센트)
+  const cost_cents = Math.max(Math.ceil(cost_usd * 100), cost_usd > 0 ? 1 : 0);
 
   // 1. 사용량 로그 기록
   const { error } = await supabase.from("api_usage_logs").insert({
@@ -131,12 +128,12 @@ export async function logApiUsage(
     console.error("[api-usage-logger] INSERT 실패:", error.message);
   }
 
-  // 2. 크레딧 차감 (cost_krw > 0일 때만)
+  // 2. 크레딧 차감 (cost_cents > 0일 때만)
   let balance_after: number | undefined;
-  if (cost_krw > 0) {
+  if (cost_cents > 0) {
     const { data, error: deductError } = await supabase.rpc("polar_deduct_balance", {
       p_user_id: params.user_id,
-      p_cost_krw: cost_krw,
+      p_cost_cents: cost_cents,
       p_description: `${params.feature} (${params.ef_name})`,
       p_ref_id: params.session_id ?? null,
     });
@@ -148,7 +145,7 @@ export async function logApiUsage(
     }
   }
 
-  return { cost_usd, cost_krw, balance_after };
+  return { cost_usd, cost_cents, balance_after };
 }
 
 // ============================================================
@@ -157,14 +154,13 @@ export async function logApiUsage(
 export async function checkBalance(
   supabase: SupabaseClient,
   userId: string
-): Promise<{ balance_krw: number; sufficient: boolean }> {
+): Promise<{ balance_cents: number; sufficient: boolean }> {
   const { data, error } = await supabase.rpc("polar_get_balance", {
     p_user_id: userId,
   });
 
-  const balance_krw = error ? 0 : (data ?? 0);
-  // 최소 1원 이상이면 sufficient (실비용은 호출 후에 정산)
-  return { balance_krw, sufficient: balance_krw > 0 };
+  const balance_cents = error ? 0 : (data ?? 0);
+  return { balance_cents, sufficient: balance_cents > 0 };
 }
 
 // ============================================================

@@ -417,7 +417,7 @@ export interface TutoringCredit {
   available: boolean;
   plan_credits: number;
   credits: number;
-  balanceKrw: number;
+  balanceCents: number;
 }
 
 // ── 이력 ──

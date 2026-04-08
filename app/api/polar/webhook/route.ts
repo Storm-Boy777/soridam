@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
       if (creditAmount > 0) {
         await supabase.rpc("polar_deduct_balance", {
           p_user_id: userId,
-          p_cost_krw: creditAmount,
+          p_cost_cents: creditAmount,
           p_description: "결제 환불에 따른 크레딧 회수",
           p_ref_id: order.id,
         });
