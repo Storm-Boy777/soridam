@@ -3,7 +3,7 @@ chcp 65001 > nul
 
 echo.
 echo ========================================
-echo    HaruOPIc Quick Start (Next.js 16)
+echo    Soridam Quick Start (Next.js 16)
 echo    Port: 3001
 echo ========================================
 echo.

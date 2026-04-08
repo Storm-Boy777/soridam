@@ -696,7 +696,7 @@ export async function getEvaluation(input: {
   try {
     const { supabase, userId } = await requireUser();
 
-    // consults + 답변 오디오 URL 병렬 조회
+    // consults + 답변(음성/STT/발음) 병렬 조회
     const [consultRes, answerRes] = await Promise.all([
       supabase
         .from(T.mock_test_consults)
@@ -707,7 +707,9 @@ export async function getEvaluation(input: {
         .maybeSingle(),
       supabase
         .from(T.mock_test_answers)
-        .select("audio_url")
+        .select(
+          "audio_url, transcript, word_count, wpm, audio_duration, pronunciation_assessment, long_pause_count, skipped"
+        )
         .eq("session_id", input.session_id)
         .eq("question_number", input.question_number)
         .maybeSingle(),
@@ -719,10 +721,23 @@ export async function getEvaluation(input: {
 
     if (!consultRes.data) return { data: null };
 
+    // pronunciation_assessment에서 점수 추출
+    const pron = answerRes.data?.pronunciation_assessment as Record<string, unknown> | null;
+
     return {
       data: {
         ...(consultRes.data as Record<string, unknown>),
         audio_url: answerRes.data?.audio_url ?? null,
+        transcript: answerRes.data?.transcript ?? null,
+        speech_meta: {
+          duration_sec: Math.round(Number(answerRes.data?.audio_duration ?? 0)),
+          word_count: answerRes.data?.word_count ?? 0,
+          wpm: Math.round(Number(answerRes.data?.wpm ?? 0)),
+          accuracy_score: pron?.AccuracyScore ?? pron?.accuracy_score ?? null,
+          fluency_score: pron?.FluencyScore ?? pron?.fluency_score ?? null,
+          pause_count_3s_plus: answerRes.data?.long_pause_count ?? 0,
+        },
+        skipped_by_answer: answerRes.data?.skipped ?? false,
       },
     };
   } catch (err) {

@@ -54,7 +54,7 @@ export interface AdminOrder {
   amount: number;
   status: string;
   payment_id: string | null;
-  pg_provider: string | null;
+  payment_provider: string | null;
   pg_tx_id: string | null;
   pay_method: string | null;
   paid_at: string | null;

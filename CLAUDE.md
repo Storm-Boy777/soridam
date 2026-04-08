@@ -1,4 +1,4 @@
-# CLAUDE.md - HaruOPIc (하루오픽) 프로젝트
+# CLAUDE.md - 소리담 (Soridam) 프로젝트
 
 ## 🔄 자동 업데이트 규칙
 
@@ -46,10 +46,11 @@
 
 ## 🎯 Project Overview
 
-**HaruOPIc (하루오픽)** - AI 기반 OPIc 영어 말하기 학습 플랫폼
-- 도메인: https://haruopic.com (리브랜딩 완료, 구 opictalkdoc.com → 리다이렉트)
-- 소리담(soridam) 베타의 최종 버전 기능을 이관하여 구축하는 프로젝트
-- 소리담 소스코드: `C:\Users\js777\Desktop\soridam`
+**소리담 (Soridam)** - AI 기반 OPIc 영어 말하기 학습 플랫폼
+- 도메인: https://soridamhub.com
+- 하루오픽(HaruOPIc) 코드를 100% 동일하게 가져온 후, 디자인만 변경한 프로젝트
+- 하루오픽 소스코드: `C:\Users\js777\Desktop\haruopic`
+- 원본 소리담 레거시: `C:\Users\js777\Desktop\back-up\soridam_legacy`
 
 ## 📚 프로젝트 문서 체계
 
@@ -141,20 +142,16 @@ docs/
 
 | 파일 | 용도 | 비고 |
 |------|------|------|
-| `logo-bandaid-terracotta.png` | **Navbar (현재 적용)** | 반창고 아이콘 + "오픽톡닥" 테라코타 |
-| `logo-heart-terracotta.png` | 대체 로고 | 하트십자 아이콘 + 테라코타 |
-| `logo-text-terracotta.png` | 텍스트 전용 | "오픽톡닥" 테라코타 |
-| `logo-text-dark.png` | 텍스트 전용 (다크) | "오픽톡닥" 다크 브라운 |
-| `logo-white.png` | 다크 배경용 | 흰색 버전 |
-| `logo-large-4x.png` | 고해상도 | 4x 스케일 |
+| `icon-soridam.png` | 앱 아이콘 | 소리담 아이콘 |
+| `favicon.ico` / `favicon.png` | 파비콘 | 브라우저 탭 아이콘 |
+| `apple-icon.png` | iOS 아이콘 | Apple 터치 아이콘 |
+| `icon-192.png` / `icon-512.png` | PWA 아이콘 | 매니페스트용 |
 
-- **로고 생성 방식**: Canvas API + Jua 폰트 로컬 렌더링 (AI 생성 X)
-- **로고 생성기**: `temp/generate-logo.html`
+- **브랜드명**: 소리담 (Soridam)
 
 ### 디자인 톤 & 키워드
-- **톤**: 웜톤, 크림, 테라코타 — "따뜻한 진료실" 느낌
-- **슬로건**: "말하다, 나답게."
-- **브랜딩 컨셉**: "나는 내 삶의 주인공이다" — 평범한 일상이 완벽한 OPIc 대본
+- **톤**: 웜톤, 크림, 테라코타 — 따뜻하고 편안한 학습 공간
+- **브랜드명**: 소리담 (Soridam) — 소리를 담다
 - **아이콘**: Lucide React 통일
 
 ### ⚠️ 모바일 레이아웃 필수 패턴
@@ -201,7 +198,7 @@ docs/
 ### Supabase MCP (설정 완료)
 - **설정 파일**: `.claude/settings.local.json`
 - **타입**: HTTP (원격)
-- **URL**: `https://mcp.supabase.com/mcp?project_ref=rwdsyqnrrpwkureqfxwb`
+- **URL**: `https://mcp.supabase.com/mcp?project_ref=fkkdbnebsaecjpqhhdvl`
 - **인증**: Supabase Access Token
 
 **사용 가능한 도구**:
@@ -240,20 +237,11 @@ docs/
 ## 🔑 인프라 정보
 
 ### GitHub
-- **계정**: opictalkdoc
-- **저장소**: `opictalkdoc/opictalkdoc-app`
-- **URL**: https://github.com/opictalkdoc/opictalkdoc-app
+- **계정**: Storm-Boy777
+- **저장소**: `Storm-Boy777/soridam`
+- **URL**: https://github.com/Storm-Boy777/soridam
 
-### Supabase (하루오픽 — 레거시)
-- **Project ID**: `rwdsyqnrrpwkureqfxwb`
-- **Project URL**: `https://rwdsyqnrrpwkureqfxwb.supabase.co`
-- **Region**: Northeast Asia (Seoul)
-- **DB Password**: `opictalk2026`
-- **DB Host (Pooler)**: `aws-1-ap-northeast-2.pooler.supabase.com`
-- **DB Port**: `6543` (Transaction) / `5432` (Session)
-- **DB User**: `postgres.rwdsyqnrrpwkureqfxwb`
-
-### Supabase (소리담 — 이전 대상)
+### Supabase (소리담 — 현재 사용)
 - **Project ID**: `fkkdbnebsaecjpqhhdvl`
 - **Project URL**: `https://fkkdbnebsaecjpqhhdvl.supabase.co`
 - **Region**: Northeast Asia (Seoul)
@@ -263,10 +251,21 @@ docs/
 - **DB User**: `postgres.fkkdbnebsaecjpqhhdvl`
 - **Access Token**: `sbp_a586b7b80d9381508101d27a1bd93b9979e93637`
 
+### Supabase (하루오픽 — 참조용)
+- **Project ID**: `rwdsyqnrrpwkureqfxwb`
+- **Project URL**: `https://rwdsyqnrrpwkureqfxwb.supabase.co`
+- **Region**: Northeast Asia (Seoul)
+- **DB Password**: `opictalk2026`
+- **DB Host (Pooler)**: `aws-1-ap-northeast-2.pooler.supabase.com`
+- **DB Port**: `6543` (Transaction) / `5432` (Session)
+- **DB User**: `postgres.rwdsyqnrrpwkureqfxwb`
+
 ### Vercel
-- **팀**: OPIcTalkDoc (Pro)
-- **프로젝트**: opictalkdoc-app
-- **도메인**: haruopic.com, www.haruopic.com (구 opictalkdoc.com → 리다이렉트)
+- **팀**: jays-projects-ef86099d
+- **프로젝트**: soridam-frontend
+- **프로젝트 ID**: `prj_KND5lcBF3OBgGcD4C5DHRjS2lr2d`
+- **URL**: https://vercel.com/jays-projects-ef86099d/soridam-frontend
+- **도메인**: soridamhub.com
 - **자동 배포**: main 브랜치 푸시 시 자동 배포
 
 ### DNS (Spaceship)
@@ -274,15 +273,14 @@ docs/
 - **CNAME**: `www` → `cname.vercel-dns.com`
 
 ### 테스트 계정 (심사/검수용)
-- **ID**: `test@opictalkdoc.com`
-- **PW**: `Test1234@@`
-- **URL**: https://haruopic.com/login
-- **용도**: 카카오페이, PG사, 통신판매업 심사 등 외부 검수용
+- **ID**: `soridamhub@gmail.com`
+- **PW**: (관리자 계정)
+- **URL**: https://soridamhub.com/login
 
 ## 📁 프로젝트 구조
 
 ```
-haruopic/                    # Git 루트 = Next.js 루트 (표준 구조)
+soridam/                     # Git 루트 = Next.js 루트 (표준 구조)
 ├── CLAUDE.md                # 프로젝트 가이드 (이 파일)
 ├── .gitignore
 ├── README.md
@@ -423,15 +421,14 @@ git add -A && git commit -m "feat: 기능 설명" && git push origin main
 ## ⚠️ Environment Variables (.env.local)
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=https://rwdsyqnrrpwkureqfxwb.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://fkkdbnebsaecjpqhhdvl.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIs...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIs...
 NEXT_PUBLIC_SITE_URL=http://localhost:3001
 
-# PortOne (결제)
-NEXT_PUBLIC_PORTONE_STORE_ID=store-73f548e3-...
-NEXT_PUBLIC_PORTONE_CHANNEL_KEY=channel-key-06303dde-...
-PORTONE_API_SECRET=XFGThRDJX2...
+# Creem (결제 — 현재 사용)
+CREEM_API_KEY=creem_...
+CREEM_WEBHOOK_SECRET=whsec_...
 
 # OpenAI (GPT-4.1 스크립트 생성, Whisper STT)
 OPENAI_API_KEY=sk-proj-...
@@ -449,14 +446,15 @@ AZURE_SPEECH_REGION=koreacentral
 
 ## 🚨 Critical Development Workflow
 
-### ⚠️ 모듈 이관 시 필수 원칙: 소리담 먼저 파악
-- **코드 구현에 들어가기 전에**, 반드시 소리담(`C:\Users\js777\Desktop\soridam`)의 해당 모듈 소스코드를 먼저 파악한다
-- 파악한 내용을 `docs/설계/{모듈}.md`에 **소리담 원본 구현** 섹션으로 정리한다
+### ⚠️ 모듈 이관 시 필수 원칙: 하루오픽 먼저 파악
+- **코드 구현에 들어가기 전에**, 반드시 하루오픽(`C:\Users\js777\Desktop\haruopic`)의 해당 모듈 소스코드를 먼저 파악한다
+- 소리담은 하루오픽 코드 100% 동일 + 디자인만 변경이므로, **하루오픽 코드가 기준**이다
+- 파악한 내용을 `docs/설계/{모듈}.md`에 **하루오픽 원본 구현** 섹션으로 정리한다
 - **설계 문서 하나만 보면 구현할 수 있는 상태**가 된 후에야 구현을 시작한다
 - 절차:
-  1. 소리담 소스코드 파악 (Edge Functions, 컴포넌트, DB, 타입, 로직)
-  2. `설계/{모듈}.md`에 소리담 원본 구현 정보 추가
-  3. 소리담 → 오픽톡닥 변경 사항 매핑 확인
+  1. 하루오픽 소스코드 파악 (Edge Functions, 컴포넌트, DB, 타입, 로직)
+  2. `설계/{모듈}.md`에 하루오픽 원본 구현 정보 추가
+  3. 하루오픽 → 소리담 변경 사항 매핑 확인 (디자인 토큰만 다름)
   4. 설계 문서 완성 확인 후 구현 시작
 
 ### ⚠️ 기술 제안 시 필수 원칙: 업계 표준 우선
@@ -541,11 +539,11 @@ perf: 성능 개선
 
 ```bash
 # 이 저장소 전용 설정
-git config user.email "haruopic@gmail.com"
-git config user.name "opictalkdoc"
+git config user.email "soridamhub@gmail.com"
+git config user.name "Storm-Boy777"
 
 # 원격 저장소 (인증 포함)
-origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
+origin: https://Storm-Boy777@github.com/Storm-Boy777/soridam.git
 ```
 
 ## 📅 개발 이력
@@ -596,7 +594,7 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 ## 🔮 현재 상태 & 다음 단계
 
 **현재**: Phase 3 완료 + 튜터링 Phase 1 ✅ + 리브랜딩(P-5) ✅ + 결제 시스템(Creem+Provider 패턴) ✅
-**다음 작업**: success_url 프로덕션 수정 → 오픈 베타 준비 (피드백 채널, 에러 모니터링, 체험 크레딧 정책)
+**다음 작업**: 훈련모드 평가 패널 이식 (EvaluationPanelV7 → training-eval-panel) → 각 기능 실사용 테스트 → 점검 모드 해제
 
 ### 모의고사 평가 파이프라인 (현행)
 ```
@@ -632,19 +630,17 @@ Stage C: mock-test-report (평가엔진 7-Step + overview/growth GPT)
 | 진입 조건 | ✅ | 모의고사 3회 이상, 최근 최대 5회, 재진입 시 새 3회 |
 | 다음 | ⏳ | EF 배포 + 실데이터 테스트 + 프롬프트 조정 |
 
-### ✅ 리브랜딩 완료 (P-5: 오픽톡닥 → 하루오픽)
+### 소리담 프로젝트 구축 (하루오픽 코드 기반)
 
 | # | 작업 | 상태 |
 |---|------|------|
-| 1 | 도메인 구매 (haruopic.com) | ✅ |
-| 2 | DNS 설정 (Vercel 연결) | ✅ |
-| 3 | 기존 도메인 리다이렉트 (opictalkdoc.com → haruopic.com) | ✅ |
-| 4 | 코드 텍스트 치환 ("오픽톡닥" → "하루오픽") | ✅ |
-| 5 | 로고 재생성 (sunrise 시리즈) | ✅ |
-| 6 | CORS 확인 (haruopic.com 포함) | ✅ |
-| 7 | 환경변수 (Vercel 프로덕션 설정) | ✅ |
-| 8 | GitHub 저장소명 | 미변경 (opictalkdoc-app 유지) |
-| 9 | 문서 일괄 갱신 | ✅ |
+| 1 | GitHub 저장소 생성 (Storm-Boy777/soridam) | ✅ |
+| 2 | 하루오픽 코드 복사 + 디자인 변경 | ✅ |
+| 3 | Supabase 소리담 프로젝트 연결 (fkkdbnebsaecjpqhhdvl) | ✅ |
+| 4 | Vercel 소리담 프로젝트 생성 | ✅ |
+| 5 | 도메인 연결 (soridamhub.com) | ✅ |
+| 6 | 결제 시스템 (Creem 연동) | ✅ |
+| 7 | CLAUDE.md 소리담 맞춤 갱신 | 🔄 진행 중 |
 
 ### 네비게이션 구조 (확정)
 ```
@@ -776,9 +772,20 @@ PGPASSWORD='soridam2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/16
   -c "SQL문"
 ```
 
+하루오픽 DB (참조용):
+```bash
+PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/16/bin/psql" \
+  -h aws-1-ap-northeast-2.pooler.supabase.com \
+  -p 6543 \
+  -U postgres.rwdsyqnrrpwkureqfxwb \
+  -d postgres \
+  --set=sslmode=require \
+  -c "SQL문"
+```
+
 > 상세 진행 상황은 `docs/실행계획.md`의 "현재 진행 상태" 참조
 > 의사결정 기록은 `docs/의사결정.md` 참조
 
 ---
 *최종 업데이트: 2026-04-08*
-*상태: Phase 3 ✅ + 튜터링 ✅ + 리브랜딩 ✅ + 결제(Creem+Provider) ✅. 다음: success_url 수정 → 오픈 베타 준비*
+*상태: 하루오픽 코드 이식 완료 + 결제(Creem+Provider) ✅ + CLAUDE.md 소리담 맞춤 갱신 중*

@@ -323,7 +323,7 @@ export default function AdminPaymentsPage() {
                       <div>
                         <span className="text-xs text-foreground-muted">결제 Provider</span>
                         <p className="mt-0.5 text-xs text-foreground-secondary">
-                          {PROVIDER_LABELS[order.pg_provider] || order.pg_provider || "-"}
+                          {(order.payment_provider && PROVIDER_LABELS[order.payment_provider]) || order.payment_provider || "-"}
                         </p>
                       </div>
                       <div>

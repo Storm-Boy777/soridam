@@ -60,7 +60,7 @@ export async function getOrders(params: {
     amount: o.amount || 0,
     status: o.status || "unknown",
     payment_id: o.polar_checkout_id || null,
-    pg_provider: (o.polar_checkout_id || "").startsWith("creem_") ? "creem" : "polar",
+    payment_provider: (o.polar_checkout_id || "").startsWith("creem_") ? "creem" : "polar",
     pg_tx_id: null,
     pay_method: null,
     paid_at: o.paid_at || null,
