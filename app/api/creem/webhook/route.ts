@@ -27,8 +27,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const computed = createHmac("sha256", secret).update(rawBody).digest("hex");
-  console.log("[creem-webhook] DEBUG signature:", { received: signature, computed, secretPrefix: secret.substring(0, 10), bodyLength: rawBody.length });
+  // whsec_ 접두사 제거 후 HMAC 계산
+  const signingKey = secret.startsWith("whsec_") ? secret.slice(6) : secret;
+  const computed = createHmac("sha256", signingKey).update(rawBody).digest("hex");
+  console.log("[creem-webhook] DEBUG signature:", { received: signature, computed, keyPrefix: signingKey.substring(0, 8), bodyLength: rawBody.length });
 
   if (computed !== signature) {
     console.error("[creem-webhook] Invalid signature");
