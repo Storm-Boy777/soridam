@@ -12,7 +12,10 @@ function getServiceClient() {
 
 function verifySignature(rawBody: string, signature: string, secret: string): boolean {
   const computed = createHmac("sha256", secret).update(rawBody).digest("hex");
-  return computed === signature;
+  const a = Buffer.from(computed, "hex");
+  const b = Buffer.from(signature, "hex");
+  if (a.length !== b.length) return false;
+  return require("crypto").timingSafeEqual(a, b);
 }
 
 export async function POST(request: NextRequest) {
@@ -27,10 +30,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // TODO: Creem 서명 검증 — 현재 HMAC 결과가 일치하지 않아 검증 비활성화
-  // Creem 지원팀에 정확한 서명 방식 확인 후 활성화 예정
-  if (signature) {
-    console.log("[creem-webhook] Signature received (verification skipped):", signature.substring(0, 16) + "...");
+  // 서명 검증 (테스트 이벤트에서 불일치 확인됨 — 실결제 후 재검증 예정)
+  const computed = createHmac("sha256", secret).update(rawBody).digest("hex");
+  const signatureValid = computed === signature;
+  console.log("[creem-webhook] Signature check:", { valid: signatureValid });
+  if (!signatureValid) {
+    console.warn("[creem-webhook] Signature mismatch — proceeding (verification pending)");
   }
 
   const body = JSON.parse(rawBody);
