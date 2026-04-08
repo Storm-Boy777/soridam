@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
   console.log("[creem-webhook] Event body keys:", Object.keys(body));
   console.log("[creem-webhook] Event body:", JSON.stringify(body).substring(0, 500));
 
-  const eventType = body.event_type || body.type;
+  const eventType = body.eventType || body.event_type || body.type;
   const eventData = body.object || body.data;
 
   console.log("[creem-webhook] Parsed:", { eventType, hasEventData: !!eventData });
@@ -57,11 +57,22 @@ export async function POST(request: NextRequest) {
   switch (eventType) {
     // 결제 완료 (1회성)
     case "checkout.completed": {
-      const metadata = eventData.metadata as Record<string, string> | null;
+      // Creem 구조: body.object = checkout, checkout.order = order
+      const checkout = eventData;
+      const order = checkout.order;
+      const metadata = checkout.metadata || order?.metadata || null;
+      const checkoutId = checkout.id;
+
+      console.log("[creem-webhook] checkout.completed:", {
+        checkoutId,
+        metadata,
+        orderAmount: order?.amount,
+        productId: order?.product,
+      });
+
       const userId = metadata?.user_id;
       const productType = metadata?.product_type;
       const creditAmount = Number(metadata?.credit_amount || "0");
-      const checkoutId = eventData.id || eventData.checkout_id;
 
       if (!userId || !productType) {
         console.error("[creem-webhook] Missing metadata:", { metadata });
@@ -75,9 +86,9 @@ export async function POST(request: NextRequest) {
       const { data, error } = await supabase.rpc("process_polar_payment", {
         p_user_id: userId,
         p_polar_checkout_id: `creem_${checkoutId}`,
-        p_polar_product_id: eventData.product_id || null,
+        p_polar_product_id: order?.product || null,
         p_product_type: productType,
-        p_amount: eventData.amount || 0,
+        p_amount: order?.amount || 0,
         p_credit_amount: creditAmount,
       });
 
