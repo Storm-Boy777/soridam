@@ -584,13 +584,19 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 | 03-25 | **튜터링 재설계** | 전문가 자문 기반 새 설계서 완성. 기존 V2 코드/DB 전부 삭제. 파이프라인 C→D→QSE→E→L1→F, 3단 등급, Layer1 규칙엔진, CO-STAR 프롬프트 |
 | 03-26 | **튜터링 구현** | Phase 1 전체 구현 (7테이블 + SA 12개 + EF 3개 + Layer1 엔진 + QSE + 9컴포넌트 + 2페이지) |
 | 03-31 | **리브랜딩 완료 확인** | P-5 전항목 완료 확인 + 레거시 EF 4개 삭제 (tutoring-v2-* 3개 + tutoring) + 문서 갱신 |
+| 04-08 | **결제 시스템 전면 리팩토링** | Provider 패턴(Creem/Polar 전환) + DB KRW→USD(센트) 전환 + RPC 7개 재생성 + UI 30개 파일 $ 표시 |
+| 04-08 | **Creem 연동 완료** | 상품 3종($10 충전, $15 충전+후원, $5 월간후원) + 웹훅 핸들러 + 서명 검증(Creem 측 이슈 대기) |
+| 04-08 | **정기 후원 시스템** | sponsorships 테이블 + 구독 lifecycle 웹훅 전체 처리(active/paid/canceled/scheduled_cancel/expired/paused) + Customer Portal 연동 |
+| 04-08 | **마이페이지 리뉴얼** | 크레딧 탭(잔액+충전/사용+이력) + 후원 상태 뱃지(후원 중💛/취소 예정/취소됨) + 관리하기 버튼 |
+| 04-08 | **서베이 UI 개선** | 2열 레이아웃(설문|전략) + 칩 색상 개선 + 반응형 최적화 + 기출 본인 제외 버그 수정 |
+| 04-08 | **EF 전체 재배포** | api-usage-logger 센트 전환 반영 — 10개 EF 일괄 배포 |
 
 <!-- 이후 새 이력은 이 테이블에 행 추가 + memory/개발이력.md에 상세 기록 -->
 
 ## 🔮 현재 상태 & 다음 단계
 
-**현재**: Phase 3 완료 + 튜터링 Phase 1 구현 완료 + 리브랜딩(P-5) 완료
-**다음 작업**: 오픈 베타 준비 (피드백 채널, 에러 모니터링, 베타 크레딧 정책)
+**현재**: Phase 3 완료 + 튜터링 Phase 1 ✅ + 리브랜딩(P-5) ✅ + 결제 시스템(Creem+Provider 패턴) ✅
+**다음 작업**: success_url 프로덕션 수정 → 오픈 베타 준비 (피드백 채널, 에러 모니터링, 체험 크레딧 정책)
 
 ### 모의고사 평가 파이프라인 (현행)
 ```
@@ -655,11 +661,9 @@ Stage C: mock-test-report (평가엔진 7-Step + overview/growth GPT)
 - **모의고사** (/mock-exam): 응시 | 결과 | 나의 이력
 - **튜터링** (/tutoring): 진단 | 훈련 | 나의 튜터링
 
-### DB 현황 (31개 테이블 — 튜터링 V1 7개 추가 + 참조 2개)
+### DB 현황 (35개 테이블 — 결제 4개 추가)
 - **questions**: 471행 (D-1 전면 교체 — 13컬럼, 새 ID 체계. 원본: `docs/질문 DB/questions_db.xlsx`)
 - **profiles**: 사용자 프로필 (Supabase Auth 연동)
-- **orders**: 결제 기록 테이블 (RLS: 본인 조회만)
-- **user_credits**: 사용자 이용권 테이블 (회원가입 트리거로 자동 생성)
 - **submissions**: 후기 마스터 (17컬럼 + credit_granted, RLS: 본인 CRUD + complete 전체 SELECT)
 - **submission_questions**: 14개 질문 기록 (FK → submissions, questions)
 - **submission_combos**: 통합 콤보 (인증: 전체 SELECT, 비인증: advance만)
@@ -678,7 +682,7 @@ Stage C: mock-test-report (평가엔진 7-Step + overview/growth GPT)
 - **evaluation_prompts**: 평가 프롬프트 템플릿 (CO-STAR, 모의고사+튜터링 공유)
 - **evaluation_criteria**: 60행 평가 기준표 (6등급 × 10유형, consult EF용)
 - **task_fulfillment_checklists**: 과제 충족 체크리스트 (question_type별)
-- **master_questions**: 레거시 질문 DB (사용 안 함, questions로 대체됨)
+- **system_settings**: 사이트 설정 (key-value, 점검 모드/결제 Provider/공지 등)
 - **tutoring_sessions**: 세션 마스터 + Prompt C/D 결과 (stable_level, bottlenecks, prescription)
 - **tutoring_focuses**: focus별 처방 (세션당 1~3개, 졸업 추적)
 - **tutoring_drills**: 드릴 문항 (focus당 Q1/Q2/Q3)
@@ -686,49 +690,73 @@ Stage C: mock-test-report (평가엔진 7-Step + overview/growth GPT)
 - **tutoring_retests**: 미니 재평가 (graduated/improving/hold)
 - **type_templates**: 10개 answer_type별 구조 + Layer1 마커 (참조)
 - **level_modifiers**: 6개 등급별 수행 요구 (참조)
+- **polar_balances**: 크레딧 잔액 (balance_cents, total_charged, total_used, creem_customer_id)
+- **polar_transactions**: 크레딧 거래 이력 (charge/usage/refund/admin_adjust)
+- **polar_orders**: 결제 주문 기록 (polar_checkout_id UNIQUE, 중복 방지)
+- **sponsorships**: 정기 후원 상태 (creem_subscription_id, status, started_at, cancelled_at, current_period_end)
 - **admin_audit_log**: 관리자 감사 로그 (action, target_type, target_id, details JSONB, RLS: admin SELECT만)
 - **Storage**: audio-recordings + script-packages + mock-test-recordings + tutoring-recordings 버킷
 
-### 결제 시스템 현황
-- **결제 SDK**: 포트원(PortOne) V2 — `@portone/browser-sdk`
-- **PG사**: KG이니시스 (신용카드) + 카카오페이 (간편결제)
-- **결제 플로우**: Store 구매 버튼 → 결제 수단 선택 모달 → 포트원 결제창 → /api/payment/verify 검증 → DB 기록
-- **취소 플로우**: 포트원 콘솔 취소 → 웹훅(`/api/payment/webhook`) → DB 자동 원복
-- **상품**: 실전(19,900), 올인원(49,900), 모의고사 횟수권(7,900), 스크립트 횟수권(3,900/5회), 튜터링 횟수권(5,900)
+### 결제 시스템 현황 (USD 크레딧 기반)
 
-### ⚠️ 크레딧 시스템 (모듈 구현 시 반드시 참고)
+**Provider 패턴**: `PAYMENT_PROVIDER` 환경변수로 Creem ↔ Polar 전환
+- **현재**: Creem (프로덕션 사용 중)
+- **대기**: Polar (승인 대기 중 — 승인 시 전환 가능)
 
-**DB 구조 (`user_credits` 테이블):**
-| 컬럼 | 용도 | 만료 |
-|------|------|------|
-| `plan_mock_exam_credits` | 플랜 구매로 받은 모의고사 크레딧 | 플랜 만료 시 0으로 초기화 |
-| `plan_script_credits` | 플랜 구매로 받은 스크립트 크레딧 | 플랜 만료 시 0으로 초기화 |
-| `mock_exam_credits` | 횟수권으로 구매한 모의고사 크레딧 | 영구 (만료 없음) |
-| `script_credits` | 횟수권으로 구매한 스크립트 크레딧 | 영구 (만료 없음) |
+**상품 3종 (USD)**:
+| 상품 | 결제 | 충전 | Creem 상품 ID |
+|------|------|------|--------------|
+| Soridam AI Usage | $10 | $10 (1000¢) | `prod_6LdgDmmfhBFbE5HpJQi5Ll` |
+| Soridam AI Usage + Support | $15 | $10 (1000¢) + 후원 $5 | `prod_7fn2850tZh2jX06vMud5Zz` |
+| Soridam Support | $5/월 | 없음 (순수 후원) | `prod_2wkBwgDh8hJDSmVU5IQFrI` |
 
-**크레딧 소진 순서:**
-1. **플랜 크레딧 먼저 차감** (`plan_mock_exam_credits`, `plan_script_credits`) — 만료되는 것부터
-2. **횟수권 크레딧 차감** (`mock_exam_credits`, `script_credits`) — 영구 크레딧은 나중에
-- **스크립트 크레딧**: ✅ 구현 완료 (`consume_script_credit` / `refund_script_credit` RPC)
-- **모의고사 크레딧**: ✅ 구현 완료 (`consume_mock_exam_credit` / `refund_mock_exam_credit` RPC)
+**결제 플로우**:
+```
+스토어 → createCheckout() → Creem 결제 페이지 → 웹훅(checkout.completed)
+  → process_polar_payment RPC → polar_balances 충전 + polar_orders 기록
+```
 
-**후기 제출 크레딧 보상 (25일 룰, 구현 완료):**
-- 최초 2회: 무조건 스크립트 크레딧 2개 지급
-- 3회차부터: 마지막 지급일로부터 25일 경과 시에만 지급 (OPIc 응시 주기 반영)
-- `submissions.credit_granted` boolean으로 지급 이력 추적
-- 완료된 후기는 삭제 불가 (크레딧 악용 방지 + 빈도 분석 데이터 보존)
+**환불 플로우**:
+```
+Creem 대시보드 환불 → 웹훅(refund.created)
+  → polar_reverse_charge RPC → balance 차감 + total_charged 차감
+```
 
-**플랜 만료 처리 (TODO):**
-- `plan_expires_at < NOW()` 시 → `plan_mock_exam_credits = 0`, `plan_script_credits = 0`, `current_plan = 'free'`
-- 체크 시점: 모의고사/스크립트 사용 시 또는 대시보드 로드 시
+**정기 후원 플로우**:
+```
+구독 시작 → subscription.active → sponsorships INSERT
+매월 갱신 → subscription.paid → period_end 갱신
+즉시 취소 → subscription.canceled → status=cancelled (즉시 해지)
+예약 취소 → subscription.scheduled_cancel → status=scheduled_cancel (period_end까지 유지)
+```
 
-### PG사 심사 현황
-| PG사 | 상태 | 비고 |
-|------|------|------|
-| KG이니시스 | ✅ 사전심사 완료 (2026-02-20) | 본계약 절차 진행 대기 |
-| 카카오페이 | ✅ 심사 완료 (2026-03-11) | CID: `CA34718795`, 수수료 3.2%, 정산한도 월200만, 하나카드 사용불가, 파트너어드민 권한 등록 완료 (03-15) |
-| 네이버페이 | ❌ 직가맹 거절 (2026-02-23) | 고위험군(횟수권 판매) + 매출 이력 없음. PG사 인증형 대안 |
-| 토스페이 | 입점 정보 회신 완료 | MID 발급 대기 |
+**웹훅**: `app/api/creem/webhook/route.ts` (서명 검증 — Creem 기술팀 이슈 대기)
+**Customer Portal**: `lib/actions/billing.ts` → Creem 고객 포털 URL 생성
+
+### ⚠️ 크레딧 시스템 (USD 센트 기반)
+
+**DB 구조 (`polar_balances` 테이블):**
+| 컬럼 | 용도 |
+|------|------|
+| `balance_cents` | 현재 잔액 (센트 단위, $10 = 1000) |
+| `total_charged` | 누적 충전 |
+| `total_used` | 누적 사용 |
+| `creem_customer_id` | Creem 고객 ID (Customer Portal 용) |
+
+**RPC 함수:**
+- `polar_get_balance` — 잔액 조회
+- `polar_charge_balance` — 충전 (결제 시)
+- `polar_deduct_balance` — 사용 차감 (API 호출 시)
+- `polar_reverse_charge` — 환불 (total_charged 차감)
+- `polar_refund_balance` — 사용 환불 (total_used 차감)
+- `polar_admin_adjust_balance` — 관리자 수동 조정
+- `process_polar_payment` — 원자적 결제 처리 (주문 기록 + 충전)
+
+**비용 차감 (api-usage-logger)**:
+- API 호출 후 실비용 USD → 센트 변환 → `polar_deduct_balance` RPC
+- 환율 변환 불필요 (USD → USD)
+
+**사전 잔액 체크**: 모의고사/스크립트/튜터링 시작 전 `polar_get_balance > 0` 확인
 
 ### DB 접속 방식
 
@@ -737,18 +765,7 @@ Stage C: mock-test-report (평가엔진 7-Step + overview/growth GPT)
 
 **2순위 (폴백): psql 직접 실행** — MCP 연결 실패 또는 대량 데이터 작업 시
 
-하루오픽 DB (레거시):
-```bash
-PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/16/bin/psql" \
-  -h aws-1-ap-northeast-2.pooler.supabase.com \
-  -p 6543 \
-  -U postgres.rwdsyqnrrpwkureqfxwb \
-  -d postgres \
-  --set=sslmode=require \
-  -c "SQL문"
-```
-
-소리담 DB (이전 대상):
+소리담 DB:
 ```bash
 PGPASSWORD='soridam2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/16/bin/psql" \
   -h aws-0-ap-northeast-2.pooler.supabase.com \
@@ -759,16 +776,9 @@ PGPASSWORD='soridam2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/16
   -c "SQL문"
 ```
 
-### v2_ 테이블 접두사 (DB 이전 중)
-- 현재 소리담 DB에 v1 테이블과 v2_ 테이블이 공존
-- 코드에서 모든 테이블명은 `lib/constants/tables.ts`의 `T.테이블명`으로 참조
-- **전환 시**: `lib/constants/tables.ts`의 `PREFIX = "v2_"` → `PREFIX = ""`로 1줄만 변경하면 끝
-- **전환 전 체크리스트**: v1 테이블 DROP → v2_ 테이블 RENAME → PREFIX 변경
-- 상세 계획: `docs/DB이전계획.md`
-
 > 상세 진행 상황은 `docs/실행계획.md`의 "현재 진행 상태" 참조
 > 의사결정 기록은 `docs/의사결정.md` 참조
 
 ---
-*최종 업데이트: 2026-03-31*
-*상태: Phase 3 전체 ✅ + 튜터링 Phase 1 ✅ + 리브랜딩(P-5) ✅. 다음: 오픈 베타 준비*
+*최종 업데이트: 2026-04-08*
+*상태: Phase 3 ✅ + 튜터링 ✅ + 리브랜딩 ✅ + 결제(Creem+Provider) ✅. 다음: success_url 수정 → 오픈 베타 준비*
