@@ -39,8 +39,14 @@ export async function POST(request: NextRequest) {
   }
 
   const body = JSON.parse(rawBody);
+  // 전체 이벤트 구조 로깅 (디버그)
+  console.log("[creem-webhook] Event body keys:", Object.keys(body));
+  console.log("[creem-webhook] Event body:", JSON.stringify(body).substring(0, 500));
+
   const eventType = body.event_type || body.type;
   const eventData = body.object || body.data;
+
+  console.log("[creem-webhook] Parsed:", { eventType, hasEventData: !!eventData });
 
   if (!eventData) {
     return NextResponse.json({ error: "No event data" }, { status: 400 });
