@@ -395,7 +395,7 @@ Deno.serve(async (req: Request) => {
       user_id: session.user_id,
       session_type: "mock_exam",
       session_id: session_id,
-      feature: "mock_consult",
+      feature: "모의고사 소견",
       service: "openai_chat",
       model: model,
       ef_name: "mock-test-consult",

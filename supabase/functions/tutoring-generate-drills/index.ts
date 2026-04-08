@@ -70,7 +70,7 @@ Deno.serve(async (req: Request) => {
       user_id: session.user_id,
       session_type: "tutoring",
       session_id: session.id,
-      feature: "tutoring_drills_e",
+      feature: "튜터링 드릴생성",
       service: "openai_chat",
       model: promptE.model,
       ef_name: "tutoring-generate-drills",
