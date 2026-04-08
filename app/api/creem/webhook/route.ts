@@ -1,6 +1,4 @@
-import crypto from "node:crypto";
-import { NextResponse } from "next/server";
-import { headers } from "next/headers";
+import { Webhook } from "@creem_io/nextjs";
 import { T } from "@/lib/constants/tables";
 import { createClient } from "@supabase/supabase-js";
 
@@ -11,309 +9,199 @@ function getServiceClient() {
   );
 }
 
-export async function POST(req: Request) {
-  // Creem 공식 예제 방식: req.text() + headers()
-  const payload = await req.text();
-  const headerList = await headers();
-  const signature = headerList.get("x-creem-signature") || headerList.get("creem-signature");
-  const secret = process.env.CREEM_WEBHOOK_SECRET;
+export const POST = Webhook({
+  webhookSecret: process.env.CREEM_WEBHOOK_SECRET!,
 
-  if (!secret || !signature) {
-    console.error("[creem-webhook] Missing secret or signature");
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // ── 결제 완료 (1회성 + 구독 최초) ──
+  onCheckoutCompleted: async (data) => {
+    const supabase = getServiceClient();
+    const metadata = data.metadata as Record<string, string> | null;
+    const userId = metadata?.user_id;
+    const productType = metadata?.product_type;
+    const creditAmount = Number(metadata?.credit_amount || "0");
+    const checkoutId = data.id;
+    const order = data.order;
+    const customerId = typeof data.customer === "object" ? data.customer?.id : data.customer;
 
-  const digest = crypto.createHmac("sha256", secret).update(payload).digest("hex");
-  const signatureValid = digest === signature;
-  console.log("[creem-webhook] Signature check:", { valid: signatureValid });
-  if (!signatureValid) {
-    console.warn("[creem-webhook] Signature mismatch — proceeding (verification pending)");
-  }
+    console.log("[creem-webhook] checkout.completed:", { userId, productType, creditAmount, checkoutId });
 
-  const rawBody = payload;
-
-  const body = JSON.parse(rawBody);
-  // 전체 이벤트 구조 로깅 (디버그)
-  console.log("[creem-webhook] Event body keys:", Object.keys(body));
-  console.log("[creem-webhook] Event body:", JSON.stringify(body).substring(0, 500));
-
-  const eventType = body.eventType || body.event_type || body.type;
-  const eventData = body.object || body.data;
-
-  console.log("[creem-webhook] Parsed:", { eventType, hasEventData: !!eventData });
-
-  if (!eventData) {
-    return NextResponse.json({ error: "No event data" }, { status: 400 });
-  }
-
-  const supabase = getServiceClient();
-
-  switch (eventType) {
-    // 결제 완료 (1회성)
-    case "checkout.completed": {
-      // Creem 구조: body.object = checkout, checkout.order = order
-      const checkout = eventData;
-      const order = checkout.order;
-      const metadata = checkout.metadata || order?.metadata || null;
-      const checkoutId = checkout.id;
-
-      console.log("[creem-webhook] checkout.completed:", {
-        checkoutId,
-        metadata,
-        orderAmount: order?.amount,
-        productId: order?.product,
-      });
-
-      const userId = metadata?.user_id;
-      const productType = metadata?.product_type;
-      const creditAmount = Number(metadata?.credit_amount || "0");
-
-      if (!userId || !productType) {
-        console.error("[creem-webhook] Missing metadata:", { metadata });
-        return NextResponse.json(
-          { error: "Missing user_id or product_type in metadata" },
-          { status: 400 }
-        );
-      }
-
-      // creem_customer_id 저장 (Customer Portal 용)
-      const creemCustomerId = checkout.customer?.id || order?.customer;
-      if (creemCustomerId && userId) {
-        await supabase
-          .from(T.polar_balances)
-          .update({ creem_customer_id: creemCustomerId })
-          .eq("user_id", userId);
-      }
-
-      // 동일한 process_polar_payment RPC 사용 (DB 경로 통일)
-      const { data, error } = await supabase.rpc("process_polar_payment", {
-        p_user_id: userId,
-        p_polar_checkout_id: `creem_${checkoutId}`,
-        p_polar_product_id: order?.product || null,
-        p_product_type: productType,
-        p_amount: order?.amount || 0,
-        p_credit_amount: creditAmount,
-      });
-
-      if (error) {
-        console.error("[creem-webhook] process_polar_payment error:", error);
-        return NextResponse.json(
-          { error: "Payment processing failed" },
-          { status: 500 }
-        );
-      }
-
-      console.log("[creem-webhook] Payment processed:", {
-        userId,
-        productType,
-        creditAmount,
-        duplicate: data?.duplicate,
-      });
-
-      return NextResponse.json({ received: true, ...data });
+    if (!userId || !productType) {
+      console.error("[creem-webhook] Missing metadata:", { metadata });
+      return;
     }
 
-    // 구독 활성화 (정기 후원)
-    case "subscription.active": {
-      const sub = eventData;
-      const metadata = sub.checkout?.metadata || sub.metadata || null;
-      const userId = metadata?.user_id;
-      const subscriptionId = sub.id || sub.subscription_id;
-      const customerId = sub.customer?.id || sub.customer;
-
-      console.log("[creem-webhook] subscription.active:", { userId, subscriptionId, customerId });
-
-      if (!userId) {
-        console.error("[creem-webhook] Subscription active: missing user_id");
-        return NextResponse.json({ received: true });
-      }
-
-      // creem_customer_id 저장
-      if (customerId) {
-        await supabase
-          .from(T.polar_balances)
-          .update({ creem_customer_id: customerId })
-          .eq("user_id", userId);
-      }
-
-      // 구독 기록 upsert
+    // creem_customer_id 저장
+    if (customerId && userId) {
       await supabase
-        .from("sponsorships")
-        .upsert({
-          user_id: userId,
-          creem_subscription_id: subscriptionId,
-          creem_customer_id: customerId,
+        .from(T.polar_balances)
+        .update({ creem_customer_id: customerId })
+        .eq("user_id", userId);
+    }
+
+    // 주문 기록 + 크레딧 충전
+    const { data: result, error } = await supabase.rpc("process_polar_payment", {
+      p_user_id: userId,
+      p_polar_checkout_id: `creem_${checkoutId}`,
+      p_polar_product_id: order?.product || null,
+      p_product_type: productType,
+      p_amount: order?.amount || 0,
+      p_credit_amount: creditAmount,
+    });
+
+    if (error) {
+      console.error("[creem-webhook] process_polar_payment error:", error);
+    } else {
+      console.log("[creem-webhook] Payment processed:", { userId, creditAmount, duplicate: result?.duplicate });
+    }
+  },
+
+  // ── 구독 활성화 (정기 후원) ──
+  onSubscriptionActive: async (data) => {
+    const supabase = getServiceClient();
+    const metadata = data.metadata as Record<string, string> | null;
+    const userId = metadata?.user_id;
+    const subscriptionId = data.id;
+    const customerId = typeof data.customer === "object" ? data.customer?.id : data.customer;
+
+    console.log("[creem-webhook] subscription.active:", { userId, subscriptionId });
+
+    if (!userId) return;
+
+    if (customerId) {
+      await supabase
+        .from(T.polar_balances)
+        .update({ creem_customer_id: customerId })
+        .eq("user_id", userId);
+    }
+
+    await supabase
+      .from(T.sponsorships)
+      .upsert({
+        user_id: userId,
+        creem_subscription_id: subscriptionId,
+        creem_customer_id: customerId,
+        status: "active",
+        amount_cents: 500,
+        started_at: new Date().toISOString(),
+        cancelled_at: null,
+        current_period_end: data.current_period_end_date || null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "creem_subscription_id" });
+
+    console.log("[creem-webhook] Sponsorship activated:", { userId, subscriptionId });
+  },
+
+  // ── 구독 결제 (갱신) ──
+  onSubscriptionPaid: async (data) => {
+    const supabase = getServiceClient();
+    const subscriptionId = data.id;
+
+    console.log("[creem-webhook] subscription.paid:", { subscriptionId });
+
+    if (subscriptionId) {
+      await supabase
+        .from(T.sponsorships)
+        .update({
           status: "active",
-          amount_cents: sub.items?.[0]?.price || 500,
-          started_at: new Date().toISOString(),
-          cancelled_at: null,
-          current_period_end: sub.current_period_end_date || null,
+          current_period_end: data.current_period_end_date || null,
           updated_at: new Date().toISOString(),
-        }, { onConflict: "creem_subscription_id" });
-
-      console.log("[creem-webhook] Sponsorship activated:", { userId, subscriptionId });
-      return NextResponse.json({ received: true });
+        })
+        .eq("creem_subscription_id", subscriptionId);
     }
+  },
 
-    // 구독 결제 (갱신)
-    case "subscription.paid": {
-      const sub = eventData;
-      const metadata = sub.checkout?.metadata || sub.metadata || null;
-      const userId = metadata?.user_id;
-      const subscriptionId = sub.id || sub.subscription_id;
+  // ── 구독 업데이트 ──
+  onSubscriptionUpdate: async (data) => {
+    const supabase = getServiceClient();
+    const subscriptionId = data.id;
 
-      console.log("[creem-webhook] subscription.paid:", { userId, subscriptionId });
+    console.log("[creem-webhook] subscription.update:", { subscriptionId, status: data.status });
 
-      if (subscriptionId) {
+    if (subscriptionId) {
+      await supabase
+        .from(T.sponsorships)
+        .update({
+          status: data.status === "canceled" ? "cancelled" : data.status === "active" ? "active" : data.status,
+          current_period_end: data.current_period_end_date || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("creem_subscription_id", subscriptionId);
+    }
+  },
+
+  // ── 구독 취소 (즉시) ──
+  onSubscriptionCanceled: async (data) => {
+    const supabase = getServiceClient();
+    const subscriptionId = data.id;
+
+    console.log("[creem-webhook] subscription.canceled:", { subscriptionId, canceledAt: data.canceled_at });
+
+    if (subscriptionId) {
+      await supabase
+        .from(T.sponsorships)
+        .update({
+          status: "cancelled",
+          cancelled_at: data.canceled_at || new Date().toISOString(),
+          current_period_end: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("creem_subscription_id", subscriptionId);
+    }
+  },
+
+  // ── 구독 만료 ──
+  onSubscriptionExpired: async (data) => {
+    const supabase = getServiceClient();
+    const subscriptionId = data.id;
+
+    if (subscriptionId) {
+      await supabase
+        .from(T.sponsorships)
+        .update({ status: "expired", updated_at: new Date().toISOString() })
+        .eq("creem_subscription_id", subscriptionId);
+    }
+  },
+
+  // ── 구독 일시정지 ──
+  onSubscriptionPaused: async (data) => {
+    const supabase = getServiceClient();
+    const subscriptionId = data.id;
+
+    if (subscriptionId) {
+      await supabase
+        .from(T.sponsorships)
+        .update({ status: "paused", updated_at: new Date().toISOString() })
+        .eq("creem_subscription_id", subscriptionId);
+    }
+  },
+
+  // ── 환불 ──
+  onRefundCreated: async (data) => {
+    const supabase = getServiceClient();
+    const checkout = typeof data.checkout === "object" ? data.checkout : null;
+    const metadata = checkout?.metadata as Record<string, string> | null;
+    const userId = metadata?.user_id;
+    const creditAmount = Number(metadata?.credit_amount || "0");
+    const checkoutId = checkout?.id;
+
+    console.log("[creem-webhook] refund.created:", { userId, creditAmount, checkoutId });
+
+    if (userId && creditAmount > 0) {
+      if (checkoutId) {
         await supabase
-          .from("sponsorships")
-          .update({
-            status: "active",
-            current_period_end: sub.current_period_end_date || null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("creem_subscription_id", subscriptionId);
+          .from(T.polar_orders)
+          .update({ status: "refunded" })
+          .eq("polar_checkout_id", `creem_${checkoutId}`);
       }
 
-      return NextResponse.json({ received: true });
-    }
-
-    // 구독 업데이트 (좌석/플랜 변경 등)
-    case "subscription.update": {
-      const sub = eventData;
-      const subscriptionId = sub.id || sub.subscription_id;
-
-      console.log("[creem-webhook] subscription.update:", { subscriptionId, status: sub.status });
-
-      if (subscriptionId) {
-        await supabase
-          .from("sponsorships")
-          .update({
-            status: sub.status === "canceled" ? "cancelled" : sub.status === "active" ? "active" : sub.status,
-            current_period_end: sub.current_period_end_date || null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("creem_subscription_id", subscriptionId);
-      }
-
-      return NextResponse.json({ received: true });
-    }
-
-    // 즉시 취소 (당일 취소 — 바로 해지)
-    case "subscription.canceled": {
-      const sub = eventData;
-      const subscriptionId = sub.id || sub.subscription_id;
-
-      console.log("[creem-webhook] subscription.canceled (즉시):", { subscriptionId, canceledAt: sub.canceled_at });
-
-      if (subscriptionId) {
-        await supabase
-          .from("sponsorships")
-          .update({
-            status: "cancelled",
-            cancelled_at: sub.canceled_at || new Date().toISOString(),
-            current_period_end: null, // 즉시 취소 — 기간 무효
-            updated_at: new Date().toISOString(),
-          })
-          .eq("creem_subscription_id", subscriptionId);
-      }
-
-      return NextResponse.json({ received: true });
-    }
-
-    // 예약 취소 (기간 중간 취소 — period_end까지 유지)
-    case "subscription.scheduled_cancel": {
-      const sub = eventData;
-      const subscriptionId = sub.id || sub.subscription_id;
-
-      console.log("[creem-webhook] subscription.scheduled_cancel:", { subscriptionId, periodEnd: sub.current_period_end_date });
-
-      if (subscriptionId) {
-        await supabase
-          .from("sponsorships")
-          .update({
-            status: "scheduled_cancel",
-            cancelled_at: sub.canceled_at || new Date().toISOString(),
-            current_period_end: sub.current_period_end_date || null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("creem_subscription_id", subscriptionId);
-      }
-
-      return NextResponse.json({ received: true });
-    }
-
-    // 구독 만료
-    case "subscription.expired": {
-      const sub = eventData;
-      const subscriptionId = sub.id || sub.subscription_id;
-
-      if (subscriptionId) {
-        await supabase
-          .from("sponsorships")
-          .update({
-            status: "expired",
-            updated_at: new Date().toISOString(),
-          })
-          .eq("creem_subscription_id", subscriptionId);
-      }
-
-      return NextResponse.json({ received: true });
-    }
-
-    // 구독 일시정지
-    case "subscription.paused": {
-      const sub = eventData;
-      const subscriptionId = sub.id || sub.subscription_id;
-
-      if (subscriptionId) {
-        await supabase
-          .from("sponsorships")
-          .update({
-            status: "paused",
-            updated_at: new Date().toISOString(),
-          })
-          .eq("creem_subscription_id", subscriptionId);
-      }
-
-      return NextResponse.json({ received: true });
-    }
-
-    // 환불
-    case "refund.created": {
-      const refund = eventData;
-      // metadata는 checkout 안에 있음
-      const metadata = refund.checkout?.metadata || refund.metadata || null;
-      const userId = metadata?.user_id;
-      const creditAmount = Number(metadata?.credit_amount || "0");
-      const checkoutId = refund.checkout?.id;
-
-      console.log("[creem-webhook] refund.created:", { userId, creditAmount, checkoutId, refundAmount: refund.refund_amount });
-
-      if (userId && creditAmount > 0) {
-        // 주문 상태 업데이트 (checkout ID로 정확히 매칭)
-        if (checkoutId) {
-          await supabase
-            .from(T.polar_orders)
-            .update({ status: "refunded" })
-            .eq("polar_checkout_id", `creem_${checkoutId}`);
-        }
-
-        // 크레딧 회수 (충전 되돌리기 — total_charged 차감)
-        await supabase.rpc("polar_reverse_charge", {
-          p_user_id: userId,
-          p_amount_cents: creditAmount,
-          p_description: "Creem refund",
-          p_ref_id: refund.id,
-        });
-      }
+      await supabase.rpc("polar_reverse_charge", {
+        p_user_id: userId,
+        p_amount_cents: creditAmount,
+        p_description: "Creem refund",
+        p_ref_id: data.id,
+      });
 
       console.log("[creem-webhook] Refund processed:", { userId, creditAmount });
-      return NextResponse.json({ received: true });
     }
-
-    default:
-      console.log("[creem-webhook] Unhandled event:", eventType);
-      return NextResponse.json({ received: true });
-  }
-}
+  },
+});
