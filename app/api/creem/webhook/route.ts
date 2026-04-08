@@ -184,6 +184,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
+    // 구독 업데이트 (좌석/플랜 변경 등)
+    case "subscription.update": {
+      const sub = eventData;
+      const subscriptionId = sub.id || sub.subscription_id;
+
+      console.log("[creem-webhook] subscription.update:", { subscriptionId, status: sub.status });
+
+      if (subscriptionId) {
+        await supabase
+          .from("sponsorships")
+          .update({
+            status: sub.status === "canceled" ? "cancelled" : sub.status === "active" ? "active" : sub.status,
+            current_period_end: sub.current_period_end_date || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("creem_subscription_id", subscriptionId);
+      }
+
+      return NextResponse.json({ received: true });
+    }
+
     // 구독 취소
     case "subscription.canceled": {
       const sub = eventData;
