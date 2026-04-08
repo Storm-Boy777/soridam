@@ -305,10 +305,10 @@ export async function POST(request: NextRequest) {
             .eq("polar_checkout_id", `creem_${checkoutId}`);
         }
 
-        // 크레딧 회수
-        await supabase.rpc("polar_deduct_balance", {
+        // 크레딧 회수 (충전 되돌리기 — total_charged 차감)
+        await supabase.rpc("polar_reverse_charge", {
           p_user_id: userId,
-          p_cost_cents: creditAmount,
+          p_amount_cents: creditAmount,
           p_description: "Creem refund",
           p_ref_id: refund.id,
         });

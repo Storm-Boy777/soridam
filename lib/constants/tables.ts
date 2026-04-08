@@ -63,6 +63,7 @@ export const RPC = {
   charge_balance: "charge_balance",
   deduct_usage_cost: "deduct_usage_cost",
   refund_usage_cost: "refund_usage_cost",
+  polar_reverse_charge: "polar_reverse_charge",
   check_balance: "check_balance",
   handle_new_user: "handle_new_user",
   handle_new_user_credits: "handle_new_user_credits",
