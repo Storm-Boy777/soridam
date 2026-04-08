@@ -85,7 +85,24 @@ export default function AdminSettingsPage() {
   const toggle = async (key: "signup_enabled" | "maintenance_mode") => {
     const newVal = !form[key];
     setForm((f) => ({ ...f, [key]: newVal }));
-    await save(key, newVal);
+
+    // 점검 모드는 /api/maintenance API도 함께 호출 (사이드바 동기화)
+    if (key === "maintenance_mode") {
+      await fetch("/api/maintenance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: newVal }),
+      });
+      // API가 system_settings도 업데이트하므로 별도 save 불필요
+      setSaving(key);
+      setSaved(key);
+      clearTimeout(savedTimer.current);
+      savedTimer.current = setTimeout(() => setSaved(null), 2000);
+      setSaving(null);
+      queryClient.invalidateQueries({ queryKey: ["admin-settings"] });
+    } else {
+      await save(key, newVal);
+    }
   };
 
   const update = (key: string, value: unknown) => {
@@ -127,7 +144,6 @@ export default function AdminSettingsPage() {
               onSave={() => save("site_description", form.site_description)}
               saving={saving === "site_description"}
               saved={saved === "site_description"}
-              textarea
             />
           </Field>
           <Field label="OG 이미지 URL">
@@ -245,31 +261,30 @@ function Card({ icon: Icon, title, children }: { icon: React.ComponentType<{ siz
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div className="py-3">
-      <div className="mb-1.5 flex items-baseline gap-2">
+    <div className="flex items-center gap-4 py-3">
+      <div className="w-28 shrink-0">
         <p className="text-xs font-medium text-foreground">{label}</p>
         {hint && <p className="text-[10px] text-foreground-muted">{hint}</p>}
       </div>
-      {children}
+      <div className="flex-1">{children}</div>
     </div>
   );
 }
 
 function InputWithSave({
-  value, onChange, onSave, saving, saved, textarea, mono, placeholder,
+  value, onChange, onSave, saving, saved, mono, placeholder,
 }: {
   value: string; onChange: (v: string) => void; onSave: () => void;
-  saving: boolean; saved: boolean; textarea?: boolean; mono?: boolean; placeholder?: string;
+  saving: boolean; saved: boolean; mono?: boolean; placeholder?: string;
 }) {
-  const cls = `w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm text-foreground placeholder:text-foreground-muted focus:border-primary-400 focus:outline-none ${mono ? "font-mono text-xs" : ""}`;
-
   return (
     <div className="flex gap-2">
-      {textarea ? (
-        <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={2} className={`${cls} resize-none`} placeholder={placeholder} />
-      ) : (
-        <input value={value} onChange={(e) => onChange(e.target.value)} className={cls} placeholder={placeholder} />
-      )}
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={`w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm text-foreground placeholder:text-foreground-muted focus:border-primary-400 focus:outline-none ${mono ? "font-mono text-xs" : ""}`}
+      />
       <SaveIndicator onSave={onSave} saving={saving} saved={saved} />
     </div>
   );
@@ -280,13 +295,13 @@ function SaveIndicator({ onSave, saving, saved }: { onSave: () => void; saving: 
     <button
       onClick={onSave}
       disabled={saving}
-      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
+      className={`ml-auto flex shrink-0 items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
         saved
           ? "bg-green-100 text-green-600"
-          : "bg-primary-50 text-primary-500 hover:bg-primary-100"
+          : "bg-primary-500 text-white hover:bg-primary-600"
       } disabled:opacity-50`}
     >
-      {saving ? <Loader2 size={14} className="animate-spin" /> : saved ? <Check size={14} /> : <Check size={14} />}
+      {saving ? <Loader2 size={12} className="animate-spin" /> : saved ? <><Check size={12} /> 완료</> : "저장"}
     </button>
   );
 }

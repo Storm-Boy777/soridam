@@ -52,9 +52,10 @@ export function AdminSidebar() {
     }
   }, []);
 
+  // pathname 변경 시마다 상태 동기화 (설정 페이지에서 변경 후 돌아올 때)
   useEffect(() => {
     fetchStatus();
-  }, [fetchStatus]);
+  }, [fetchStatus, pathname]);
 
   const handleToggle = async () => {
     if (toggling || maintenance === null) return;
