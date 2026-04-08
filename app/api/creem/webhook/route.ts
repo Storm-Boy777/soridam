@@ -119,29 +119,125 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true, ...data });
     }
 
-    // 구독 활성화 (향후 확장용)
-    case "subscription.active":
-    case "subscription.paid": {
-      const metadata = eventData.metadata as Record<string, string> | null;
+    // 구독 활성화 (정기 후원)
+    case "subscription.active": {
+      const sub = eventData;
+      const metadata = sub.checkout?.metadata || sub.metadata || null;
       const userId = metadata?.user_id;
-      const creditAmount = Number(metadata?.credit_amount || "0");
-      const subscriptionId = eventData.subscription_id || eventData.id;
+      const subscriptionId = sub.id || sub.subscription_id;
+      const customerId = sub.customer?.id || sub.customer;
+
+      console.log("[creem-webhook] subscription.active:", { userId, subscriptionId, customerId });
 
       if (!userId) {
-        console.error("[creem-webhook] Subscription: missing user_id");
+        console.error("[creem-webhook] Subscription active: missing user_id");
         return NextResponse.json({ received: true });
       }
 
-      if (creditAmount > 0) {
-        await supabase.rpc("polar_charge_balance", {
-          p_user_id: userId,
-          p_amount_cents: creditAmount,
-          p_description: `Subscription renewal`,
-          p_ref_id: subscriptionId,
-        });
+      // creem_customer_id 저장
+      if (customerId) {
+        await supabase
+          .from(T.polar_balances)
+          .update({ creem_customer_id: customerId })
+          .eq("user_id", userId);
       }
 
-      console.log("[creem-webhook] Subscription processed:", { userId, creditAmount });
+      // 구독 기록 upsert
+      await supabase
+        .from("sponsorships")
+        .upsert({
+          user_id: userId,
+          creem_subscription_id: subscriptionId,
+          creem_customer_id: customerId,
+          status: "active",
+          amount_cents: sub.items?.[0]?.price || 500,
+          started_at: new Date().toISOString(),
+          cancelled_at: null,
+          current_period_end: sub.current_period_end_date || null,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "creem_subscription_id" });
+
+      console.log("[creem-webhook] Sponsorship activated:", { userId, subscriptionId });
+      return NextResponse.json({ received: true });
+    }
+
+    // 구독 결제 (갱신)
+    case "subscription.paid": {
+      const sub = eventData;
+      const metadata = sub.checkout?.metadata || sub.metadata || null;
+      const userId = metadata?.user_id;
+      const subscriptionId = sub.id || sub.subscription_id;
+
+      console.log("[creem-webhook] subscription.paid:", { userId, subscriptionId });
+
+      if (subscriptionId) {
+        await supabase
+          .from("sponsorships")
+          .update({
+            status: "active",
+            current_period_end: sub.current_period_end_date || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("creem_subscription_id", subscriptionId);
+      }
+
+      return NextResponse.json({ received: true });
+    }
+
+    // 구독 취소
+    case "subscription.canceled": {
+      const sub = eventData;
+      const subscriptionId = sub.id || sub.subscription_id;
+
+      console.log("[creem-webhook] subscription.canceled:", { subscriptionId, canceledAt: sub.canceled_at });
+
+      if (subscriptionId) {
+        await supabase
+          .from("sponsorships")
+          .update({
+            status: "cancelled",
+            cancelled_at: sub.canceled_at || new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("creem_subscription_id", subscriptionId);
+      }
+
+      return NextResponse.json({ received: true });
+    }
+
+    // 구독 만료
+    case "subscription.expired": {
+      const sub = eventData;
+      const subscriptionId = sub.id || sub.subscription_id;
+
+      if (subscriptionId) {
+        await supabase
+          .from("sponsorships")
+          .update({
+            status: "expired",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("creem_subscription_id", subscriptionId);
+      }
+
+      return NextResponse.json({ received: true });
+    }
+
+    // 구독 일시정지
+    case "subscription.paused": {
+      const sub = eventData;
+      const subscriptionId = sub.id || sub.subscription_id;
+
+      if (subscriptionId) {
+        await supabase
+          .from("sponsorships")
+          .update({
+            status: "paused",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("creem_subscription_id", subscriptionId);
+      }
+
       return NextResponse.json({ received: true });
     }
 

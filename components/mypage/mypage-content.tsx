@@ -49,14 +49,21 @@ type TransactionData = {
   created_at: string;
 };
 
+type SponsorshipData = {
+  status: "active" | "cancelled" | "expired" | "paused";
+  started_at: string;
+  cancelled_at: string | null;
+};
+
 type CreditsData = {
   balance: BalanceData;
   transactions: TransactionData[];
+  sponsorship: SponsorshipData | null;
 };
 
 async function fetchUserCredits(userId: string): Promise<CreditsData> {
   const supabase = createClient();
-  const [balanceRes, txRes] = await Promise.all([
+  const [balanceRes, txRes, sponsorRes] = await Promise.all([
     supabase
       .from(T.polar_balances)
       .select("balance_cents, total_charged, total_used, creem_customer_id")
@@ -68,10 +75,18 @@ async function fetchUserCredits(userId: string): Promise<CreditsData> {
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(20),
+    supabase
+      .from(T.sponsorships)
+      .select("status, started_at, cancelled_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
   return {
     balance: (balanceRes.data as BalanceData) ?? { balance_cents: 0, total_charged: 0, total_used: 0 },
     transactions: (txRes.data as TransactionData[]) ?? [],
+    sponsorship: (sponsorRes.data as SponsorshipData) ?? null,
   };
 }
 
@@ -363,6 +378,7 @@ const TX_TYPE_COLOR: Record<string, string> = {
 function PlanTab({ credits }: { user: UserData; credits?: CreditsData }) {
   const balance = credits?.balance ?? { balance_cents: 0, total_charged: 0, total_used: 0 };
   const transactions = credits?.transactions ?? [];
+  const sponsorship = credits?.sponsorship ?? null;
   const hasCreemCustomer = !!credits?.balance?.creem_customer_id;
 
   return (
@@ -397,15 +413,34 @@ function PlanTab({ credits }: { user: UserData; credits?: CreditsData }) {
         </Link>
       </div>
 
-      {/* 후원 관리 — Creem 결제 이력이 있을 때만 */}
-      {hasCreemCustomer && (
+      {/* 후원 상태 — 후원 이력이 있을 때 */}
+      {(sponsorship || hasCreemCustomer) && (
         <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-foreground">후원 관리</h3>
-              <p className="mt-0.5 text-xs text-foreground-muted">정기 후원 취소 및 결제 수단을 관리할 수 있습니다.</p>
+            <div className="flex items-center gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-foreground">월간 후원</h3>
+                  {sponsorship?.status === "active" && (
+                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700">후원 중 💛</span>
+                  )}
+                  {sponsorship?.status === "cancelled" && (
+                    <span className="rounded-full bg-foreground-muted/10 px-2 py-0.5 text-[11px] font-semibold text-foreground-muted">취소됨</span>
+                  )}
+                  {sponsorship?.status === "paused" && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">일시정지</span>
+                  )}
+                </div>
+                <p className="mt-0.5 text-xs text-foreground-muted">
+                  {sponsorship?.status === "active"
+                    ? `${new Date(sponsorship.started_at).toLocaleDateString("ko-KR")}부터 후원 중`
+                    : sponsorship?.status === "cancelled"
+                      ? `${new Date(sponsorship.cancelled_at!).toLocaleDateString("ko-KR")}에 취소됨`
+                      : "결제 수단 및 후원을 관리할 수 있습니다."}
+                </p>
+              </div>
             </div>
-            <BillingPortalButton />
+            {hasCreemCustomer && <BillingPortalButton />}
           </div>
         </div>
       )}
