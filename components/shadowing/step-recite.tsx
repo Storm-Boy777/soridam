@@ -16,9 +16,9 @@ import { RecordingComparison } from "./recording-comparison";
 import { useShadowingStore } from "@/lib/stores/shadowing";
 
 const HINT_LABELS: Record<0 | 1 | 2, string> = {
-  0: "힌트 숨김",
+  0: "숨김",
   1: "구조만",
-  2: "전체 보기",
+  2: "힌트 포함",
 };
 
 const HINT_ICONS: Record<0 | 1 | 2, React.ElementType> = {
@@ -33,7 +33,6 @@ export function StepRecite() {
     questionKorean,
     questionAudioUrl,
     structureSummary,
-    keySentences,
     reciteTimer,
     reciteHintLevel,
     reciteRecordingDone,
@@ -52,9 +51,6 @@ export function StepRecite() {
   const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
   const [isPlayingQuestion, setIsPlayingQuestion] = useState(false);
   const questionAudioRef = useRef<HTMLAudioElement | null>(null);
-
-  // 핵심 문장 공개 수준 (0 = 첫 2단어, 탭할 때마다 +2 단어)
-  const [keySentenceReveal, setKeySentenceReveal] = useState(0);
 
   const toggleQuestionAudio = useCallback(() => {
     if (!questionAudioUrl) return;
@@ -110,14 +106,6 @@ export function StepRecite() {
     return `${m}:${s.toString().padStart(2, "0")}`;
   }
 
-  // 핵심 문장 부분 공개 텍스트
-  const getRevealedText = (english: string): string => {
-    const words = english.split(" ");
-    const revealCount = Math.min(words.length, 2 + keySentenceReveal * 2);
-    if (revealCount >= words.length) return english;
-    return words.slice(0, revealCount).join(" ") + " ...";
-  };
-
   const isOver2Min = reciteTimer >= 120;
   const HintIcon = HINT_ICONS[reciteHintLevel];
 
@@ -157,65 +145,52 @@ export function StepRecite() {
         </div>
       </div>
 
-      {/* 2. 답변 구조 — 3단계 힌트 */}
+      {/* 2. 답변 구조 — 타임라인 */}
       {structureSummary && structureSummary.length > 0 && (
         <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface">
           <button
             onClick={cycleHintLevel}
             className="flex w-full items-center justify-between px-4 py-2.5 hover:bg-surface-secondary transition-colors"
           >
-            <span className="text-xs font-semibold text-foreground-secondary">답변 구조</span>
+            <span className="text-xs font-semibold text-foreground-secondary">답변 흐름</span>
             <span className="flex items-center gap-1.5 text-[11px] font-medium text-foreground-muted">
               <HintIcon size={12} />
               {HINT_LABELS[reciteHintLevel]}
             </span>
           </button>
           {reciteHintLevel > 0 && (
-            <div className="divide-y divide-border/60 border-t border-border">
-              {structureSummary.map((item, i) => (
-                <div key={i} className="flex flex-col gap-1 px-4 py-3 sm:grid sm:grid-cols-[7rem_1fr] sm:items-start sm:gap-x-3">
-                  <span className="shrink-0 self-start rounded-md bg-surface-secondary px-2 py-0.5 text-[11px] font-semibold text-foreground-secondary text-center sm:w-full">
-                    {item.tag}
-                  </span>
-                  {reciteHintLevel === 2 ? (
-                    <p className="text-xs leading-relaxed text-foreground-secondary sm:text-[13px]">
-                      {item.description}
-                    </p>
-                  ) : (
-                    <p className="text-xs leading-relaxed text-foreground-muted sm:text-[13px]">
-                      {item.description.split(" ").slice(0, 3).join(" ")}...
-                    </p>
-                  )}
+            <div className="border-t border-border px-5 py-4">
+              <div className="relative">
+                <div className="space-y-3">
+                  {structureSummary.map((item, i) => (
+                    <div key={i} className="relative flex items-start gap-3">
+                      {/* 노드→다음 노드 연결선 (마지막 제외) */}
+                      {i < structureSummary.length - 1 && (
+                        <div className="absolute left-[5px] top-[18px] w-px bg-border" style={{ height: "calc(100% + 6px)" }} />
+                      )}
+                      {/* 타임라인 노드 — 뱃지 중앙과 수직 정렬 */}
+                      <div className="relative z-10 mt-[7px] flex h-[11px] w-[11px] shrink-0 rounded-full border-2 border-primary-400 bg-surface" />
+
+                      <div className="min-w-0 flex-1">
+                        <span className="inline-block rounded-md bg-surface-secondary px-2 py-0.5 text-[11px] font-semibold text-foreground-secondary">
+                          {item.tag}
+                        </span>
+                        {reciteHintLevel === 2 && (
+                          <p className="mt-1 text-xs leading-relaxed text-foreground-muted">
+                            {item.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
           )}
         </div>
       )}
 
-      {/* 3. 핵심 문장 힌트 (별도 섹션) */}
-      {keySentences && keySentences.length > 0 && (
-        <div className="overflow-hidden rounded-[var(--radius-xl)] border border-amber-200/60 bg-amber-50/30">
-          <button
-            onClick={() => setKeySentenceReveal((v) => v + 1)}
-            className="flex w-full items-center justify-between px-4 py-2.5 hover:bg-amber-50/50 transition-colors"
-          >
-            <span className="text-xs font-semibold text-amber-700">핵심 문장 힌트</span>
-            <span className="text-[10px] text-amber-600">탭하면 더 공개</span>
-          </button>
-          <div className="divide-y divide-amber-100 border-t border-amber-200/60">
-            {keySentences.map((ks, i) => (
-              <div key={i} className="px-4 py-2.5">
-                <p className="text-xs font-medium text-amber-800">
-                  {getRevealedText(ks.english)}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 4. 녹음 비교 (녹음 완료 후) */}
+      {/* 3. 녹음 비교 (녹음 완료 후) */}
       {recordingBlob && !isRecording && questionAudioUrl && (
         <RecordingComparison
           originalUrl={questionAudioUrl}
@@ -227,8 +202,8 @@ export function StepRecite() {
 
       {/* 5. 타이머 + 녹음 — 모바일: 하단 고정 / 데스크탑: 인라인 */}
       <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-surface px-5 py-3 sm:static sm:rounded-[var(--radius-xl)] sm:border sm:border-border sm:py-5">
-        <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-center sm:gap-0">
-          <div className="flex items-center gap-1.5 sm:mb-4 sm:gap-2">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-1.5">
             <Timer
               size={14}
               className={isOver2Min ? "text-red-500" : "text-foreground-muted"}

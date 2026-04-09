@@ -11,17 +11,10 @@ import {
   Check,
   Mic,
   Square,
-  Loader2,
 } from "lucide-react";
 import { ShadowingPlayer } from "./shadowing-player";
 import { SentenceMasteryDots } from "./sentence-mastery-dots";
-import { SentenceComparisonResult } from "./sentence-comparison-result";
 import { useShadowingStore, type TextHintLevel } from "@/lib/stores/shadowing";
-import { extractSegment, blobToPCM } from "@/lib/audio/audio-segment";
-import { extractPitch, type PitchFrame } from "@/lib/audio/pitch-extractor";
-import { extractMFCC } from "@/lib/audio/mfcc";
-import { dtw } from "@/lib/audio/dtw";
-import { scorePronunciation } from "@/lib/audio/pronunciation-scorer";
 
 const LANG_OPTIONS: { mode: TextHintLevel; label: string; icon: React.ElementType }[] = [
   { mode: "both", icon: Languages, label: "영/한" },
@@ -67,16 +60,13 @@ export function StepShadow() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
   const karaokeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setTimeout> | null>(null); // 녹음 딜레이 타이머
   const MAX_RECORDING_DURATION = 30;
 
-  // 분석 결과 캐시
-  const [nativePitchData, setNativePitchData] = useState<PitchFrame[] | null>(null);
-  const [userPitchData, setUserPitchData] = useState<PitchFrame[] | null>(null);
-  const [dtwPath, setDtwPath] = useState<[number, number][] | null>(null);
+  // 녹음 결과 (재생용)
   const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
+  const [recordingBlobUrl, setRecordingBlobUrl] = useState<string | null>(null);
 
   const currentSentence = shadowIndex >= 0 && shadowIndex < sentences.length
     ? sentences[shadowIndex]
@@ -133,12 +123,11 @@ export function StepShadow() {
   useEffect(() => {
     setShadowComparisonState("idle");
     setShadowComparisonResult(null);
-    setNativePitchData(null);
-    setUserPitchData(null);
-    setDtwPath(null);
+    if (recordingBlobUrl) URL.revokeObjectURL(recordingBlobUrl);
     setRecordingBlob(null);
+    setRecordingBlobUrl(null);
     setRecordingDuration(0);
-  }, [shadowIndex, setShadowComparisonState, setShadowComparisonResult]);
+  }, [shadowIndex, setShadowComparisonState, setShadowComparisonResult]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 녹음 시작: 카라오케 즉시 → 0.5초 후 녹음 ON → 카라오케 끝 → 0.5초 후 녹음 OFF
   const RECORD_DELAY = 500; // 카라오케 대비 녹음 시작/종료 딜레이 (ms)
@@ -203,12 +192,14 @@ export function StepShadow() {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
 
-      recorder.onstop = async () => {
+      recorder.onstop = () => {
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
         setRecordingBlob(blob);
-        await analyzeRecording(blob);
+        const url = URL.createObjectURL(blob);
+        setRecordingBlobUrl(url);
+        setShadowComparisonState("showing_result");
       };
 
       recorder.start(); // timeslice 없이 — stop() 시 완전한 WebM Blob 생성
@@ -227,68 +218,12 @@ export function StepShadow() {
     }, RECORD_DELAY);
   }, [setShadowComparisonState, currentSentence, stopRecording, setCurrentTime]);
 
-  // 녹음 분석 — AbortController로 경합 조건 방지
-  const analyzeRecording = useCallback(async (blob: Blob) => {
-    if (!currentSentence || !audioUrl) return;
-
-    // 이전 분석 취소
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    setShadowComparisonState("analyzing");
-
-    try {
-      // 1. 원어민 오디오 구간 추출 + 피치 분석
-      const nativeSegment = await extractSegment(
-        audioUrl,
-        currentSentence.start,
-        currentSentence.end,
-        shadowIndex,
-      );
-      if (controller.signal.aborted) return;
-
-      const nativePitch = extractPitch(nativeSegment.pcm, nativeSegment.sampleRate);
-      const nativeMFCC = extractMFCC(nativeSegment.pcm, nativeSegment.sampleRate);
-
-      // 2. 사용자 녹음 PCM 변환 + 피치 + MFCC 분석
-      const userSegment = await blobToPCM(blob);
-      if (controller.signal.aborted) return;
-
-      const userPitch = extractPitch(userSegment.pcm, userSegment.sampleRate);
-      const userMFCC = extractMFCC(userSegment.pcm, userSegment.sampleRate);
-
-      // 3. F0 배열 추출 (DTW 입력)
-      const nativeF0 = nativePitch.map((f) => f.f0);
-      const userF0 = userPitch.map((f) => f.f0);
-
-      // 4. DTW 정렬
-      const dtwResult = dtw(nativeF0, userF0);
-      if (controller.signal.aborted) return;
-
-      // 5. 점수 계산 (MFCC 포함)
-      const score = scorePronunciation(nativePitch, userPitch, dtwResult, nativeMFCC, userMFCC);
-
-      // 결과 저장
-      setNativePitchData(nativePitch);
-      setUserPitchData(userPitch);
-      setDtwPath(dtwResult.path);
-      setShadowComparisonResult(score);
-      setShadowComparisonState("showing_result");
-    } catch (err) {
-      if (controller.signal.aborted) return;
-      console.error("발음 분석 실패:", err);
-      setShadowComparisonState("ready_to_record");
-    }
-  }, [currentSentence, audioUrl, shadowIndex, setShadowComparisonState, setShadowComparisonResult]);
-
-  // 정리 — 마이크 스트림 + 타이머 + 카라오케 + 카운트다운 + 분석 취소
+  // 정리 — 마이크 스트림 + 타이머 + 카라오케 + 카운트다운
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       if (karaokeTimerRef.current) clearInterval(karaokeTimerRef.current);
       if (countdownRef.current) clearTimeout(countdownRef.current);
-      abortRef.current?.abort();
       const recorder = mediaRecorderRef.current;
       if (recorder && recorder.state !== "inactive") recorder.stop();
       streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -310,10 +245,10 @@ export function StepShadow() {
   const handleRetry = useCallback(() => {
     setShadowComparisonState("ready_to_record");
     setShadowComparisonResult(null);
-    setNativePitchData(null);
-    setUserPitchData(null);
-    setDtwPath(null);
-  }, [setShadowComparisonState, setShadowComparisonResult]);
+    if (recordingBlobUrl) URL.revokeObjectURL(recordingBlobUrl);
+    setRecordingBlob(null);
+    setRecordingBlobUrl(null);
+  }, [setShadowComparisonState, setShadowComparisonResult, recordingBlobUrl]);
 
   const handleNextFromResult = useCallback(() => {
     if (shadowIndex < sentences.length - 1) {
@@ -479,36 +414,28 @@ export function StepShadow() {
               </div>
             )}
 
-            {/* 분석 중 */}
-            {shadowComparisonState === "analyzing" && (
-              <div className="flex flex-col items-center gap-3 py-6">
-                <div className="relative">
-                  <div className="h-12 w-12 animate-spin rounded-full border-[3px] border-surface-secondary border-t-primary-500" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-medium text-foreground">발음 분석 중</p>
-                  <p className="mt-0.5 text-[11px] text-foreground-muted">피치와 억양을 비교하고 있어요</p>
+            {/* 녹음 재생 */}
+            {shadowComparisonState === "showing_result" && recordingBlobUrl && (
+              <div className="flex flex-col items-center gap-4 py-2">
+                <p className="text-sm font-medium text-foreground">내 녹음 듣기</p>
+                <audio controls src={recordingBlobUrl} className="w-full max-w-xs" />
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleRetry}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground-secondary transition-colors hover:bg-surface-secondary"
+                  >
+                    <RefreshCw size={14} />
+                    다시 녹음
+                  </button>
+                  <button
+                    onClick={handleNextFromResult}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600"
+                  >
+                    다음 문장
+                    <ChevronRight size={14} />
+                  </button>
                 </div>
               </div>
-            )}
-
-            {/* 결과 표시 */}
-            {shadowComparisonState === "showing_result" && shadowComparisonResult && nativePitchData && userPitchData && (
-              <SentenceComparisonResult
-                sentenceIndex={shadowIndex}
-                totalSentences={sentences.length}
-                score={shadowComparisonResult}
-                nativePitch={nativePitchData}
-                userPitch={userPitchData}
-                dtwPath={dtwPath}
-                recordingBlob={recordingBlob}
-                recordingDuration={recordingDuration}
-                nativeAudioUrl={audioUrl}
-                sentenceStart={currentSentence?.start}
-                sentenceEnd={currentSentence?.end}
-                onRetry={handleRetry}
-                onNext={handleNextFromResult}
-              />
             )}
           </div>
         )}

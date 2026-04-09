@@ -95,10 +95,10 @@ export function ShadowingStepNav({
             )}
 
             {/* 아이콘 + 진행률 링 — 데스크탑에서만 표시 */}
-            <div className="relative hidden sm:block">
+            <div className="relative hidden h-[22px] w-[22px] items-center justify-center sm:flex">
               {/* 진행률 링 — 미완료 + 진행 중인 경우만 표시 */}
               {!isComplete && stepProgress > 0 && stepProgress < 1 && (
-                <div className="absolute -inset-1">
+                <div className="absolute inset-0">
                   <StepProgressRing progress={stepProgress} size={22} strokeWidth={1.5} />
                 </div>
               )}
