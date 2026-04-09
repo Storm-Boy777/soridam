@@ -104,17 +104,17 @@ export const ATTEMPT_COUNT_LABELS: Record<AttemptCount, string> = {
 };
 
 export const PERCEIVED_DIFFICULTY_LABELS: Record<PerceivedDifficulty, string> = {
-  easy: '쉬웠다',
-  normal: '보통이었다',
-  hard: '어려웠다',
+  easy: '쉬움',
+  normal: '보통',
+  hard: '어려움',
 };
 
 export const ACTUAL_DURATION_LABELS: Record<ActualDuration, string> = {
-  under_20: '20분 미만',
-  '20_25': '20~25분',
-  '25_30': '25~30분',
-  '30_35': '30~35분',
-  '35_40': '35~40분',
+  under_20: '20 ↓',
+  '20_25': '20~25',
+  '25_30': '25~30',
+  '30_35': '30~35',
+  '35_40': '35 ↑',
 };
 
 // ── 서베이 항목 ──

@@ -161,7 +161,7 @@ export function StepListen() {
                     : isActive
                       ? "bg-primary-50"
                       : "hover:bg-surface-secondary/60"
-                }`}
+                } ${!isListened && !isActive && !isRepeating ? "opacity-50" : ""}`}
               >
                 <div className="flex items-start gap-2">
                   {/* 문장 번호 또는 반복 아이콘 — 텍스트 첫 줄과 동일 라인 */}
@@ -238,7 +238,7 @@ function QuestionCard({ english, korean }: { english: string; korean: string | n
   return (
     <div className="rounded-[var(--radius-xl)] border border-border bg-surface px-4 py-3 sm:px-5">
       <p className="text-[13px] font-medium leading-relaxed text-foreground sm:text-sm">
-        {english}
+        <span className="mr-1 text-primary-500">Q.</span>{english}
       </p>
       {korean && (
         <>

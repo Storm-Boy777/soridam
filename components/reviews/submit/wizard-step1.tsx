@@ -590,7 +590,7 @@ export function WizardStep1({ onComplete, submissionId }: WizardStep1Props) {
           </PillField>
 
 <PillField
-            label="실제 소요 시간"
+            label="실제 소요 시간(분)"
             required
             error={errors.actual_duration?.message}
           >
