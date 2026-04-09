@@ -254,7 +254,7 @@ export interface ShadowingEvaluation {
   id: string;
   session_id: string;
   user_id: string;
-  transcript: string;
+  transcript: string | null;
   word_count: number | null;
   pronunciation: number | null;
   fluency: number | null;
@@ -273,6 +273,17 @@ export interface ShadowingEvaluation {
     missing_elements: string[];
   } | null;
   created_at: string;
+  // 실전 말하기 (미니 모의고사) 확장 필드
+  eval_status?: string;
+  audio_url?: string | null;
+  wpm?: number | null;
+  filler_count?: number | null;
+  pronunciation_assessment?: Record<string, unknown> | null;
+  fulfillment?: string | null;
+  task_checklist?: Array<{ item: string; pass: boolean; evidence: string }> | null;
+  observation?: string | null;
+  directions?: string[] | null;
+  weak_points?: Array<{ code: string; severity: string; reason: string; evidence: string }> | null;
 }
 
 // script_specs (읽기 전용)

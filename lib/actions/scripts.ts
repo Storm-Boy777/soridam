@@ -924,6 +924,129 @@ export async function getShadowingEvaluation(
 }
 
 // ============================================================
+// 쉐도잉 실전 말하기 — 녹음 제출 + 평가 트리거
+// ============================================================
+
+export async function submitSpeakRecording(input: {
+  sessionId: string;
+  questionId: string;
+  audioBase64: string;
+}): Promise<ActionResult<{ evaluationId: string }>> {
+  try {
+    const { supabase, userId } = await requireUser();
+
+    // 1. 크레딧 확인
+    const { data: balance } = await supabase.rpc("polar_get_balance", { p_user_id: userId });
+    if (!balance || balance <= 0) {
+      return { error: "크레딧이 부족합니다" };
+    }
+
+    // 2. 음성 파일 업로드 (Supabase Storage)
+    const audioBuffer = Uint8Array.from(atob(input.audioBase64), (c) => c.charCodeAt(0));
+    const filePath = `${userId}/${input.sessionId}/${Date.now()}.webm`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("shadowing-recordings")
+      .upload(filePath, audioBuffer, {
+        contentType: "audio/webm",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      return { error: `음성 업로드 실패: ${uploadError.message}` };
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("shadowing-recordings")
+      .getPublicUrl(filePath);
+
+    const audioUrl = urlData.publicUrl;
+
+    // 3. 평가 행 생성 (eval_status: pending)
+    const { data: evalRow, error: insertError } = await supabase
+      .from(T.shadowing_evaluations)
+      .insert({
+        session_id: input.sessionId,
+        user_id: userId,
+        audio_url: audioUrl,
+        eval_status: "pending",
+      })
+      .select("id")
+      .single();
+
+    if (insertError || !evalRow) {
+      return { error: `평가 행 생성 실패: ${insertError?.message}` };
+    }
+
+    // 4. 크레딧 차감 (고정 50센트)
+    await supabase.rpc("polar_deduct_balance", {
+      p_user_id: userId,
+      p_amount: 50,
+      p_description: "쉐도잉 실전 평가",
+    });
+
+    // 5. EF fire-and-forget 트리거
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+    fetch(`${supabaseUrl}/functions/v1/shadowing-speak-eval`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({
+        evaluation_id: evalRow.id,
+        audio_url: audioUrl,
+        question_id: input.questionId,
+        user_id: userId,
+      }),
+    }).catch((err) => {
+      console.error("shadowing-speak-eval fire-and-forget 실패:", err);
+    });
+
+    return { data: { evaluationId: evalRow.id } };
+  } catch (err) {
+    return { error: (err as Error).message };
+  }
+}
+
+// ============================================================
+// 쉐도잉 실전 말하기 — 평가 상태 폴링
+// ============================================================
+
+export async function pollSpeakEvaluation(
+  evaluationId: string
+): Promise<ActionResult<{
+  status: string;
+  evaluation: ShadowingEvaluation | null;
+}>> {
+  try {
+    const { supabase, userId } = await requireUser();
+
+    const { data, error } = await supabase
+      .from(T.shadowing_evaluations)
+      .select("*")
+      .eq("id", evaluationId)
+      .eq("user_id", userId)
+      .single();
+
+    if (error || !data) {
+      return { error: "평가를 찾을 수 없습니다" };
+    }
+
+    return {
+      data: {
+        status: data.eval_status,
+        evaluation: data.eval_status === "completed" ? (data as ShadowingEvaluation) : null,
+      },
+    };
+  } catch (err) {
+    return { error: (err as Error).message };
+  }
+}
+
+// ============================================================
 // 쉐도잉 훈련 가능 스크립트 목록 (패키지 완료된 것만)
 // ============================================================
 
