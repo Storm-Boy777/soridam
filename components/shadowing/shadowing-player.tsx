@@ -25,6 +25,8 @@ interface ShadowingPlayerProps {
   compact?: boolean;
   // UI만 렌더링 (audio 요소 제외 — 중복 인스턴스 방지)
   noAudio?: boolean;
+  // 외부에서 audio 요소를 공유할 때 사용 (noAudio와 함께)
+  externalAudioRef?: React.RefObject<HTMLAudioElement | null>;
 }
 
 export function ShadowingPlayer({
@@ -35,8 +37,10 @@ export function ShadowingPlayer({
   showSpeedControl = false,
   compact = false,
   noAudio = false,
+  externalAudioRef,
 }: ShadowingPlayerProps) {
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const internalAudioRef = useRef<HTMLAudioElement>(null);
+  const audioRef = externalAudioRef ?? internalAudioRef;
   const {
     audioUrl,
     sentences,
@@ -164,6 +168,15 @@ export function ShadowingPlayer({
   const duration = audioRef.current?.duration || 0;
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
+  // 반복 구간 프로그레스 바 하이라이트
+  const repeatSegment = repeatTargetIndex != null && !sentenceMode && duration > 0
+    ? (() => {
+        const s = sentences[repeatTargetIndex];
+        if (!s) return null;
+        return { left: (s.start / duration) * 100, width: ((s.end - s.start) / duration) * 100 };
+      })()
+    : null;
+
   // 드래그 시킹 핸들러
   const seekToPosition = useCallback((clientX: number) => {
     const audio = audioRef.current;
@@ -201,21 +214,9 @@ export function ShadowingPlayer({
     setPlaybackRate(next);
   }, [playbackRate, setPlaybackRate]);
 
-  // 반복 중인 문장 텍스트
-  const repeatSentenceText = repeatTargetIndex != null && sentences[repeatTargetIndex]
-    ? sentences[repeatTargetIndex].english
-    : null;
-
   if (compact) {
     return (
       <div className="space-y-1">
-        {/* 반복 문장 뱃지 */}
-        {repeatSentenceText && !sentenceMode && (
-          <div className="truncate text-center text-[10px] text-primary-500">
-            🔁 {repeatSentenceText}
-          </div>
-        )}
-
         <div className="flex items-center gap-3">
           {audioUrl && !noAudio && <audio ref={audioRef} src={audioUrl} preload="auto" />}
 
@@ -235,6 +236,13 @@ export function ShadowingPlayer({
             onPointerUp={handlePointerUp}
           >
             <div className="absolute top-1/2 h-1 w-full -translate-y-1/2 rounded-full bg-surface-secondary">
+              {/* 반복 구간 하이라이트 */}
+              {repeatSegment && (
+                <div
+                  className="absolute h-1 rounded-full bg-primary-200"
+                  style={{ left: `${repeatSegment.left}%`, width: `${repeatSegment.width}%` }}
+                />
+              )}
               <div
                 className="h-1 rounded-full bg-primary-500 transition-[width] duration-100"
                 style={{ width: `${progressPercent}%` }}
