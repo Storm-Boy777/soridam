@@ -23,6 +23,8 @@ interface ShadowingPlayerProps {
   showSpeedControl?: boolean;
   // 컴팩트 모드: 단일 라인 플레이어
   compact?: boolean;
+  // UI만 렌더링 (audio 요소 제외 — 중복 인스턴스 방지)
+  noAudio?: boolean;
 }
 
 export function ShadowingPlayer({
@@ -32,6 +34,7 @@ export function ShadowingPlayer({
   onTimeUpdate,
   showSpeedControl = false,
   compact = false,
+  noAudio = false,
 }: ShadowingPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const {
@@ -214,7 +217,7 @@ export function ShadowingPlayer({
         )}
 
         <div className="flex items-center gap-3">
-          {audioUrl && <audio ref={audioRef} src={audioUrl} preload="auto" />}
+          {audioUrl && !noAudio && <audio ref={audioRef} src={audioUrl} preload="auto" />}
 
           <button
             onClick={togglePlay}
@@ -288,7 +291,7 @@ export function ShadowingPlayer({
   // 기본 모드: 기존 레이아웃
   return (
     <div className="p-4">
-      {audioUrl && <audio ref={audioRef} src={audioUrl} preload="auto" />}
+      {audioUrl && !noAudio && <audio ref={audioRef} src={audioUrl} preload="auto" />}
 
       {/* 프로그레스 바 — 드래그 지원 */}
       <div className="mb-3">

@@ -112,6 +112,12 @@ export function StepListen() {
         </div>
 
         {/* 문장 목록 */}
+        {displayMode === "both" && (
+          <div className="hidden border-b border-border px-4 py-2 md:grid md:grid-cols-2 md:gap-4 sm:px-6">
+            <span className="pl-7 text-[11px] font-bold uppercase tracking-wider text-primary-500">English Script</span>
+            <span className="pl-4 text-[11px] font-bold tracking-wider text-foreground-muted">한국어 스크립트</span>
+          </div>
+        )}
         <div className="space-y-1 p-4 sm:p-6">
           {sentences.map((sent, i) => {
             const isActive = i === activeIndex;
@@ -140,7 +146,7 @@ export function StepListen() {
                     {String(i + 1).padStart(2, "0")}
                   </span>
 
-                  <div className="min-w-0 flex-1">
+                  <div className={`min-w-0 flex-1 ${displayMode === "both" ? "md:grid md:grid-cols-2 md:gap-4" : ""}`}>
                     {(displayMode === "both" || displayMode === "english") && (
                       <p
                         className={`text-[13px] leading-relaxed sm:text-[15px] ${
@@ -158,7 +164,9 @@ export function StepListen() {
                     {(displayMode === "both" || displayMode === "korean") && (
                       <p
                         className={`text-xs leading-relaxed sm:text-sm ${
-                          displayMode === "both" ? "mt-1 border-l-2 border-primary-100 pl-2" : ""
+                          displayMode === "both"
+                            ? "mt-1 border-l-2 border-primary-100 pl-2 md:mt-0 md:border-l md:border-border md:pl-4 md:border-primary-100/0"
+                            : ""
                         } ${
                           isActive
                             ? "text-foreground-secondary"
@@ -176,9 +184,9 @@ export function StepListen() {
         </div>
       </div>
 
-      {/* 오디오 플레이어 — 모바일: 하단 고정 */}
+      {/* 오디오 플레이어 — 모바일: 하단 고정 (UI만, audio 요소는 PC 플레이어에서 관리) */}
       <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-surface px-4 py-[18px] sm:hidden">
-        <ShadowingPlayer showSpeedControl compact />
+        <ShadowingPlayer showSpeedControl compact noAudio />
       </div>
     </div>
   );

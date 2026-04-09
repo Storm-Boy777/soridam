@@ -34,7 +34,7 @@ export default function PipelineSection() {
           <h2 className="mt-5 text-[1.8rem] font-extrabold leading-[1.3] tracking-tight text-white sm:text-[2.4rem]">
             데이터에서 시작해,
             <br />
-            체화로 끝나는 학습
+            체화로 끝나는 훈련
           </h2>
           <p className="mt-4 text-[0.95rem] leading-relaxed text-white/50 sm:text-[1.05rem]">
             각 단계별 빈 곳 없는 완결된 학습 사이클.
