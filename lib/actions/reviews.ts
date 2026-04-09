@@ -250,12 +250,12 @@ export async function saveQuestions(
 }
 
 // ============================================================
-// Step 3: 완료 + 콤보 추출 + 크레딧 보상
+// Step 3: 완료 + 콤보 추출
 // ============================================================
 
 export async function completeSubmission(
   formData: Record<string, unknown>
-): Promise<ActionResult<{ creditGranted: boolean; nextCreditDate: string | null }>> {
+): Promise<ActionResult> {
   const parsed = step3Schema.safeParse(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -327,11 +327,8 @@ export async function completeSubmission(
       console.error("콤보 추출/기출풀 확인 실패 (후기는 저장됨):", comboErr);
     }
 
-    // 크레딧 보상 (25일 룰)
-    const { creditGranted, nextCreditDate } = await processCredits(supabase, userId, submission_id);
-
     revalidatePath("/reviews");
-    return { data: { creditGranted, nextCreditDate } };
+    return { data: null };
   } catch (e) {
     if (e instanceof Error && e.message === "로그인이 필요합니다") {
       return { error: e.message };
@@ -393,69 +390,6 @@ async function checkExamApproval(
   // 조건 충족 → 'pending' 유지 (관리자 승인 대기)
 }
 
-// ── 헬퍼: 크레딧 보상 (25일 룰) ──
-
-async function processCredits(
-  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
-  userId: string,
-  submissionId: number
-): Promise<{ creditGranted: boolean; nextCreditDate: string | null }> {
-  let creditGranted = false;
-  let nextCreditDate: string | null = null;
-
-  try {
-    const { data: creditHistory } = await supabase
-      .from(T.submissions)
-      .select("submitted_at")
-      .eq("user_id", userId)
-      .eq("status", "complete")
-      .eq("credit_granted", true)
-      .order("submitted_at", { ascending: false });
-
-    const creditCount = creditHistory?.length ?? 0;
-
-    if (creditCount < 2) {
-      // 최초 2회: 무조건 지급
-      creditGranted = true;
-    } else {
-      // 3회차부터: 마지막 지급일로부터 25일 경과 확인
-      const lastGrantedAt = creditHistory![0].submitted_at;
-      if (lastGrantedAt) {
-        const lastDate = new Date(lastGrantedAt);
-        const daysSince = Math.floor(
-          (Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
-        );
-        if (daysSince >= 25) {
-          creditGranted = true;
-        } else {
-          const next = new Date(lastDate);
-          next.setDate(next.getDate() + 25);
-          nextCreditDate = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`;
-        }
-      }
-    }
-
-    if (creditGranted) {
-      const { error: rpcError } = await supabase.rpc(RPC.increment_script_credits, {
-        p_user_id: userId,
-        p_amount: 2,
-      });
-      if (rpcError) {
-        console.error("크레딧 지급 RPC 실패:", rpcError);
-        creditGranted = false;
-      } else {
-        await supabase
-          .from(T.submissions)
-          .update({ credit_granted: true })
-          .eq("id", submissionId);
-      }
-    }
-  } catch (creditErr) {
-    console.error("크레딧 지급 처리 실패:", creditErr);
-  }
-
-  return { creditGranted, nextCreditDate };
-}
 
 // ============================================================
 // 제출 상세 조회 (submission + questions 한 번에)

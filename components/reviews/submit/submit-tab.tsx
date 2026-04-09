@@ -23,7 +23,6 @@ export function SubmitTab({ initialSubmissions }: SubmitTabProps) {
 
   // URL params로 완료 배너 표시
   const completed = searchParams.get("completed") === "true";
-  const creditGranted = searchParams.get("credit") === "true";
 
   // 완료 후 돌아왔을 때 URL params 정리 (히스토리 교체)
   useEffect(() => {

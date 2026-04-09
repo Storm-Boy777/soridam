@@ -645,8 +645,8 @@ export function ScriptWizard({
 
       {/* ── Step 4 하단 액션 바 (스크롤 밖 고정) ── */}
       {step === 4 && scriptDetail && (
-        <div className="border-t border-border bg-surface px-4 py-3 sm:px-6 sm:py-4">
-          <div className="mx-auto max-w-3xl">
+        <div className="border-t border-border bg-surface py-3 sm:py-4">
+          <div className="mx-auto max-w-3xl px-4 sm:px-6">
             {isTrialMode ? (
               /* 체험판: 수정 비활성 + 확정 버튼만 */
               <div className="flex items-center justify-between gap-3">
@@ -685,12 +685,19 @@ export function ScriptWizard({
                 </button>
               </div>
             ) : (
-              /* 확정: 패키지 생성 / 쉐도잉 / 내 스크립트 */
-              <div className="flex flex-wrap items-center justify-center gap-3">
+              /* 확정: 내 스크립트 / 패키지 생성 (또는 쉐도잉) */
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/scripts"
+                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-[var(--radius-lg)] border border-border bg-surface text-sm font-medium text-foreground-secondary transition-colors hover:bg-surface-secondary"
+                >
+                  <FileText size={14} />
+                  내 스크립트
+                </Link>
                 {scriptDetail.package?.status === "completed" && (
                   <Link
                     href={`/scripts/shadowing?packageId=${scriptDetail.package.id}&scriptId=${scriptDetail.id}`}
-                    className="inline-flex h-10 items-center gap-2 rounded-[var(--radius-lg)] bg-primary-500 px-5 text-sm font-medium text-white transition-colors hover:bg-primary-600"
+                    className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-[var(--radius-lg)] bg-primary-500 text-sm font-medium text-white transition-colors hover:bg-primary-600"
                   >
                     <Headphones size={16} />
                     쉐도잉 훈련
@@ -699,14 +706,14 @@ export function ScriptWizard({
                 {!scriptDetail.package && (
                   <button
                     onClick={() => setStep(5)}
-                    className="inline-flex h-10 items-center gap-2 rounded-[var(--radius-lg)] bg-primary-500 px-5 text-sm font-medium text-white transition-colors hover:bg-primary-600"
+                    className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-[var(--radius-lg)] bg-primary-500 text-sm font-medium text-white transition-colors hover:bg-primary-600"
                   >
                     <Package size={16} />
                     패키지 생성
                   </button>
                 )}
                 {scriptDetail.package && scriptDetail.package.status !== "completed" && scriptDetail.package.status !== "failed" && (
-                  <span className="inline-flex h-10 items-center gap-2 rounded-[var(--radius-lg)] bg-surface-secondary px-5 text-sm font-medium text-foreground-secondary">
+                  <span className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-[var(--radius-lg)] bg-surface-secondary text-sm font-medium text-foreground-secondary">
                     <Loader2 size={16} className="animate-spin" />
                     패키지 생성중 {scriptDetail.package.progress}%
                   </span>
@@ -714,19 +721,12 @@ export function ScriptWizard({
                 {scriptDetail.package?.status === "failed" && (
                   <button
                     onClick={() => setStep(5)}
-                    className="inline-flex h-10 items-center gap-2 rounded-[var(--radius-lg)] bg-primary-500 px-5 text-sm font-medium text-white transition-colors hover:bg-primary-600"
+                    className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-[var(--radius-lg)] bg-primary-500 text-sm font-medium text-white transition-colors hover:bg-primary-600"
                   >
                     <RotateCcw size={16} />
                     패키지 재생성
                   </button>
                 )}
-                <Link
-                  href="/scripts"
-                  className="inline-flex h-10 items-center gap-2 rounded-[var(--radius-lg)] border border-border bg-surface px-5 text-sm font-medium text-foreground-secondary transition-colors hover:bg-surface-secondary"
-                >
-                  <FileText size={14} />
-                  내 스크립트
-                </Link>
               </div>
             )}
           </div>
@@ -1694,7 +1694,7 @@ function Step5Complete({
         </p>
 
         {/* 음성 선택 */}
-        <div className="mt-5 w-full max-w-xs sm:mt-6">
+        <div className="mt-5 w-full max-w-sm sm:mt-6">
           <p className="mb-2 text-center text-xs font-medium text-foreground-secondary">
             원어민 음성 선택
           </p>
@@ -1720,7 +1720,7 @@ function Step5Complete({
         <button
           onClick={handleCreatePackage}
           disabled={!scriptId}
-          className="mt-4 flex h-9 w-full max-w-xs items-center justify-center gap-2 rounded-[var(--radius-lg)] bg-primary-500 text-sm font-medium text-white transition-colors hover:bg-primary-600 disabled:opacity-50 sm:mt-5 sm:h-10 sm:w-auto sm:px-6"
+          className="mt-4 flex h-9 w-full max-w-sm items-center justify-center gap-2 rounded-[var(--radius-lg)] bg-primary-500 text-sm font-medium text-white transition-colors hover:bg-primary-600 disabled:opacity-50 sm:mt-5 sm:h-10"
         >
           <Package size={16} />
           패키지 생성 (음성 + 쉐도잉)
@@ -1948,7 +1948,7 @@ function TrialStep5({ onGoToScripts }: { onGoToScripts: () => void }) {
           원어민 음성 패키지를 생성하면 쉐도잉 훈련을 시작할 수 있습니다.
         </p>
 
-        <div className="mt-5 w-full max-w-xs sm:mt-6">
+        <div className="mt-5 w-full max-w-sm sm:mt-6">
           <p className="mb-2 text-center text-xs font-medium text-foreground-secondary">
             원어민 음성 선택
           </p>
@@ -1972,7 +1972,7 @@ function TrialStep5({ onGoToScripts }: { onGoToScripts: () => void }) {
 
         <button
           onClick={() => { setPhase("loading"); setProgress(15); }}
-          className="mt-4 flex h-9 w-full max-w-xs items-center justify-center gap-2 rounded-[var(--radius-lg)] bg-primary-500 text-sm font-medium text-white transition-colors hover:bg-primary-600 sm:mt-5 sm:h-10 sm:w-auto sm:px-6"
+          className="mt-4 flex h-9 w-full max-w-sm items-center justify-center gap-2 rounded-[var(--radius-lg)] bg-primary-500 text-sm font-medium text-white transition-colors hover:bg-primary-600 sm:mt-5 sm:h-10"
         >
           <Package size={16} />
           패키지 생성 (음성 + 쉐도잉)

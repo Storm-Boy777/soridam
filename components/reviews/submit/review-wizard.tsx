@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Check } from "lucide-react";
 import { WizardStep1 } from "./wizard-step1";
 import { WizardStep2, type ComboResult } from "./wizard-step2";
-import { WizardStep3, type CreditResult } from "./wizard-step3";
+import { WizardStep3 } from "./wizard-step3";
 import { getDraftQuestions } from "@/lib/actions/reviews";
 
 /* ── 위저드 3단계 정의 ── */
@@ -81,13 +81,10 @@ export function ReviewWizard({ initialTopics }: ReviewWizardProps) {
   }, [resumeSubmissionId]);
 
   // 위저드 완료
-  const handleComplete = (result: CreditResult) => {
+  const handleComplete = () => {
     queryClient.invalidateQueries({ queryKey: ["my-submissions"] });
     queryClient.invalidateQueries({ queryKey: ["review-frequency"] });
-    queryClient.invalidateQueries({ queryKey: ["user-credits"] });
-    router.push(
-      `/reviews?completed=true&credit=${result.creditGranted ? "true" : "false"}`
-    );
+    router.push("/reviews?completed=true");
   };
 
   // 취소

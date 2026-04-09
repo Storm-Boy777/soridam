@@ -3,18 +3,13 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ChevronLeft, Loader2, Send, Gift } from "lucide-react";
+import { ChevronLeft, Loader2, Send } from "lucide-react";
 import { step3Schema, type Step3Input } from "@/lib/validations/reviews";
 import { completeSubmission } from "@/lib/actions/reviews";
 
-export interface CreditResult {
-  creditGranted: boolean;
-  nextCreditDate: string | null;
-}
-
 interface WizardStep3Props {
   submissionId: number;
-  onComplete: (creditResult: CreditResult) => void;
+  onComplete: () => void;
   onBack: () => void;
 }
 
@@ -56,10 +51,7 @@ export function WizardStep3({ submissionId, onComplete, onBack }: WizardStep3Pro
       return;
     }
 
-    onComplete({
-      creditGranted: result.data?.creditGranted ?? false,
-      nextCreditDate: result.data?.nextCreditDate ?? null,
-    });
+    onComplete();
   };
 
   return (
