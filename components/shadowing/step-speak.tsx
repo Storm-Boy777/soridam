@@ -334,8 +334,11 @@ export function StepSpeak() {
           {showQuestion !== "hidden" && (
             <div className="mt-2 border-t border-border/50 pt-2">
               <p className="text-sm font-medium text-foreground">{questionText}</p>
-              {questionKorean && showQuestion === "ko" && (
-                <p className="mt-0.5 text-xs text-foreground-secondary">{questionKorean}</p>
+              {questionKorean && (
+                <>
+                  <div className="my-2 h-px bg-border/50" />
+                  <p className="text-xs leading-relaxed text-foreground-muted">{questionKorean}</p>
+                </>
               )}
             </div>
           )}
