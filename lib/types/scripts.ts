@@ -76,14 +76,14 @@ export const SHADOWING_STEP_LABELS: Record<ShadowingStep, string> = {
   listen: '듣기',
   shadow: '따라 읽기',
   recite: '구조로 말하기',
-  speak: '실전 말하기',
+  speak: '실전 평가',
 };
 
 export const SHADOWING_STEP_SHORT_LABELS: Record<ShadowingStep, string> = {
   listen: '듣기',
   shadow: '따라읽기',
   recite: '구조로 말하기',
-  speak: '실전 말하기',
+  speak: '실전 평가',
 };
 
 export const SHADOWING_STEP_DESCRIPTIONS: Record<ShadowingStep, string> = {
@@ -273,7 +273,7 @@ export interface ShadowingEvaluation {
     missing_elements: string[];
   } | null;
   created_at: string;
-  // 실전 말하기 (미니 모의고사) 확장 필드
+  // 실전 평가 (미니 모의고사) 확장 필드
   eval_status?: string;
   audio_url?: string | null;
   wpm?: number | null;

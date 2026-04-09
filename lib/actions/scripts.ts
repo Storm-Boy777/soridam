@@ -929,7 +929,7 @@ export async function getShadowingEvaluation(
 
 export async function submitSpeakRecording(input: {
   sessionId: string;
-  questionId: string;
+  scriptId: string;
   audioBase64: string;
 }): Promise<ActionResult<{ evaluationId: string }>> {
   try {
@@ -940,6 +940,18 @@ export async function submitSpeakRecording(input: {
     if (!balance || balance <= 0) {
       return { error: "크레딧이 부족합니다" };
     }
+
+    // 1.5. script → question_id 조회
+    const { data: scriptData } = await supabase
+      .from(T.scripts)
+      .select("question_id")
+      .eq("id", input.scriptId)
+      .single();
+
+    if (!scriptData?.question_id) {
+      return { error: "스크립트의 질문 정보를 찾을 수 없습니다" };
+    }
+    const questionId = scriptData.question_id;
 
     // 2. 음성 파일 업로드 (Supabase Storage)
     const audioBuffer = Uint8Array.from(atob(input.audioBase64), (c) => c.charCodeAt(0));
@@ -998,7 +1010,7 @@ export async function submitSpeakRecording(input: {
       body: JSON.stringify({
         evaluation_id: evalRow.id,
         audio_url: audioUrl,
-        question_id: input.questionId,
+        question_id: questionId,
         user_id: userId,
       }),
     }).catch((err) => {
