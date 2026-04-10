@@ -13,6 +13,7 @@ import {
   GraduationCap,
   Stethoscope,
   Megaphone,
+  MessageCircle,
   Sparkles,
   ScrollText,
   ArrowLeft,
@@ -31,6 +32,7 @@ const menuItems = [
   { label: "모의고사", href: "/admin/mock-exam", icon: GraduationCap },
   { label: "튜터링", href: "/admin/tutoring", icon: Stethoscope },
   { label: "공지사항", href: "/admin/announcements", icon: Megaphone },
+  { label: "소통함", href: "/admin/support", icon: MessageCircle },
   { label: "감사 로그", href: "/admin/logs", icon: ScrollText },
   { label: "설정", href: "/admin/settings", icon: Settings },
 ];

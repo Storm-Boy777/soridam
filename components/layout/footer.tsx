@@ -19,6 +19,7 @@ export function Footer() {
             <Link href="/terms">이용약관</Link>
             <Link href="/privacy">개인정보처리방침</Link>
             <Link href="/refund">환불 규정</Link>
+            <Link href="/support">소통함</Link>
           </div>
         </div>
 

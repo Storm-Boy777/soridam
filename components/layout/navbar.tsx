@@ -28,6 +28,7 @@ const appNav: NavItem[] = [
   { label: "튜터링", href: "/tutoring" },
   { label: "만능패턴", href: "/patterns" },
   { label: "AI 스토어", href: "/store" },
+  { label: "소통함", href: "/support" },
 ];
 
 /** 서버에서 전달하는 인증 정보 (선택적). 전달 시 클라이언트 getSession() 스킵 → 깜빡임 제거 */
@@ -108,20 +109,24 @@ export function Navbar({ serverAuth }: { serverAuth?: NavbarServerAuth } = {}) {
 
         {/* 데스크톱 네비게이션 */}
         <div className="hidden items-center gap-1 md:flex">
-          {navItems.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              onClick={(e) => handleNavClick(e, item.href)}
-              className={`relative rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium transition-colors ${isLanding ? "text-gray-400 hover:bg-white/5 hover:text-white" : "text-foreground-secondary hover:bg-surface-secondary hover:text-foreground"}`}
-            >
-              {item.label}
-              {item.soon && (
-                <span className="absolute -right-1 -top-1 rounded-full bg-primary-100 px-1 text-[8px] font-semibold text-primary-600">
-                  곧
-                </span>
+          {navItems.map((item, idx) => (
+            <div key={item.label} className="flex items-center">
+              {["/reviews", "/patterns", "/support"].includes(item.href) && (
+                <div className={`mx-1 h-4 w-px ${isLanding ? "bg-white/20" : "bg-border"}`} />
               )}
-            </Link>
+              <Link
+                href={item.href}
+                onClick={(e) => handleNavClick(e, item.href)}
+                className={`relative rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium transition-colors ${isLanding ? "text-gray-400 hover:bg-white/5 hover:text-white" : "text-foreground-secondary hover:bg-surface-secondary hover:text-foreground"}`}
+              >
+                {item.label}
+                {item.soon && (
+                  <span className="absolute -right-1 -top-1 rounded-full bg-primary-100 px-1 text-[8px] font-semibold text-primary-600">
+                    곧
+                  </span>
+                )}
+              </Link>
+            </div>
           ))}
         </div>
 

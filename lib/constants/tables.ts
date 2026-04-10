@@ -41,6 +41,9 @@ export const T = {
   admin_audit_log: "admin_audit_log",
   user_activity_log: "user_activity_log",
   api_usage_logs: "api_usage_logs",
+  support_posts: "support_posts",
+  support_comments: "support_comments",
+  support_votes: "support_votes",
 } as const;
 
 // RPC 함수명 상수
