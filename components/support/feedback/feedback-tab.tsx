@@ -20,8 +20,6 @@ import type {
   SupportPost,
   SupportCategory,
   FeedbackSort,
-  SupportComment,
-  PUBLIC_CATEGORIES,
 } from "@/lib/types/support";
 
 interface FeedbackTabProps {
@@ -56,7 +54,7 @@ export function FeedbackTab({ initialData, isLoggedIn }: FeedbackTabProps) {
 
   // 내 투표 상태 로드
   useQuery({
-    queryKey: ["support-my-votes", data.posts.map((p) => p.id)],
+    queryKey: ["support-my-votes", category, sort],
     queryFn: async () => {
       if (!isLoggedIn || data.posts.length === 0) return [];
       const result = await getMyVotes(data.posts.map((p) => p.id));

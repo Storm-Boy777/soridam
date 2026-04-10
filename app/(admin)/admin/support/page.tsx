@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -43,6 +43,11 @@ export default function AdminSupportPage() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [replyContent, setReplyContent] = useState("");
   const [replying, setReplying] = useState(false);
+
+  // 확장 게시물 변경 시 답변 입력 초기화
+  useEffect(() => {
+    setReplyContent("");
+  }, [expandedId]);
 
   const visibility = tab === "feedback" ? "public" : "private";
 

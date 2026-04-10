@@ -48,7 +48,7 @@ export interface ActiveAnnouncement {
 export async function getAllAnnouncements(): Promise<
   ActionResult<ActiveAnnouncement[]>
 > {
-  const { supabase } = await getOptionalUser();
+  const { supabase, userId } = await getOptionalUser();
   const now = new Date().toISOString();
 
   const { data, error } = await supabase
@@ -59,7 +59,27 @@ export async function getAllAnnouncements(): Promise<
     .order("created_at", { ascending: false });
 
   if (error) return { error: error.message };
-  return { data: (data || []) as ActiveAnnouncement[] };
+
+  // target_audience 필터링
+  let userPlan = "free";
+  if (userId) {
+    const { data: credits } = await supabase
+      .from(T.user_credits)
+      .select("current_plan")
+      .eq("user_id", userId)
+      .single();
+    userPlan = credits?.current_plan || "free";
+  }
+
+  const filtered = ((data || []) as ActiveAnnouncement[]).filter((a) => {
+    if (a.target_audience === "all") return true;
+    if (!userId) return false;
+    if (a.target_audience === "free" && userPlan === "free") return true;
+    if (a.target_audience === "paid" && userPlan !== "free") return true;
+    return false;
+  });
+
+  return { data: filtered };
 }
 
 // ── 피드백 보드 (공개 글) ──
@@ -142,6 +162,14 @@ export async function createPost(params: {
   title: string;
   content: string;
 }): Promise<ActionResult<{ id: number }>> {
+  // 입력 검증
+  if (!params.title.trim() || params.title.length > 200) {
+    return { error: "제목은 1~200자 이내로 입력해주세요" };
+  }
+  if (!params.content.trim() || params.content.length > 5000) {
+    return { error: "내용은 1~5000자 이내로 입력해주세요" };
+  }
+
   const { supabase, userId } = await requireUser();
 
   const visibility =
@@ -189,6 +217,10 @@ export async function createComment(params: {
   post_id: number;
   content: string;
 }): Promise<ActionResult<{ id: number }>> {
+  if (!params.content.trim() || params.content.length > 2000) {
+    return { error: "댓글은 1~2000자 이내로 입력해주세요" };
+  }
+
   const { supabase, userId } = await requireUser();
 
   const { data, error } = await supabase
