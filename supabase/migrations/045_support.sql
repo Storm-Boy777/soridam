@@ -28,6 +28,10 @@ CREATE TABLE support_posts (
   )
 );
 
+-- profiles FK (PostgREST 임베디드 쿼리용)
+ALTER TABLE support_posts ADD CONSTRAINT support_posts_user_id_profiles_fk
+  FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE;
+
 CREATE INDEX idx_support_posts_visibility_created ON support_posts(visibility, created_at DESC);
 CREATE INDEX idx_support_posts_user_id ON support_posts(user_id);
 CREATE INDEX idx_support_posts_status ON support_posts(status);
@@ -57,6 +61,10 @@ CREATE TABLE support_comments (
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- profiles FK (PostgREST 임베디드 쿼리용)
+ALTER TABLE support_comments ADD CONSTRAINT support_comments_user_id_profiles_fk
+  FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE;
 
 CREATE INDEX idx_support_comments_post_id ON support_comments(post_id, created_at);
 
