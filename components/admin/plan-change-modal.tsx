@@ -5,10 +5,8 @@ import { X } from "lucide-react";
 import type { PlanChangeParams } from "@/lib/types/admin";
 
 const PLAN_DEFAULTS: Record<string, { balanceCents: number; months: number }> = {
-  free:     { balanceCents: 0,    months: 0 },
-  beta:     { balanceCents: 1000, months: 1 },
-  standard: { balanceCents: 1000, months: 1 },
-  allinone: { balanceCents: 5000, months: 2 },
+  free: { balanceCents: 0,    months: 0 },
+  beta: { balanceCents: 1000, months: 1 },
 };
 
 interface PlanChangeModalProps {
@@ -26,8 +24,8 @@ export function PlanChangeModal({
   onSubmit,
   onClose,
 }: PlanChangeModalProps) {
-  const [plan, setPlan] = useState<"free" | "beta" | "standard" | "allinone">(
-    (currentPlan as "free" | "beta" | "standard" | "allinone") || "free"
+  const [plan, setPlan] = useState<"free" | "beta">(
+    currentPlan === "beta" ? "beta" : "free"
   );
   const defaults = PLAN_DEFAULTS[plan];
   const [balanceCents, setBalanceCents] = useState(defaults.balanceCents);
@@ -38,7 +36,7 @@ export function PlanChangeModal({
   const isFree = plan === "free";
 
   // 플랜 선택 변경 시 기본값 자동 세팅
-  const handlePlanChange = (newPlan: "free" | "beta" | "standard" | "allinone") => {
+  const handlePlanChange = (newPlan: "free" | "beta") => {
     setPlan(newPlan);
     const d = PLAN_DEFAULTS[newPlan];
     setBalanceCents(d.balanceCents);
@@ -64,10 +62,8 @@ export function PlanChangeModal({
   };
 
   const planOptions = [
-    { value: "free" as const,     label: "Free",   color: "bg-gray-100 text-gray-700 border-gray-300" },
-    { value: "beta" as const,     label: "Beta",   color: "bg-primary-50 text-primary-700 border-primary-400" },
-    { value: "standard" as const, label: "실전",   color: "bg-blue-50 text-blue-700 border-blue-400" },
-    { value: "allinone" as const, label: "올인원", color: "bg-purple-50 text-purple-700 border-purple-400" },
+    { value: "free" as const, label: "Free", color: "bg-gray-100 text-gray-700 border-gray-300" },
+    { value: "beta" as const, label: "Beta", color: "bg-primary-50 text-primary-700 border-primary-400" },
   ];
 
   return (

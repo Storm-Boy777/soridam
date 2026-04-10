@@ -76,7 +76,7 @@ export interface RevenueStats {
 
 export interface PlanChangeParams {
   userId: string;
-  plan: "free" | "standard" | "allinone" | "beta";
+  plan: "free" | "beta";
   balanceCents: number;
   expiresInMonths: number;
   reason: string;
