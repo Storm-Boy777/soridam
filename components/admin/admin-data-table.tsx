@@ -44,13 +44,13 @@ export function AdminDataTable<T extends Record<string, any>>({
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface">
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-border bg-surface-secondary">
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`px-4 py-2.5 text-left text-xs font-semibold text-foreground-secondary ${col.className || ""}`}
+                  className={`px-3 py-2 text-left text-[11px] font-semibold text-foreground-muted ${col.className || ""}`}
                 >
                   {col.label}
                 </th>
@@ -75,7 +75,7 @@ export function AdminDataTable<T extends Record<string, any>>({
                 }`}
               >
                 {columns.map((col) => (
-                  <td key={col.key} className={`px-4 py-3 ${col.className || ""}`}>
+                  <td key={col.key} className={`px-3 py-2 ${col.className || ""}`}>
                     {col.render
                       ? col.render(row)
                       : String(row[col.key] ?? "-")}
