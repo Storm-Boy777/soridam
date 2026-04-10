@@ -32,7 +32,6 @@ export default function PrivacyPage() {
               튜터링, 쉐도잉), 학습 리포트 생성, 맞춤 학습
             </li>
             <li>크레딧 충전: 결제 처리, 크레딧 잔액 관리</li>
-            <li>마케팅: 이벤트·광고성 정보 제공 (별도 동의 시)</li>
           </ul>
         </section>
 
