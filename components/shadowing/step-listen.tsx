@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useMemo, useState } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import { Languages, CaseSensitive, Type, Star, ChevronDown, Repeat1 } from "lucide-react";
 import { ShadowingPlayer, useActiveSentenceIndex } from "./shadowing-player";
+import { QuestionCard } from "./question-card";
 import { useShadowingStore, type DisplayMode } from "@/lib/stores/shadowing";
 
 const DISPLAY_MODES: { mode: DisplayMode; icon: React.ElementType; label: string }[] = [
@@ -22,6 +23,7 @@ export function StepListen() {
     stepCompletions,
     questionText,
     questionKorean,
+    questionAudioUrl,
     audioUrl,
     setDisplayMode,
     seekTo,
@@ -93,7 +95,7 @@ export function StepListen() {
       {audioUrl && <audio ref={sharedAudioRef} src={audioUrl} preload="auto" />}
 
       {/* 질문 표시 */}
-      {questionText && <QuestionCard english={questionText} korean={questionKorean} />}
+      {questionText && <QuestionCard english={questionText} korean={questionKorean} audioUrl={questionAudioUrl} />}
 
       {/* 오디오 플레이어 — PC: 문장 위 sticky */}
       <div className="hidden sm:sticky sm:top-0 sm:z-10 sm:block sm:rounded-[var(--radius-xl)] sm:border sm:border-border sm:bg-surface/95 sm:px-4 sm:py-3 sm:shadow-sm sm:backdrop-blur-sm">
@@ -226,43 +228,6 @@ export function StepListen() {
       <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-surface px-4 py-[18px] sm:hidden">
         <ShadowingPlayer showSpeedControl compact noAudio externalAudioRef={sharedAudioRef} />
       </div>
-    </div>
-  );
-}
-
-// ── 질문 카드: 한국어 토글 ──
-
-function QuestionCard({ english, korean }: { english: string; korean: string | null }) {
-  const [showKorean, setShowKorean] = useState(false);
-
-  return (
-    <div className="rounded-[var(--radius-xl)] border border-border bg-surface px-4 py-3 sm:px-5">
-      <p className="text-[13px] font-medium leading-relaxed text-foreground sm:text-sm">
-        <span className="mr-1 text-primary-500">Q.</span>{english}
-      </p>
-      {korean && (
-        <>
-          <div className="mt-2.5 flex items-center gap-2">
-            <div className="h-px flex-1 bg-border" />
-            <button
-              onClick={() => setShowKorean(!showKorean)}
-              className={`flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors ${
-                showKorean
-                  ? "bg-surface text-foreground shadow-sm"
-                  : "text-foreground-muted hover:text-foreground-secondary"
-              }`}
-            >
-              <Type size={12} />
-              한글
-            </button>
-          </div>
-          {showKorean && (
-            <p className="mt-2 text-[11px] leading-relaxed text-foreground-muted sm:text-xs">
-              {korean}
-            </p>
-          )}
-        </>
-      )}
     </div>
   );
 }

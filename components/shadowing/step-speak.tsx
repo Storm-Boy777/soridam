@@ -28,7 +28,6 @@ import { useQuestionPlayer } from "@/lib/hooks/use-question-player";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ShadowingEvaluation } from "@/lib/types/scripts";
 
-// Phase 전환: ready → playing → recording → submitting → evaluating → result
 type SpeakPhase = "ready" | "playing" | "recording" | "submitting" | "evaluating" | "result";
 
 export function StepSpeak() {
@@ -55,7 +54,6 @@ export function StepSpeak() {
   const avaContainerRef = useRef<HTMLDivElement>(null);
   const [avaHeight, setAvaHeight] = useState(0);
 
-  // AVA 높이 측정 (볼륨바 동기화)
   useEffect(() => {
     const el = avaContainerRef.current;
     if (!el) return;
@@ -64,7 +62,6 @@ export function StepSpeak() {
     return () => ro.disconnect();
   }, []);
 
-  // 크레딧 조회
   const { data: creditData } = useQuery({
     queryKey: ["script-credit"],
     queryFn: async () => {
@@ -75,26 +72,19 @@ export function StepSpeak() {
     staleTime: 60 * 1000,
   });
 
-  // useRecorder
   const recorder = useRecorder({ maxDuration: 120, minDuration: 3, timeWarningAt: 15 });
 
-  // useQuestionPlayer
   const questionPlayer = useQuestionPlayer({
     replayWindowSeconds: 5,
     onPlaybackEnded: () => {
-      // 리플레이 안 쓰면 자동 녹음 시작
-      if (!questionPlayer.hasReplayed) {
-        setTimeout(() => {
-          if (!questionPlayer.canReplay) {
-            setPhase("recording");
-            recorder.startRecording();
-          }
-        }, 5500); // replayWindow 후 자동
+      // 모의고사 동일: 재생 완료와 동시에 녹음 자동 시작
+      if (recorder.state === "idle") {
+        setPhase("recording");
+        recorder.startRecording();
       }
     },
   });
 
-  // 시작 → 세션 생성 + 질문 재생
   const handleStart = useCallback(async () => {
     if (!packageId || !scriptId) return;
     setError("");
@@ -102,7 +92,6 @@ export function StepSpeak() {
       const result = await startShadowingSession({ package_id: packageId, script_id: scriptId });
       if (result.error || !result.data) { setError(result.error || "세션 생성 실패"); return; }
       setSessionId(result.data.sessionId);
-
       if (questionAudioUrl) {
         setPhase("playing");
         questionPlayer.play(questionAudioUrl);
@@ -113,26 +102,19 @@ export function StepSpeak() {
     } catch (err) { setError((err as Error).message); }
   }, [packageId, scriptId, questionAudioUrl, questionPlayer, recorder]);
 
-  // 리플레이
   const handleReplay = useCallback(() => {
+    // 모의고사 동일: 녹음 중이면 리셋 후 리플레이
+    if (recorder.state === "recording") {
+      recorder.reset();
+    }
+    setPhase("playing");
     questionPlayer.replay();
-  }, [questionPlayer]);
+  }, [questionPlayer, recorder]);
+  const handleManualRecord = useCallback(() => { setPhase("recording"); recorder.startRecording(); }, [recorder]);
+  const handleStop = useCallback(() => { recorder.stopRecording(); }, [recorder]);
 
-  // 수동 녹음 시작 (리플레이 후)
-  const handleManualRecord = useCallback(() => {
-    setPhase("recording");
-    recorder.startRecording();
-  }, [recorder]);
-
-  // 녹음 정지
-  const handleStop = useCallback(() => {
-    recorder.stopRecording();
-  }, [recorder]);
-
-  // audioBlob 생성 시 자동 제출
   useEffect(() => {
     if (phase !== "recording" || !recorder.audioBlob || !sessionId || !scriptId) return;
-
     const submit = async () => {
       setPhase("submitting");
       setError("");
@@ -144,8 +126,7 @@ export function StepSpeak() {
         for (let i = 0; i < bytes.length; i += chunkSize) {
           binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
         }
-        const base64 = btoa(binary);
-        const result = await submitSpeakRecording({ sessionId, scriptId, audioBase64: base64 });
+        const result = await submitSpeakRecording({ sessionId, scriptId, audioBase64: btoa(binary) });
         if (result.error || !result.data) { setError(result.error || "제출 실패"); setPhase("recording"); return; }
         setEvaluationId(result.data.evaluationId);
         setPhase("evaluating");
@@ -154,7 +135,6 @@ export function StepSpeak() {
     submit();
   }, [recorder.audioBlob, phase, sessionId, scriptId]);
 
-  // 평가 폴링
   useEffect(() => {
     if (phase !== "evaluating" || !evaluationId) return;
     const poll = async () => {
@@ -178,15 +158,9 @@ export function StepSpeak() {
     return () => { if (pollIntervalRef.current) clearInterval(pollIntervalRef.current); };
   }, [phase, evaluationId, setSpeakResult, stepCompletions.speak, markStepComplete, queryClient]);
 
-  // 다시 도전
   const handleRetry = useCallback(() => {
-    setPhase("ready");
-    setSessionId(null);
-    setEvaluationId(null);
-    setEvalResult(null);
-    setError("");
-    recorder.reset();
-    questionPlayer.reset();
+    setPhase("ready"); setSessionId(null); setEvaluationId(null); setEvalResult(null); setError("");
+    recorder.reset(); questionPlayer.reset();
   }, [recorder, questionPlayer]);
 
   function formatTime(sec: number): string {
@@ -198,7 +172,7 @@ export function StepSpeak() {
   // ── 결과 화면 ──
   if (phase === "result" && evalResult) {
     return (
-      <div className="space-y-5 pb-20 sm:pb-0">
+      <div className="space-y-5 pb-4">
         <div className="rounded-[var(--radius-xl)] border border-border bg-surface">
           <div className="flex items-center gap-3 border-b border-border px-4 py-3 sm:px-6">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50">
@@ -298,11 +272,11 @@ export function StepSpeak() {
     );
   }
 
-  // ── 메인 UI (모의고사 세션 레이아웃) ──
+  // ── 메인 UI ──
   return (
-    <div className="space-y-4 pb-20 sm:pb-0">
-      {/* 크레딧 안내 */}
-      <div className="flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50/50 p-2.5 text-xs">
+    <div className="space-y-3 md:space-y-4">
+      {/* 크레딧 안내 (모바일: 컴팩트) */}
+      <div className="flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50/50 p-2 text-[11px] md:p-2.5 md:text-xs">
         <Coins size={14} className="text-amber-600" />
         <span className="text-amber-700">
           크레딧이 사용량에 따라 차감됩니다
@@ -320,9 +294,7 @@ export function StepSpeak() {
       {questionText && (
         <div className="hidden rounded-xl border border-border bg-surface px-4 py-2.5 md:block">
           <div className="flex items-center justify-between">
-            <span className="rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-medium text-primary-700">
-              실전 평가
-            </span>
+            <span className="rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-medium text-primary-700">실전 평가</span>
             <button
               onClick={() => setShowQuestion((prev) => prev === "hidden" ? "en" : "hidden")}
               className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-foreground-muted hover:bg-surface-secondary hover:text-foreground-secondary"
@@ -345,15 +317,16 @@ export function StepSpeak() {
         </div>
       )}
 
-      {/* ═══ 메인 2-Column 프레임 (모의고사 동일) ═══ */}
-      <div className="flex min-h-0 flex-1 flex-col md:flex-none md:rounded-2xl md:border md:border-border md:bg-surface md:p-5">
-        <div className="flex min-h-0 flex-1 flex-col gap-2 md:flex-row md:min-h-auto md:flex-none md:gap-5">
-          {/* === 좌측: AVA 면접관 + 재생 컨트롤 === */}
-          <div className="flex min-h-0 flex-1 flex-col gap-2 md:flex-none md:w-[42%] md:gap-3">
+      {/* ═══ 메인 프레임 (모의고사 동일) ═══ */}
+      <div className="rounded-2xl border border-border bg-surface p-2 md:p-5">
+        <div className="flex flex-col gap-2 md:flex-row md:gap-5">
+
+          {/* === 좌측: AVA + 재생 컨트롤 === */}
+          <div className="flex flex-col gap-2 md:w-[42%] md:gap-3">
             {/* 아바타 */}
             <div
               ref={avaContainerRef}
-              className="relative w-full min-h-0 flex-1 overflow-hidden rounded-xl border border-border md:flex-none md:aspect-square"
+              className="relative aspect-[3/4] w-full overflow-hidden rounded-xl border border-border md:aspect-square"
               style={{ backgroundColor: "#F7F3EE" }}
             >
               <AvaAvatar
@@ -386,96 +359,61 @@ export function StepSpeak() {
               )}
             </div>
 
-            {/* 재생 컨트롤 (데스크탑) */}
-            <div className="hidden rounded-xl border border-border bg-surface-secondary p-3 md:block">
-              {/* 프로그레스 바 */}
+            {/* 재생 컨트롤 (모바일 + 데스크탑 공용) */}
+            <div className="shrink-0 rounded-xl border border-border bg-surface-secondary p-3">
               <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-border">
-                <div
-                  className="h-full rounded-full bg-primary-500 transition-[width] duration-300 ease-linear"
-                  style={{ width: `${questionPlayer.playbackProgress}%` }}
-                />
+                <div className="h-full rounded-full bg-primary-500 transition-[width] duration-300" style={{ width: `${questionPlayer.playbackProgress}%` }} />
               </div>
 
-              {/* ready: 시작 버튼 */}
               {phase === "ready" && (
-                <button
-                  onClick={handleStart}
-                  disabled={!creditData?.hasCredit}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-3 text-sm font-bold text-white shadow-lg transition-all hover:bg-primary-600 active:scale-95 disabled:opacity-50"
-                >
+                <button onClick={handleStart} disabled={!creditData?.hasCredit} className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-3 text-sm font-bold text-white shadow-lg hover:bg-primary-600 active:scale-95 disabled:opacity-50">
                   <Volume2 size={18} />질문 듣기
                 </button>
               )}
-
-              {/* playing: 재생 중 */}
               {questionPlayer.isPlaying && (
                 <button disabled className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-3 text-sm font-bold text-white shadow-lg disabled:opacity-50">
                   <Loader2 size={18} className="animate-spin" />Playing...
                 </button>
               )}
-
-              {/* 리플레이 가능 */}
               {phase === "playing" && questionPlayer.canReplay && !questionPlayer.hasReplayed && (
-                <button
-                  onClick={handleReplay}
-                  className="flex w-full animate-pulse items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-3 text-sm font-bold text-white shadow-lg transition-all"
-                >
+                <button onClick={handleReplay} className="flex w-full animate-pulse items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-3 text-sm font-bold text-white shadow-lg">
                   <RotateCcw size={18} />다시 듣기 ({questionPlayer.replayCountdown}초)
                 </button>
               )}
-
-              {/* 재생 완료 + 녹음 대기 */}
               {phase === "playing" && questionPlayer.hasPlayed && !questionPlayer.isPlaying && !questionPlayer.canReplay && recorder.state === "idle" && (
-                <button
-                  onClick={handleManualRecord}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-3 text-sm font-bold text-white shadow-lg hover:bg-primary-600"
-                >
+                <button onClick={handleManualRecord} className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-3 text-sm font-bold text-white shadow-lg hover:bg-primary-600">
                   <Mic size={18} />녹음 시작
                 </button>
               )}
-
-              {/* 녹음 중: 정지 버튼 */}
               {recorder.state === "recording" && (
-                <button
-                  onClick={handleStop}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-500 px-4 py-3 text-sm font-bold text-white shadow-lg hover:bg-red-600"
-                >
+                <button onClick={handleStop} className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-500 px-4 py-3 text-sm font-bold text-white shadow-lg hover:bg-red-600">
                   <Square size={16} />답변 완료
                 </button>
               )}
-
-              {/* 제출/평가 중 */}
               {(phase === "submitting" || phase === "evaluating") && (
                 <div className="flex w-full items-center justify-center gap-2 rounded-lg bg-surface-secondary px-4 py-3 text-sm font-bold text-foreground-muted">
-                  <Loader2 size={18} className="animate-spin" />
-                  {phase === "submitting" ? "업로드 중..." : "AI 평가 중..."}
+                  <Loader2 size={18} className="animate-spin" />{phase === "submitting" ? "업로드 중..." : "AI 평가 중..."}
                 </div>
               )}
             </div>
           </div>
 
-          {/* === 세로 볼륨바: LED 세그먼트 미터 (데스크탑) === */}
-          <div
-            className="hidden w-4 flex-shrink-0 md:flex md:flex-col md:items-center md:gap-1"
-            style={{ height: avaHeight > 0 ? avaHeight : undefined }}
-          >
+          {/* === 세로 볼륨바 (데스크탑) === */}
+          <div className="hidden w-4 flex-shrink-0 md:flex md:flex-col md:items-center md:gap-1" style={{ height: avaHeight > 0 ? avaHeight : undefined }}>
             <div className="flex w-full flex-1 flex-col-reverse gap-px rounded-lg border border-border bg-surface-secondary p-0.5">
               {Array.from({ length: 24 }).map((_, i) => {
                 const threshold = (i + 1) / 24;
                 const vol = recorder.state === "recording" ? recorder.volume : 0;
                 const lit = vol >= threshold;
-                const color =
-                  i < 16 ? lit ? "bg-primary-300" : "bg-border"
-                  : i < 21 ? lit ? "bg-primary-500" : "bg-border"
-                  : lit ? "bg-accent-500" : "bg-border";
+                const color = i < 16 ? lit ? "bg-primary-300" : "bg-border" : i < 21 ? lit ? "bg-primary-500" : "bg-border" : lit ? "bg-accent-500" : "bg-border";
                 return <div key={i} className={`w-full flex-1 rounded-sm transition-colors duration-75 ${color}`} />;
               })}
             </div>
             <Mic size={12} className={`shrink-0 transition-colors ${recorder.state === "recording" ? "animate-pulse text-primary-500" : "text-foreground-muted"}`} />
           </div>
 
-          {/* === 우측: 녹음 상태 === */}
-          <div className="flex flex-col gap-1 md:flex-1 md:gap-2">
+          {/* === 우측: 녹음 상태 (데스크탑) === */}
+          <div className="hidden flex-col gap-2 md:flex md:flex-1">
             {/* 녹음 시간 (데스크탑) */}
             <div className="hidden items-center justify-between rounded-xl border border-border bg-surface-secondary p-3 md:flex">
               <span className="text-sm font-medium text-foreground-secondary">녹음 시간</span>
@@ -486,7 +424,6 @@ export function StepSpeak() {
 
             {/* 상태 표시 (데스크탑) */}
             <div className="hidden flex-1 flex-col items-center justify-center rounded-xl border border-border bg-surface-secondary p-4 md:flex">
-              {/* 대기 */}
               {phase === "ready" && (
                 <div className="text-center">
                   <Headphones size={28} className="mx-auto mb-2 text-foreground-muted" />
@@ -494,8 +431,6 @@ export function StepSpeak() {
                   <p className="mt-1 text-xs text-foreground-muted">좌측 &apos;질문 듣기&apos; 버튼을 눌러 시작하세요</p>
                 </div>
               )}
-
-              {/* 질문 재생 중 */}
               {questionPlayer.isPlaying && (
                 <div className="text-center">
                   <Volume2 size={28} className="mx-auto mb-2 animate-pulse text-primary-500" />
@@ -503,8 +438,6 @@ export function StepSpeak() {
                   <p className="mt-1 text-xs text-foreground-muted">질문을 잘 듣고 답변을 준비하세요</p>
                 </div>
               )}
-
-              {/* 녹음 중 */}
               {recorder.state === "recording" && (
                 <div className="relative flex w-full flex-1 flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-primary-200 bg-primary-50">
                   <div className="absolute inset-0 animate-pulse bg-primary-100/50" />
@@ -519,23 +452,12 @@ export function StepSpeak() {
                   )}
                 </div>
               )}
-
-              {/* 녹음 중 볼륨바 (모바일) */}
-              {recorder.state === "recording" && (
-                <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-primary-100 md:hidden">
-                  <div className="h-full rounded-full bg-primary-500 transition-all" style={{ width: `${Math.min(recorder.volume * 100, 100)}%` }} />
-                </div>
-              )}
-
-              {/* 제출 중 */}
               {phase === "submitting" && (
                 <div className="text-center">
                   <Loader2 size={28} className="mx-auto mb-2 animate-spin text-primary-500" />
                   <p className="text-sm font-medium text-foreground-secondary">녹음 업로드 중...</p>
                 </div>
               )}
-
-              {/* 평가 중 */}
               {phase === "evaluating" && (
                 <div className="text-center">
                   <div className="mx-auto mb-3 h-12 w-12 animate-spin rounded-full border-[3px] border-surface-secondary border-t-primary-500" />
@@ -543,8 +465,6 @@ export function StepSpeak() {
                   <p className="mt-0.5 text-[11px] text-foreground-muted">음성을 분석하고 피드백을 생성하고 있어요</p>
                 </div>
               )}
-
-              {/* 리플레이 대기 / 녹음 대기 */}
               {phase === "playing" && !questionPlayer.isPlaying && recorder.state === "idle" && (
                 <div className="text-center">
                   <Mic size={28} className="mx-auto mb-2 text-foreground-muted" />
@@ -554,58 +474,8 @@ export function StepSpeak() {
               )}
             </div>
 
-            {/* 녹음 중 상태 (모바일) */}
-            {recorder.state === "recording" && (
-              <div className="rounded-lg border border-primary-100 bg-primary-50 px-3 py-2 md:hidden">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-                  <span className="text-xs font-medium text-primary-600">Recording...</span>
-                  <span className="ml-auto font-mono text-xs font-semibold text-primary-500">{formatTime(recorder.duration)}</span>
-                </div>
-                <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-primary-100">
-                  <div className="h-full rounded-full bg-primary-500 transition-all" style={{ width: `${Math.min(recorder.volume * 100, 100)}%` }} />
-                </div>
-              </div>
-            )}
-
-            {/* 질문 재생 중 (모바일) */}
-            {questionPlayer.isPlaying && (
-              <div className="flex items-center gap-2 rounded-lg border border-primary-100 bg-primary-50 px-3 py-2 md:hidden">
-                <Volume2 size={14} className="animate-pulse text-primary-500" />
-                <span className="text-xs font-medium text-primary-600">질문을 듣는 중...</span>
-              </div>
-            )}
           </div>
         </div>
-      </div>
-
-      {/* 모바일 하단 컨트롤 */}
-      <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-surface px-4 py-3 sm:hidden">
-        {phase === "ready" && (
-          <button onClick={handleStart} disabled={!creditData?.hasCredit} className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-3 text-sm font-bold text-white shadow-lg disabled:opacity-50">
-            <Play size={18} />실전처럼 답변하기
-          </button>
-        )}
-        {phase === "playing" && questionPlayer.canReplay && !questionPlayer.hasReplayed && (
-          <button onClick={handleReplay} className="flex w-full animate-pulse items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-3 text-sm font-bold text-white shadow-lg">
-            <RotateCcw size={18} />다시 듣기 ({questionPlayer.replayCountdown}초)
-          </button>
-        )}
-        {phase === "playing" && !questionPlayer.isPlaying && !questionPlayer.canReplay && recorder.state === "idle" && (
-          <button onClick={handleManualRecord} className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-3 text-sm font-bold text-white shadow-lg">
-            <Mic size={18} />녹음 시작
-          </button>
-        )}
-        {recorder.state === "recording" && (
-          <button onClick={handleStop} className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-500 px-4 py-3 text-sm font-bold text-white shadow-lg">
-            <Square size={16} />답변 완료
-          </button>
-        )}
-        {(phase === "submitting" || phase === "evaluating") && (
-          <div className="flex w-full items-center justify-center gap-2 rounded-lg bg-surface-secondary px-4 py-3 text-sm font-bold text-foreground-muted">
-            <Loader2 size={18} className="animate-spin" />{phase === "submitting" ? "업로드 중..." : "AI 평가 중..."}
-          </div>
-        )}
       </div>
 
       {/* 에러 */}

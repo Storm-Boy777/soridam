@@ -96,10 +96,13 @@ export function Navbar({ serverAuth }: { serverAuth?: NavbarServerAuth } = {}) {
         <Link
           href="/"
           onClick={handleLogoClick}
-          className="flex items-center gap-2"
+          className="flex items-baseline gap-1.5"
         >
           <span className={`text-[22px] font-extrabold tracking-tight ${isLanding ? "text-white" : "text-foreground"}`}>
             소리<span className={isLanding ? "text-primary-400" : "text-primary-500"}>담</span>
+          </span>
+          <span className={`text-[11px] font-bold tracking-wide ${isLanding ? "text-white/70" : "text-foreground-muted"}`}>
+            OPIc
           </span>
         </Link>
 

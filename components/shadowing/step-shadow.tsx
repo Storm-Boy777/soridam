@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { ShadowingPlayer } from "./shadowing-player";
 import { SentenceMasteryDots } from "./sentence-mastery-dots";
+import { QuestionCard } from "./question-card";
 import { useShadowingStore, type TextHintLevel } from "@/lib/stores/shadowing";
 
 const LANG_OPTIONS: { mode: TextHintLevel; label: string; icon: React.ElementType }[] = [
@@ -33,6 +34,9 @@ export function StepShadow() {
     shadowComparisonResult,
     currentTime,
     stepCompletions,
+    questionText,
+    questionKorean,
+    questionAudioUrl,
     setShadowIndex,
     setShadowHintLevel,
     incrementShadowPlayCount,
@@ -287,6 +291,9 @@ export function StepShadow() {
 
   return (
     <div className="space-y-3 pb-[220px] sm:pb-0">
+      {/* 질문 카드 */}
+      {questionText && <QuestionCard english={questionText} korean={questionKorean} audioUrl={questionAudioUrl} />}
+
       {/* 문장 마스터리 도트 네비게이션 */}
       <div className="rounded-[var(--radius-xl)] border border-border bg-surface px-3 py-2.5">
         <SentenceMasteryDots onDotClick={handleDotClick} />

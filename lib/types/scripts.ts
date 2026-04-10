@@ -73,15 +73,15 @@ export const TTS_VOICE_LABELS: Record<TtsVoice, string> = {
 };
 
 export const SHADOWING_STEP_LABELS: Record<ShadowingStep, string> = {
-  listen: '듣기',
-  shadow: '따라 읽기',
+  listen: '쉐도잉',
+  shadow: '문장 말하기',
   recite: '구조로 말하기',
   speak: '실전 평가',
 };
 
 export const SHADOWING_STEP_SHORT_LABELS: Record<ShadowingStep, string> = {
-  listen: '듣기',
-  shadow: '따라읽기',
+  listen: '쉐도잉',
+  shadow: '문장말하기',
   recite: '구조로 말하기',
   speak: '실전 평가',
 };
