@@ -4,15 +4,16 @@
 
 export interface AdminDashboardStats {
   totalUsers: number;
-  dauToday: number;
-  totalRevenue: number;
-  pendingEvals: number;
+  todayLearners: number;
+  monthlyAICostUsd: number;
+  creditBalanceCents: number;
 }
 
 export interface RecentActivity {
   id: string;
   type: "signup" | "order" | "mock_exam" | "review";
   description: string;
+  userName: string;
   created_at: string;
 }
 

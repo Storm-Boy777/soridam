@@ -33,7 +33,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       {payload.map((p: any) => (
         <p key={p.name} className="text-sm font-medium" style={{ color: p.color }}>
-          {p.name}: {p.name === "매출" ? `${p.value.toLocaleString()}원` : p.value}
+          {p.name}: {p.name === "충전" ? `$${(p.value / 100).toFixed(2)}` : p.value}
         </p>
       ))}
     </div>
@@ -88,7 +88,8 @@ export function AdminTrendCharts() {
 
       {/* 차트 3개 */}
       {data && (
-        <div className="grid gap-4 lg:grid-cols-3">
+        <>
+        <div className="grid gap-4 lg:grid-cols-2">
           {/* 차트 1: 가입 추이 */}
           <div className="rounded-xl border border-border bg-surface p-4">
             <p className="mb-3 text-sm font-medium text-foreground">가입 추이</p>
@@ -107,6 +108,7 @@ export function AdminTrendCharts() {
                   axisLine={false}
                   tickLine={false}
                   allowDecimals={false}
+                  width={40}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Line
@@ -122,9 +124,9 @@ export function AdminTrendCharts() {
             </ResponsiveContainer>
           </div>
 
-          {/* 차트 2: 매출 추이 */}
+          {/* 차트 2: 크레딧 충전 추이 */}
           <div className="rounded-xl border border-border bg-surface p-4">
-            <p className="mb-3 text-sm font-medium text-foreground">매출 추이</p>
+            <p className="mb-3 text-sm font-medium text-foreground">크레딧 충전 추이</p>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E8E6E1" />
@@ -139,14 +141,15 @@ export function AdminTrendCharts() {
                   tick={{ fontSize: 11, fill: "#A0A0AF" }}
                   axisLine={false}
                   tickLine={false}
+                  width={40}
                   tickFormatter={(v: number) =>
-                    v >= 10000 ? `${(v / 10000).toFixed(0)}만` : v.toLocaleString()
+                    v >= 100 ? `$${(v / 100).toFixed(0)}` : `$${(v / 100).toFixed(2)}`
                   }
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar
                   dataKey="revenue"
-                  name="매출"
+                  name="충전"
                   fill="#3A5BC7"
                   radius={[4, 4, 0, 0]}
                 />
@@ -154,53 +157,56 @@ export function AdminTrendCharts() {
             </ResponsiveContainer>
           </div>
 
-          {/* 차트 3: 모듈 사용량 */}
-          <div className="rounded-xl border border-border bg-surface p-4">
-            <p className="mb-3 text-sm font-medium text-foreground">모듈 사용량</p>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E8E6E1" />
-                <XAxis
-                  dataKey="date"
-                  tickFormatter={formatDate}
-                  tick={{ fontSize: 11, fill: "#A0A0AF" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 11, fill: "#A0A0AF" }}
-                  axisLine={false}
-                  tickLine={false}
-                  allowDecimals={false}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend
-                  iconType="circle"
-                  iconSize={8}
-                  wrapperStyle={{ fontSize: 11 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="mockExams"
-                  name="모의고사"
-                  stroke="#7C3AED"
-                  strokeWidth={2}
-                  dot={{ r: 2, fill: "#7C3AED" }}
-                  activeDot={{ r: 4 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="scripts"
-                  name="스크립트"
-                  stroke="#2563EB"
-                  strokeWidth={2}
-                  dot={{ r: 2, fill: "#2563EB" }}
-                  activeDot={{ r: 4 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
         </div>
+
+        {/* 차트 3: 모듈 사용량 (풀와이드) */}
+        <div className="rounded-xl border border-border bg-surface p-4">
+          <p className="mb-3 text-sm font-medium text-foreground">모듈 사용량</p>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8E6E1" />
+              <XAxis
+                dataKey="date"
+                tickFormatter={formatDate}
+                tick={{ fontSize: 11, fill: "#A0A0AF" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: "#A0A0AF" }}
+                axisLine={false}
+                tickLine={false}
+                allowDecimals={false}
+                width={35}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend
+                iconType="circle"
+                iconSize={8}
+                wrapperStyle={{ fontSize: 11 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="mockExams"
+                name="모의고사"
+                stroke="#7C3AED"
+                strokeWidth={2}
+                dot={{ r: 2, fill: "#7C3AED" }}
+                activeDot={{ r: 4 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="scripts"
+                name="스크립트"
+                stroke="#2563EB"
+                strokeWidth={2}
+                dot={{ r: 2, fill: "#2563EB" }}
+                activeDot={{ r: 4 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        </>
       )}
     </div>
   );

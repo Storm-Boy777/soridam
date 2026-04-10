@@ -6,7 +6,6 @@ import type {
   AdminDashboardStats,
   RecentActivity,
   DailyTrend,
-  ConversionMetrics,
 } from "@/lib/types/admin";
 
 // ── 비활성 사용자 감지 ──
@@ -205,58 +204,74 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
   const { supabase } = await requireAdmin();
 
   const today = new Date().toISOString().split("T")[0];
+  const monthStart = `${today.slice(0, 7)}-01`;
 
-  const [usersRes, dauRes, revenueRes, evalsRes] = await Promise.all([
+  const [usersRes, todayLearnersRes, monthlyCostRes, balanceRes] = await Promise.all([
     // 총 회원 수
     supabase.from(T.user_credits).select("*", { count: "exact", head: true }),
-    // 오늘 로그인한 사용자 (DAU RPC)
-    supabase.rpc("get_dau_count", { target_date: today }),
-    // 총 매출 (성공 결제) — polar_orders 사용
-    supabase.from(T.polar_orders).select("amount").eq("status", "paid"),
-    // 평가 대기 중인 모의고사 답변
+    // 오늘 학습자 (모의고사/스크립트/쉐도잉/튜터링 활동)
     supabase
-      .from(T.mock_test_answers)
-      .select("*", { count: "exact", head: true })
-      .not("eval_status", "in", '("completed","skipped")'),
+      .from(T.user_activity_log)
+      .select("user_id")
+      .in("action", ["mock_exam", "script", "shadowing", "tutoring"])
+      .gte("created_at", today),
+    // 이번 달 AI 비용
+    supabase
+      .from(T.api_usage_logs)
+      .select("cost_usd")
+      .gte("created_at", monthStart),
+    // 전체 크레딧 균형 (충전총액 - 사용총액)
+    supabase
+      .from(T.polar_balances)
+      .select("total_charged, total_used"),
   ]);
 
-  // 에러 로깅
-  if (usersRes.error) console.error("[AdminStats] users query failed:", usersRes.error.message);
-  if (dauRes.error) console.error("[AdminStats] DAU query failed:", dauRes.error.message);
-  if (revenueRes.error) console.error("[AdminStats] revenue query failed:", revenueRes.error.message);
-  if (evalsRes.error) console.error("[AdminStats] evals query failed:", evalsRes.error.message);
+  const todayLearners = new Set(
+    (todayLearnersRes.data || []).map((r: { user_id: string }) => r.user_id)
+  ).size;
 
-  const dauCount = (dauRes.data as { count: number }[] | null)?.[0]?.count ?? 0;
+  const monthlyAICostUsd = (monthlyCostRes.data || []).reduce(
+    (sum: number, r: { cost_usd?: number }) => sum + (r.cost_usd || 0),
+    0
+  );
 
-  const totalRevenue = (revenueRes.data || []).reduce(
-    (sum: number, o: { amount?: number }) => sum + (o.amount || 0),
+  const creditBalance = (balanceRes.data || []).reduce(
+    (sum: number, r: { total_charged?: number; total_used?: number }) =>
+      sum + ((r.total_charged || 0) - (r.total_used || 0)),
     0
   );
 
   return {
     totalUsers: usersRes.count || 0,
-    dauToday: Number(dauCount),
-    totalRevenue,
-    pendingEvals: evalsRes.count || 0,
+    todayLearners,
+    monthlyAICostUsd,
+    creditBalanceCents: creditBalance,
   };
 }
 
 export async function getRecentActivity(): Promise<RecentActivity[]> {
   const { supabase } = await requireAdmin();
 
-  // 최근 활동 — 여러 소스에서 모아 시간순 정렬
+  // 최근 활동 — 여러 소스에서 모아 시간순 정렬 (profiles JOIN)
   const [ordersRes, sessionsRes] = await Promise.all([
     supabase
       .from(T.polar_orders)
-      .select("id, product_type, amount, status, created_at")
+      .select("id, user_id, product_type, amount, status, created_at, profiles(display_name, email)")
       .order("created_at", { ascending: false })
       .limit(5),
     supabase
       .from(T.mock_test_sessions)
-      .select("id, mode, status, started_at")
+      .select("id, user_id, mode, status, started_at, profiles(display_name, email)")
       .order("started_at", { ascending: false })
       .limit(5),
   ]);
+
+  const getName = (row: { profiles?: { display_name?: string | null; email?: string } | null }) => {
+    const p = (row as any).profiles;
+    const name = p?.display_name || p?.email || "사용자";
+    const email = p?.email || "";
+    return p?.display_name && email ? `${name} (${email})` : name;
+  };
 
   const activities: RecentActivity[] = [];
 
@@ -264,6 +279,7 @@ export async function getRecentActivity(): Promise<RecentActivity[]> {
     activities.push({
       id: o.id,
       type: "order",
+      userName: getName(o as any),
       description: `${o.product_type} — $${((o.amount || 0) / 100).toFixed(2)} (${o.status})`,
       created_at: o.created_at,
     });
@@ -273,6 +289,7 @@ export async function getRecentActivity(): Promise<RecentActivity[]> {
     activities.push({
       id: s.id,
       type: "mock_exam",
+      userName: getName(s as any),
       description: `모의고사 ${s.mode === "test" ? "실전" : "훈련"} — ${s.status}`,
       created_at: s.started_at,
     });
@@ -286,36 +303,46 @@ export async function getRecentActivity(): Promise<RecentActivity[]> {
   return activities.slice(0, 10);
 }
 
-export async function getConversionMetrics(): Promise<ConversionMetrics> {
+// ── 학습 활동 ──
+
+export interface LearningActivity {
+  mockExam: { totalUsers: number; thisMonth: number };
+  script: { totalUsers: number; thisMonth: number };
+  shadowing: { totalUsers: number; thisMonth: number };
+  tutoring: { totalUsers: number; thisMonth: number };
+}
+
+export async function getLearningActivity(): Promise<LearningActivity> {
   const { supabase } = await requireAdmin();
 
-  // DB 레벨 DISTINCT — Supabase 행 수 제한(1000)에 영향받지 않음
-  const { data, error } = await supabase.rpc("admin_conversion_metrics");
-  if (error) throw new Error(`admin_conversion_metrics RPC 실패: ${error.message}`);
+  const monthStart = `${new Date().toISOString().slice(0, 7)}-01`;
 
-  const m = data as {
-    total_users: number;
-    paid_users: number;
-    plan_users: number;
-    avg_order_cents: number;
-    mock_exam_users: number;
-    script_users: number;
-  };
+  // 4개 모듈 × 2쿼리(전체/이번달) = 8개 병렬 쿼리
+  const [
+    mockAll, mockMonth,
+    scriptAll, scriptMonth,
+    shadowAll, shadowMonth,
+    tutorAll, tutorMonth,
+  ] = await Promise.all([
+    supabase.from(T.mock_test_sessions).select("user_id"),
+    supabase.from(T.mock_test_sessions).select("user_id").gte("started_at", monthStart),
+    supabase.from(T.scripts).select("user_id"),
+    supabase.from(T.scripts).select("user_id").gte("created_at", monthStart),
+    supabase.from(T.shadowing_sessions).select("user_id"),
+    supabase.from(T.shadowing_sessions).select("user_id").gte("created_at", monthStart),
+    supabase.from(T.tutoring_sessions).select("user_id"),
+    supabase.from(T.tutoring_sessions).select("user_id").gte("created_at", monthStart),
+  ]);
 
-  const totalUsers = m.total_users;
-  const safe = (n: number) => (totalUsers > 0 ? Math.round((n / totalUsers) * 1000) / 10 : 0);
+  const distinct = (data: { user_id: string }[] | null) =>
+    new Set((data || []).map((r) => r.user_id)).size;
+  const count = (data: unknown[] | null) => (data || []).length;
 
   return {
-    totalUsers,
-    paidUsers: m.paid_users,
-    planUsers: m.plan_users,
-    conversionRate: safe(m.paid_users),
-    planRate: safe(m.plan_users),
-    avgOrderValue: m.avg_order_cents,
-    mockExamUsers: m.mock_exam_users,
-    scriptUsers: m.script_users,
-    mockExamRate: safe(m.mock_exam_users),
-    scriptRate: safe(m.script_users),
+    mockExam: { totalUsers: distinct(mockAll.data), thisMonth: count(mockMonth.data) },
+    script: { totalUsers: distinct(scriptAll.data), thisMonth: count(scriptMonth.data) },
+    shadowing: { totalUsers: distinct(shadowAll.data), thisMonth: count(shadowMonth.data) },
+    tutoring: { totalUsers: distinct(tutorAll.data), thisMonth: count(tutorMonth.data) },
   };
 }
 

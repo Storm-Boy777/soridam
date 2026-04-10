@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { Users, CreditCard, GraduationCap, Clock, TrendingUp, BarChart3, ClipboardList, FileText, Cpu, AlertTriangle, Coins, HardDrive, UserX, UserPlus, ChevronRight } from "lucide-react";
-import { getAdminDashboardStats, getRecentActivity, getConversionMetrics, getAICostStats, getSystemHealthStats, getUserEngagementStats, getRecentSignups } from "@/lib/actions/admin/stats";
+import { Users, CreditCard, GraduationCap, BookOpen, Mic, Stethoscope, FileText, Cpu, Coins, HardDrive, UserPlus, ChevronRight, Wallet, DollarSign } from "lucide-react";
+import { getAdminDashboardStats, getRecentActivity, getLearningActivity, getAICostStats, getSystemHealthStats, getUserEngagementStats, getRecentSignups } from "@/lib/actions/admin/stats";
 import { AdminStatCard } from "@/components/admin/admin-stat-card";
 import { AdminTrendCharts } from "@/components/admin/admin-trend-charts";
 
@@ -16,19 +16,19 @@ async function DashboardStats() {
         value={stats.totalUsers.toLocaleString()}
       />
       <AdminStatCard
-        icon={Clock}
-        label="오늘 DAU"
-        value={stats.dauToday.toLocaleString()}
+        icon={BookOpen}
+        label="오늘 학습자"
+        value={`${stats.todayLearners}명`}
       />
       <AdminStatCard
-        icon={CreditCard}
-        label="총 매출"
-        value={`${(stats.totalRevenue / 10000).toFixed(1)}만원`}
+        icon={Coins}
+        label="이번 달 AI 비용"
+        value={`$${stats.monthlyAICostUsd.toFixed(2)}`}
       />
       <AdminStatCard
-        icon={GraduationCap}
-        label="평가 대기"
-        value={stats.pendingEvals}
+        icon={Wallet}
+        label="크레딧 균형"
+        value={`$${(stats.creditBalanceCents / 100).toFixed(2)}`}
       />
     </div>
   );
@@ -89,50 +89,29 @@ async function RecentActivityList() {
   );
 }
 
-async function ConversionStats() {
-  const m = await getConversionMetrics();
+async function LearningActivitySection() {
+  const activity = await getLearningActivity();
+
+  const modules = [
+    { icon: <GraduationCap size={16} className="text-purple-500" />, label: "모의고사", data: activity.mockExam },
+    { icon: <FileText size={16} className="text-emerald-500" />, label: "스크립트", data: activity.script },
+    { icon: <Mic size={16} className="text-sky-500" />, label: "쉐도잉", data: activity.shadowing },
+    { icon: <Stethoscope size={16} className="text-amber-500" />, label: "튜터링", data: activity.tutoring },
+  ];
 
   return (
     <div className="space-y-3">
-      <h2 className="text-sm font-semibold text-foreground-secondary">전환율 & 활성도</h2>
+      <h2 className="text-sm font-semibold text-foreground-secondary">학습 활동</h2>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <MetricCard
-          icon={<TrendingUp size={16} className="text-primary-500" />}
-          label="가입→결제"
-          value={`${m.conversionRate}%`}
-          sub={`${m.paidUsers}명`}
-        />
-        <MetricCard
-          icon={<CreditCard size={16} className="text-purple-500" />}
-          label="유료 플랜"
-          value={`${m.planRate}%`}
-          sub={`${m.planUsers}명`}
-        />
-        <MetricCard
-          icon={<BarChart3 size={16} className="text-teal-500" />}
-          label="평균 주문액"
-          value={`$${(m.avgOrderValue / 100).toFixed(2)}`}
-        />
-        <MetricCard
-          icon={<Users size={16} className="text-blue-500" />}
-          label="결제 회원"
-          value={`${m.paidUsers}명`}
-          sub={`/ ${m.totalUsers}명`}
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <MetricCard
-          icon={<ClipboardList size={16} className="text-sky-500" />}
-          label="모의고사"
-          value={`${m.mockExamRate}%`}
-          sub={`${m.mockExamUsers}명`}
-        />
-        <MetricCard
-          icon={<FileText size={16} className="text-emerald-500" />}
-          label="스크립트"
-          value={`${m.scriptRate}%`}
-          sub={`${m.scriptUsers}명`}
-        />
+        {modules.map((m) => (
+          <MetricCard
+            key={m.label}
+            icon={m.icon}
+            label={m.label}
+            value={`${m.data.totalUsers}명`}
+            sub={`이번 달 ${m.data.thisMonth}건`}
+          />
+        ))}
       </div>
     </div>
   );
@@ -165,28 +144,70 @@ function MetricCard({
 
 async function AICostSection() {
   const cost = await getAICostStats();
+  // 충전/사용 총액도 함께 가져오기
+  const stats = await getAdminDashboardStats();
 
-  const fmtTokens = (n: number) => {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
-    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-    return String(n);
-  };
+  const totalCharged = (stats.creditBalanceCents + Math.round(cost.totalCostUsd * 100)) / 100;
+  const balance = stats.creditBalanceCents / 100;
+  const maxBar = Math.max(totalCharged, cost.totalCostUsd, 1);
 
   return (
     <div className="space-y-3">
       <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground-secondary">
         <Coins size={16} className="text-amber-500" />
-        AI 비용
+        AI 비용 & 지속가능성
       </h2>
       <div className="rounded-xl border border-border bg-surface p-4">
-        <p className="text-2xl font-bold tabular-nums text-foreground">${cost.totalCostUsd.toFixed(2)}</p>
-        <p className="text-xs text-foreground-muted">총 누적 비용 · {fmtTokens(cost.totalTokens)} 토큰</p>
-        <div className="mt-3 space-y-2">
+        {/* 충전 vs 비용 비교 */}
+        <div className="space-y-2.5">
+          <div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1 text-foreground-secondary">
+                <DollarSign size={12} className="text-green-500" />
+                크레딧 충전 총액
+              </span>
+              <span className="font-bold tabular-nums text-green-600">${totalCharged.toFixed(2)}</span>
+            </div>
+            <div className="mt-1 h-2 overflow-hidden rounded-full bg-surface-secondary">
+              <div
+                className="h-full rounded-full bg-green-500"
+                style={{ width: `${(totalCharged / maxBar) * 100}%` }}
+              />
+            </div>
+          </div>
+          <div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1 text-foreground-secondary">
+                <Coins size={12} className="text-amber-500" />
+                AI 비용 총액
+              </span>
+              <span className="font-bold tabular-nums text-amber-600">${cost.totalCostUsd.toFixed(2)}</span>
+            </div>
+            <div className="mt-1 h-2 overflow-hidden rounded-full bg-surface-secondary">
+              <div
+                className="h-full rounded-full bg-amber-500"
+                style={{ width: `${(cost.totalCostUsd / maxBar) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 잔여 균형 */}
+        <div className="mt-3 flex items-center justify-between rounded-lg bg-surface-secondary px-3 py-2">
+          <span className="text-xs text-foreground-secondary">잔여 균형</span>
+          <span className={`text-sm font-bold tabular-nums ${balance >= 0 ? "text-green-600" : "text-red-600"}`}>
+            ${balance.toFixed(2)}
+          </span>
+        </div>
+
+        {/* 모듈별 비용 */}
+        <div className="mt-3 space-y-1.5 border-t border-border pt-3">
+          <p className="text-[11px] font-medium text-foreground-muted">모듈별 비용</p>
           {cost.moduleBreakdown.map((m) => (
-            <div key={m.module} className="flex items-center justify-between text-sm">
+            <div key={m.module} className="flex items-center justify-between text-xs">
               <span className="text-foreground-secondary">{m.module}</span>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-foreground-muted">{m.calls}건</span>
+                <span className="text-foreground-muted">{m.calls}건</span>
                 <span className="font-medium tabular-nums text-foreground">
                   ${m.costUsd.toFixed(2)}
                 </span>
@@ -291,30 +312,27 @@ async function RecentSignupsSection() {
           </p>
         ) : (
           <>
-            <div className="flex border-b border-border bg-surface-secondary/50 px-4 py-2">
-              <span className="flex-1 text-[11px] font-semibold text-foreground-muted">사용자</span>
-              <span className="w-16 text-center text-[11px] font-semibold text-foreground-muted">가입 방법</span>
-              <span className="w-20 text-right text-[11px] font-semibold text-foreground-muted">가입일</span>
+            <div className="flex bg-surface-secondary/50 px-3 py-2 text-[11px] font-semibold text-foreground-muted">
+              <span className="flex-[2]">사용자</span>
+              <span className="flex-[3]">이메일</span>
+              <span className="flex-[3]">가입 방법</span>
+              <span className="flex-[2] text-right">가입일</span>
             </div>
             {signups.map((u, idx) => (
               <div
                 key={u.id}
-                className={`flex items-center px-4 py-2.5 ${idx > 0 ? "border-t border-border" : ""}`}
+                className={`flex items-center px-3 py-2 text-xs ${idx > 0 ? "border-t border-border" : ""}`}
               >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-foreground">
-                    <span className="font-medium">{u.display_name || u.email}</span>
-                    {u.display_name && (
-                      <span className="ml-2 text-[11px] text-foreground-muted">{u.email}</span>
-                    )}
-                  </p>
-                </div>
-                <span className="w-16 text-center">
-                  <span className="rounded-md bg-surface-secondary px-1.5 py-0.5 text-[10px] font-medium text-foreground-muted">
-                    {PROVIDER_LABELS[u.provider] || u.provider}
-                  </span>
+                <span className="flex-[2] truncate font-medium text-foreground">
+                  {u.display_name || u.email}
                 </span>
-                <span className="w-20 text-right text-xs text-foreground-muted">
+                <span className="flex-[3] truncate text-foreground-muted">
+                  {u.email}
+                </span>
+                <span className="flex-[3] truncate text-foreground-muted">
+                  {PROVIDER_LABELS[u.provider] || u.provider}
+                </span>
+                <span className="flex-[2] text-right text-foreground-muted">
                   {new Date(u.created_at).toLocaleDateString("ko-KR", {
                     month: "short",
                     day: "numeric",
@@ -331,13 +349,19 @@ async function RecentSignupsSection() {
 
 async function UserEngagementSection() {
   const stats = await getUserEngagementStats();
+  const activities = await getRecentActivity();
 
   const weekRate = stats.totalUsers > 0
     ? ((stats.activeWeek / stats.totalUsers) * 100).toFixed(1)
     : "0";
-  const monthRate = stats.totalUsers > 0
-    ? ((stats.activeMonth / stats.totalUsers) * 100).toFixed(1)
-    : "0";
+
+  const typeLabel: Record<string, string> = {
+    signup: "가입", order: "결제", mock_exam: "모의고사", review: "후기",
+  };
+  const typeColor: Record<string, string> = {
+    signup: "bg-green-100 text-green-700", order: "bg-blue-100 text-blue-700",
+    mock_exam: "bg-purple-100 text-purple-700", review: "bg-amber-100 text-amber-700",
+  };
 
   return (
     <div className="space-y-3">
@@ -354,73 +378,98 @@ async function UserEngagementSection() {
         </Link>
       </div>
 
-      {/* 활성 사용자 지표 */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="rounded-lg border border-border bg-surface px-3.5 py-2.5">
-          <p className="text-[11px] text-foreground-muted">오늘 활성</p>
-          <p className="mt-1 text-lg font-bold tabular-nums text-foreground">
-            {stats.activeToday}
-            <span className="ml-1 text-xs font-normal text-foreground-muted">명</span>
-          </p>
-        </div>
-        <div className="rounded-lg border border-border bg-surface px-3.5 py-2.5">
-          <p className="text-[11px] text-foreground-muted">주간 활성 (7일)</p>
-          <div className="mt-1 flex items-baseline gap-1">
-            <span className="text-lg font-bold tabular-nums text-foreground">{stats.activeWeek}</span>
-            <span className="text-xs text-foreground-muted">명</span>
-            <span className="text-xs font-medium text-primary-600">{weekRate}%</span>
-          </div>
-        </div>
-        <div className="rounded-lg border border-border bg-surface px-3.5 py-2.5">
-          <p className="text-[11px] text-foreground-muted">월간 활성 (30일)</p>
-          <div className="mt-1 flex items-baseline gap-1">
-            <span className="text-lg font-bold tabular-nums text-foreground">{stats.activeMonth}</span>
-            <span className="text-xs text-foreground-muted">명</span>
-            <span className="text-xs font-medium text-primary-600">{monthRate}%</span>
-          </div>
-        </div>
-        <div className="rounded-lg border border-border bg-surface px-3.5 py-2.5">
-          <p className="text-[11px] text-foreground-muted">미접속 (가입만)</p>
-          <p className={`mt-1 text-lg font-bold tabular-nums ${stats.neverLoggedIn > 0 ? "text-red-600" : "text-foreground"}`}>
-            {stats.neverLoggedIn}
-            <span className="ml-1 text-xs font-normal text-foreground-muted">명</span>
-          </p>
-        </div>
-      </div>
-
-      {/* 최근 로그인 (고유 사용자) */}
       <div className="rounded-xl border border-border bg-surface p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-xs font-medium text-foreground-secondary">최근 접속 사용자</p>
-          <Link href="/admin/activity" className="flex items-center gap-0.5 text-[10px] text-primary-600 hover:text-primary-700">
-            전체 보기 <ChevronRight size={10} />
-          </Link>
+        {/* 활성 지표 — 한 줄 요약 */}
+        <div className="flex items-center gap-6 text-sm">
+          <div>
+            <span className="text-foreground-muted">오늘</span>
+            <span className="ml-1.5 font-bold tabular-nums text-foreground">{stats.activeToday}명</span>
+          </div>
+          <div className="h-4 w-px bg-border" />
+          <div>
+            <span className="text-foreground-muted">주간</span>
+            <span className="ml-1.5 font-bold tabular-nums text-foreground">{stats.activeWeek}명</span>
+            <span className="ml-1 text-xs text-primary-600">{weekRate}%</span>
+          </div>
+          <div className="h-4 w-px bg-border" />
+          <div>
+            <span className="text-foreground-muted">월간</span>
+            <span className="ml-1.5 font-bold tabular-nums text-foreground">{stats.activeMonth}명</span>
+          </div>
+          {stats.neverLoggedIn > 0 && (
+            <>
+              <div className="h-4 w-px bg-border" />
+              <div>
+                <span className="text-foreground-muted">미접속</span>
+                <span className="ml-1.5 font-bold tabular-nums text-red-600">{stats.neverLoggedIn}명</span>
+              </div>
+            </>
+          )}
         </div>
-        {stats.recentLogins.length === 0 ? (
-          <p className="py-4 text-center text-xs text-foreground-muted">로그인 기록이 없습니다</p>
-        ) : (
-          <div className="space-y-2">
-            {stats.recentLogins.map((l, i) => (
-              <div key={i} className="flex items-center justify-between text-xs">
-                <div className="min-w-0 flex-1">
-                  <span className="font-medium text-foreground">
+
+        {/* 최근 로그인 */}
+        {stats.recentLogins.length > 0 && (
+          <div className="mt-3">
+            <p className="mb-2 text-[11px] font-semibold text-foreground-muted">최근 로그인</p>
+            <div className="overflow-hidden rounded-lg border border-border">
+              <div className="flex bg-surface-secondary/50 px-3 py-2 text-[11px] font-semibold text-foreground-muted">
+                <span className="flex-[2]">사용자</span>
+                <span className="flex-[6]">이메일</span>
+                <span className="flex-[2] text-right">시간</span>
+              </div>
+              {stats.recentLogins.slice(0, 5).map((l, i) => (
+                <div key={`login-${i}`} className="flex items-center border-t border-border px-3 py-2 text-xs">
+                  <span className="flex-[2] truncate font-medium text-foreground">
                     {l.display_name || l.email}
                   </span>
-                  {l.display_name && (
-                    <span className="ml-2 text-foreground-muted">{l.email}</span>
-                  )}
+                  <span className="flex-[6] truncate text-foreground-muted">
+                    {l.email}
+                  </span>
+                  <span className="flex-[2] text-right text-foreground-muted">
+                    {new Date(l.last_login).toLocaleString("ko-KR", {
+                      timeZone: "Asia/Seoul", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+                    })}
+                  </span>
                 </div>
-                <span className="shrink-0 text-foreground-muted">
-                  {new Date(l.last_login).toLocaleString("ko-KR", {
-                    timeZone: "Asia/Seoul",
-                    month: "short",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 최근 활동 */}
+        {activities.length > 0 && (
+          <div className="mt-3">
+            <p className="mb-2 text-[11px] font-semibold text-foreground-muted">최근 활동</p>
+            <div className="overflow-hidden rounded-lg border border-border">
+              <div className="flex bg-surface-secondary/50 px-3 py-2 text-[11px] font-semibold text-foreground-muted">
+                <span className="flex-[2]">사용자</span>
+                <span className="flex-[3]">이메일</span>
+                <span className="flex-[3]">내용</span>
+                <span className="flex-[2] text-right">시간</span>
               </div>
-            ))}
+              {activities.slice(0, 5).map((a) => {
+                const name = a.userName.split(" (")[0];
+                const email = a.userName.includes("(") ? a.userName.split("(")[1]?.replace(")", "") : "";
+                return (
+                  <div key={`${a.type}-${a.id}`} className="flex items-center border-t border-border px-3 py-2 text-xs">
+                    <span className="flex-[2] truncate font-medium text-foreground">
+                      {name}
+                    </span>
+                    <span className="flex-[3] truncate text-foreground-muted">
+                      {email}
+                    </span>
+                    <span className="flex-[3] truncate text-foreground-secondary">
+                      {a.description}
+                    </span>
+                    <span className="flex-[2] text-right text-foreground-muted">
+                      {new Date(a.created_at).toLocaleString("ko-KR", {
+                        timeZone: "Asia/Seoul", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
@@ -456,7 +505,7 @@ export default function AdminDashboardPage() {
         <DashboardStats />
       </Suspense>
 
-      {/* 전환율 & 활성도 */}
+      {/* 학습 활동 */}
       <Suspense
         fallback={
           <div className="space-y-3">
@@ -469,7 +518,7 @@ export default function AdminDashboardPage() {
           </div>
         }
       >
-        <ConversionStats />
+        <LearningActivitySection />
       </Suspense>
 
       {/* 추이 차트 */}
@@ -490,30 +539,10 @@ export default function AdminDashboardPage() {
         <RecentSignupsSection />
       </Suspense>
 
-      {/* 사용자 활동 (활성률 + 최근 접속) */}
+      {/* 사용자 활동 (활성률 + 최근 활동 피드 통합) */}
       <Suspense fallback={<SectionSkeleton />}>
         <UserEngagementSection />
       </Suspense>
-
-      <div>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-foreground-secondary">최근 활동</h2>
-          <Link href="/admin/activity" className="flex items-center gap-0.5 text-xs text-primary-600 hover:text-primary-700">
-            전체 활동 보기 <ChevronRight size={12} />
-          </Link>
-        </div>
-        <Suspense
-          fallback={
-            <div className="space-y-2">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-12 animate-pulse rounded-lg border border-border bg-surface-secondary" />
-              ))}
-            </div>
-          }
-        >
-          <RecentActivityList />
-        </Suspense>
-      </div>
     </div>
   );
 }
