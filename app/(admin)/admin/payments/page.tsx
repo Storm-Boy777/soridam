@@ -80,9 +80,9 @@ function RevenueStatsSection({ stats }: { stats: RevenueStats }) {
     <div className="space-y-4">
       {/* 4칸 그리드 */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {/* 전체 매출 */}
+        {/* 전체 충전 */}
         <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-foreground-muted">전체 매출</p>
+          <p className="text-xs text-foreground-muted">전체 충전</p>
           <p className="mt-1 text-lg font-bold text-foreground">{formatAmount(stats.totalRevenue)}</p>
         </div>
         {/* 이번 달 */}
@@ -111,27 +111,6 @@ function RevenueStatsSection({ stats }: { stats: RevenueStats }) {
         </div>
       </div>
 
-      {/* 상품별 매출 테이블 */}
-      {stats.productDistribution.length > 0 && (
-        <div className="overflow-hidden rounded-xl border border-border bg-surface">
-          <div className="border-b border-border/50 px-4 py-2.5">
-            <p className="text-xs font-medium text-foreground-secondary">상품별 매출</p>
-          </div>
-          <div className="divide-y divide-border/30">
-            {stats.productDistribution.slice(0, 4).map((p) => (
-              <div key={p.productId} className="flex items-center justify-between px-4 py-2.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-foreground">{p.productName}</span>
-                  <span className="text-xs text-foreground-muted">{p.count}건</span>
-                </div>
-                <span className="text-sm font-semibold tabular-nums text-foreground">
-                  {formatAmount(p.revenue)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -199,7 +178,7 @@ export default function AdminPaymentsPage() {
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold text-foreground">결제 관리</h1>
+          <h1 className="text-xl font-bold text-foreground">AI 크레딧</h1>
           <button
             onClick={async () => {
               const { toCSV, downloadCSV } = await import("@/lib/utils/csv-export");

@@ -48,9 +48,7 @@
 
 **소리담 (Soridam)** - AI 기반 OPIc 영어 말하기 학습 플랫폼
 - 도메인: https://soridamhub.com
-- 하루오픽(HaruOPIc) 코드를 100% 동일하게 가져온 후, 디자인만 변경한 프로젝트
-- 하루오픽 소스코드: `C:\Users\js777\Desktop\haruopic`
-- 원본 소리담 레거시: `C:\Users\js777\Desktop\back-up\soridam_legacy`
+- 하루오픽 코드 기반으로 시작, 현재는 독립 프로젝트로 운영 (이관 완료)
 
 ## 📚 프로젝트 문서 체계
 
@@ -107,7 +105,7 @@ docs/
 - **questions (471개)**: 시스템 전체의 SSOT. 모든 모듈이 이 테이블에서 시작됨. DB 원본: `docs/질문 DB/questions_db.xlsx`
 - **question_type (10가지)**: 묘사/루틴/비교/경험3종/비교변화/사회적이슈/질문하기/대안제시. 평가 체크박스, AI 튜터 진단, 스크립트 전략이 모두 이 값으로 분기
 - **백엔드 아키텍처 (T-9)**: 하이브리드 — Server Actions(CRUD) + Edge Functions(AI API 호출)
-- **이관 순서**: 시험후기 → 스크립트 → 모의고사 → 튜터링 → 쉐도잉
+- **이관 완료**: 시험후기 → 스크립트 → 모의고사 → 튜터링 → 쉐도잉 (전체 이관 완료)
 
 ## 🎨 디자인 시스템 (현재 적용 중)
 
@@ -117,18 +115,21 @@ docs/
 
 | 역할 | 토큰 | 값 | 용도 |
 |------|------|-----|------|
-| **Primary** | `primary-500` | `#D4835E` (테라코타) | 메인 CTA, 강조, 브랜드 컬러 |
-| **Primary Light** | `primary-50` | `#FDF5F0` | 하이라이트 배경, 뱃지 |
-| **Primary Dark** | `primary-700` | `#A5603F` | 호버, 진한 강조 |
-| **Secondary** | `secondary-500` | `#B8945A` (웜 앰버) | 보조 강조 |
-| **Accent** | `accent-500` | `#BF5B43` (웜 로즈) | 경고성 강조 |
-| **Background** | `background` | `#FAF6F1` (크림) | 페이지 기본 배경 |
-| **Surface** | `surface` | `#FFFCF8` | 카드, 모달 배경 |
-| **Surface Secondary** | `surface-secondary` | `#F3ECE4` | 섹션 배경, 호버 |
-| **Foreground** | `foreground` | `#3A2E25` (다크 브라운) | 제목, 본문 텍스트 |
-| **Foreground Secondary** | `foreground-secondary` | `#8B7E72` | 보조 텍스트, 설명 |
-| **Foreground Muted** | `foreground-muted` | `#B5A99D` | 비활성, 힌트 |
-| **Border** | `border` | `#EAE0D5` | 카드/섹션 테두리 |
+| **Primary** | `primary-500` | `#3A5BC7` (인디고 블루) | 메인 CTA, 강조, 브랜드 컬러 |
+| **Primary Light** | `primary-50` | `#EBF0FF` | 하이라이트 배경, 뱃지 |
+| **Primary 100** | `primary-100` | `#D6E0FF` | 보조 배경 |
+| **Primary Dark** | `primary-600` | `#2A4399` | 호버 |
+| **Primary Darker** | `primary-700` | `#1E3378` | 진한 강조 |
+| **Accent** | `accent-500` | `#E07A5F` (웜 코랄) | 경고성 강조 |
+| **Background** | `background` | `#FAFAF7` (크림) | 페이지 기본 배경 |
+| **Surface** | `surface` | `#FFFFFF` | 카드, 모달 배경 |
+| **Surface Secondary** | `surface-secondary` | `#F3F2EF` | 섹션 배경, 호버 |
+| **Foreground** | `foreground` | `#1A1A2E` (다크 네이비) | 제목, 본문 텍스트 |
+| **Foreground Secondary** | `foreground-secondary` | `#6B6B7B` | 보조 텍스트, 설명 |
+| **Foreground Muted** | `foreground-muted` | `#A0A0AF` | 비활성, 힌트 |
+| **Border** | `border` | `#E8E6E1` | 카드/섹션 테두리 |
+| **다크 배경 (히어로)** | — | `#12121F` | 랜딩 히어로, CTA 섹션 |
+| **다크 배경 (일반)** | — | `#1A1A2E` | 필로소피, 크레딧 섹션 |
 
 ### 폰트
 
@@ -150,7 +151,9 @@ docs/
 - **브랜드명**: 소리담 (Soridam)
 
 ### 디자인 톤 & 키워드
-- **톤**: 웜톤, 크림, 테라코타 — 따뜻하고 편안한 학습 공간
+- **톤**: 인디고 블루 + 크림 — 신뢰감 있는 학습 플랫폼 (다크/라이트 투톤)
+- **랜딩**: 다크 네이비(`#12121F`) 히어로 + 밝은 크림(`#FAFAF7`) 콘텐츠 교차
+- **CTA 버튼**: `bg-primary-500 rounded-full` (pill 형태 인디고 블루)
 - **브랜드명**: 소리담 (Soridam) — 소리를 담다
 - **아이콘**: Lucide React 통일
 
@@ -251,14 +254,10 @@ docs/
 - **DB User**: `postgres.fkkdbnebsaecjpqhhdvl`
 - **Access Token**: `sbp_a586b7b80d9381508101d27a1bd93b9979e93637`
 
-### Supabase (하루오픽 — 참조용)
+### Supabase (하루오픽 — 아카이브, 필요 시만 참조)
 - **Project ID**: `rwdsyqnrrpwkureqfxwb`
-- **Project URL**: `https://rwdsyqnrrpwkureqfxwb.supabase.co`
-- **Region**: Northeast Asia (Seoul)
-- **DB Password**: `opictalk2026`
-- **DB Host (Pooler)**: `aws-1-ap-northeast-2.pooler.supabase.com`
-- **DB Port**: `6543` (Transaction) / `5432` (Session)
-- **DB User**: `postgres.rwdsyqnrrpwkureqfxwb`
+- **DB Host (Pooler)**: `aws-1-ap-northeast-2.pooler.supabase.com:6543`
+- **DB User**: `postgres.rwdsyqnrrpwkureqfxwb` / **PW**: `opictalk2026`
 
 ### Vercel
 - **팀**: jays-projects-ef86099d
@@ -446,16 +445,10 @@ AZURE_SPEECH_REGION=koreacentral
 
 ## 🚨 Critical Development Workflow
 
-### ⚠️ 모듈 이관 시 필수 원칙: 하루오픽 먼저 파악
-- **코드 구현에 들어가기 전에**, 반드시 하루오픽(`C:\Users\js777\Desktop\haruopic`)의 해당 모듈 소스코드를 먼저 파악한다
-- 소리담은 하루오픽 코드 100% 동일 + 디자인만 변경이므로, **하루오픽 코드가 기준**이다
-- 파악한 내용을 `docs/설계/{모듈}.md`에 **하루오픽 원본 구현** 섹션으로 정리한다
-- **설계 문서 하나만 보면 구현할 수 있는 상태**가 된 후에야 구현을 시작한다
-- 절차:
-  1. 하루오픽 소스코드 파악 (Edge Functions, 컴포넌트, DB, 타입, 로직)
-  2. `설계/{모듈}.md`에 하루오픽 원본 구현 정보 추가
-  3. 하루오픽 → 소리담 변경 사항 매핑 확인 (디자인 토큰만 다름)
-  4. 설계 문서 완성 확인 후 구현 시작
+### ✅ 모듈 이관 완료
+- 하루오픽 → 소리담 전체 이관 완료 (시험후기/스크립트/모의고사/튜터링/쉐도잉)
+- 신규 기능 구현 시 `docs/설계/{모듈}.md` 참조
+- 하루오픽 소스코드(`C:\Users\js777\Desktop\haruopic`)는 필요 시에만 참조
 
 ### ⚠️ 기술 제안 시 필수 원칙: 업계 표준 우선
 - 기술 방식, 아키텍처, 패턴을 제안할 때는 **현재 기술 스택에서 업계에서 가장 보편적이고 검증된 표준 방식**을 먼저 확인한 후 제안한다
@@ -588,6 +581,12 @@ origin: https://Storm-Boy777@github.com/Storm-Boy777/soridam.git
 | 04-08 | **마이페이지 리뉴얼** | 크레딧 탭(잔액+충전/사용+이력) + 후원 상태 뱃지(후원 중💛/취소 예정/취소됨) + 관리하기 버튼 |
 | 04-08 | **서베이 UI 개선** | 2열 레이아웃(설문|전략) + 칩 색상 개선 + 반응형 최적화 + 기출 본인 제외 버그 수정 |
 | 04-08 | **EF 전체 재배포** | api-usage-logger 센트 전환 반영 — 10개 EF 일괄 배포 |
+| 04-10 | **관리자 통계 정확도** | Supabase 1000행 제한 → RPC 기반 정확 집계 + AI 비용 api_usage_logs 실데이터 전환 |
+| 04-10 | **크레딧 사전 경고** | 모듈별 예상 비용 상수(estimated-costs.ts) + balance >= estimatedCost 기준 사전 차단 |
+| 04-10 | **약관/환불/개인정보** | 크레딧 시스템 반영 + 사업자 정보 삭제 + 이메일 템플릿 3종 소리담 디자인 적용 |
+| 04-10 | **랜딩 FAQ** | 10개 질문 아코디언 + 대시보드 CTA 크레딧 기반 수정 |
+| 04-10 | **회원가입 채널 제어** | Google/Kakao/이메일 개별 토글 + 이메일 도메인 화이트리스트 (실시간 검증) |
+| 04-10 | **디자인 시스템 현행화** | CLAUDE.md 컬러 팔레트 실제 값으로 갱신 (테라코타→인디고 블루) |
 
 <!-- 이후 새 이력은 이 테이블에 행 추가 + memory/개발이력.md에 상세 기록 -->
 
@@ -788,20 +787,14 @@ PGPASSWORD='soridam2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/16
   -c "SQL문"
 ```
 
-하루오픽 DB (참조용):
+하루오픽 DB (아카이브, 필요 시만):
 ```bash
-PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/16/bin/psql" \
-  -h aws-1-ap-northeast-2.pooler.supabase.com \
-  -p 6543 \
-  -U postgres.rwdsyqnrrpwkureqfxwb \
-  -d postgres \
-  --set=sslmode=require \
-  -c "SQL문"
+PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/16/bin/psql" -h aws-1-ap-northeast-2.pooler.supabase.com -p 6543 -U postgres.rwdsyqnrrpwkureqfxwb -d postgres --set=sslmode=require -c "SQL문"
 ```
 
 > 상세 진행 상황은 `docs/실행계획.md`의 "현재 진행 상태" 참조
 > 의사결정 기록은 `docs/의사결정.md` 참조
 
 ---
-*최종 업데이트: 2026-04-08*
-*상태: 하루오픽 코드 이식 완료 + 결제(Creem+Provider) ✅ + CLAUDE.md 소리담 맞춤 갱신 중*
+*최종 업데이트: 2026-04-10*
+*상태: 전체 이관 완료 + 결제(Creem) ✅ + 회원가입 채널 제어 ✅ + 디자인 시스템 현행화 ✅*

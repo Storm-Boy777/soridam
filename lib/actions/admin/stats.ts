@@ -6,6 +6,7 @@ import type {
   AdminDashboardStats,
   RecentActivity,
   DailyTrend,
+  SponsorshipOverview,
 } from "@/lib/types/admin";
 
 // ── 비활성 사용자 감지 ──
@@ -357,13 +358,9 @@ export async function getDailyTrends(days: number = 30): Promise<DailyTrend[]> {
   startDate.setDate(startDate.getDate() - days);
   const startIso = startDate.toISOString();
 
-  const [signupsRes, ordersRes, mockRes, scriptsRes] =
+  const [authUsersRes, ordersRes, mockRes, scriptsRes] =
     await Promise.all([
-      supabase
-        .from(T.user_credits)
-        .select("created_at")
-        .gte("created_at", startIso)
-        .limit(10000),
+      supabase.auth.admin.listUsers({ perPage: 1000 }),
       supabase
         .from(T.polar_orders)
         .select("amount, created_at")
@@ -397,9 +394,9 @@ export async function getDailyTrends(days: number = 30): Promise<DailyTrend[]> {
     });
   }
 
-  // 각 데이터를 날짜별로 카운트
-  for (const row of signupsRes.data || []) {
-    const key = row.created_at?.split("T")[0];
+  // auth.users에서 가입일 기준 카운트
+  for (const user of authUsersRes.data?.users || []) {
+    const key = user.created_at?.split("T")[0];
     if (key && dateMap.has(key)) dateMap.get(key)!.signups++;
   }
 
@@ -590,4 +587,75 @@ export async function getRecentSignups(
     provider: providerMap.get(u.id) || "email",
     created_at: u.created_at,
   }));
+}
+
+// ── 후원금 현황 ──
+
+export async function getSponsorshipOverview(): Promise<SponsorshipOverview> {
+  const { supabase } = await requireAdmin();
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+  // 병렬 조회: 활성 후원, 전체 후원 주문, 이번 달 후원 주문, 최근 후원자
+  const [activeRes, totalOrdersRes, monthOrdersRes, recentRes] = await Promise.all([
+    // 활성 후원자 수
+    supabase
+      .from(T.sponsorships)
+      .select("user_id, amount_cents", { count: "exact" })
+      .eq("status", "active"),
+    // 누적 후원 총액 (sponsor + credit_sponsor 주문)
+    supabase
+      .from(T.polar_orders)
+      .select("amount, product_type")
+      .eq("status", "paid")
+      .in("product_type", ["sponsor", "credit_sponsor"]),
+    // 이번 달 후원 총액
+    supabase
+      .from(T.polar_orders)
+      .select("amount")
+      .eq("status", "paid")
+      .in("product_type", ["sponsor", "credit_sponsor"])
+      .gte("created_at", monthStart),
+    // 최근 후원자 (profiles JOIN)
+    supabase
+      .from(T.sponsorships)
+      .select("user_id, amount_cents, status, started_at, profiles!inner(email, display_name)")
+      .order("started_at", { ascending: false })
+      .limit(5),
+  ]);
+
+  const activeSponsorCount = activeRes.count || 0;
+
+  // 누적 후원 총액 (센트)
+  const totalRevenueCents = (totalOrdersRes.data || []).reduce(
+    (sum, o) => sum + (o.amount || 0),
+    0
+  );
+
+  // 이번 달 후원 총액 (센트)
+  const monthlyRevenueCents = (monthOrdersRes.data || []).reduce(
+    (sum, o) => sum + (o.amount || 0),
+    0
+  );
+
+  // 최근 후원자 목록
+  const recentSponsors = (recentRes.data || []).map((r: Record<string, unknown>) => {
+    const profile = r.profiles as { email: string; display_name: string | null } | null;
+    return {
+      user_id: r.user_id as string,
+      email: profile?.email || "",
+      display_name: profile?.display_name || null,
+      amount_cents: r.amount_cents as number,
+      status: r.status as string,
+      started_at: r.started_at as string,
+    };
+  });
+
+  return {
+    activeSponsorCount,
+    monthlyRevenueCents,
+    totalRevenueCents,
+    recentSponsors,
+  };
 }

@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { Users, CreditCard, GraduationCap, BookOpen, Mic, Stethoscope, FileText, Cpu, Coins, HardDrive, UserPlus, ChevronRight, Wallet, DollarSign } from "lucide-react";
-import { getAdminDashboardStats, getRecentActivity, getLearningActivity, getAICostStats, getSystemHealthStats, getUserEngagementStats, getRecentSignups } from "@/lib/actions/admin/stats";
+import { Users, CreditCard, GraduationCap, BookOpen, Mic, Stethoscope, FileText, Cpu, Coins, HardDrive, UserPlus, ChevronRight, Wallet, DollarSign, Heart } from "lucide-react";
+import { getAdminDashboardStats, getRecentActivity, getLearningActivity, getAICostStats, getSystemHealthStats, getUserEngagementStats, getRecentSignups, getSponsorshipOverview } from "@/lib/actions/admin/stats";
 import { AdminStatCard } from "@/components/admin/admin-stat-card";
 import { AdminTrendCharts } from "@/components/admin/admin-trend-charts";
 
@@ -129,12 +129,12 @@ function MetricCard({
   sub?: string;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-surface px-3.5 py-2.5">
-      <div className="flex items-center gap-1.5">
+    <div className="rounded-lg border border-border bg-surface px-3.5 py-2.5 text-center">
+      <div className="flex items-center justify-center gap-1.5">
         {icon}
         <span className="text-[11px] text-foreground-muted">{label}</span>
       </div>
-      <div className="mt-1 flex items-baseline gap-1">
+      <div className="mt-1 flex items-baseline justify-center gap-1">
         <span className="text-lg font-bold tabular-nums text-foreground">{value}</span>
         {sub && <span className="text-xs text-foreground-muted">{sub}</span>}
       </div>
@@ -281,6 +281,100 @@ async function SystemHealthSection() {
   );
 }
 
+const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  active: { label: "활성", color: "bg-green-100 text-green-700" },
+  scheduled_cancel: { label: "취소 예정", color: "bg-amber-100 text-amber-700" },
+  cancelled: { label: "취소", color: "bg-red-100 text-red-700" },
+  expired: { label: "만료", color: "bg-gray-100 text-gray-600" },
+  paused: { label: "일시정지", color: "bg-blue-100 text-blue-700" },
+};
+
+async function SponsorshipSection() {
+  const overview = await getSponsorshipOverview();
+
+  const avgCents =
+    overview.activeSponsorCount > 0
+      ? Math.round(overview.monthlyRevenueCents / overview.activeSponsorCount)
+      : 0;
+
+  return (
+    <div className="space-y-3">
+      <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground-secondary">
+        <Heart size={16} className="text-pink-500" />
+        후원금 현황
+      </h2>
+
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <MetricCard
+          icon={<Heart size={16} className="text-pink-500" />}
+          label="활성 후원자"
+          value={`${overview.activeSponsorCount}명`}
+        />
+        <MetricCard
+          icon={<DollarSign size={16} className="text-green-500" />}
+          label="이번 달 후원"
+          value={`$${(overview.monthlyRevenueCents / 100).toFixed(2)}`}
+        />
+        <MetricCard
+          icon={<Coins size={16} className="text-amber-500" />}
+          label="누적 후원"
+          value={`$${(overview.totalRevenueCents / 100).toFixed(2)}`}
+        />
+        <MetricCard
+          icon={<Wallet size={16} className="text-indigo-500" />}
+          label="평균 후원액"
+          value={`$${(avgCents / 100).toFixed(2)}`}
+        />
+      </div>
+
+      {overview.recentSponsors.length > 0 && (
+        <div>
+          <p className="mb-2 text-[11px] font-semibold text-foreground-muted">최근 후원자</p>
+          <div className="overflow-hidden rounded-xl border border-border bg-surface">
+            <div className="flex bg-surface-secondary/50 px-3 py-2 text-[11px] font-semibold text-foreground-muted">
+              <span className="flex-[2]">사용자</span>
+              <span className="flex-[2] text-center">이메일</span>
+              <span className="flex-[1] text-center">금액</span>
+              <span className="flex-[1] text-center">상태</span>
+              <span className="flex-[1] text-center">시작일</span>
+            </div>
+            {overview.recentSponsors.map((s, i) => {
+              const st = STATUS_LABELS[s.status] || { label: s.status, color: "bg-gray-100 text-gray-600" };
+              return (
+                <div
+                  key={`sponsor-${i}`}
+                  className={`flex items-center px-3 py-2 text-xs ${i > 0 ? "border-t border-border" : ""}`}
+                >
+                  <span className="flex-[2] truncate font-medium text-foreground">
+                    {s.display_name || s.email}
+                  </span>
+                  <span className="flex-[2] truncate text-center text-foreground-muted">
+                    {s.email}
+                  </span>
+                  <span className="flex-[1] text-center font-medium tabular-nums text-foreground">
+                    ${(s.amount_cents / 100).toFixed(2)}
+                  </span>
+                  <span className="flex-[1] text-center">
+                    <span className={`inline-block rounded-md px-1.5 py-0.5 text-[10px] font-medium ${st.color}`}>
+                      {st.label}
+                    </span>
+                  </span>
+                  <span className="flex-[1] text-center text-foreground-muted">
+                    {new Date(s.started_at).toLocaleDateString("ko-KR", {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const PROVIDER_LABELS: Record<string, string> = {
   google: "Google",
   kakao: "Kakao",
@@ -378,105 +472,100 @@ async function UserEngagementSection() {
         </Link>
       </div>
 
-      <div className="rounded-xl border border-border bg-surface p-4">
-        {/* 활성 지표 — 한 줄 요약 */}
-        <div className="flex items-center gap-6 text-sm">
-          <div>
-            <span className="text-foreground-muted">오늘</span>
-            <span className="ml-1.5 font-bold tabular-nums text-foreground">{stats.activeToday}명</span>
-          </div>
-          <div className="h-4 w-px bg-border" />
-          <div>
-            <span className="text-foreground-muted">주간</span>
-            <span className="ml-1.5 font-bold tabular-nums text-foreground">{stats.activeWeek}명</span>
-            <span className="ml-1 text-xs text-primary-600">{weekRate}%</span>
-          </div>
-          <div className="h-4 w-px bg-border" />
-          <div>
-            <span className="text-foreground-muted">월간</span>
-            <span className="ml-1.5 font-bold tabular-nums text-foreground">{stats.activeMonth}명</span>
-          </div>
-          {stats.neverLoggedIn > 0 && (
-            <>
-              <div className="h-4 w-px bg-border" />
-              <div>
-                <span className="text-foreground-muted">미접속</span>
-                <span className="ml-1.5 font-bold tabular-nums text-red-600">{stats.neverLoggedIn}명</span>
-              </div>
-            </>
-          )}
-        </div>
+      {/* 활성 지표 — 카드 그리드 */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <MetricCard
+          icon={<Users size={16} className="text-blue-500" />}
+          label="오늘 활성"
+          value={`${stats.activeToday}명`}
+        />
+        <MetricCard
+          icon={<Users size={16} className="text-indigo-500" />}
+          label="주간 활성"
+          value={`${stats.activeWeek}명`}
+          sub={`${weekRate}%`}
+        />
+        <MetricCard
+          icon={<Users size={16} className="text-violet-500" />}
+          label="월간 활성"
+          value={`${stats.activeMonth}명`}
+        />
+        <MetricCard
+          icon={<Users size={16} className={stats.neverLoggedIn > 0 ? "text-red-500" : "text-gray-400"} />}
+          label="미접속"
+          value={`${stats.neverLoggedIn}명`}
+        />
+      </div>
 
-        {/* 최근 로그인 */}
-        {stats.recentLogins.length > 0 && (
-          <div className="mt-3">
-            <p className="mb-2 text-[11px] font-semibold text-foreground-muted">최근 로그인</p>
-            <div className="overflow-hidden rounded-lg border border-border">
-              <div className="flex bg-surface-secondary/50 px-3 py-2 text-[11px] font-semibold text-foreground-muted">
-                <span className="flex-[2]">사용자</span>
-                <span className="flex-[3] text-center">이메일</span>
-                <span className="flex-[3] text-center">-</span>
-                <span className="flex-[2] text-center">시간</span>
+      {/* 최근 로그인 */}
+      {stats.recentLogins.length > 0 && (
+        <div>
+          <p className="mb-2 text-[11px] font-semibold text-foreground-muted">최근 로그인</p>
+          <div className="overflow-hidden rounded-xl border border-border bg-surface">
+            <div className="flex bg-surface-secondary/50 px-3 py-2 text-[11px] font-semibold text-foreground-muted">
+              <span className="flex-[2]">사용자</span>
+              <span className="flex-[3] text-center">이메일</span>
+              <span className="flex-[3] text-center">-</span>
+              <span className="flex-[2] text-center">시간</span>
+            </div>
+            {stats.recentLogins.slice(0, 5).map((l, i) => (
+              <div key={`login-${i}`} className="flex items-center border-t border-border px-3 py-2 text-xs">
+                <span className="flex-[2] truncate font-medium text-foreground">
+                  {l.display_name || l.email}
+                </span>
+                <span className="flex-[3] truncate text-center text-foreground-muted">
+                  {l.email}
+                </span>
+                <span className="flex-[3] text-center text-foreground-muted">
+                  -
+                </span>
+                <span className="flex-[2] text-center text-foreground-muted">
+                  {new Date(l.last_login).toLocaleString("ko-KR", {
+                    timeZone: "Asia/Seoul", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+                  })}
+                </span>
               </div>
-              {stats.recentLogins.slice(0, 5).map((l, i) => (
-                <div key={`login-${i}`} className="flex items-center border-t border-border px-3 py-2 text-xs">
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 최근 활동 */}
+      {activities.length > 0 && (
+        <div>
+          <p className="mb-2 text-[11px] font-semibold text-foreground-muted">최근 활동</p>
+          <div className="overflow-hidden rounded-xl border border-border bg-surface">
+            <div className="flex bg-surface-secondary/50 px-3 py-2 text-[11px] font-semibold text-foreground-muted">
+              <span className="flex-[2]">사용자</span>
+              <span className="flex-[3] text-center">이메일</span>
+              <span className="flex-[3] text-center">내용</span>
+              <span className="flex-[2] text-center">시간</span>
+            </div>
+            {activities.slice(0, 5).map((a) => {
+              const name = a.userName.split(" (")[0];
+              const email = a.userName.includes("(") ? a.userName.split("(")[1]?.replace(")", "") : "";
+              return (
+                <div key={`${a.type}-${a.id}`} className="flex items-center border-t border-border px-3 py-2 text-xs">
                   <span className="flex-[2] truncate font-medium text-foreground">
-                    {l.display_name || l.email}
+                    {name}
                   </span>
                   <span className="flex-[3] truncate text-center text-foreground-muted">
-                    {l.email}
+                    {email}
                   </span>
-                  <span className="flex-[3] text-center text-foreground-muted">
-                    -
+                  <span className="flex-[3] truncate text-center text-foreground-secondary">
+                    {a.description}
                   </span>
                   <span className="flex-[2] text-center text-foreground-muted">
-                    {new Date(l.last_login).toLocaleString("ko-KR", {
+                    {new Date(a.created_at).toLocaleString("ko-KR", {
                       timeZone: "Asia/Seoul", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
                     })}
                   </span>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        )}
-
-        {/* 최근 활동 */}
-        {activities.length > 0 && (
-          <div className="mt-3">
-            <p className="mb-2 text-[11px] font-semibold text-foreground-muted">최근 활동</p>
-            <div className="overflow-hidden rounded-lg border border-border">
-              <div className="flex bg-surface-secondary/50 px-3 py-2 text-[11px] font-semibold text-foreground-muted">
-                <span className="flex-[2]">사용자</span>
-                <span className="flex-[3] text-center">이메일</span>
-                <span className="flex-[3] text-center">내용</span>
-                <span className="flex-[2] text-center">시간</span>
-              </div>
-              {activities.slice(0, 5).map((a) => {
-                const name = a.userName.split(" (")[0];
-                const email = a.userName.includes("(") ? a.userName.split("(")[1]?.replace(")", "") : "";
-                return (
-                  <div key={`${a.type}-${a.id}`} className="flex items-center border-t border-border px-3 py-2 text-xs">
-                    <span className="flex-[2] truncate font-medium text-foreground">
-                      {name}
-                    </span>
-                    <span className="flex-[3] truncate text-center text-foreground-muted">
-                      {email}
-                    </span>
-                    <span className="flex-[3] truncate text-center text-foreground-secondary">
-                      {a.description}
-                    </span>
-                    <span className="flex-[2] text-center text-foreground-muted">
-                      {new Date(a.created_at).toLocaleString("ko-KR", {
-                        timeZone: "Asia/Seoul", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
-                      })}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -537,6 +626,11 @@ export default function AdminDashboardPage() {
           <SystemHealthSection />
         </Suspense>
       </div>
+
+      {/* 후원금 현황 */}
+      <Suspense fallback={<SectionSkeleton />}>
+        <SponsorshipSection />
+      </Suspense>
 
       {/* 최근 가입자 */}
       <Suspense fallback={<SectionSkeleton />}>

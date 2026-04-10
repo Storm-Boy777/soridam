@@ -284,6 +284,49 @@ export interface PaginatedResult<T> {
   pageSize: number;
 }
 
+export interface SponsorshipOverview {
+  activeSponsorCount: number;
+  monthlyRevenueCents: number;
+  totalRevenueCents: number;
+  recentSponsors: Array<{
+    user_id: string;
+    email: string;
+    display_name: string | null;
+    amount_cents: number;
+    status: string;
+    started_at: string;
+  }>;
+}
+
+export interface AdminSponsorship {
+  id: string;
+  user_id: string;
+  email: string;
+  display_name: string | null;
+  creem_subscription_id: string;
+  amount_cents: number;
+  status: string;
+  started_at: string;
+  cancelled_at: string | null;
+  current_period_end: string | null;
+}
+
+export interface OneTimeSponsor {
+  id: string;
+  user_id: string;
+  email: string;
+  display_name: string | null;
+  amount_cents: number;
+  paid_at: string;
+}
+
+export interface SponsorshipStats {
+  activeSponsorCount: number;
+  monthlyRevenueCents: number;
+  totalRevenueCents: number;
+  avgAmountCents: number;
+}
+
 export interface AdminListParams {
   page?: number;
   pageSize?: number;
