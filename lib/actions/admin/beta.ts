@@ -1,136 +1,141 @@
 "use server";
 
-// 오픈 베타 관리자 Server Actions
+// 베타 관리자 Server Actions — 관리자 초대 베타
 
 import { requireAdmin } from "@/lib/auth";
-import { T } from "@/lib/constants/tables";
-import type { BetaApplication, BetaStats, PaginatedResult } from "@/lib/types/admin";
+import { RPC, T } from "@/lib/constants/tables";
+import type { BetaStats, BetaUser, UserSearchResult } from "@/lib/types/admin";
 
 // ── 베타 통계 ──
 
 export async function getBetaStats(): Promise<BetaStats> {
   const { supabase } = await requireAdmin();
-  const { data } = await supabase.rpc("get_beta_stats");
-  return data ?? { total: 0, approved: 0, pending: 0, rejected: 0, remaining: 100 };
+  const { data } = await supabase.rpc(RPC.get_beta_stats);
+  return data ?? { active: 0, revoked: 0, total: 0 };
 }
 
-// ── 베타 신청 목록 ──
+// ── 활성 베타 사용자 목록 ──
 
-export async function getBetaApplications(params: {
-  page?: number;
-  pageSize?: number;
-  status?: string; // 'all' | 'pending' | 'approved' | 'rejected'
-}): Promise<PaginatedResult<BetaApplication>> {
+export async function getBetaUsers(): Promise<BetaUser[]> {
   const { supabase } = await requireAdmin();
-  const page = params.page ?? 1;
-  const pageSize = params.pageSize ?? 20;
-  const offset = (page - 1) * pageSize;
-
-  // 신청 목록 조회
-  let query = supabase
-    .from(T.beta_applications)
-    .select("*", { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range(offset, offset + pageSize - 1);
-
-  if (params.status && params.status !== "all") {
-    query = query.eq("status", params.status);
-  }
-
-  const { data: apps, count, error } = await query;
-  if (error || !apps) {
-    return { data: [], total: 0, page, pageSize };
-  }
-
-  // user 정보 매핑 (profiles 조인)
-  const userIds = apps.map((a: { user_id: string }) => a.user_id);
-  const { data: profiles } = await supabase
-    .from(T.profiles)
-    .select("id, display_name")
-    .in("id", userIds);
-
-  // auth.users에서 이메일 가져오기
-  const enriched: BetaApplication[] = [];
-  for (const app of apps) {
-    const profile = profiles?.find((p: { id: string }) => p.id === app.user_id);
-    // service role로 개별 사용자 이메일 조회
-    const { data: { user } } = await supabase.auth.admin.getUserById(app.user_id);
-    enriched.push({
-      id: app.id,
-      user_id: app.user_id,
-      user_email: user?.email ?? "—",
-      user_name: profile?.display_name ?? null,
-      kakao_nickname: app.kakao_nickname,
-      status: app.status,
-      rejected_reason: app.rejected_reason,
-      reviewed_at: app.reviewed_at,
-      created_at: app.created_at,
-    });
-  }
-
-  return { data: enriched, total: count ?? 0, page, pageSize };
+  const { data, error } = await supabase.rpc(RPC.get_beta_users);
+  if (error || !data) return [];
+  return data as BetaUser[];
 }
 
-// ── 베타 승인 ──
+// ── 이메일로 사용자 검색 (발급 전 확인용) ──
 
-export async function approveBeta(applicationId: string) {
-  const { supabase, userId, userEmail } = await requireAdmin();
+export async function searchUserForBeta(
+  email: string
+): Promise<{ user: UserSearchResult | null; error?: string }> {
+  if (!email.trim()) return { user: null, error: "이메일을 입력해주세요" };
 
-  const { data, error } = await supabase.rpc("approve_beta_application", {
-    p_application_id: applicationId,
-    p_admin_id: userId,
+  const { supabase } = await requireAdmin();
+  const { data, error } = await supabase.rpc(RPC.find_user_by_email, {
+    p_email: email.trim().toLowerCase(),
   });
 
-  if (error) {
-    return { success: false, error: "승인 처리 중 오류가 발생했습니다" };
-  }
+  if (error) return { user: null, error: "검색 중 오류가 발생했습니다" };
+  if (!data || data.length === 0) return { user: null, error: "해당 이메일로 가입된 사용자가 없습니다" };
 
-  if (!data?.success) {
-    return { success: false, error: data?.error ?? "승인에 실패했습니다" };
-  }
+  return { user: data[0] as UserSearchResult };
+}
+
+// ── 베타 발급 ──
+
+export async function grantBeta(params: {
+  userId: string;
+  balanceCents: number;   // 지급할 크레딧 (센트, 예: 1000 = $10)
+  expiresAt: string;      // ISO 날짜 문자열
+  memo?: string;
+}) {
+  const { supabase, userId: adminId, userEmail } = await requireAdmin();
+
+  const { data, error } = await supabase.rpc(RPC.grant_beta_access, {
+    p_user_id:      params.userId,
+    p_admin_id:     adminId,
+    p_balance_cents: params.balanceCents,
+    p_expires_at:   params.expiresAt,
+    p_memo:         params.memo ?? null,
+  });
+
+  if (error) return { success: false, error: "베타 발급 중 오류가 발생했습니다" };
+  if (!data?.success) return { success: false, error: "베타 발급에 실패했습니다" };
 
   // 감사 로그
   await supabase.from(T.admin_audit_log).insert({
-    admin_id: userId,
+    admin_id:    adminId,
     admin_email: userEmail,
-    action: "beta_approve",
-    target_type: "beta_application",
-    target_id: applicationId,
-    details: { user_id: data.user_id, remaining: data.remaining },
-  });
-
-  return { success: true, remaining: data.remaining };
-}
-
-// ── 베타 거절 ──
-
-export async function rejectBeta(applicationId: string, reason: string) {
-  const { supabase, userId, userEmail } = await requireAdmin();
-
-  const { error } = await supabase
-    .from(T.beta_applications)
-    .update({
-      status: "rejected",
-      rejected_reason: reason,
-      reviewed_by: userId,
-      reviewed_at: new Date().toISOString(),
-    })
-    .eq("id", applicationId)
-    .eq("status", "pending");
-
-  if (error) {
-    return { success: false, error: "거절 처리 중 오류가 발생했습니다" };
-  }
-
-  // 감사 로그
-  await supabase.from(T.admin_audit_log).insert({
-    admin_id: userId,
-    admin_email: userEmail,
-    action: "beta_reject",
-    target_type: "beta_application",
-    target_id: applicationId,
-    details: { reason },
+    action:      "beta_grant",
+    target_type: "user",
+    target_id:   params.userId,
+    details: {
+      balance_cents: params.balanceCents,
+      expires_at:    params.expiresAt,
+      memo:          params.memo,
+    },
   });
 
   return { success: true };
+}
+
+// ── 베타 회수 (단건) ──
+
+export async function revokeBeta(targetUserId: string) {
+  const { supabase, userId: adminId, userEmail } = await requireAdmin();
+
+  const { data, error } = await supabase.rpc(RPC.revoke_beta_access, {
+    p_user_id:  targetUserId,
+    p_admin_id: adminId,
+  });
+
+  if (error) return { success: false, error: "베타 회수 중 오류가 발생했습니다" };
+  if (!data?.success) return { success: false, error: data?.error ?? "베타 회수에 실패했습니다" };
+
+  // 감사 로그
+  await supabase.from(T.admin_audit_log).insert({
+    admin_id:    adminId,
+    admin_email: userEmail,
+    action:      "beta_revoke",
+    target_type: "user",
+    target_id:   targetUserId,
+    details:     {},
+  });
+
+  return { success: true };
+}
+
+// ── 베타 일괄 회수 ──
+
+export async function bulkRevokeBeta(targetUserIds: string[]) {
+  if (!targetUserIds.length) return { success: true, revoked: 0, failed: 0 };
+
+  const { supabase, userId: adminId, userEmail } = await requireAdmin();
+
+  let revoked = 0;
+  let failed = 0;
+
+  for (const targetUserId of targetUserIds) {
+    const { data, error } = await supabase.rpc(RPC.revoke_beta_access, {
+      p_user_id:  targetUserId,
+      p_admin_id: adminId,
+    });
+    if (!error && data?.success) {
+      revoked++;
+    } else {
+      failed++;
+    }
+  }
+
+  // 감사 로그 (일괄)
+  await supabase.from(T.admin_audit_log).insert({
+    admin_id:    adminId,
+    admin_email: userEmail,
+    action:      "beta_bulk_revoke",
+    target_type: "user",
+    target_id:   null,
+    details:     { user_ids: targetUserIds, revoked, failed },
+  });
+
+  return { success: true, revoked, failed };
 }

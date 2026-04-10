@@ -1,7 +1,7 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth";
-import { T } from "@/lib/constants/tables";
+import { T, RPC } from "@/lib/constants/tables";
 import type {
   AdminUser,
   AdminUserDetail,
@@ -45,15 +45,24 @@ export async function getUsers(params: {
     );
   }
 
-  // user_credits 조인
+  // user_credits + polar_balances 병렬 조인
   const userIds = users.map((u) => u.id);
-  const { data: credits } = await supabase
-    .from(T.user_credits)
-    .select("user_id, plan_mock_exam_credits, plan_script_credits, mock_exam_credits, script_credits, current_plan")
-    .in("user_id", userIds);
+  const [creditsResult, balancesResult] = await Promise.all([
+    supabase
+      .from(T.user_credits)
+      .select("user_id, current_plan")
+      .in("user_id", userIds),
+    supabase
+      .from(T.polar_balances)
+      .select("user_id, balance_cents")
+      .in("user_id", userIds),
+  ]);
 
   const creditMap = new Map(
-    (credits || []).map((c) => [c.user_id, c])
+    (creditsResult.data || []).map((c) => [c.user_id, c])
+  );
+  const balanceMap = new Map(
+    (balancesResult.data || []).map((b) => [b.user_id, b.balance_cents as number])
   );
 
   const data: AdminUser[] = users.map((u) => {
@@ -67,11 +76,8 @@ export async function getUsers(params: {
       created_at: u.created_at,
       last_sign_in_at: u.last_sign_in_at || null,
       banned_until: u.banned_until || null,
-      plan_mock_exam_credits: c?.plan_mock_exam_credits || 0,
-      plan_script_credits: c?.plan_script_credits || 0,
-      mock_exam_credits: c?.mock_exam_credits || 0,
-      script_credits: c?.script_credits || 0,
       current_plan: c?.current_plan || "free",
+      balance_cents: balanceMap.get(u.id) ?? 0,
     };
   });
 
@@ -85,11 +91,10 @@ export async function getUserDetail(userId: string): Promise<AdminUser | null> {
   if (error || !authData?.user) return null;
 
   const u = authData.user;
-  const { data: c } = await supabase
-    .from(T.user_credits)
-    .select("*")
-    .eq("user_id", userId)
-    .single();
+  const [creditsResult, balanceResult] = await Promise.all([
+    supabase.from(T.user_credits).select("current_plan").eq("user_id", userId).single(),
+    supabase.from(T.polar_balances).select("balance_cents").eq("user_id", userId).single(),
+  ]);
 
   return {
     id: u.id,
@@ -100,11 +105,8 @@ export async function getUserDetail(userId: string): Promise<AdminUser | null> {
     created_at: u.created_at,
     last_sign_in_at: u.last_sign_in_at || null,
     banned_until: u.banned_until || null,
-    plan_mock_exam_credits: c?.plan_mock_exam_credits || 0,
-    plan_script_credits: c?.plan_script_credits || 0,
-    mock_exam_credits: c?.mock_exam_credits || 0,
-    script_credits: c?.script_credits || 0,
-    current_plan: c?.current_plan || "free",
+    current_plan: creditsResult.data?.current_plan || "free",
+    balance_cents: balanceResult.data?.balance_cents ?? 0,
   };
 }
 
@@ -115,6 +117,7 @@ export async function getAdminUserDetail(userId: string): Promise<AdminUserDetai
   const [
     authResult,
     creditsResult,
+    balanceResult,
     mockExamsResult,
     completedMockResult,
     scriptsResult,
@@ -123,9 +126,11 @@ export async function getAdminUserDetail(userId: string): Promise<AdminUserDetai
   ] = await Promise.all([
     // 1. 기본 정보
     supabase.auth.admin.getUserById(userId),
-    // 2. 크레딧
-    supabase.from(T.user_credits).select("*").eq("user_id", userId).single(),
-    // 3. 최근 모의고사 5건
+    // 2. 플랜
+    supabase.from(T.user_credits).select("current_plan").eq("user_id", userId).single(),
+    // 3. 잔액
+    supabase.from(T.polar_balances).select("balance_cents").eq("user_id", userId).single(),
+    // 4. 최근 모의고사 5건
     supabase
       .from(T.mock_test_sessions)
       .select("session_id, mode, status, started_at", { count: "exact" })
@@ -165,6 +170,7 @@ export async function getAdminUserDetail(userId: string): Promise<AdminUserDetai
 
   const u = authResult.data.user;
   const c = creditsResult.data;
+  const bal = balanceResult.data;
 
   // 모의고사 final_level 매핑 — 최근 5건의 session_id로 reports 조회
   const mockExams = mockExamsResult.data || [];
@@ -205,11 +211,8 @@ export async function getAdminUserDetail(userId: string): Promise<AdminUserDetai
     created_at: u.created_at,
     last_sign_in_at: u.last_sign_in_at || null,
     banned_until: u.banned_until || null,
-    plan_mock_exam_credits: c?.plan_mock_exam_credits || 0,
-    plan_script_credits: c?.plan_script_credits || 0,
-    mock_exam_credits: c?.mock_exam_credits || 0,
-    script_credits: c?.script_credits || 0,
     current_plan: c?.current_plan || "free",
+    balance_cents: bal?.balance_cents ?? 0,
   };
 
   return {
@@ -306,37 +309,48 @@ export async function changePlan(
 ): Promise<{ success: boolean; error?: string }> {
   const { supabase, userId: adminId, userEmail: adminEmail } = await requireAdmin();
 
-  // 현재 크레딧/플랜 조회 (변경 전 값 저장)
+  // 현재 플랜 조회 (감사 로그용)
   const { data: current, error: fetchError } = await supabase
     .from(T.user_credits)
-    .select("current_plan, plan_mock_exam_credits, plan_script_credits")
+    .select("current_plan")
     .eq("user_id", params.userId)
     .single();
 
   if (fetchError || !current) {
-    return { success: false, error: "사용자 크레딧 조회 실패" };
+    return { success: false, error: "사용자 플랜 조회 실패" };
   }
 
-  // 만료일 계산: free이면 null, 아니면 N개월 후 (setMonth으로 정확한 월 계산)
+  // 만료일 계산: free이면 null, 아니면 N개월 후
   let planExpiresAt: string | null = null;
-  if (params.plan !== "free") {
+  if (params.plan !== "free" && params.expiresInMonths > 0) {
     const expires = new Date();
     expires.setMonth(expires.getMonth() + params.expiresInMonths);
     planExpiresAt = expires.toISOString();
   }
 
+  // 플랜/만료일 업데이트
   const { error: updateError } = await supabase
     .from(T.user_credits)
     .update({
       current_plan: params.plan,
-      plan_mock_exam_credits: params.mockExamCredits,
-      plan_script_credits: params.scriptCredits,
       plan_expires_at: planExpiresAt,
     })
     .eq("user_id", params.userId);
 
   if (updateError) {
     return { success: false, error: `플랜 변경 실패: ${updateError.message}` };
+  }
+
+  // 크레딧 충전 (0보다 큰 경우에만)
+  if (params.balanceCents > 0) {
+    const { error: balanceError } = await supabase.rpc(RPC.polar_admin_adjust_balance, {
+      p_user_id: params.userId,
+      p_amount: params.balanceCents,
+      p_description: `플랜 변경 크레딧 (${params.plan})`,
+    });
+    if (balanceError) {
+      return { success: false, error: `크레딧 충전 실패: ${balanceError.message}` };
+    }
   }
 
   // 감사 로그
@@ -349,14 +363,7 @@ export async function changePlan(
     details: {
       old_plan: current.current_plan,
       new_plan: params.plan,
-      old_credits: {
-        mock: current.plan_mock_exam_credits,
-        script: current.plan_script_credits,
-      },
-      new_credits: {
-        mock: params.mockExamCredits,
-        script: params.scriptCredits,
-      },
+      balance_cents_added: params.balanceCents,
       expires_in_months: params.expiresInMonths,
       reason: params.reason,
     },

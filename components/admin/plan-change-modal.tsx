@@ -4,11 +4,11 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import type { PlanChangeParams } from "@/lib/types/admin";
 
-const PLAN_DEFAULTS = {
-  free: { mockExam: 0, script: 0, tutoring: 0, months: 0 },
-  beta: { mockExam: 3, script: 15, tutoring: 0, months: 1 },
-  standard: { mockExam: 3, script: 15, tutoring: 0, months: 1 },
-  allinone: { mockExam: 10, script: 50, tutoring: 3, months: 2 },
+const PLAN_DEFAULTS: Record<string, { balanceCents: number; months: number }> = {
+  free:     { balanceCents: 0,    months: 0 },
+  beta:     { balanceCents: 1000, months: 1 },
+  standard: { balanceCents: 1000, months: 1 },
+  allinone: { balanceCents: 5000, months: 2 },
 };
 
 interface PlanChangeModalProps {
@@ -30,8 +30,7 @@ export function PlanChangeModal({
     (currentPlan as "free" | "beta" | "standard" | "allinone") || "free"
   );
   const defaults = PLAN_DEFAULTS[plan];
-  const [mockExamCredits, setMockExamCredits] = useState(defaults.mockExam);
-  const [scriptCredits, setScriptCredits] = useState(defaults.script);
+  const [balanceCents, setBalanceCents] = useState(defaults.balanceCents);
   const [expiresInMonths, setExpiresInMonths] = useState(defaults.months);
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
@@ -42,8 +41,7 @@ export function PlanChangeModal({
   const handlePlanChange = (newPlan: "free" | "beta" | "standard" | "allinone") => {
     setPlan(newPlan);
     const d = PLAN_DEFAULTS[newPlan];
-    setMockExamCredits(d.mockExam);
-    setScriptCredits(d.script);
+    setBalanceCents(d.balanceCents);
     setExpiresInMonths(d.months);
   };
 
@@ -55,8 +53,7 @@ export function PlanChangeModal({
       await onSubmit({
         userId,
         plan,
-        mockExamCredits: isFree ? 0 : mockExamCredits,
-        scriptCredits: isFree ? 0 : scriptCredits,
+        balanceCents: isFree ? 0 : balanceCents,
         expiresInMonths: isFree ? 0 : expiresInMonths,
         reason,
       });
@@ -66,11 +63,10 @@ export function PlanChangeModal({
     }
   };
 
-  // 플랜별 라벨/색상
   const planOptions = [
-    { value: "free" as const, label: "Free", color: "bg-gray-100 text-gray-700 border-gray-300" },
-    { value: "beta" as const, label: "Beta", color: "bg-primary-50 text-primary-700 border-primary-400" },
-    { value: "standard" as const, label: "실전", color: "bg-blue-50 text-blue-700 border-blue-400" },
+    { value: "free" as const,     label: "Free",   color: "bg-gray-100 text-gray-700 border-gray-300" },
+    { value: "beta" as const,     label: "Beta",   color: "bg-primary-50 text-primary-700 border-primary-400" },
+    { value: "standard" as const, label: "실전",   color: "bg-blue-50 text-blue-700 border-blue-400" },
     { value: "allinone" as const, label: "올인원", color: "bg-purple-50 text-purple-700 border-purple-400" },
   ];
 
@@ -96,7 +92,7 @@ export function PlanChangeModal({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* 플랜 선택 라디오 */}
+          {/* 플랜 선택 */}
           <div>
             <label className="mb-2 block text-sm font-medium text-foreground-secondary">
               변경할 플랜
@@ -119,34 +115,35 @@ export function PlanChangeModal({
             </div>
           </div>
 
-          {/* 플랜 크레딧 입력 */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-foreground-secondary">
-                모의고사 크레딧
-              </label>
+          {/* 크레딧 충전 금액 */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-foreground-secondary">
+              크레딧 충전 금액 (USD)
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-foreground-muted">$</span>
               <input
                 type="number"
                 min={0}
-                value={isFree ? 0 : mockExamCredits}
-                onChange={(e) => setMockExamCredits(Number(e.target.value))}
+                step={0.01}
+                value={isFree ? "0.00" : (balanceCents / 100).toFixed(2)}
+                onChange={(e) =>
+                  setBalanceCents(Math.round(parseFloat(e.target.value || "0") * 100))
+                }
                 disabled={isFree}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground disabled:opacity-40"
+                className="w-full rounded-lg border border-border bg-background py-2 pl-7 pr-3 text-sm text-foreground disabled:opacity-40"
+                placeholder="0.00"
               />
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-foreground-secondary">
-                스크립트 크레딧
-              </label>
-              <input
-                type="number"
-                min={0}
-                value={isFree ? 0 : scriptCredits}
-                onChange={(e) => setScriptCredits(Number(e.target.value))}
-                disabled={isFree}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground disabled:opacity-40"
-              />
-            </div>
+            {isFree ? (
+              <p className="mt-1 text-xs text-foreground-muted">
+                Free 플랜 전환 시 크레딧 충전 없이 플랜만 변경됩니다.
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-foreground-muted">
+                기존 잔액에 추가 충전됩니다.
+              </p>
+            )}
           </div>
 
           {/* 유효 기간 */}
@@ -163,11 +160,6 @@ export function PlanChangeModal({
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground disabled:opacity-40"
               placeholder="예: 1"
             />
-            {isFree && (
-              <p className="mt-1 text-xs text-foreground-muted">
-                Free 플랜은 크레딧 0, 기간 없음으로 설정됩니다.
-              </p>
-            )}
           </div>
 
           {/* 사유 */}

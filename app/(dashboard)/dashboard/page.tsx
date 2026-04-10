@@ -230,27 +230,26 @@ async function DashboardStatsLoader({ userId }: { userId: string }) {
 
 async function BetaSectionLoader({ userId }: { userId: string }) {
   const supabase = await createServerSupabaseClient();
-  const [{ data: credits }, { data: betaApp }, { data: stats }] = await Promise.all([
-    supabase
-      .from(T.user_credits)
-      .select("current_plan, plan_expires_at")
-      .eq("user_id", userId)
-      .single(),
-    supabase
-      .from(T.beta_applications)
-      .select("status, rejected_reason")
-      .eq("user_id", userId)
-      .single(),
-    supabase.rpc("get_beta_stats"),
-  ]);
+
+  const { data: credits } = await supabase
+    .from(T.user_credits)
+    .select("current_plan, plan_expires_at")
+    .eq("user_id", userId)
+    .single();
+
+  // beta 플랜이 아니면 렌더링 안 함
+  if (credits?.current_plan !== "beta") return null;
+
+  const { data: balance } = await supabase
+    .from(T.polar_balances)
+    .select("balance_cents")
+    .eq("user_id", userId)
+    .single();
 
   return (
     <BetaSection
-      currentPlan={credits?.current_plan ?? "free"}
-      betaStatus={betaApp?.status ?? null}
-      betaRejectedReason={betaApp?.rejected_reason ?? null}
-      remaining={stats?.remaining ?? 0}
-      planExpiresAt={credits?.plan_expires_at ?? null}
+      planExpiresAt={credits.plan_expires_at ?? null}
+      balanceCents={balance?.balance_cents ?? 0}
     />
   );
 }

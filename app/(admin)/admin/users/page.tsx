@@ -295,11 +295,11 @@ export default function AdminUsersPage() {
       ),
     },
     {
-      key: "credits",
-      label: "이용권 (모/스)",
+      key: "balance_cents",
+      label: "잔액",
       render: (row: AdminUser) => (
-        <span className="text-xs">
-          {row.mock_exam_credits + row.plan_mock_exam_credits} / {row.script_credits + row.plan_script_credits}
+        <span className="text-xs font-medium text-foreground">
+          {formatCurrency(row.balance_cents)}
         </span>
       ),
     },
@@ -340,8 +340,7 @@ export default function AdminUsersPage() {
                 { key: "email", label: "이메일" },
                 { key: "display_name", label: "이름" },
                 { key: "current_plan", label: "플랜" },
-                { key: "mock_exam_credits", label: "모의고사 응시권" },
-                { key: "script_credits", label: "스크립트 생성권" },
+                { key: "balance_cents", label: "잔액(센트)" },
                 { key: "created_at", label: "가입일" },
               ]);
               downloadCSV(csv, `users_${new Date().toISOString().split("T")[0]}.csv`);
@@ -490,12 +489,11 @@ function UserDetailView({
           </div>
 
           <div className="flex flex-col items-end gap-2">
-            {/* 크레딧 4개 표시 */}
+            {/* 잔액 표시 */}
             <div className="flex flex-wrap gap-2">
-              <CreditBadge label="플랜모의" value={user.plan_mock_exam_credits} color="purple" />
-              <CreditBadge label="플랜스크립트" value={user.plan_script_credits} color="blue" />
-              <CreditBadge label="모의" value={user.mock_exam_credits} color="amber" />
-              <CreditBadge label="스크립트" value={user.script_credits} color="teal" />
+              <span className="rounded-md bg-primary-50 px-3 py-1 text-sm font-semibold text-primary-700">
+                잔액 {formatCurrency(user.balance_cents)}
+              </span>
             </div>
             <div className="flex flex-wrap gap-2">
               <button
@@ -648,22 +646,6 @@ function UserDetailView({
 }
 
 // ── 보조 컴포넌트 ──
-
-// 크레딧 뱃지
-function CreditBadge({ label, value, color }: { label: string; value: number; color: string }) {
-  const colorMap: Record<string, string> = {
-    purple: "bg-purple-50 text-purple-700",
-    blue: "bg-blue-50 text-blue-700",
-    amber: "bg-amber-50 text-amber-700",
-    teal: "bg-teal-50 text-teal-700",
-  };
-
-  return (
-    <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${colorMap[color] || colorMap.blue}`}>
-      {label} {value}
-    </span>
-  );
-}
 
 // 활동 요약 카드
 function SummaryCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {

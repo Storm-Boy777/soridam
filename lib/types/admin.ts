@@ -28,11 +28,9 @@ export interface AdminUser {
   last_sign_in_at: string | null;
   banned_until: string | null;
   // user_credits 조인
-  plan_mock_exam_credits: number;
-  plan_script_credits: number;
-  mock_exam_credits: number;
-  script_credits: number;
   current_plan: string;
+  // polar_balances 조인
+  balance_cents: number;
 }
 
 export interface CreditAdjustParams {
@@ -80,32 +78,37 @@ export interface RevenueStats {
 export interface PlanChangeParams {
   userId: string;
   plan: "free" | "standard" | "allinone" | "beta";
-  mockExamCredits: number;
-  scriptCredits: number;
+  balanceCents: number;
   expiresInMonths: number;
   reason: string;
 }
 
 // ── 베타 관리 ──
 
-export interface BetaApplication {
-  id: string;
+export interface BetaUser {
+  application_id: string;
   user_id: string;
-  user_email: string;
-  user_name: string | null;
-  kakao_nickname: string;
-  status: "pending" | "approved" | "rejected";
-  rejected_reason: string | null;
-  reviewed_at: string | null;
-  created_at: string;
+  email: string;
+  display_name: string | null;
+  granted_cents: number;
+  balance_cents: number;
+  plan_expires_at: string | null;
+  memo: string | null;
+  granted_at: string;
 }
 
 export interface BetaStats {
+  active: number;
+  revoked: number;
   total: number;
-  approved: number;
-  pending: number;
-  rejected: number;
-  remaining: number;
+}
+
+export interface UserSearchResult {
+  user_id: string;
+  email: string;
+  display_name: string | null;
+  current_plan: string;
+  is_beta_active: boolean;
 }
 
 // ── 감사 로그 ──
