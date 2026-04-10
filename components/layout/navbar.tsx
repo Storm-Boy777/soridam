@@ -107,25 +107,34 @@ export function Navbar({ serverAuth }: { serverAuth?: NavbarServerAuth } = {}) {
 
         {/* 데스크톱 네비게이션 */}
         <div className="hidden items-center gap-1 md:flex">
-          {navItems.map((item, idx) => (
-            <div key={item.label} className="flex items-center">
-              {["/reviews", "/patterns", "/support"].includes(item.href) && (
-                <div className="mx-1 h-4 w-px bg-white/20" />
-              )}
-              <Link
-                href={item.href}
-                onClick={(e) => handleNavClick(e, item.href)}
-                className="relative rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium transition-colors text-gray-400 hover:bg-white/5 hover:text-white"
-              >
-                {item.label}
-                {item.soon && (
-                  <span className="absolute -right-1 -top-1 rounded-full bg-primary-100 px-1 text-[8px] font-semibold text-primary-600">
-                    곧
-                  </span>
+          {navItems.map((item, idx) => {
+            const isActive = item.href === "/"
+              ? pathname === "/"
+              : pathname.startsWith(item.href);
+            return (
+              <div key={item.label} className="flex items-center">
+                {["/reviews", "/patterns", "/support"].includes(item.href) && (
+                  <div className="mx-1 h-4 w-px bg-white/20" />
                 )}
-              </Link>
-            </div>
-          ))}
+                <Link
+                  href={item.href}
+                  onClick={(e) => handleNavClick(e, item.href)}
+                  className={`relative rounded-[var(--radius-md)] px-3 py-2 text-sm transition-colors ${
+                    isActive
+                      ? "font-bold text-primary-300"
+                      : "font-medium text-white/70 hover:bg-white/8 hover:text-white"
+                  }`}
+                >
+                  {item.label}
+                  {item.soon && (
+                    <span className="absolute -right-1 -top-1 rounded-full bg-primary-100 px-1 text-[8px] font-semibold text-primary-600">
+                      곧
+                    </span>
+                  )}
+                </Link>
+              </div>
+            );
+          })}
         </div>
 
         {/* 우측: 인증 버튼 + 모바일 메뉴 */}
