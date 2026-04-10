@@ -11,61 +11,107 @@ import type {
 
 // ── 비활성 사용자 감지 ──
 
-export interface InactiveUsersStats {
-  inactive7days: number;
-  inactive14days: number;
-  inactive30days: number;
-  recentLogins: Array<{ user_id: string; email: string; last_login: string }>;
+export interface UserEngagementStats {
+  totalUsers: number;
+  // 활성 사용자 (기간별 고유 로그인)
+  activeToday: number;
+  activeWeek: number;
+  activeMonth: number;
+  // 리텐션 (가입 후 재방문)
+  neverLoggedIn: number;
+  // 최근 로그인 (고유 사용자, 중복 제거)
+  recentLogins: Array<{
+    user_id: string;
+    email: string;
+    display_name: string | null;
+    last_login: string;
+  }>;
 }
 
-export async function getInactiveUsersStats(): Promise<InactiveUsersStats> {
+export async function getUserEngagementStats(): Promise<UserEngagementStats> {
   const { supabase } = await requireAdmin();
 
   const now = new Date();
-  const d7 = new Date(now.getTime() - 7 * 86400000).toISOString();
-  const d14 = new Date(now.getTime() - 14 * 86400000).toISOString();
-  const d30 = new Date(now.getTime() - 30 * 86400000).toISOString();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  const week = new Date(now.getTime() - 7 * 86400000).toISOString();
+  const month = new Date(now.getTime() - 30 * 86400000).toISOString();
 
-  // 전체 사용자의 last_sign_in_at 조회 (Supabase Auth)
+  // 1. 전체 사용자 수
+  const { count: totalCount } = await supabase
+    .from(T.user_credits)
+    .select("*", { count: "exact", head: true });
+  const totalUsers = totalCount || 0;
+
+  // 2. 기간별 활성 사용자 (고유 user_id) — 3개 쿼리 병렬
+  const [todayRes, weekRes, monthRes] = await Promise.all([
+    supabase.rpc("get_dau_count", { target_date: today.split("T")[0] }),
+    supabase
+      .from(T.user_activity_log)
+      .select("user_id")
+      .eq("action", "login")
+      .gte("created_at", week),
+    supabase
+      .from(T.user_activity_log)
+      .select("user_id")
+      .eq("action", "login")
+      .gte("created_at", month),
+  ]);
+
+  const activeToday = (todayRes.data as { count: number }[] | null)?.[0]?.count ?? 0;
+  const activeWeek = new Set((weekRes.data || []).map((r: { user_id: string }) => r.user_id)).size;
+  const activeMonth = new Set((monthRes.data || []).map((r: { user_id: string }) => r.user_id)).size;
+
+  // 3. 한 번도 로그인 안 한 사용자
   const { data: authUsers } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-  const users = authUsers?.users || [];
+  const neverLoggedIn = (authUsers?.users || []).filter(
+    (u) => !u.last_sign_in_at
+  ).length;
 
-  let inactive7 = 0;
-  let inactive14 = 0;
-  let inactive30 = 0;
-
-  for (const u of users) {
-    const lastSign = u.last_sign_in_at;
-    if (!lastSign || lastSign < d30) inactive30++;
-    else if (lastSign < d14) inactive14++;
-    else if (lastSign < d7) inactive7++;
-  }
-
-  // 최근 로그인 10건 (활동 로그)
+  // 4. 최근 로그인 (고유 사용자, 최신 로그인만)
   const { data: recentLogs } = await supabase
     .from(T.user_activity_log)
     .select("user_id, created_at")
     .eq("action", "login")
     .order("created_at", { ascending: false })
-    .limit(10);
+    .limit(50);
 
-  // 이메일 매핑
-  const userIds = [...new Set((recentLogs || []).map((l) => l.user_id))];
-  const emailMap = new Map<string, string>();
-  for (const uid of userIds) {
-    const { data } = await supabase.auth.admin.getUserById(uid);
-    if (data?.user?.email) emailMap.set(uid, data.user.email);
+  // 고유 사용자 추출 (최신 로그인만)
+  const seen = new Set<string>();
+  const uniqueLogins: { user_id: string; created_at: string }[] = [];
+  for (const log of recentLogs || []) {
+    if (!seen.has(log.user_id)) {
+      seen.add(log.user_id);
+      uniqueLogins.push(log);
+      if (uniqueLogins.length >= 10) break;
+    }
   }
 
+  // 프로필 매핑
+  const userIds = uniqueLogins.map((l) => l.user_id);
+  const { data: profiles } = await supabase
+    .from(T.profiles)
+    .select("id, email, display_name")
+    .in("id", userIds);
+
+  const profileMap = new Map(
+    (profiles || []).map((p) => [p.id, p])
+  );
+
   return {
-    inactive7days: inactive7,
-    inactive14days: inactive14,
-    inactive30days: inactive30,
-    recentLogins: (recentLogs || []).map((l) => ({
-      user_id: l.user_id,
-      email: emailMap.get(l.user_id) || "",
-      last_login: l.created_at,
-    })),
+    totalUsers,
+    activeToday,
+    activeWeek,
+    activeMonth,
+    neverLoggedIn,
+    recentLogins: uniqueLogins.map((l) => {
+      const p = profileMap.get(l.user_id);
+      return {
+        user_id: l.user_id,
+        email: p?.email || "",
+        display_name: p?.display_name || null,
+        last_login: l.created_at,
+      };
+    }),
   };
 }
 
@@ -82,6 +128,60 @@ export async function getUserActivityLog(userId: string, limit: number = 20) {
     .limit(limit);
 
   return data || [];
+}
+
+// ── 전체 사용자 활동 로그 ──
+
+export interface ActivityLogEntry {
+  id: number;
+  user_id: string;
+  action: string;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+  // JOIN
+  email?: string;
+  display_name?: string | null;
+}
+
+export async function getAllActivityLogs(params: {
+  action?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{ data: ActivityLogEntry[]; total: number }> {
+  const { supabase } = await requireAdmin();
+  const page = params.page || 1;
+  const limit = params.limit || 50;
+  const offset = (page - 1) * limit;
+
+  let query = supabase
+    .from(T.user_activity_log)
+    .select("*, profiles(email, display_name)", { count: "exact" });
+
+  if (params.action) {
+    query = query.eq("action", params.action);
+  }
+
+  const { data, count, error } = await query
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) {
+    console.error("[getAllActivityLogs]", error);
+    return { data: [], total: 0 };
+  }
+
+  // profiles JOIN 결과를 flatten
+  const entries: ActivityLogEntry[] = (data || []).map((row: any) => ({
+    id: row.id,
+    user_id: row.user_id,
+    action: row.action,
+    metadata: row.metadata,
+    created_at: row.created_at,
+    email: row.profiles?.email || "",
+    display_name: row.profiles?.display_name || null,
+  }));
+
+  return { data: entries, total: count || 0 };
 }
 
 // ── AI 비용 & 시스템 헬스 타입 ──
@@ -410,4 +510,57 @@ export async function getSystemHealthStats(): Promise<SystemHealthStats> {
       { bucket: "스크립트 패키지", fileCount: scriptPkgRes.count || 0 },
     ],
   };
+}
+
+// ── 최근 가입자 ──
+
+export interface RecentSignup {
+  id: string;
+  email: string;
+  display_name: string | null;
+  provider: string;
+  created_at: string;
+}
+
+export async function getRecentSignups(
+  limit: number = 5
+): Promise<RecentSignup[]> {
+  const { supabase } = await requireAdmin();
+
+  // auth.admin.listUsers는 최신순 정렬을 지원하지 않으므로,
+  // profiles 테이블에서 최근 가입자를 조회
+  const { data } = await supabase
+    .from(T.profiles)
+    .select("id, email, display_name, created_at")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (!data || data.length === 0) return [];
+
+  // 가입 방법 확인 (auth.users의 app_metadata.provider)
+  const userIds = data.map((u) => u.id);
+  const { data: authData } = await supabase.auth.admin.listUsers({
+    page: 1,
+    perPage: 100,
+  });
+
+  const providerMap = new Map<string, string>();
+  if (authData?.users) {
+    for (const u of authData.users) {
+      if (userIds.includes(u.id)) {
+        providerMap.set(
+          u.id,
+          u.app_metadata?.provider || u.app_metadata?.providers?.[0] || "email"
+        );
+      }
+    }
+  }
+
+  return data.map((u) => ({
+    id: u.id,
+    email: u.email || "",
+    display_name: u.display_name,
+    provider: providerMap.get(u.id) || "email",
+    created_at: u.created_at,
+  }));
 }

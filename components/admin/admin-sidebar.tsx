@@ -14,6 +14,7 @@ import {
   Stethoscope,
   Megaphone,
   MessageCircle,
+  Activity,
   Sparkles,
   ScrollText,
   ArrowLeft,
@@ -33,6 +34,7 @@ const menuItems = [
   { label: "튜터링", href: "/admin/tutoring", icon: Stethoscope },
   { label: "공지사항", href: "/admin/announcements", icon: Megaphone },
   { label: "소통함", href: "/admin/support", icon: MessageCircle },
+  { label: "활동 로그", href: "/admin/activity", icon: Activity },
   { label: "감사 로그", href: "/admin/logs", icon: ScrollText },
   { label: "설정", href: "/admin/settings", icon: Settings },
 ];

@@ -20,7 +20,7 @@ export default async function AdminLayout({
         </p>
       </div>
       {/* PC 메인 영역 — flex-row이므로 flex-1(너비 확장) + h-full(높이 채움) */}
-      <main className="hidden flex-1 overflow-y-auto md:block">
+      <main className="hidden flex-1 overflow-y-scroll md:block">
         <div className="mx-auto max-w-5xl px-6 py-6">
           {children}
         </div>

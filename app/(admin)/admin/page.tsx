@@ -1,6 +1,7 @@
 import { Suspense } from "react";
-import { Users, CreditCard, GraduationCap, Clock, TrendingUp, BarChart3, ClipboardList, FileText, Cpu, AlertTriangle, Coins, HardDrive, UserX } from "lucide-react";
-import { getAdminDashboardStats, getRecentActivity, getConversionMetrics, getAICostStats, getSystemHealthStats, getInactiveUsersStats } from "@/lib/actions/admin/stats";
+import Link from "next/link";
+import { Users, CreditCard, GraduationCap, Clock, TrendingUp, BarChart3, ClipboardList, FileText, Cpu, AlertTriangle, Coins, HardDrive, UserX, UserPlus, ChevronRight } from "lucide-react";
+import { getAdminDashboardStats, getRecentActivity, getConversionMetrics, getAICostStats, getSystemHealthStats, getUserEngagementStats, getRecentSignups } from "@/lib/actions/admin/stats";
 import { AdminStatCard } from "@/components/admin/admin-stat-card";
 import { AdminTrendCharts } from "@/components/admin/admin-trend-charts";
 
@@ -259,59 +260,169 @@ async function SystemHealthSection() {
   );
 }
 
-async function InactiveUsersSection() {
-  const stats = await getInactiveUsersStats();
+const PROVIDER_LABELS: Record<string, string> = {
+  google: "Google",
+  kakao: "Kakao",
+  email: "이메일",
+};
+
+async function RecentSignupsSection() {
+  const signups = await getRecentSignups(5);
 
   return (
     <div className="space-y-3">
-      <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground-secondary">
-        <UserX size={16} className="text-red-500" />
-        사용자 활동
-      </h2>
-      <div className="grid gap-4 lg:grid-cols-2">
-        {/* 비활성 사용자 */}
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="mb-3 text-xs font-medium text-foreground-secondary">비활성 사용자</p>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <p className={`text-xl font-bold tabular-nums ${stats.inactive7days > 0 ? "text-amber-600" : "text-foreground"}`}>
-                {stats.inactive7days}
-              </p>
-              <p className="text-xs text-foreground-muted">7일 미접속</p>
+      <div className="flex items-center justify-between">
+        <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground-secondary">
+          <UserPlus size={16} className="text-green-500" />
+          최근 가입자
+        </h2>
+        <Link
+          href="/admin/users"
+          className="flex items-center gap-0.5 text-xs text-primary-600 hover:text-primary-700"
+        >
+          전체 보기
+          <ChevronRight size={12} />
+        </Link>
+      </div>
+      <div className="overflow-hidden rounded-xl border border-border bg-surface">
+        {signups.length === 0 ? (
+          <p className="py-8 text-center text-xs text-foreground-muted">
+            최근 가입자가 없습니다
+          </p>
+        ) : (
+          <>
+            <div className="flex border-b border-border bg-surface-secondary/50 px-4 py-2">
+              <span className="flex-1 text-[11px] font-semibold text-foreground-muted">사용자</span>
+              <span className="w-16 text-center text-[11px] font-semibold text-foreground-muted">가입 방법</span>
+              <span className="w-20 text-right text-[11px] font-semibold text-foreground-muted">가입일</span>
             </div>
-            <div>
-              <p className={`text-xl font-bold tabular-nums ${stats.inactive14days > 0 ? "text-orange-600" : "text-foreground"}`}>
-                {stats.inactive14days}
-              </p>
-              <p className="text-xs text-foreground-muted">14일 미접속</p>
-            </div>
-            <div>
-              <p className={`text-xl font-bold tabular-nums ${stats.inactive30days > 0 ? "text-red-600" : "text-foreground"}`}>
-                {stats.inactive30days}
-              </p>
-              <p className="text-xs text-foreground-muted">30일+ 미접속</p>
-            </div>
+            {signups.map((u, idx) => (
+              <div
+                key={u.id}
+                className={`flex items-center px-4 py-2.5 ${idx > 0 ? "border-t border-border" : ""}`}
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm text-foreground">
+                    <span className="font-medium">{u.display_name || u.email}</span>
+                    {u.display_name && (
+                      <span className="ml-2 text-[11px] text-foreground-muted">{u.email}</span>
+                    )}
+                  </p>
+                </div>
+                <span className="w-16 text-center">
+                  <span className="rounded-md bg-surface-secondary px-1.5 py-0.5 text-[10px] font-medium text-foreground-muted">
+                    {PROVIDER_LABELS[u.provider] || u.provider}
+                  </span>
+                </span>
+                <span className="w-20 text-right text-xs text-foreground-muted">
+                  {new Date(u.created_at).toLocaleDateString("ko-KR", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </span>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+async function UserEngagementSection() {
+  const stats = await getUserEngagementStats();
+
+  const weekRate = stats.totalUsers > 0
+    ? ((stats.activeWeek / stats.totalUsers) * 100).toFixed(1)
+    : "0";
+  const monthRate = stats.totalUsers > 0
+    ? ((stats.activeMonth / stats.totalUsers) * 100).toFixed(1)
+    : "0";
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground-secondary">
+          <Users size={16} className="text-blue-500" />
+          사용자 활동
+        </h2>
+        <Link
+          href="/admin/activity"
+          className="flex items-center gap-0.5 text-xs text-primary-600 hover:text-primary-700"
+        >
+          활동 로그 <ChevronRight size={12} />
+        </Link>
+      </div>
+
+      {/* 활성 사용자 지표 */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="rounded-lg border border-border bg-surface px-3.5 py-2.5">
+          <p className="text-[11px] text-foreground-muted">오늘 활성</p>
+          <p className="mt-1 text-lg font-bold tabular-nums text-foreground">
+            {stats.activeToday}
+            <span className="ml-1 text-xs font-normal text-foreground-muted">명</span>
+          </p>
+        </div>
+        <div className="rounded-lg border border-border bg-surface px-3.5 py-2.5">
+          <p className="text-[11px] text-foreground-muted">주간 활성 (7일)</p>
+          <div className="mt-1 flex items-baseline gap-1">
+            <span className="text-lg font-bold tabular-nums text-foreground">{stats.activeWeek}</span>
+            <span className="text-xs text-foreground-muted">명</span>
+            <span className="text-xs font-medium text-primary-600">{weekRate}%</span>
           </div>
         </div>
-
-        {/* 최근 로그인 */}
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="mb-3 text-xs font-medium text-foreground-secondary">최근 로그인</p>
-          {stats.recentLogins.length === 0 ? (
-            <p className="py-4 text-center text-xs text-foreground-muted">로그인 기록이 없습니다</p>
-          ) : (
-            <div className="space-y-1.5">
-              {stats.recentLogins.slice(0, 5).map((l, i) => (
-                <div key={i} className="flex items-center justify-between text-xs">
-                  <span className="truncate text-foreground">{l.email}</span>
-                  <span className="shrink-0 text-foreground-muted">
-                    {new Date(l.last_login).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+        <div className="rounded-lg border border-border bg-surface px-3.5 py-2.5">
+          <p className="text-[11px] text-foreground-muted">월간 활성 (30일)</p>
+          <div className="mt-1 flex items-baseline gap-1">
+            <span className="text-lg font-bold tabular-nums text-foreground">{stats.activeMonth}</span>
+            <span className="text-xs text-foreground-muted">명</span>
+            <span className="text-xs font-medium text-primary-600">{monthRate}%</span>
+          </div>
         </div>
+        <div className="rounded-lg border border-border bg-surface px-3.5 py-2.5">
+          <p className="text-[11px] text-foreground-muted">미접속 (가입만)</p>
+          <p className={`mt-1 text-lg font-bold tabular-nums ${stats.neverLoggedIn > 0 ? "text-red-600" : "text-foreground"}`}>
+            {stats.neverLoggedIn}
+            <span className="ml-1 text-xs font-normal text-foreground-muted">명</span>
+          </p>
+        </div>
+      </div>
+
+      {/* 최근 로그인 (고유 사용자) */}
+      <div className="rounded-xl border border-border bg-surface p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-xs font-medium text-foreground-secondary">최근 접속 사용자</p>
+          <Link href="/admin/activity" className="flex items-center gap-0.5 text-[10px] text-primary-600 hover:text-primary-700">
+            전체 보기 <ChevronRight size={10} />
+          </Link>
+        </div>
+        {stats.recentLogins.length === 0 ? (
+          <p className="py-4 text-center text-xs text-foreground-muted">로그인 기록이 없습니다</p>
+        ) : (
+          <div className="space-y-2">
+            {stats.recentLogins.map((l, i) => (
+              <div key={i} className="flex items-center justify-between text-xs">
+                <div className="min-w-0 flex-1">
+                  <span className="font-medium text-foreground">
+                    {l.display_name || l.email}
+                  </span>
+                  {l.display_name && (
+                    <span className="ml-2 text-foreground-muted">{l.email}</span>
+                  )}
+                </div>
+                <span className="shrink-0 text-foreground-muted">
+                  {new Date(l.last_login).toLocaleString("ko-KR", {
+                    timeZone: "Asia/Seoul",
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -374,13 +485,23 @@ export default function AdminDashboardPage() {
         </Suspense>
       </div>
 
-      {/* 비활성 사용자 + 최근 로그인 */}
+      {/* 최근 가입자 */}
       <Suspense fallback={<SectionSkeleton />}>
-        <InactiveUsersSection />
+        <RecentSignupsSection />
+      </Suspense>
+
+      {/* 사용자 활동 (활성률 + 최근 접속) */}
+      <Suspense fallback={<SectionSkeleton />}>
+        <UserEngagementSection />
       </Suspense>
 
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-foreground-secondary">최근 활동</h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-foreground-secondary">최근 활동</h2>
+          <Link href="/admin/activity" className="flex items-center gap-0.5 text-xs text-primary-600 hover:text-primary-700">
+            전체 활동 보기 <ChevronRight size={12} />
+          </Link>
+        </div>
         <Suspense
           fallback={
             <div className="space-y-2">
