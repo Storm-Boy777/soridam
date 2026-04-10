@@ -314,9 +314,9 @@ async function RecentSignupsSection() {
           <>
             <div className="flex bg-surface-secondary/50 px-3 py-2 text-[11px] font-semibold text-foreground-muted">
               <span className="flex-[2]">사용자</span>
-              <span className="flex-[3]">이메일</span>
-              <span className="flex-[3]">가입 방법</span>
-              <span className="flex-[2] text-right">가입일</span>
+              <span className="flex-[3] text-center">이메일</span>
+              <span className="flex-[3] text-center">가입 방법</span>
+              <span className="flex-[2] text-center">가입일</span>
             </div>
             {signups.map((u, idx) => (
               <div
@@ -326,13 +326,13 @@ async function RecentSignupsSection() {
                 <span className="flex-[2] truncate font-medium text-foreground">
                   {u.display_name || u.email}
                 </span>
-                <span className="flex-[3] truncate text-foreground-muted">
+                <span className="flex-[3] truncate text-center text-foreground-muted">
                   {u.email}
                 </span>
-                <span className="flex-[3] truncate text-foreground-muted">
+                <span className="flex-[3] text-center text-foreground-muted">
                   {PROVIDER_LABELS[u.provider] || u.provider}
                 </span>
-                <span className="flex-[2] text-right text-foreground-muted">
+                <span className="flex-[2] text-center text-foreground-muted">
                   {new Date(u.created_at).toLocaleDateString("ko-KR", {
                     month: "short",
                     day: "numeric",
@@ -414,18 +414,22 @@ async function UserEngagementSection() {
             <div className="overflow-hidden rounded-lg border border-border">
               <div className="flex bg-surface-secondary/50 px-3 py-2 text-[11px] font-semibold text-foreground-muted">
                 <span className="flex-[2]">사용자</span>
-                <span className="flex-[6]">이메일</span>
-                <span className="flex-[2] text-right">시간</span>
+                <span className="flex-[3] text-center">이메일</span>
+                <span className="flex-[3] text-center">-</span>
+                <span className="flex-[2] text-center">시간</span>
               </div>
               {stats.recentLogins.slice(0, 5).map((l, i) => (
                 <div key={`login-${i}`} className="flex items-center border-t border-border px-3 py-2 text-xs">
                   <span className="flex-[2] truncate font-medium text-foreground">
                     {l.display_name || l.email}
                   </span>
-                  <span className="flex-[6] truncate text-foreground-muted">
+                  <span className="flex-[3] truncate text-center text-foreground-muted">
                     {l.email}
                   </span>
-                  <span className="flex-[2] text-right text-foreground-muted">
+                  <span className="flex-[3] text-center text-foreground-muted">
+                    -
+                  </span>
+                  <span className="flex-[2] text-center text-foreground-muted">
                     {new Date(l.last_login).toLocaleString("ko-KR", {
                       timeZone: "Asia/Seoul", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
                     })}
@@ -443,9 +447,9 @@ async function UserEngagementSection() {
             <div className="overflow-hidden rounded-lg border border-border">
               <div className="flex bg-surface-secondary/50 px-3 py-2 text-[11px] font-semibold text-foreground-muted">
                 <span className="flex-[2]">사용자</span>
-                <span className="flex-[3]">이메일</span>
-                <span className="flex-[3]">내용</span>
-                <span className="flex-[2] text-right">시간</span>
+                <span className="flex-[3] text-center">이메일</span>
+                <span className="flex-[3] text-center">내용</span>
+                <span className="flex-[2] text-center">시간</span>
               </div>
               {activities.slice(0, 5).map((a) => {
                 const name = a.userName.split(" (")[0];
@@ -455,13 +459,13 @@ async function UserEngagementSection() {
                     <span className="flex-[2] truncate font-medium text-foreground">
                       {name}
                     </span>
-                    <span className="flex-[3] truncate text-foreground-muted">
+                    <span className="flex-[3] truncate text-center text-foreground-muted">
                       {email}
                     </span>
-                    <span className="flex-[3] truncate text-foreground-secondary">
+                    <span className="flex-[3] truncate text-center text-foreground-secondary">
                       {a.description}
                     </span>
-                    <span className="flex-[2] text-right text-foreground-muted">
+                    <span className="flex-[2] text-center text-foreground-muted">
                       {new Date(a.created_at).toLocaleString("ko-KR", {
                         timeZone: "Asia/Seoul", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
                       })}
