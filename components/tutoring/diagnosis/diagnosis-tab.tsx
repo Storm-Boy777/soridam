@@ -381,7 +381,9 @@ function StartDiagnosisView({
           <>
             <div className="mb-3 flex items-center gap-2 text-xs text-foreground-secondary sm:text-sm">
               <AlertTriangle className="h-4 w-4 shrink-0 text-accent-500" />
-              크레딧이 부족합니다
+              {(credit?.balanceCents ?? 0) > 0
+                ? `잔액(${formatUsd(credit?.balanceCents ?? 0)})이 예상 비용(${formatUsd(credit?.estimatedCostCents ?? 0)})보다 부족합니다`
+                : "크레딧이 부족합니다"}
             </div>
             <a
               href="/store"

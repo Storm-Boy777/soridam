@@ -418,6 +418,7 @@ export interface TutoringCredit {
   plan_credits: number;
   credits: number;
   balanceCents: number;
+  estimatedCostCents: number;
 }
 
 // ── 이력 ──

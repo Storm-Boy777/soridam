@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>소리담 이메일 변경 확인</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #FAFAF7;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #FAFAF7; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 12px rgba(26, 26, 46, 0.06);">
+
+                    <!-- 헤더 -->
+                    <tr>
+                        <td style="background-color: #12121F; padding: 36px 30px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 26px; font-weight: bold; letter-spacing: -0.5px;">소리담</h1>
+                            <p style="margin: 8px 0 0 0; color: rgba(255, 255, 255, 0.55); font-size: 13px;">데이터 기반 OPIc AI 학습 플랫폼</p>
+                        </td>
+                    </tr>
+
+                    <!-- 본문 -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <h2 style="margin: 0 0 16px 0; color: #1A1A2E; font-size: 22px; font-weight: 700;">이메일 변경 확인</h2>
+
+                            <p style="margin: 0 0 28px 0; color: #6B6B7B; font-size: 15px; line-height: 1.7;">
+                                이메일 주소 변경을 요청하셨습니다.<br>
+                                아래 버튼을 클릭하여 새 이메일 주소를 확인해주세요.
+                            </p>
+
+                            <!-- 변경 정보 -->
+                            <div style="background-color: #F3F2EF; border: 1px solid #E8E6E1; padding: 16px 18px; margin: 0 0 28px 0; border-radius: 10px;">
+                                <p style="margin: 0; color: #6B6B7B; font-size: 13px; line-height: 1.8;">
+                                    <strong style="color: #1A1A2E;">변경 내용</strong><br>
+                                    기존: <strong>{{ .Email }}</strong><br>
+                                    변경: <strong>{{ .NewEmail }}</strong>
+                                </p>
+                            </div>
+
+                            <!-- CTA 버튼 -->
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 28px 0;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change" style="display: inline-block; background-color: #3A5BC7; color: #ffffff; text-decoration: none; padding: 15px 44px; border-radius: 9999px; font-size: 15px; font-weight: 700;">
+                                            이메일 변경 확인하기
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- 안내 -->
+                            <div style="background-color: #F3F2EF; border: 1px solid #E8E6E1; padding: 16px 18px; margin: 28px 0; border-radius: 10px;">
+                                <p style="margin: 0; color: #6B6B7B; font-size: 13px; line-height: 1.7;">
+                                    <strong style="color: #1A1A2E;">안내</strong><br>
+                                    &bull; 확인 링크는 <strong>1시간 동안</strong> 유효합니다<br>
+                                    &bull; 본인이 요청하지 않았다면 이 메일을 무시하세요<br>
+                                    &bull; 확인 전까지 기존 이메일이 유지됩니다
+                                </p>
+                            </div>
+
+                            <p style="margin: 20px 0 0 0; color: #A0A0AF; font-size: 13px; line-height: 1.6;">
+                                버튼이 작동하지 않는 경우, 아래 링크를 복사하여 브라우저에 붙여넣어 주세요:<br>
+                                <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change" style="color: #3A5BC7; word-break: break-all; text-decoration: underline;">{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change</a>
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- 푸터 -->
+                    <tr>
+                        <td style="background-color: #12121F; padding: 28px 30px; text-align: center;">
+                            <p style="margin: 0 0 8px 0; color: rgba(255, 255, 255, 0.6); font-size: 13px;">
+                                소리담과 함께 효과적인 오픽 준비를 시작하세요.
+                            </p>
+                            <p style="margin: 0; color: rgba(255, 255, 255, 0.35); font-size: 12px;">
+                                &copy; 2026 소리담 (Soridam). All rights reserved.<br>
+                                <a href="https://soridamhub.com" style="color: #3A5BC7; text-decoration: none;">soridamhub.com</a>
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

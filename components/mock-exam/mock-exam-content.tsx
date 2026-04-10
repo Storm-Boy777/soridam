@@ -387,7 +387,7 @@ function StartTab({
             hasCredit={false}
           />
           <div className="mt-4">
-            <NoCreditCard type="mock-exam" credits={credit?.balanceCents ?? 0} />
+            <NoCreditCard type="mock-exam" credits={credit?.balanceCents ?? 0} estimatedCostCents={credit?.estimatedCostCents} />
           </div>
         </div>
       )}

@@ -201,17 +201,17 @@ function SidePanelContent({ targetGrade, currentGrade, examDate }: { targetGrade
       {/* Store CTA */}
       <div className="rounded-[var(--radius-xl)] border border-primary-200 bg-gradient-to-br from-primary-50 to-primary-100/50 p-4 sm:p-5">
         <p className="text-sm font-semibold text-primary-700">
-          더 많은 학습이 필요하신가요?
+          크레딧이 부족하신가요?
         </p>
         <p className="mt-0.5 text-xs text-primary-600/80 sm:mt-1">
-          실전 플랜으로 업그레이드하여 모의고사 3회 + 스크립트 15회를 이용해보세요.
+          크레딧을 충전하여 모의고사, 스크립트, 튜터링을 계속 이용해보세요.
         </p>
         <div className="mt-3 flex gap-3">
           <Link
             href="/store"
             className="flex flex-1 items-center justify-center gap-1 rounded-full bg-primary-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600"
           >
-            Store
+            충전하기
             <ArrowRight size={14} />
           </Link>
         </div>

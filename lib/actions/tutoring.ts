@@ -150,6 +150,8 @@ export async function checkTutoringEligibility(): Promise<ActionResult<TutoringE
 // 2. 튜터링 크레딧 확인 (checkTutoringCredit)
 // ============================================================
 
+import { ESTIMATED_COST_CENTS } from "@/lib/constants/estimated-costs";
+
 export async function checkTutoringCredit(): Promise<ActionResult<TutoringCredit>> {
   try {
     const { supabase, userId } = await requireUser();
@@ -161,11 +163,13 @@ export async function checkTutoringCredit(): Promise<ActionResult<TutoringCredit
       .single();
 
     const balanceCents = balance?.balance_cents ?? 0;
+    const estimatedCostCents = ESTIMATED_COST_CENTS.tutoring;
 
     return {
       data: {
-        available: balanceCents > 0,
+        available: balanceCents >= estimatedCostCents,
         balanceCents,
+        estimatedCostCents,
         // 하위 호환용
         plan_credits: 0,
         credits: balanceCents,

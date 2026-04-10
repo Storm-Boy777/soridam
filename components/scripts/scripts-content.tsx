@@ -230,7 +230,7 @@ function CreateTab() {
         {/* CTA — 크레딧 유무에 따라 분기 */}
         <div className="mt-4 border-t border-border pt-3 sm:mt-6 sm:pt-4">
           {creditInfo && !creditInfo.hasCredit ? (
-            <NoCreditCard type="script" credits={creditInfo.totalCredits} />
+            <NoCreditCard type="script" credits={creditInfo.totalCredits} estimatedCostCents={creditInfo.estimatedCostCents} />
           ) : (
             <Link
               href="/scripts/create"

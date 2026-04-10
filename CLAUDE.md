@@ -596,6 +596,22 @@ origin: https://Storm-Boy777@github.com/Storm-Boy777/soridam.git
 **현재**: Phase 3 완료 + 튜터링 Phase 1 ✅ + 리브랜딩(P-5) ✅ + 결제 시스템(Creem+Provider 패턴) ✅
 **다음 작업**: 훈련모드 평가 패널 이식 (EvaluationPanelV7 → training-eval-panel) → 각 기능 실사용 테스트 → 점검 모드 해제
 
+### ⚠️ 반드시 해야 할 일: 크레딧 예상 비용 실측 업데이트
+- **파일**: `lib/constants/estimated-costs.ts`
+- **현재**: 보수적 추정값 (script: 5¢, mock_exam: 30¢, tutoring: 10¢)
+- **시점**: 각 모듈 실사용 테스트 후 `api_usage_logs`에 충분한 데이터가 쌓이면
+- **방법**: 아래 쿼리로 모듈별 1회 평균 비용 산출 후 상수 업데이트
+```sql
+SELECT session_type, round(avg(session_cost)::numeric, 2) AS avg_cost_cents
+FROM (
+  SELECT session_type, session_id, sum(cost_usd) * 100 AS session_cost
+  FROM api_usage_logs
+  WHERE session_id IS NOT NULL
+  GROUP BY session_type, session_id
+) t
+GROUP BY session_type;
+```
+
 ### 모의고사 평가 파이프라인 (현행)
 ```
 submitAnswer (SA) → fire-and-forget

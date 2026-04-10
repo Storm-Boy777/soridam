@@ -88,8 +88,9 @@ export async function getUserActivityLog(userId: string, limit: number = 20) {
 
 export interface AICostStats {
   totalTokens: number;
-  moduleBreakdown: { module: string; tokens: number; sessions: number }[];
-  dailyCosts: { date: string; tokens: number }[];
+  totalCostUsd: number;
+  moduleBreakdown: { module: string; tokens: number; calls: number; costUsd: number }[];
+  dailyCosts: { date: string; tokens: number; costUsd: number }[];
 }
 
 export interface SystemHealthStats {
@@ -110,8 +111,8 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     supabase.from(T.user_credits).select("*", { count: "exact", head: true }),
     // 오늘 로그인한 사용자 (DAU RPC)
     supabase.rpc("get_dau_count", { target_date: today }),
-    // 총 매출 (성공 결제)
-    supabase.from(T.orders).select("amount").eq("status", "paid"),
+    // 총 매출 (성공 결제) — polar_orders 사용
+    supabase.from(T.polar_orders).select("amount").eq("status", "paid"),
     // 평가 대기 중인 모의고사 답변
     supabase
       .from(T.mock_test_answers)
@@ -146,8 +147,8 @@ export async function getRecentActivity(): Promise<RecentActivity[]> {
   // 최근 활동 — 여러 소스에서 모아 시간순 정렬
   const [ordersRes, sessionsRes] = await Promise.all([
     supabase
-      .from(T.orders)
-      .select("id, product_name, amount, status, created_at")
+      .from(T.polar_orders)
+      .select("id, product_type, amount, status, created_at")
       .order("created_at", { ascending: false })
       .limit(5),
     supabase
@@ -163,7 +164,7 @@ export async function getRecentActivity(): Promise<RecentActivity[]> {
     activities.push({
       id: o.id,
       type: "order",
-      description: `${o.product_name} — ${o.amount?.toLocaleString()}원 (${o.status})`,
+      description: `${o.product_type} — $${((o.amount || 0) / 100).toFixed(2)} (${o.status})`,
       created_at: o.created_at,
     });
   }
@@ -188,56 +189,33 @@ export async function getRecentActivity(): Promise<RecentActivity[]> {
 export async function getConversionMetrics(): Promise<ConversionMetrics> {
   const { supabase } = await requireAdmin();
 
-  const [
-    totalUsersRes,
-    paidUsersRes,
-    planUsersRes,
-    avgOrderRes,
-    mockUsersRes,
-    scriptUsersRes,
-  ] = await Promise.all([
-    // 전체 회원
-    supabase.from(T.user_credits).select("*", { count: "exact", head: true }),
-    // 1회 이상 결제한 사용자 (DISTINCT user_id) — 최대 5000건
-    supabase.from(T.orders).select("user_id").eq("status", "paid").limit(5000),
-    // 현재 유료 플랜 사용자
-    supabase
-      .from(T.user_credits)
-      .select("*", { count: "exact", head: true })
-      .neq("current_plan", "free"),
-    // 평균 주문 금액
-    supabase.from(T.orders).select("amount").eq("status", "paid"),
-    // 모의고사 1회+ 응시자 — 최대 5000건
-    supabase.from(T.mock_test_sessions).select("user_id").limit(5000),
-    // 스크립트 1회+ 생성자 — 최대 5000건
-    supabase.from(T.scripts).select("user_id").limit(5000),
-  ]);
+  // DB 레벨 DISTINCT — Supabase 행 수 제한(1000)에 영향받지 않음
+  const { data, error } = await supabase.rpc("admin_conversion_metrics");
+  if (error) throw new Error(`admin_conversion_metrics RPC 실패: ${error.message}`);
 
-  const totalUsers = totalUsersRes.count || 0;
+  const m = data as {
+    total_users: number;
+    paid_users: number;
+    plan_users: number;
+    avg_order_cents: number;
+    mock_exam_users: number;
+    script_users: number;
+  };
 
-  // DISTINCT user_id 계산
-  const paidUsers = new Set((paidUsersRes.data || []).map((r) => r.user_id)).size;
-  const mockExamUsers = new Set((mockUsersRes.data || []).map((r) => r.user_id)).size;
-  const scriptUsers = new Set((scriptUsersRes.data || []).map((r) => r.user_id)).size;
-
-  const orders = avgOrderRes.data || [];
-  const avgOrderValue = orders.length > 0
-    ? Math.round(orders.reduce((sum, o) => sum + (o.amount || 0), 0) / orders.length)
-    : 0;
-
+  const totalUsers = m.total_users;
   const safe = (n: number) => (totalUsers > 0 ? Math.round((n / totalUsers) * 1000) / 10 : 0);
 
   return {
     totalUsers,
-    paidUsers,
-    planUsers: planUsersRes.count || 0,
-    conversionRate: safe(paidUsers),
-    planRate: safe(planUsersRes.count || 0),
-    avgOrderValue,
-    mockExamUsers,
-    scriptUsers,
-    mockExamRate: safe(mockExamUsers),
-    scriptRate: safe(scriptUsers),
+    paidUsers: m.paid_users,
+    planUsers: m.plan_users,
+    conversionRate: safe(m.paid_users),
+    planRate: safe(m.plan_users),
+    avgOrderValue: m.avg_order_cents,
+    mockExamUsers: m.mock_exam_users,
+    scriptUsers: m.script_users,
+    mockExamRate: safe(m.mock_exam_users),
+    scriptRate: safe(m.script_users),
   };
 }
 
@@ -260,7 +238,7 @@ export async function getDailyTrends(days: number = 30): Promise<DailyTrend[]> {
         .gte("created_at", startIso)
         .limit(10000),
       supabase
-        .from(T.orders)
+        .from(T.polar_orders)
         .select("amount, created_at")
         .eq("status", "paid")
         .gte("created_at", startIso)
@@ -324,58 +302,43 @@ export async function getDailyTrends(days: number = 30): Promise<DailyTrend[]> {
 export async function getAICostStats(): Promise<AICostStats> {
   const { supabase } = await requireAdmin();
 
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - 30);
-  const startIso = startDate.toISOString();
-
-  // 모듈별 토큰 사용량 병렬 조회
-  const [tutoringRes, mockReportsRes, scriptsRes] = await Promise.all([
-    // 튜터링 세션 토큰
-    supabase.from(T.tutoring_sessions).select("tokens_used, created_at"),
-    // 모의고사 리포트 (토큰 정보가 있으면)
-    supabase.from(T.mock_test_reports).select("created_at").limit(5000),
-    // 스크립트 생성 (토큰 추정: 1회 생성 ≈ 4000토큰)
-    supabase.from(T.scripts).select("created_at").limit(5000),
+  // api_usage_logs 실데이터 기반 집계
+  const [totalsRes, dailyRes] = await Promise.all([
+    supabase.rpc("admin_ai_cost_stats"),
+    supabase.rpc("admin_ai_daily_tokens", { days_back: 30 }),
   ]);
 
-  const tutoringTokens = (tutoringRes.data || []).reduce((sum, s) => sum + (s.tokens_used || 0), 0);
-  const tutoringCount = (tutoringRes.data || []).length;
-  // 모의고사: 1세션(14문항) ≈ 평균 50,000 토큰 (judge+coach+report+growth)
-  const mockCount = (mockReportsRes.data || []).length;
-  const mockTokens = mockCount * 50000;
-  // 스크립트: 1회 ≈ 4,000 토큰
-  const scriptCount = (scriptsRes.data || []).length;
-  const scriptTokens = scriptCount * 4000;
+  if (totalsRes.error) throw new Error(`admin_ai_cost_stats RPC 실패: ${totalsRes.error.message}`);
 
-  // 일별 토큰 추이 (최근 30일)
-  const dateMap = new Map<string, number>();
-  for (let i = 30; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    dateMap.set(d.toISOString().split("T")[0], 0);
-  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const raw = totalsRes.data as any;
 
-  for (const s of tutoringRes.data || []) {
-    const key = s.created_at?.split("T")[0];
-    if (key && dateMap.has(key)) dateMap.set(key, (dateMap.get(key) || 0) + (s.tokens_used || 0));
-  }
-  for (const r of mockReportsRes.data || []) {
-    const key = r.created_at?.split("T")[0];
-    if (key && dateMap.has(key)) dateMap.set(key, (dateMap.get(key) || 0) + 50000);
-  }
-  for (const s of scriptsRes.data || []) {
-    const key = s.created_at?.split("T")[0];
-    if (key && dateMap.has(key)) dateMap.set(key, (dateMap.get(key) || 0) + 4000);
-  }
+  const moduleNameMap: Record<string, string> = {
+    mock_exam: "모의고사",
+    script: "스크립트",
+    tutoring: "튜터링",
+    shadowing: "쉐도잉",
+  };
+
+  const dailyCosts: { date: string; tokens: number; costUsd: number }[] =
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ((dailyRes.data || []) as any[]).map((d) => ({
+      date: String(d.date),
+      tokens: Number(d.tokens) || 0,
+      costUsd: Number(d.cost_usd) || 0,
+    }));
 
   return {
-    totalTokens: tutoringTokens + mockTokens + scriptTokens,
-    moduleBreakdown: [
-      { module: "모의고사", tokens: mockTokens, sessions: mockCount },
-      { module: "튜터링", tokens: tutoringTokens, sessions: tutoringCount },
-      { module: "스크립트", tokens: scriptTokens, sessions: scriptCount },
-    ],
-    dailyCosts: [...dateMap.entries()].map(([date, tokens]) => ({ date, tokens })),
+    totalTokens: Number(raw?.total_tokens) || 0,
+    totalCostUsd: Number(raw?.total_cost_usd) || 0,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    moduleBreakdown: ((raw?.modules || []) as any[]).map((mod) => ({
+      module: moduleNameMap[mod.session_type] || mod.session_type,
+      tokens: Number(mod.total_tokens) || 0,
+      calls: Number(mod.calls) || 0,
+      costUsd: Number(mod.total_cost_usd) || 0,
+    })),
+    dailyCosts,
   };
 }
 

@@ -164,25 +164,30 @@ function MetricCard({
 
 async function AICostSection() {
   const cost = await getAICostStats();
-  const totalM = (cost.totalTokens / 1_000_000).toFixed(2);
+
+  const fmtTokens = (n: number) => {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+    return String(n);
+  };
 
   return (
     <div className="space-y-3">
       <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground-secondary">
         <Coins size={16} className="text-amber-500" />
-        AI 비용 (토큰)
+        AI 비용
       </h2>
       <div className="rounded-xl border border-border bg-surface p-4">
-        <p className="text-2xl font-bold tabular-nums text-foreground">{totalM}M</p>
-        <p className="text-xs text-foreground-muted">총 누적 토큰</p>
+        <p className="text-2xl font-bold tabular-nums text-foreground">${cost.totalCostUsd.toFixed(2)}</p>
+        <p className="text-xs text-foreground-muted">총 누적 비용 · {fmtTokens(cost.totalTokens)} 토큰</p>
         <div className="mt-3 space-y-2">
           {cost.moduleBreakdown.map((m) => (
             <div key={m.module} className="flex items-center justify-between text-sm">
               <span className="text-foreground-secondary">{m.module}</span>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-foreground-muted">{m.sessions}건</span>
+                <span className="text-xs text-foreground-muted">{m.calls}건</span>
                 <span className="font-medium tabular-nums text-foreground">
-                  {(m.tokens / 1_000_000).toFixed(2)}M
+                  ${m.costUsd.toFixed(2)}
                 </span>
               </div>
             </div>

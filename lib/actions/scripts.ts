@@ -44,6 +44,8 @@ async function requireUser() {
 // 크레딧 확인
 // ============================================================
 
+import { ESTIMATED_COST_CENTS } from "@/lib/constants/estimated-costs";
+
 export async function checkScriptCredit(): Promise<ActionResult<CreditCheckResult>> {
   try {
     const { supabase, userId } = await requireUser();
@@ -55,11 +57,13 @@ export async function checkScriptCredit(): Promise<ActionResult<CreditCheckResul
       .single();
 
     const balanceCents = balance?.balance_cents ?? 0;
+    const estimatedCostCents = ESTIMATED_COST_CENTS.script;
 
     return {
       data: {
-        hasCredit: balanceCents > 0,
+        hasCredit: balanceCents >= estimatedCostCents,
         balanceCents,
+        estimatedCostCents,
         // 하위 호환용 (기존 UI에서 참조)
         planCredits: 0,
         permanentCredits: 0,

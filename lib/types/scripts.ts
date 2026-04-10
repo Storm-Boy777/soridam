@@ -410,6 +410,7 @@ export interface CreditCheckResult {
   permanentCredits: number;
   totalCredits: number;
   balanceCents: number;
+  estimatedCostCents: number;
 }
 
 // ── opic_tips 학습 콘텐츠 ──

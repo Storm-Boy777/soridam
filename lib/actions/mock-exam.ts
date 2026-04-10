@@ -749,10 +749,13 @@ export async function getEvaluation(input: {
 // 11. 모의고사 크레딧 확인 (checkMockExamCredit)
 // ============================================================
 
+import { ESTIMATED_COST_CENTS } from "@/lib/constants/estimated-costs";
+
 export async function checkMockExamCredit(): Promise<
   ActionResult<{
     available: boolean;
     balanceCents: number;
+    estimatedCostCents: number;
   }>
 > {
   try {
@@ -765,11 +768,13 @@ export async function checkMockExamCredit(): Promise<
       .single();
 
     const balanceCents = balance?.balance_cents ?? 0;
+    const estimatedCostCents = ESTIMATED_COST_CENTS.mock_exam;
 
     return {
       data: {
-        available: balanceCents > 0,
+        available: balanceCents >= estimatedCostCents,
         balanceCents,
+        estimatedCostCents,
       },
     };
   } catch (err) {

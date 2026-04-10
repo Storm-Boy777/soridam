@@ -10,7 +10,7 @@ export default function PrivacyPage() {
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
       <h1 className="text-3xl font-bold">개인정보처리방침</h1>
       <p className="mt-2 text-sm text-foreground-muted">
-        시행일: 2026년 2월 18일 | 개정일: 2026년 3월 31일
+        시행일: 2026년 2월 18일 | 개정일: 2026년 4월 10일
       </p>
 
       <div className="mt-10 space-y-10 text-sm leading-relaxed text-foreground-secondary">
@@ -20,7 +20,7 @@ export default function PrivacyPage() {
             제1조 (개인정보의 수집 및 이용 목적)
           </h2>
           <p className="mt-2">
-            스투스 OPIc(이하 &quot;회사&quot;)은 다음의 목적을 위하여
+            소리담 운영자(이하 &quot;운영자&quot;)는 다음의 목적을 위하여
             개인정보를 처리합니다. 처리하는 개인정보는 다음의 목적 이외의
             용도로는 이용되지 않으며, 이용 목적이 변경되는 경우에는
             별도의 동의를 받는 등 필요한 조치를 이행합니다.
@@ -31,7 +31,7 @@ export default function PrivacyPage() {
               서비스 제공: AI 기반 OPIc 말하기 학습(모의고사, 스크립트 생성,
               튜터링, 쉐도잉), 학습 리포트 생성, 맞춤 학습
             </li>
-            <li>유료서비스: 결제 처리, 요금 정산, 이용권 관리</li>
+            <li>크레딧 충전: 결제 처리, 크레딧 잔액 관리</li>
             <li>마케팅: 이벤트·광고성 정보 제공 (별도 동의 시)</li>
           </ul>
         </section>
@@ -77,7 +77,7 @@ export default function PrivacyPage() {
             제3조 (개인정보의 보유 및 이용 기간)
           </h2>
           <p className="mt-2">
-            회사는 개인정보 수집 및 이용 목적이 달성된 후에는 해당 정보를
+            운영자는 개인정보 수집 및 이용 목적이 달성된 후에는 해당 정보를
             지체 없이 파기합니다. 다만, 관계 법령에 의해 보존할 필요가 있는
             경우 해당 기간 동안 보관합니다.
           </p>
@@ -95,7 +95,7 @@ export default function PrivacyPage() {
             제4조 (개인정보의 제3자 제공)
           </h2>
           <p className="mt-2">
-            회사는 원칙적으로 이용자의 개인정보를 외부에 제공하지 않습니다.
+            운영자는 원칙적으로 이용자의 개인정보를 외부에 제공하지 않습니다.
             다만, 다음의 경우에는 예외로 합니다.
           </p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
@@ -110,7 +110,7 @@ export default function PrivacyPage() {
             제5조 (개인정보 처리의 위탁)
           </h2>
           <p className="mt-2">
-            회사는 원활한 서비스 제공을 위해 다음과 같이 개인정보 처리
+            운영자는 원활한 서비스 제공을 위해 다음과 같이 개인정보 처리
             업무를 위탁하고 있습니다.
           </p>
           <div className="mt-3 overflow-x-auto">
@@ -130,23 +130,8 @@ export default function PrivacyPage() {
               </thead>
               <tbody className="divide-y divide-border/50">
                 <tr>
-                  <td className="py-2 pr-4">주식회사 코리아포트원 (PortOne)</td>
-                  <td className="py-2 pr-4">전자결제 처리 및 결제 도용 방지</td>
-                  <td className="py-2">위탁 계약 종료 시까지</td>
-                </tr>
-                <tr>
-                  <td className="py-2 pr-4">주식회사 KG이니시스</td>
-                  <td className="py-2 pr-4">신용카드 결제 대행</td>
-                  <td className="py-2">위탁 계약 종료 시까지</td>
-                </tr>
-                <tr>
-                  <td className="py-2 pr-4">주식회사 카카오페이</td>
-                  <td className="py-2 pr-4">간편결제 대행</td>
-                  <td className="py-2">위탁 계약 종료 시까지</td>
-                </tr>
-                <tr>
-                  <td className="py-2 pr-4">주식회사 NHN KCP</td>
-                  <td className="py-2 pr-4">전자결제 대행</td>
+                  <td className="py-2 pr-4">Creem Inc.</td>
+                  <td className="py-2 pr-4">크레딧 결제 대행</td>
                   <td className="py-2">위탁 계약 종료 시까지</td>
                 </tr>
                 <tr>
@@ -163,7 +148,7 @@ export default function PrivacyPage() {
             </table>
           </div>
           <p className="mt-3">
-            회사는 위탁 계약 체결 시 개인정보보호법 제26조에 따라
+            운영자는 위탁 계약 체결 시 개인정보보호법 제26조에 따라
             위탁업무 수행 목적 외 개인정보 처리 금지, 기술적·관리적
             보호조치, 재위탁 제한, 수탁자에 대한 관리·감독, 손해배상 등
             책임에 관한 사항을 계약서 등 문서에 명시하고, 해당
@@ -178,7 +163,7 @@ export default function PrivacyPage() {
             제6조 (개인정보의 파기)
           </h2>
           <p className="mt-2">
-            회사는 개인정보 보유기간의 경과, 처리 목적 달성 등 개인정보가
+            운영자는 개인정보 보유기간의 경과, 처리 목적 달성 등 개인정보가
             불필요하게 되었을 때에는 지체 없이 해당 개인정보를 파기합니다.
           </p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
@@ -204,7 +189,7 @@ export default function PrivacyPage() {
           </ul>
           <p className="mt-2">
             권리 행사는 서비스 내 설정 또는 이메일(soridamhub@gmail.com)로
-            요청할 수 있으며, 회사는 지체 없이 조치합니다.
+            요청할 수 있으며, 운영자는 지체 없이 조치합니다.
           </p>
         </section>
 
@@ -214,7 +199,7 @@ export default function PrivacyPage() {
             제8조 (개인정보의 안전성 확보 조치)
           </h2>
           <p className="mt-2">
-            회사는 개인정보의 안전성 확보를 위해 다음과 같은 조치를 취하고
+            운영자는 개인정보의 안전성 확보를 위해 다음과 같은 조치를 취하고
             있습니다.
           </p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
@@ -230,9 +215,11 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-semibold text-foreground">
             제9조 (개인정보 보호책임자)
           </h2>
+          <p className="mt-2">
+            개인정보 보호 관련 문의는 아래 이메일로 접수하실 수 있으며,
+            운영자는 지체 없이 조치합니다.
+          </p>
           <ul className="mt-2 space-y-0.5">
-            <li>성명: 전다영</li>
-            <li>직책: 대표</li>
             <li>이메일: soridamhub@gmail.com</li>
           </ul>
         </section>
@@ -249,18 +236,10 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        {/* 사업자 정보 */}
+        {/* 문의처 */}
         <section className="rounded-[var(--radius-lg)] border border-border bg-surface-secondary p-5">
-          <p className="font-medium text-foreground">사업자 정보</p>
-          <ul className="mt-2 space-y-0.5">
-            <li>상호: 스투스 OPIc</li>
-            <li>대표: 전다영</li>
-            <li>사업자등록번호: 757-18-02318</li>
-            <li>
-              소재지: 경상북도 구미시 해마루공원로 80, 104동 1903호
-            </li>
-            <li>이메일: soridamhub@gmail.com</li>
-          </ul>
+          <p className="font-medium text-foreground">문의처</p>
+          <p className="mt-2">이메일: soridamhub@gmail.com</p>
         </section>
       </div>
     </div>

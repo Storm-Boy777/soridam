@@ -6,6 +6,7 @@ import { AlertCircle, FlaskConical, Wallet } from "lucide-react";
 interface NoCreditCardProps {
   type: "script" | "mock-exam" | "tutoring";
   credits?: number;
+  estimatedCostCents?: number;
 }
 
 const CONFIG = {
@@ -24,18 +25,24 @@ const CONFIG = {
 };
 
 // 크레딧 부족 시 공통 안내 카드
-export function NoCreditCard({ type, credits = 0 }: NoCreditCardProps) {
+export function NoCreditCard({ type, credits = 0, estimatedCostCents }: NoCreditCardProps) {
   const { label, trialHref } = CONFIG[type];
 
   return (
     <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-4 sm:p-5">
       {/* 크레딧 현황 */}
-      <div className="flex items-center justify-center gap-2">
-        <span className="text-sm text-foreground-secondary">크레딧 잔액:</span>
-        <span className="text-sm font-bold text-foreground">${(credits / 100).toFixed(2)}</span>
-        {credits <= 0 && (
-          <span className="text-xs text-accent-500">(크레딧이 부족합니다)</span>
-        )}
+      <div className="flex flex-col items-center gap-1">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-foreground-secondary">크레딧 잔액:</span>
+          <span className="text-sm font-bold text-foreground">${(credits / 100).toFixed(2)}</span>
+        </div>
+        {credits <= 0 ? (
+          <span className="text-xs text-accent-500">크레딧이 부족합니다</span>
+        ) : estimatedCostCents && credits < estimatedCostCents ? (
+          <span className="text-xs text-amber-600">
+            {label} 1회 예상 비용(${(estimatedCostCents / 100).toFixed(2)})보다 잔액이 부족합니다
+          </span>
+        ) : null}
       </div>
 
       {/* 체험판 + 충전 */}

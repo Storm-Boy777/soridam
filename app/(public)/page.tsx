@@ -6,6 +6,7 @@ import PipelineSection from "@/components/landing/pipeline-section";
 import SurveySection from "@/components/landing/survey-section";
 import FeaturesSection from "@/components/landing/features-section";
 import PhilosophySection from "@/components/landing/philosophy-section";
+import FaqSection from "@/components/landing/faq-section";
 import FinalCtaSection from "@/components/landing/final-cta-section";
 
 export const metadata: Metadata = {
@@ -44,7 +45,14 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ─── 6부: CTA ─── */}
+      {/* ─── 6부: FAQ (다크) ─── */}
+      <div className="bg-[#1A1A2E] text-white">
+        <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 md:py-24">
+          <FaqSection />
+        </div>
+      </div>
+
+      {/* ─── 7부: CTA ─── */}
       <div className="bg-[#12121F] text-white">
         <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 md:py-24">
           <FinalCtaSection />
