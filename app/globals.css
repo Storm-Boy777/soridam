@@ -315,6 +315,16 @@ details.faq-item .faq-answer {
   animation: fadeIn 0.2s ease-out;
 }
 
+@keyframes fadeInLeft {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeInRight {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
 /* 모바일 스크롤바 숨김 */
 @media (max-width: 767px) {
   html,

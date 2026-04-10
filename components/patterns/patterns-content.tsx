@@ -165,10 +165,17 @@ export function PatternsContent() {
   const autoPlayRef = useRef<{ audio: HTMLAudioElement | null; sessionId: number }>({ audio: null, sessionId: 0 });
   const isAutoPlayingRef = useRef(false);
   const studyIndexRef = useRef(studyIndex);
+  const prevStudyIndexRef = useRef(studyIndex);
+  const [slideDirection, setSlideDirection] = useState<"left" | "right">("right");
 
   // ref 동기화
   useEffect(() => { isAutoPlayingRef.current = isAutoPlaying; }, [isAutoPlaying]);
-  useEffect(() => { studyIndexRef.current = studyIndex; }, [studyIndex]);
+  useEffect(() => {
+    if (studyIndex > prevStudyIndexRef.current) setSlideDirection("right");
+    else if (studyIndex < prevStudyIndexRef.current) setSlideDirection("left");
+    prevStudyIndexRef.current = studyIndex;
+    studyIndexRef.current = studyIndex;
+  }, [studyIndex]);
 
   const stopAutoPlay = useCallback(() => {
     setIsAutoPlaying(false);
@@ -403,15 +410,27 @@ export function PatternsContent() {
             </p>
           </div>
 
-          {/* 패턴 카드 (학습 모드: 예시 기본 숨김) */}
-          <PatternCard
-            key={currentStudyItem.pattern.id}
-            pattern={currentStudyItem.pattern}
-            number={currentStudyItem.indexInPhase + 1}
-            phaseColor={currentStudyItem.phaseColor}
-            patternType={activeTab}
-            studyMode
-          />
+          {/* 진행률 바 */}
+          <div className="mb-4 h-1 overflow-hidden rounded-full bg-primary-100">
+            <div
+              className="h-full rounded-full bg-primary-500 transition-all duration-300"
+              style={{ width: `${((studyIndex + 1) / totalPatterns) * 100}%` }}
+            />
+          </div>
+
+          {/* 패턴 카드 */}
+          <div
+            key={`${activeTab}-${studyIndex}`}
+            className={slideDirection === "right" ? "animate-[fadeInRight_250ms_ease-out]" : "animate-[fadeInLeft_250ms_ease-out]"}
+          >
+            <PatternCard
+              pattern={currentStudyItem.pattern}
+              number={currentStudyItem.indexInPhase + 1}
+              phaseColor={currentStudyItem.phaseColor}
+              patternType={activeTab}
+              studyMode
+            />
+          </div>
 
           {/* Phase 진행률 도트 */}
           <div className="mt-4 flex items-center justify-center gap-1 overflow-x-auto max-md:justify-start max-md:px-2 max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden">
