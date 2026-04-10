@@ -56,59 +56,49 @@ export function CommentSection({
 
   return (
     <div>
-      <h4 className="mb-3 text-sm font-semibold text-foreground">
+      <h4 className="text-[13px] font-semibold text-slate-800">
         댓글{comments.length > 0 ? ` ${comments.length}` : ""}
       </h4>
 
       {/* 댓글 목록 */}
       {comments.length > 0 ? (
-        <div className="space-y-2.5">
+        <div className="mt-3 divide-y divide-slate-100">
           {comments.map((c) => {
             const name = c.is_admin_reply
-              ? "관리자"
+              ? "소리담 개발자"
               : c.profiles?.display_name || "사용자";
             const initial = name[0].toUpperCase();
 
             return (
-              <div key={c.id} className="flex gap-2.5">
+              <div key={c.id} className="flex gap-3 py-3.5 first:pt-0">
                 {/* 아바타 */}
                 <div
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
                     c.is_admin_reply
-                      ? "bg-primary-500 text-white"
-                      : "bg-surface-secondary text-foreground-muted"
+                      ? "bg-blue-500 text-white"
+                      : "bg-slate-100 text-slate-600"
                   }`}
                 >
-                  {c.is_admin_reply ? (
-                    <Shield size={12} />
-                  ) : (
-                    initial
-                  )}
+                  {c.is_admin_reply ? <Shield size={11} /> : initial}
                 </div>
 
                 {/* 내용 */}
-                <div
-                  className={`min-w-0 flex-1 rounded-lg px-3 py-2.5 ${
-                    c.is_admin_reply
-                      ? "border border-primary-200 bg-primary-50/40"
-                      : "bg-surface-secondary"
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
                     <span
-                      className={`text-xs font-semibold ${
+                      className={`text-[12px] font-semibold ${
                         c.is_admin_reply
-                          ? "text-primary-600"
-                          : "text-foreground"
+                          ? "text-blue-600"
+                          : "text-slate-700"
                       }`}
                     >
                       {name}
                     </span>
-                    <span className="text-[10px] text-foreground-muted">
+                    <span className="text-[10px] text-slate-400">
                       {formatTime(c.created_at)}
                     </span>
                   </div>
-                  <p className="mt-0.5 whitespace-pre-wrap text-sm text-foreground">
+                  <p className="mt-1 whitespace-pre-wrap text-[13px] leading-relaxed text-slate-600">
                     {c.content}
                   </p>
                 </div>
@@ -117,16 +107,15 @@ export function CommentSection({
           })}
         </div>
       ) : (
-        <p className="py-2 text-center text-xs text-foreground-muted">
+        <p className="py-6 text-center text-[13px] text-slate-400">
           아직 댓글이 없습니다. 첫 댓글을 남겨보세요.
         </p>
       )}
 
       {/* 댓글 입력 */}
       {isLoggedIn && (
-        <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-surface p-1.5 focus-within:border-primary-300 focus-within:ring-1 focus-within:ring-primary-200">
-          <input
-            type="text"
+        <div className="mt-4 flex items-end gap-2 rounded-xl border border-slate-200 bg-white p-2 transition-all focus-within:border-slate-400 focus-within:ring-4 focus-within:ring-slate-200/50">
+          <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onKeyDown={(e) => {
@@ -136,12 +125,19 @@ export function CommentSection({
               }
             }}
             placeholder="댓글을 입력하세요..."
-            className="flex-1 bg-transparent px-2 py-1.5 text-sm outline-none placeholder:text-foreground-muted"
+            rows={1}
+            className="flex-1 resize-none bg-transparent px-2 py-2 text-[13px] text-slate-700 outline-none placeholder:text-slate-400 sm:text-sm"
+            style={{ maxHeight: "120px", overflowY: "auto" }}
+            onInput={(e) => {
+              const el = e.currentTarget;
+              el.style.height = "auto";
+              el.style.height = Math.min(el.scrollHeight, 120) + "px";
+            }}
           />
           <button
             onClick={handleSubmit}
             disabled={submitting || !content.trim()}
-            className="shrink-0 rounded-md bg-primary-500 p-2 text-white transition-colors hover:bg-primary-600 disabled:opacity-40"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-white shadow-sm transition-colors hover:bg-slate-700 disabled:opacity-40"
           >
             <Send size={14} />
           </button>

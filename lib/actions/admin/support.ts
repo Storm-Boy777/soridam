@@ -2,13 +2,13 @@
 
 import { requireAdmin } from "@/lib/auth";
 import { T } from "@/lib/constants/tables";
-import type { SupportPost, SupportStatus } from "@/lib/types/support";
+import type { SupportPost } from "@/lib/types/support";
 
 // ── 전체 게시물 조회 (관리자) ──
 
 export async function getAdminPosts(params: {
   visibility?: "public" | "private";
-  status?: SupportStatus;
+  status?: string;
   page?: number;
   limit?: number;
 }): Promise<{
@@ -41,33 +41,6 @@ export async function getAdminPosts(params: {
   }
 
   return { data: (data || []) as SupportPost[], total: count || 0 };
-}
-
-// ── 상태 변경 ──
-
-export async function updatePostStatus(
-  postId: number,
-  status: SupportStatus
-): Promise<{ success: boolean; error?: string }> {
-  const { supabase, userId, userEmail } = await requireAdmin();
-
-  const { error } = await supabase
-    .from(T.support_posts)
-    .update({ status })
-    .eq("id", postId);
-
-  if (error) return { success: false, error: error.message };
-
-  await supabase.from(T.admin_audit_log).insert({
-    admin_id: userId,
-    admin_email: userEmail,
-    action: "support_status_change",
-    target_type: "support_post",
-    target_id: String(postId),
-    details: { new_status: status },
-  });
-
-  return { success: true };
 }
 
 // ── 고정/해제 ──

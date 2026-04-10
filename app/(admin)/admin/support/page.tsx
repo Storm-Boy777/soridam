@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import {
   getAdminPosts,
-  updatePostStatus,
   togglePinPost,
   deletePost,
   createAdminReply,
@@ -24,14 +23,8 @@ import {
 } from "@/lib/actions/admin/support";
 import { getPostDetail } from "@/lib/actions/support";
 import {
-  STATUS_LABELS,
-  STATUS_COLORS,
   CATEGORY_LABELS,
-  CATEGORY_EMOJI,
   CATEGORY_COLORS,
-  SUPPORT_STATUSES,
-  type SupportPost,
-  type SupportStatus,
   type SupportCategory,
 } from "@/lib/types/support";
 
@@ -78,20 +71,6 @@ export default function AdminSupportPage() {
       queryClient.invalidateQueries({
         queryKey: ["support-post-detail", expandedId],
       });
-    }
-  };
-
-  // 상태 변경
-  const handleStatusChange = async (
-    postId: number,
-    status: SupportStatus
-  ) => {
-    const result = await updatePostStatus(postId, status);
-    if (result.success) {
-      toast.success(`상태가 '${STATUS_LABELS[status]}'(으)로 변경되었습니다`);
-      refresh();
-    } else {
-      toast.error(result.error || "상태 변경 실패");
     }
   };
 
@@ -189,23 +168,6 @@ export default function AdminSupportPage() {
         </button>
       </div>
 
-      {/* 통계 요약 */}
-      <div className="flex gap-3">
-        {(["open", "in_progress", "resolved", "closed"] as SupportStatus[]).map(
-          (s) => {
-            const count = posts.filter((p) => p.status === s).length;
-            return (
-              <div
-                key={s}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium ${STATUS_COLORS[s]}`}
-              >
-                {STATUS_LABELS[s]}: {count}
-              </div>
-            );
-          }
-        )}
-      </div>
-
       {/* 게시물 목록 */}
       {isLoading ? (
         <div className="space-y-2">
@@ -246,15 +208,9 @@ export default function AdminSupportPage() {
                         />
                       )}
                       <span
-                        className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${CATEGORY_COLORS[post.category as SupportCategory]}`}
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${CATEGORY_COLORS[post.category as SupportCategory]}`}
                       >
-                        {CATEGORY_EMOJI[post.category as SupportCategory]}{" "}
                         {CATEGORY_LABELS[post.category as SupportCategory]}
-                      </span>
-                      <span
-                        className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${STATUS_COLORS[post.status as SupportStatus]}`}
-                      >
-                        {STATUS_LABELS[post.status as SupportStatus]}
                       </span>
                     </div>
                     <h3 className="text-sm font-semibold text-foreground">
@@ -323,26 +279,6 @@ export default function AdminSupportPage() {
                     <p className="mb-3 whitespace-pre-wrap text-sm text-foreground">
                       {detail?.content || post.content}
                     </p>
-
-                    {/* 상태 변경 */}
-                    <div className="mb-3 flex items-center gap-2">
-                      <span className="text-xs text-foreground-muted">
-                        상태:
-                      </span>
-                      {SUPPORT_STATUSES.map((s) => (
-                        <button
-                          key={s}
-                          onClick={() => handleStatusChange(post.id, s)}
-                          className={`rounded-md px-2 py-0.5 text-[10px] font-medium ${
-                            post.status === s
-                              ? STATUS_COLORS[s]
-                              : "bg-surface-secondary text-foreground-muted hover:text-foreground"
-                          }`}
-                        >
-                          {STATUS_LABELS[s]}
-                        </button>
-                      ))}
-                    </div>
 
                     {/* 댓글 */}
                     {detail?.comments && detail.comments.length > 0 && (

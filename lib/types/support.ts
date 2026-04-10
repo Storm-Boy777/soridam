@@ -31,47 +31,34 @@ export type SupportStatus = (typeof SUPPORT_STATUSES)[number];
 
 export type SupportVisibility = "public" | "private";
 
-// ── 한글 레이블 ──
+// ── 한글 레이블 (따뜻한 소통함 톤) ──
 export const CATEGORY_LABELS: Record<SupportCategory, string> = {
-  bug: "버그",
-  suggestion: "건의",
-  question: "질문",
+  bug: "버그제보",
+  suggestion: "기능건의",
+  question: "응원/인사",
   refund: "환불",
   account: "계정",
   other: "기타",
 };
 
 export const CATEGORY_EMOJI: Record<SupportCategory, string> = {
-  bug: "🐛",
-  suggestion: "💡",
-  question: "❓",
-  refund: "💳",
-  account: "👤",
-  other: "📩",
+  bug: "",
+  suggestion: "",
+  question: "",
+  refund: "",
+  account: "",
+  other: "",
 };
 
 export const CATEGORY_COLORS: Record<SupportCategory, string> = {
-  bug: "bg-red-100 text-red-700",
-  suggestion: "bg-amber-100 text-amber-700",
-  question: "bg-blue-100 text-blue-700",
+  bug: "bg-rose-100 text-rose-700",
+  suggestion: "bg-blue-100 text-blue-700",
+  question: "bg-orange-100 text-orange-700",
   refund: "bg-purple-100 text-purple-700",
   account: "bg-teal-100 text-teal-700",
-  other: "bg-gray-100 text-gray-600",
+  other: "bg-slate-100 text-slate-600",
 };
 
-export const STATUS_LABELS: Record<SupportStatus, string> = {
-  open: "대기",
-  in_progress: "처리중",
-  resolved: "해결",
-  closed: "종료",
-};
-
-export const STATUS_COLORS: Record<SupportStatus, string> = {
-  open: "bg-yellow-100 text-yellow-700",
-  in_progress: "bg-blue-100 text-blue-700",
-  resolved: "bg-green-100 text-green-700",
-  closed: "bg-gray-100 text-gray-600",
-};
 
 // ── DB Row 인터페이스 ──
 export interface SupportPost {
@@ -81,7 +68,7 @@ export interface SupportPost {
   visibility: SupportVisibility;
   title: string;
   content: string;
-  status: SupportStatus;
+  status?: string;
   is_pinned: boolean;
   vote_count: number;
   comment_count: number;

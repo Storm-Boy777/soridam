@@ -6,7 +6,6 @@ import type {
   SupportPost,
   SupportComment,
   SupportCategory,
-  SupportStatus,
   FeedbackSort,
 } from "@/lib/types/support";
 

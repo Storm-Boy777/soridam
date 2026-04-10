@@ -31,26 +31,17 @@ async function SupportDataLoader() {
 
 function SupportPlaceholder() {
   return (
-    <div>
-      {/* 탭 스켈레톤 */}
-      <div className="mb-4 flex border-b border-border sm:mb-6">
-        {["공지사항", "게시판", "1:1 문의"].map((label) => (
-          <div
-            key={label}
-            className="flex items-center justify-center gap-1.5 px-4 py-3 text-xs font-medium text-foreground-muted sm:gap-2 sm:px-6 sm:text-sm"
-          >
-            <div className="h-4 w-4 rounded bg-foreground-muted/20" />
-            <span>{label}</span>
-          </div>
+    <div className="space-y-6">
+      <div className="h-8 w-48 animate-pulse rounded-lg bg-surface-secondary" />
+      <div className="h-5 w-80 animate-pulse rounded-lg bg-surface-secondary/60" />
+      <div className="flex gap-2 pt-2">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-10 w-24 animate-pulse rounded-full bg-surface-secondary/50" />
         ))}
       </div>
-      {/* 콘텐츠 스켈레톤 */}
-      <div className="space-y-3">
+      <div className="space-y-3 pt-2">
         {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="h-20 animate-pulse rounded-xl border border-border bg-surface"
-          />
+          <div key={i} className="h-24 animate-pulse rounded-2xl bg-surface-secondary/30" />
         ))}
       </div>
     </div>
@@ -59,15 +50,19 @@ function SupportPlaceholder() {
 
 export default function SupportPage() {
   return (
-    <div className="pb-6 pt-1 sm:pb-8 sm:pt-2 lg:pt-0">
-      <div className="mb-4 sm:mb-6">
-        <h1 className="text-xl font-bold text-foreground sm:text-2xl">
-          소통함
+    <div className="mx-auto max-w-3xl px-5 pb-16 pt-6 sm:px-6 sm:pt-10 md:px-8">
+      {/* 따뜻한 인사 헤더 — "부담 없는 온기" 철학 */}
+      <header className="mb-8 sm:mb-10">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-800 sm:text-[30px]">
+          소리담 소통함
         </h1>
-        <p className="mt-0.5 text-sm text-foreground-secondary sm:mt-1 sm:text-base">
-          소리담과 소통하는 공간입니다. 피드백, 건의, 문의를 남겨주세요.
+        <p className="mt-2 text-[14px] leading-relaxed text-slate-500 sm:mt-2.5 sm:text-[15px]">
+          사용하시며 느낀 작은 불편함도, 소소한 성장의 기쁨도 모두 좋습니다.
+          <br className="hidden sm:block" />
+          소리담은 여러분의 이야기로 자라납니다.
         </p>
-      </div>
+      </header>
+
       <Suspense fallback={<SupportPlaceholder />}>
         <SupportDataLoader />
       </Suspense>
