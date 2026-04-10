@@ -1018,9 +1018,7 @@ function Step2Input({
 
       {!hasCredit && !isTrialMode && (
         <p className="text-center text-xs text-red-500">
-          {(creditInfo?.balanceCents ?? 0) > 0
-            ? `잔액(${formatUsd(creditInfo?.balanceCents ?? 0)})이 예상 비용(${formatUsd(creditInfo?.estimatedCostCents ?? 0)})보다 부족하여 진행 중 크레딧이 소진될 수 있습니다.`
-            : "크레딧이 부족합니다."}{" "}
+          크레딧이 부족합니다.{" "}
           <a href="/store" className="underline">충전하기</a>
         </p>
       )}
