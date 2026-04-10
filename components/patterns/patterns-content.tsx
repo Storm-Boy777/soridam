@@ -271,7 +271,7 @@ export function PatternsContent() {
       {/* 탭 바 (가로 스크롤) */}
       <div
         ref={tabsRef}
-        className="mb-4 flex gap-1.5 overflow-x-auto rounded-xl bg-surface-secondary p-1 lg:grid lg:grid-cols-10 max-lg:[scrollbar-width:none] max-lg:[&::-webkit-scrollbar]:hidden"
+        className="mb-4 flex overflow-x-auto border-b border-border max-lg:[scrollbar-width:none] max-lg:[&::-webkit-scrollbar]:hidden"
       >
         {tabs.map((tab) => {
           const active = activeTab === tab.id;
@@ -280,14 +280,17 @@ export function PatternsContent() {
               key={tab.id}
               data-tab={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-medium transition-all lg:shrink ${
+              className={`relative flex shrink-0 items-center justify-center gap-1.5 px-3 py-3 text-xs font-medium transition-colors sm:px-4 ${
                 active
-                  ? "bg-surface text-foreground shadow-sm"
-                  : "text-foreground-secondary hover:text-foreground"
+                  ? "text-primary-600"
+                  : "text-foreground-muted hover:text-foreground-secondary"
               }`}
             >
               <tab.icon className="h-3.5 w-3.5 shrink-0" />
               <span>{tab.label}</span>
+              {active && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-primary-500" />
+              )}
             </button>
           );
         })}

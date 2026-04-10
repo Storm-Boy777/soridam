@@ -94,9 +94,11 @@ export function ExamPoolSelector({
       <div className="relative">
         {disabled && (
           <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-surface/70 backdrop-blur-[1px]">
-            <p className="mx-4 text-center text-sm font-semibold text-foreground">
-              진행 중인 모의고사를 <span className="text-primary-600">완료</span>하거나 <span className="text-primary-600">그만둔</span> 후<br />새로 시작할 수 있습니다.
-            </p>
+            <div className="rounded-xl border border-border bg-surface px-6 py-4 shadow-lg">
+              <p className="text-center text-sm font-semibold text-foreground">
+                진행 중인 모의고사를 <span className="text-primary-600">완료</span>하거나 <span className="text-primary-600">그만둔</span> 후<br />새로 시작할 수 있습니다.
+              </p>
+            </div>
           </div>
         )}
         <div className="grid gap-3 sm:grid-cols-3">

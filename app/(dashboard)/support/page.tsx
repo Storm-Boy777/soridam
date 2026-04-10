@@ -33,11 +33,11 @@ function SupportPlaceholder() {
   return (
     <div>
       {/* 탭 스켈레톤 */}
-      <div className="mb-4 flex gap-1 rounded-xl bg-surface-secondary p-1 sm:mb-6">
-        {["공지사항", "피드백 보드", "1:1 문의"].map((label) => (
+      <div className="mb-4 flex border-b border-border sm:mb-6">
+        {["공지사항", "게시판", "1:1 문의"].map((label) => (
           <div
             key={label}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-xs font-medium text-foreground-muted sm:gap-2 sm:px-3 sm:text-sm"
+            className="flex items-center justify-center gap-1.5 px-4 py-3 text-xs font-medium text-foreground-muted sm:gap-2 sm:px-6 sm:text-sm"
           >
             <div className="h-4 w-4 rounded bg-foreground-muted/20" />
             <span>{label}</span>

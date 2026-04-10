@@ -62,8 +62,8 @@ export function TutoringContent({
 
   return (
     <div>
-      {/* 탭 네비게이션 — 카드형 (튜터링 고유 스타일) */}
-      <div className="mb-4 flex gap-1 rounded-xl bg-surface-secondary p-1 sm:mb-6">
+      {/* 탭 네비게이션 — 하단 인디케이터 */}
+      <div className="mb-4 flex border-b border-border sm:mb-6">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -71,14 +71,17 @@ export function TutoringContent({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-xs font-medium transition-all sm:gap-2 sm:px-3 sm:text-sm ${
+              className={`relative flex items-center justify-center gap-1.5 px-4 py-3 text-xs font-medium transition-colors sm:gap-2 sm:px-6 sm:text-sm ${
                 isActive
-                  ? "bg-surface text-foreground shadow-sm"
-                  : "text-foreground-secondary hover:text-foreground"
+                  ? "text-primary-600"
+                  : "text-foreground-muted hover:text-foreground-secondary"
               }`}
             >
               <Icon className="h-4 w-4 shrink-0" />
               <span className="truncate">{tab.label}</span>
+              {isActive && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-primary-500" />
+              )}
             </button>
           );
         })}
