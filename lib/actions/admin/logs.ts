@@ -7,7 +7,8 @@ import type { AuditLogEntry, PaginatedResult } from "@/lib/types/admin";
 export async function getAuditLogs(params: {
   page?: number;
   pageSize?: number;
-  action?: string;
+  action?: string;      // 단일 action (하위 호환)
+  actions?: string[];   // action 그룹 필터
   dateFrom?: string;    // ISO date "2026-03-01"
   dateTo?: string;      // ISO date "2026-03-14"
 }): Promise<PaginatedResult<AuditLogEntry>> {
@@ -20,7 +21,9 @@ export async function getAuditLogs(params: {
     .from(T.admin_audit_log)
     .select("*", { count: "exact" });
 
-  if (params.action && params.action !== "all") {
+  if (params.actions && params.actions.length > 0) {
+    query = query.in("action", params.actions);
+  } else if (params.action && params.action !== "all") {
     query = query.eq("action", params.action);
   }
 

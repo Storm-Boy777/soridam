@@ -322,20 +322,20 @@ export default function AdminSponsorshipsPage() {
       )}
 
       {/* 탭 */}
-      <div className="flex gap-1 border-b border-border">
+      <div className="flex border-b border-border">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`relative px-4 py-2.5 text-sm font-medium transition-colors ${
+            className={`relative px-4 py-3 text-xs font-medium transition-colors sm:px-6 sm:text-sm ${
               activeTab === tab.key
-                ? "text-primary-600"
+                ? "text-foreground"
                 : "text-foreground-muted hover:text-foreground-secondary"
             }`}
           >
             {tab.label}
             {activeTab === tab.key && (
-              <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-primary-500" />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-foreground" />
             )}
           </button>
         ))}

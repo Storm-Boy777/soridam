@@ -102,7 +102,7 @@ export default function ExamApprovalPage() {
       </div>
 
       {/* 탭 + 카운트 배지 */}
-      <div className="flex gap-1 border-b border-border">
+      <div className="flex border-b border-border">
         {TAB_CONFIG.map((t) => {
           const count = counts[t.key];
           const isActive = tab === t.key;
@@ -110,10 +110,10 @@ export default function ExamApprovalPage() {
             <button
               key={t.key}
               onClick={() => handleTabChange(t.key)}
-              className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+              className={`relative flex items-center gap-1.5 px-4 py-3 text-xs font-medium transition-colors sm:px-6 sm:text-sm ${
                 isActive
-                  ? "border-primary-500 text-primary-600"
-                  : "border-transparent text-foreground-secondary hover:text-foreground"
+                  ? "text-foreground"
+                  : "text-foreground-muted hover:text-foreground-secondary"
               }`}
             >
               {t.label}
@@ -129,6 +129,9 @@ export default function ExamApprovalPage() {
                 >
                   {count}
                 </span>
+              )}
+              {isActive && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-foreground" />
               )}
             </button>
           );

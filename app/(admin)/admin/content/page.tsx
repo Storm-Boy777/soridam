@@ -39,18 +39,21 @@ export default function AdminContentPage() {
       <h1 className="text-xl font-bold text-foreground">콘텐츠 관리</h1>
 
       {/* 탭 */}
-      <div className="flex gap-1 border-b border-border">
+      <div className="flex border-b border-border">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+            className={`relative px-4 py-3 text-xs font-medium transition-colors sm:px-6 sm:text-sm ${
               tab === t.key
-                ? "border-primary-500 text-primary-600"
-                : "border-transparent text-foreground-secondary hover:text-foreground"
+                ? "text-foreground"
+                : "text-foreground-muted hover:text-foreground-secondary"
             }`}
           >
             {t.label}
+            {tab === t.key && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-foreground" />
+            )}
           </button>
         ))}
       </div>
