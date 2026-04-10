@@ -39,7 +39,7 @@ const PRODUCT_CARDS = [
     buttonClass: "bg-primary-500 hover:bg-primary-700 text-white",
     labelClass: "text-primary-600",
     checkClass: "text-primary-500",
-    features: ["AI 사용량 $10.00 충전", "사용한 만큼만 차감", "모의고사 · 스크립트 · 튜터링 · 쉐도잉"],
+    features: ["크레딧 $10 충전", "사용량에 따라 차감", "모의고사 · 스크립트 · 튜터링"],
   },
   {
     key: "credit_sponsor" as const,
@@ -50,7 +50,7 @@ const PRODUCT_CARDS = [
     buttonClass: "bg-secondary-500 hover:bg-secondary-600 text-white",
     labelClass: "text-secondary-600",
     checkClass: "text-secondary-500",
-    features: ["AI 사용량 $10.00 충전", "서버 운영 후원 $5.00 포함", "소리담의 지속가능한 운영을 응원"],
+    features: ["크레딧 $10 충전", "서버 후원 $5 포함", "소리담을 지속가능하게"],
   },
   {
     key: "sponsor" as const,
@@ -61,7 +61,7 @@ const PRODUCT_CARDS = [
     buttonClass: "bg-accent-500 hover:bg-accent-600 text-white",
     labelClass: "text-accent-600",
     checkClass: "text-accent-500",
-    features: ["월 $5.00 정기 후원", "서버 및 인프라 운영 지원", "언제든 해지 가능"],
+    features: ["크레딧 미포함", "언제든 해지 가능", "서버운영비 후원"],
   },
 ] as const;
 
@@ -201,19 +201,39 @@ export function StoreContent({ userId }: { userId: string }) {
         })}
       </div>
 
-      {/* ── 왜 크레딧인가요? ── */}
+      {/* ── 소리담은 무료 플랫폼입니다 ── */}
       <div className="rounded-2xl border border-border bg-surface p-4 sm:p-6">
-        <h3 className="text-xs font-bold text-foreground sm:text-sm">왜 크레딧인가요?</h3>
-        <p className="mt-2 text-xs leading-relaxed text-foreground/70 sm:text-sm">
-          소리담은 <span className="font-semibold text-primary-500">GPT, Gemini, Azure 등 외부 AI를 활용하여 분석·평가·생성을 수행</span>합니다.
-          보통 이런 AI 서비스를 직접 사용하려면 API 키 발급, 결제 설정 등 복잡한 과정이 필요하지만,
-          소리담에서는{" "}
-          <span className="font-semibold text-foreground">별도의 설정 없이 동일한 비용으로 바로 이용</span>할 수 있도록
-          크레딧 시스템을 개발 및 적용하였습니다.
-          AI를 활용할 때마다 실제 비용이 발생하기 때문에,{" "}
-          <span className="font-semibold text-foreground">사용한 만큼만 크레딧에서 차감</span>되는
-          종량제 방식으로 운영됩니다. 월정액이 아니므로 사용하지 않으면 비용이 들지 않습니다.
-        </p>
+        <h3 className="text-sm font-bold text-foreground sm:text-base">
+          소리담은 &ldquo;<span className="text-primary-500">무료 플랫폼</span>&rdquo; 입니다.
+        </h3>
+        <p className="mt-2 text-xs text-foreground-muted">무료인데 왜 충전이 필요할까요?</p>
+
+        <div className="mt-4 space-y-4 text-xs leading-relaxed text-foreground/70 sm:text-sm sm:leading-[1.8]">
+          <p>
+            여러분의 답변을 분석하고, 맞춤 스크립트를 완성해 주는 건{" "}
+            <span className="font-semibold text-primary-500">OpenAI, Google, Azure</span> 같은 첨단 AI 기술입니다.
+            이 친구들은 일을 참 잘하지만... <span className="font-medium text-foreground">공짜로 일하진 않습니다.</span>
+          </p>
+          <p>
+            이전에는 이용자가 <span className="text-red-400">직접 복잡하게 API 키를 등록</span>하거나,
+            &lsquo;월 5달러&rsquo; 후원으로 무제한 이용할 수 있도록 열어두었습니다.
+            사실 상징적인 후원금만으로는 부족해,
+            개발자가 API 비용을 조금씩 더 안고 가야 하는 구조였습니다.
+          </p>
+          <p>
+            그래서 이제는 복잡한 API 등록+개별충전 방식 대신,{" "}
+            <span className="font-bold text-primary-500">&lsquo;크레딧 충전&rsquo;</span> 한 번에 모든 기능을 사용할 수 있게 하였습니다.
+          </p>
+        </div>
+
+        <div className="mt-4 rounded-xl border border-border bg-surface-secondary px-4 py-3">
+          <p className="text-xs leading-relaxed text-foreground/70 sm:text-sm">
+            크레딧은 소리담 이용료가 아닙니다.
+            AI 기능을 사용할 때 발생하는 외부 API 원가를,
+            간편하게 처리할 수 있도록 만든{" "}
+            <span className="font-medium text-primary-500">이용 수단</span>입니다.
+          </p>
+        </div>
 
         {/* AI 상세 토글 */}
         <button
@@ -287,43 +307,33 @@ export function StoreContent({ userId }: { userId: string }) {
         )}
       </div>
 
-      {/* ── 비교표 ── */}
+      {/* ── 비교표 (랜딩 동일) ── */}
       <div className="overflow-hidden rounded-2xl border border-border bg-surface">
         <div className="border-b border-border px-3 py-2.5 sm:px-5 sm:py-3">
-          <p className="text-center text-xs font-bold text-foreground/70 sm:text-sm">기존 방식 (~2026.04) vs 크레딧 방식</p>
+          <p className="text-center text-xs font-bold text-foreground/70 sm:text-sm">뭐가 달라졌나요?</p>
         </div>
         <div className="overflow-x-auto max-sm:[scrollbar-width:none] max-sm:[&::-webkit-scrollbar]:hidden">
-          <div className="min-w-[420px]">
-            <div className="grid grid-cols-4 text-[11px] sm:text-sm">
+          <div className="min-w-[360px]">
+            <div className="grid grid-cols-3 text-[11px] sm:text-sm">
               <div className="border-b border-r border-border px-3 py-3" />
-              <div className="border-b border-r border-border px-3 py-3 text-center font-bold text-foreground/50">기존</div>
-              <div className="border-b border-r border-border px-3 py-3 text-center font-bold text-primary-500">크레딧</div>
-              <div className="border-b border-border px-3 py-3 text-center font-bold text-secondary-500">비고</div>
+              <div className="border-b border-r border-border px-3 py-3 text-center font-bold text-foreground/50">이전</div>
+              <div className="border-b border-border px-3 py-3 text-center font-bold text-primary-500">지금</div>
 
-              <div className="flex items-center justify-center border-b border-r border-border px-3 py-2.5 text-center font-medium text-foreground"><span>API 키 등록<br /><span className="text-xs text-foreground/50">OpenAI · Gemini · Azure</span></span></div>
-              <div className="flex items-center justify-center border-b border-r border-border px-3 py-2.5 text-center text-foreground/50">3개 직접 등록</div>
-              <div className="flex items-center justify-center border-b border-r border-border px-3 py-2.5 text-center text-primary-500">소리담에서 제공</div>
-              <div className="flex items-center justify-center border-b border-border px-3 py-2.5 text-center text-secondary-500">복잡한 설정 불필요</div>
+              <div className="border-b border-r border-border px-3 py-2.5 font-medium text-foreground">시작하려면</div>
+              <div className="border-b border-r border-border px-3 py-2.5 text-center text-foreground/50">AI 서비스 3개 가입 + API 키 등록 + 충전</div>
+              <div className="border-b border-border px-3 py-2.5 text-center text-primary-500">크레딧 충전만 하면 끝</div>
 
-              <div className="flex items-center justify-center border-b border-r border-border px-3 py-2.5 text-center font-medium text-foreground">충전</div>
-              <div className="flex items-center justify-center border-b border-r border-border px-3 py-2.5 text-center text-foreground/50">API별 개별 충전</div>
-              <div className="flex items-center justify-center border-b border-r border-border px-3 py-2.5 text-center text-primary-500">1회 통합 충전</div>
-              <div className="flex items-center justify-center border-b border-border px-3 py-2.5 text-center text-secondary-500">동일비용, 편의성 up ↑</div>
+              <div className="border-b border-r border-border px-3 py-2.5 font-medium text-foreground">결과</div>
+              <div className="border-b border-r border-border px-3 py-2.5 text-center text-red-400">대부분 포기</div>
+              <div className="border-b border-border px-3 py-2.5 text-center text-emerald-500">누구나 바로 사용</div>
 
-              <div className="flex items-center justify-center border-b border-r border-border px-3 py-2.5 text-center font-medium text-foreground">실사용률</div>
-              <div className="flex items-center justify-center border-b border-r border-border px-3 py-2.5 text-center text-red-400">5% 미만</div>
-              <div className="flex items-center justify-center border-b border-r border-border px-3 py-2.5 text-center text-primary-500">누구나</div>
-              <div className="flex items-center justify-center border-b border-border px-3 py-2.5 text-center text-secondary-500">진입장벽 제거</div>
+              <div className="border-b border-r border-border px-3 py-2.5 font-medium text-foreground">유효기간</div>
+              <div className="border-b border-r border-border px-3 py-2.5 text-center text-foreground/50">없음</div>
+              <div className="border-b border-border px-3 py-2.5 text-center text-foreground/50">없음 (동일)</div>
 
-              <div className="flex items-center justify-center border-b border-r border-border px-3 py-2.5 text-center font-medium text-foreground">기간만료</div>
-              <div className="flex items-center justify-center border-b border-r border-border px-3 py-2.5 text-center text-foreground/50">없음</div>
-              <div className="flex items-center justify-center border-b border-r border-border px-3 py-2.5 text-center text-primary-500">← 동일</div>
-              <div className="flex items-center justify-center border-b border-border px-3 py-2.5 text-center text-secondary-500">만료 없이 사용</div>
-
-              <div className="flex items-center justify-center border-r border-border px-3 py-2.5 text-center font-medium text-foreground">소리담 수익</div>
-              <div className="flex items-center justify-center border-r border-border px-3 py-2.5 text-center text-foreground/50">없음</div>
-              <div className="flex items-center justify-center border-r border-border px-3 py-2.5 text-center text-primary-500">← 동일</div>
-              <div className="flex items-center justify-center px-3 py-2.5 text-center text-secondary-500">비영리 운영</div>
+              <div className="border-r border-border px-3 py-2.5 font-medium text-foreground">소리담 수익</div>
+              <div className="border-r border-border px-3 py-2.5 text-center text-foreground/50">없음</div>
+              <div className="px-3 py-2.5 text-center text-foreground/50">없음 (동일)</div>
             </div>
           </div>
         </div>
