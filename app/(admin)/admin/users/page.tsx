@@ -41,8 +41,6 @@ function formatCurrency(amount: number) {
 const planColors: Record<string, string> = {
   free: "bg-gray-100 text-gray-600",
   beta: "bg-primary-50 text-primary-700",
-  standard: "bg-blue-50 text-blue-700",
-  allinone: "bg-purple-50 text-purple-700",
 };
 
 // 등급 뱃지 색상
