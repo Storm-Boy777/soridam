@@ -5,19 +5,25 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { login, loginWithOAuth } from "@/lib/actions/auth";
 import { loginSchema, type LoginInput } from "@/lib/validations/auth";
 import { isInAppBrowser, openInExternalBrowser } from "@/lib/utils/detect-webview";
+import { getSignupSettings, type SignupSettings } from "@/lib/actions/admin/settings";
 
 function LoginForm() {
   const searchParams = useSearchParams();
   const urlError = searchParams.get("error");
   const [serverError, setServerError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [signupCfg, setSignupCfg] = useState<SignupSettings | null>(null);
+
+  useEffect(() => {
+    getSignupSettings().then(setSignupCfg);
+  }, []);
 
   const {
     register,
@@ -87,13 +93,14 @@ function LoginForm() {
         </div>
       )}
 
-      {/* 소셜 로그인 — OAuth 셋업 전 비활성 */}
+      {/* 소셜 로그인 */}
       <div className="mt-6 flex flex-col gap-3">
         <Button
           type="button"
           variant="outline"
-          className="w-full gap-2 opacity-50"
-          disabled
+          className={`w-full gap-2${signupCfg?.googleEnabled === false ? " opacity-50" : ""}`}
+          disabled={!signupCfg?.googleEnabled}
+          onClick={() => handleOAuth("google")}
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -105,8 +112,9 @@ function LoginForm() {
         </Button>
         <button
           type="button"
-          className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[#FEE500] bg-[#FEE500] px-4 py-2.5 text-sm font-medium text-[#000000] opacity-50"
-          disabled
+          className={`flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[#FEE500] bg-[#FEE500] px-4 py-2.5 text-sm font-medium text-[#000000]${signupCfg?.kakaoEnabled === false ? " opacity-50" : ""}`}
+          disabled={!signupCfg?.kakaoEnabled}
+          onClick={() => handleOAuth("kakao")}
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
             <path fillRule="evenodd" clipRule="evenodd" d="M12 4C7.029 4 3 7.13 3 10.95c0 2.414 1.605 4.536 4.02 5.726l-1.02 3.784c-.09.332.287.6.578.41L10.7 18.28c.424.046.858.07 1.3.07 4.971 0 9-3.13 9-6.95S16.971 4 12 4z" fill="#000000" />

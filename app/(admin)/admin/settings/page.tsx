@@ -8,7 +8,6 @@ import {
   Globe,
   CreditCard,
   Shield,
-  Megaphone,
   Check,
   Loader2,
 } from "lucide-react";
@@ -41,9 +40,11 @@ export default function AdminSettingsPage() {
     og_image_url: "",
     payment_provider: "creem",
     welcome_credit_cents: 0,
-    signup_enabled: true,
+    signup_google_enabled: false,
+    signup_kakao_enabled: false,
+    signup_email_enabled: true,
+    signup_email_whitelist: "",
     maintenance_mode: false,
-    site_notice: "",
   });
   const [saving, setSaving] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
@@ -57,9 +58,11 @@ export default function AdminSettingsPage() {
         og_image_url: parseVal(settings.og_image_url),
         payment_provider: parseVal(settings.payment_provider) || "creem",
         welcome_credit_cents: parseNum(settings.welcome_credit_cents),
-        signup_enabled: parseBool(settings.signup_enabled),
+        signup_google_enabled: parseBool(settings.signup_google_enabled),
+        signup_kakao_enabled: parseBool(settings.signup_kakao_enabled),
+        signup_email_enabled: parseBool(settings.signup_email_enabled),
+        signup_email_whitelist: parseVal(settings.signup_email_whitelist),
         maintenance_mode: parseBool(settings.maintenance_mode),
-        site_notice: parseVal(settings.site_notice),
       });
     }
   }, [settings]);
@@ -82,7 +85,7 @@ export default function AdminSettingsPage() {
     }
   };
 
-  const toggle = async (key: "signup_enabled" | "maintenance_mode") => {
+  const toggle = async (key: "signup_google_enabled" | "signup_kakao_enabled" | "signup_email_enabled" | "maintenance_mode") => {
     const newVal = !form[key];
     setForm((f) => ({ ...f, [key]: newVal }));
 
@@ -206,16 +209,44 @@ export default function AdminSettingsPage() {
 
         {/* ── 접근 설정 ── */}
         <Card icon={Shield} title="접근 설정">
-          <Field label="회원가입">
+          <Field label="Google 가입" right>
             <Toggle
-              enabled={form.signup_enabled}
-              onChange={() => toggle("signup_enabled")}
-              saving={saving === "signup_enabled"}
+              enabled={form.signup_google_enabled}
+              onChange={() => toggle("signup_google_enabled")}
+              saving={saving === "signup_google_enabled"}
               labelOn="허용"
               labelOff="차단"
             />
           </Field>
-          <Field label="점검 모드" hint="프로덕션 접근 차단">
+          <Field label="Kakao 가입" right>
+            <Toggle
+              enabled={form.signup_kakao_enabled}
+              onChange={() => toggle("signup_kakao_enabled")}
+              saving={saving === "signup_kakao_enabled"}
+              labelOn="허용"
+              labelOff="차단"
+            />
+          </Field>
+          <Field label="이메일 가입" right>
+            <Toggle
+              enabled={form.signup_email_enabled}
+              onChange={() => toggle("signup_email_enabled")}
+              saving={saving === "signup_email_enabled"}
+              labelOn="허용"
+              labelOff="차단"
+            />
+          </Field>
+          <Field label="허용 도메인" hint="빈 값 = 제한 없음">
+            <InputWithSave
+              value={form.signup_email_whitelist}
+              onChange={(v) => update("signup_email_whitelist", v)}
+              onSave={() => save("signup_email_whitelist", form.signup_email_whitelist)}
+              saving={saving === "signup_email_whitelist"}
+              saved={saved === "signup_email_whitelist"}
+              placeholder="예: gmail.com, naver.com"
+            />
+          </Field>
+          <Field label="점검 모드" hint="프로덕션 접근 차단" right>
             <Toggle
               enabled={form.maintenance_mode}
               onChange={() => toggle("maintenance_mode")}
@@ -227,19 +258,7 @@ export default function AdminSettingsPage() {
           </Field>
         </Card>
 
-        {/* ── 알림 설정 ── */}
-        <Card icon={Megaphone} title="알림 설정">
-          <Field label="공지 배너" hint="빈 값 = 미표시">
-            <InputWithSave
-              value={form.site_notice}
-              onChange={(v) => update("site_notice", v)}
-              onSave={() => save("site_notice", form.site_notice)}
-              saving={saving === "site_notice"}
-              saved={saved === "site_notice"}
-              placeholder="예: 4/10 오후 2시 서버 점검 예정"
-            />
-          </Field>
-        </Card>
+        {/* 알림 설정: 공지사항 관리 페이지(/admin/announcements)로 이전됨 */}
       </div>
     </div>
   );
@@ -259,14 +278,14 @@ function Card({ icon: Icon, title, children }: { icon: React.ComponentType<{ siz
   );
 }
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Field({ label, hint, right, children }: { label: string; hint?: string; right?: boolean; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-4 py-3">
       <div className="w-28 shrink-0">
         <p className="text-xs font-medium text-foreground">{label}</p>
         {hint && <p className="text-[10px] text-foreground-muted">{hint}</p>}
       </div>
-      <div className="flex-1">{children}</div>
+      <div className={`flex-1${right ? " flex justify-end" : ""}`}>{children}</div>
     </div>
   );
 }

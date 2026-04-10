@@ -9,12 +9,47 @@ export type SettingKey =
   | "payment_provider"
   | "welcome_credit_cents"
   | "signup_enabled"
+  | "signup_google_enabled"
+  | "signup_kakao_enabled"
+  | "signup_email_enabled"
+  | "signup_email_whitelist"
   | "site_notice"
   | "site_name"
   | "site_description"
   | "og_image_url";
 
 export type SettingsMap = Record<SettingKey, unknown>;
+
+// 가입 채널 설정 조회 (비인증 접근 가능 — 가입/로그인 페이지용)
+export interface SignupSettings {
+  googleEnabled: boolean;
+  kakaoEnabled: boolean;
+  emailEnabled: boolean;
+  emailWhitelist: string[]; // 허용 도메인 배열
+}
+
+export async function getSignupSettings(): Promise<SignupSettings> {
+  const { createServerSupabaseClient } = await import("@/lib/supabase-server");
+  const supabase = await createServerSupabaseClient();
+
+  const keys = ["signup_google_enabled", "signup_kakao_enabled", "signup_email_enabled", "signup_email_whitelist"];
+  const { data } = await supabase
+    .from(T.system_settings)
+    .select("key, value")
+    .in("key", keys);
+
+  const map: Record<string, unknown> = {};
+  for (const row of data || []) map[row.key] = row.value;
+
+  const whitelist = String(map.signup_email_whitelist ?? "").trim();
+
+  return {
+    googleEnabled: map.signup_google_enabled === true,
+    kakaoEnabled: map.signup_kakao_enabled === true,
+    emailEnabled: map.signup_email_enabled !== false,
+    emailWhitelist: whitelist ? whitelist.split(",").map((d) => d.trim().toLowerCase()).filter(Boolean) : [],
+  };
+}
 
 // 전체 설정 조회
 export async function getSettings(): Promise<SettingsMap> {

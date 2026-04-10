@@ -66,6 +66,23 @@ export async function signup(formData: FormData): Promise<AuthResult> {
     return { error: parsed.error.issues[0]?.message || "입력값을 확인해주세요" };
   }
 
+  // 이메일 가입 채널 + 도메인 화이트리스트 체크
+  try {
+    const { getSignupSettings } = await import("@/lib/actions/admin/settings");
+    const cfg = await getSignupSettings();
+    if (!cfg.emailEnabled) {
+      return { error: "현재 이메일 가입이 비활성화되어 있습니다." };
+    }
+    if (cfg.emailWhitelist.length > 0) {
+      const domain = parsed.data.email.split("@")[1]?.toLowerCase();
+      if (!domain || !cfg.emailWhitelist.includes(domain)) {
+        return { error: `현재 허용되지 않은 이메일 도메인입니다. 허용 도메인: ${cfg.emailWhitelist.join(", ")}` };
+      }
+    }
+  } catch {
+    // 설정 조회 실패 시 가입 허용 (설정 서버 장애로 가입 차단 방지)
+  }
+
   try {
     const supabase = await createServerSupabaseClient();
     const { error } = await supabase.auth.signUp({
@@ -161,6 +178,20 @@ export async function resetPassword(formData: FormData): Promise<AuthResult> {
 }
 
 export async function loginWithOAuth(provider: "google" | "kakao") {
+  // 프로바이더 설정 체크
+  try {
+    const { getSignupSettings } = await import("@/lib/actions/admin/settings");
+    const cfg = await getSignupSettings();
+    if (provider === "google" && !cfg.googleEnabled) {
+      return { error: "Google 로그인이 현재 비활성화되어 있습니다." };
+    }
+    if (provider === "kakao" && !cfg.kakaoEnabled) {
+      return { error: "Kakao 로그인이 현재 비활성화되어 있습니다." };
+    }
+  } catch {
+    // 설정 조회 실패 시 허용
+  }
+
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,

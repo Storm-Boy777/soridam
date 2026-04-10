@@ -16,7 +16,7 @@ export async function getActiveAnnouncements(): Promise<ActiveAnnouncement[]> {
   const supabase = await createServerSupabaseClient();
 
   const now = new Date().toISOString();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from(T.announcements)
     .select("id, title, content, type, target_audience")
     .eq("is_active", true)
