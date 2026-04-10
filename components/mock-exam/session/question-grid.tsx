@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { EvalStatus, MockExamMode } from "@/lib/types/mock-exam";
 
 // ── 문항 상태 ──
@@ -21,6 +22,16 @@ const STATUS_STYLES: Record<QStatus, string> = {
   skipped:     "bg-foreground-muted/30 text-foreground-muted line-through",
   answered:    "bg-secondary-100 text-secondary-700",
   pending:     "border border-border bg-surface text-foreground-muted",
+};
+
+const TOOLTIP_CONFIG: Record<QStatus, { label: string; bg: string; text: string }> = {
+  current:     { label: "현재 문항", bg: "bg-primary-600", text: "text-white" },
+  eval_done:   { label: "평가 완료", bg: "bg-emerald-600", text: "text-white" },
+  eval_failed: { label: "평가 실패", bg: "bg-red-600", text: "text-white" },
+  evaluating:  { label: "평가 중...", bg: "bg-amber-500", text: "text-white" },
+  skipped:     { label: "스킵", bg: "bg-gray-600", text: "text-white" },
+  answered:    { label: "답변 완료", bg: "bg-indigo-100", text: "text-indigo-700" },
+  pending:     { label: "미답변", bg: "bg-surface-secondary", text: "text-foreground-muted" },
 };
 
 interface QuestionGridProps {
@@ -89,44 +100,51 @@ export function QuestionGrid({
     }
   };
 
+  const [hoveredQ, setHoveredQ] = useState<number | null>(null);
+
   return (
     <div className="grid grid-cols-8 justify-items-center gap-1 md:flex md:justify-between md:gap-1.5">
       {Array.from({ length: 15 }, (_, i) => i + 1).map((qNum) => {
         const status = getStatus(qNum);
         const canClick =
           isTraining &&
-          ((qNum === currentQ && viewingEvalQNum != null) || // 평가 뷰 중 현재 문항 → 세션 복귀
+          ((qNum === currentQ && viewingEvalQNum != null) ||
             (qNum !== currentQ &&
               (status === "eval_done" ||
                 answeredQuestions.has(qNum) ||
                 skippedQuestions.has(qNum))));
 
-        // 모바일 grid: 9→col2, 10→col3, ... 15→col8
         const gridCol = qNum > 8 ? { gridColumnStart: qNum - 7 } : undefined;
+        const tooltip = TOOLTIP_CONFIG[status];
+        const isHovered = hoveredQ === qNum;
 
         return (
-          <button
-            key={qNum}
-            onClick={() => canClick && handleClick(qNum, status)}
-            disabled={!canClick}
-            style={gridCol}
-            className={`flex h-5 w-full items-center justify-center rounded text-[10px] font-bold transition-colors md:h-8 md:flex-1 md:rounded-lg md:text-xs ${
-              STATUS_STYLES[status]
-            } ${viewingEvalQNum === qNum ? "ring-2 ring-emerald-300" : ""} ${canClick ? "cursor-pointer hover:opacity-80" : "cursor-default"}`}
-            title={
-              status === "eval_done"
-                ? `Q${qNum} — 평가 완료 (클릭하여 확인)`
-                : status === "eval_failed"
-                  ? `Q${qNum} — 평가 실패`
-                  : status === "evaluating"
-                    ? `Q${qNum} — 평가 중...`
-                    : status === "skipped"
-                      ? `Q${qNum} — 스킵`
-                      : `Q${qNum}`
-            }
-          >
-            {qNum}
-          </button>
+          <div key={qNum} className="relative flex-1" style={gridCol}>
+            <button
+              onClick={() => canClick && handleClick(qNum, status)}
+              disabled={!canClick}
+              onMouseEnter={() => setHoveredQ(qNum)}
+              onMouseLeave={() => setHoveredQ(null)}
+              className={`flex h-5 w-full items-center justify-center rounded text-[10px] font-bold transition-colors md:h-8 md:rounded-lg md:text-xs ${
+                STATUS_STYLES[status]
+              } ${viewingEvalQNum === qNum ? "ring-2 ring-emerald-300" : ""} ${canClick ? "cursor-pointer hover:opacity-80" : "cursor-default"}`}
+            >
+              {qNum}
+            </button>
+
+            {/* 커스텀 툴팁 (하단) */}
+            {isHovered && (
+              <div className="pointer-events-none absolute left-1/2 top-full z-50 mt-1 -translate-x-1/2 whitespace-nowrap">
+                {/* 화살표 */}
+                <div className={`mx-auto h-0 w-0 border-x-[5px] border-b-[5px] border-x-transparent ${
+                  tooltip.bg.replace("bg-", "border-b-")
+                }`} />
+                <div className={`rounded-md px-2 py-1 text-[10px] font-semibold shadow-lg ${tooltip.bg} ${tooltip.text}`}>
+                  Q{qNum} · {tooltip.label}
+                </div>
+              </div>
+            )}
+          </div>
         );
       })}
     </div>
