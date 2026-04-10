@@ -24,6 +24,7 @@ async function SupportDataLoader() {
       initialFeedback={feedbackResult.data || { posts: [], total: 0 }}
       initialInquiries={inquiriesResult.data || []}
       isLoggedIn={!!user}
+      userId={user?.id || null}
     />
   );
 }

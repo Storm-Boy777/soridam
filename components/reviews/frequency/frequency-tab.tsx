@@ -24,6 +24,13 @@ interface FrequencyTabProps {
   isPaidUser?: boolean;
 }
 
+// 카테고리별 색상 테마
+const CATEGORY_THEME: Record<FrequencyCategory, { bar: string; text: string; badge: string }> = {
+  "일반": { bar: "bg-primary-500", text: "text-primary-600", badge: "bg-primary-50 text-primary-600" },
+  "롤플레이": { bar: "bg-emerald-500", text: "text-emerald-600", badge: "bg-emerald-50 text-emerald-600" },
+  "어드밴스": { bar: "bg-amber-500", text: "text-amber-600", badge: "bg-amber-50 text-amber-600" },
+};
+
 export function FrequencyTab({ initialStats, initialFrequency, isPaidUser = false }: FrequencyTabProps) {
   const queryClient = useQueryClient();
   // 무료 사용자는 어드밴스만 접근 가능
@@ -283,7 +290,7 @@ export function FrequencyTab({ initialStats, initialFrequency, isPaidUser = fals
                           {typeLabel && (
                             <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
                               typeLabel === "선택"
-                                ? "bg-primary-50 text-primary-600"
+                                ? CATEGORY_THEME[subTab].badge
                                 : "bg-slate-100 text-slate-600"
                             }`}>
                               {typeLabel}
@@ -292,7 +299,7 @@ export function FrequencyTab({ initialStats, initialFrequency, isPaidUser = fals
                         </div>
                         <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-surface-secondary">
                           <div
-                            className="h-full rounded-full bg-primary-500 transition-all"
+                            className={`h-full rounded-full transition-all ${CATEGORY_THEME[subTab].bar}`}
                             style={{
                               width: `${(item.frequency / maxFreq) * 100}%`,
                             }}
@@ -301,7 +308,7 @@ export function FrequencyTab({ initialStats, initialFrequency, isPaidUser = fals
                       </div>
                       <div className="shrink-0 flex items-center gap-1">
                         <div className="text-right">
-                          <span className="text-sm font-bold text-primary-600">
+                          <span className={`text-sm font-bold ${CATEGORY_THEME[subTab].text}`}>
                             {item.frequency}
                           </span>
                           <span className="ml-1 text-xs text-foreground-muted">

@@ -27,7 +27,7 @@ export function MobileNav({
     <div className="md:hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-foreground-secondary transition-colors hover:bg-surface-secondary"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-white/60 transition-colors hover:bg-white/10 hover:text-white"
         aria-label="메뉴"
       >
         {open ? <X size={20} /> : <Menu size={20} />}

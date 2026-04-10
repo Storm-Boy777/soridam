@@ -26,7 +26,7 @@ export function UserMenu({ name, isAdmin }: { name: string; isAdmin?: boolean })
     <div ref={ref} className="relative hidden md:block">
       <button
         onClick={() => setOpen(!open)}
-        className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-sm font-bold text-primary-600 transition-colors hover:bg-primary-200"
+        className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-500/80 text-sm font-bold text-white transition-colors hover:bg-primary-500"
         aria-label="사용자 메뉴"
       >
         {initial}

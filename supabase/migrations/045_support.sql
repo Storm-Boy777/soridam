@@ -139,9 +139,10 @@ CREATE POLICY "support_posts_update" ON support_posts FOR UPDATE USING (
   OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
 );
 
--- DELETE: 관리자만
+-- DELETE: 본인 + 관리자
 CREATE POLICY "support_posts_delete" ON support_posts FOR DELETE USING (
-  (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+  auth.uid() = user_id
+  OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
 );
 
 -- ── 7. RLS: support_comments ──

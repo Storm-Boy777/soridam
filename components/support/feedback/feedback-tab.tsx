@@ -1,21 +1,30 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Plus,
+  Pencil,
+  Trash2,
   ArrowUpDown,
   Heart,
   MessageSquare,
   Pin,
-  ChevronDown,
-  ChevronUp,
+  ChevronRight,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { getFeedbackPosts, toggleVote, getMyVotes, getPostDetail } from "@/lib/actions/support";
+import {
+  getFeedbackPosts,
+  toggleVote,
+  getMyVotes,
+  getPostDetail,
+  updatePost,
+  deleteMyPost,
+} from "@/lib/actions/support";
 import { StatusBadge, CategoryBadge } from "../shared/status-badge";
 import { CommentSection } from "../shared/comment-section";
 import { FeedbackForm } from "./feedback-form";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type {
   SupportPost,
   SupportCategory,
@@ -25,19 +34,37 @@ import type {
 interface FeedbackTabProps {
   initialData: { posts: SupportPost[]; total: number };
   isLoggedIn: boolean;
+  userId: string | null;
 }
 
-export function FeedbackTab({ initialData, isLoggedIn }: FeedbackTabProps) {
+function formatTime(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return "방금 전";
+  if (min < 60) return `${min}분 전`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}시간 전`;
+  const day = Math.floor(hr / 24);
+  if (day < 7) return `${day}일 전`;
+  return new Date(dateStr).toLocaleDateString("ko-KR");
+}
+
+export function FeedbackTab({ initialData, isLoggedIn, userId }: FeedbackTabProps) {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [category, setCategory] = useState<SupportCategory | "all">("all");
   const [sort, setSort] = useState<FeedbackSort>("latest");
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [votedPosts, setVotedPosts] = useState<Set<number>>(new Set());
   const [votingId, setVotingId] = useState<number | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  // 피드백 목록
-  const { data, isLoading } = useQuery({
+  const { data } = useQuery({
     queryKey: ["support-feedback", category, sort],
     queryFn: async () => {
       const result = await getFeedbackPosts({
@@ -52,7 +79,6 @@ export function FeedbackTab({ initialData, isLoggedIn }: FeedbackTabProps) {
     staleTime: 30_000,
   });
 
-  // 내 투표 상태 로드
   useQuery({
     queryKey: ["support-my-votes", category, sort],
     queryFn: async () => {
@@ -65,20 +91,21 @@ export function FeedbackTab({ initialData, isLoggedIn }: FeedbackTabProps) {
     staleTime: 60_000,
   });
 
-  // 상세 조회 (확장 시)
   const { data: detail } = useQuery({
-    queryKey: ["support-post-detail", expandedId],
+    queryKey: ["support-post-detail", selectedId],
     queryFn: async () => {
-      if (!expandedId) return null;
-      const result = await getPostDetail(expandedId);
+      if (!selectedId) return null;
+      const result = await getPostDetail(selectedId);
       return result.data || null;
     },
-    enabled: !!expandedId,
+    enabled: !!selectedId,
     staleTime: 30_000,
   });
 
-  // 공감 토글
-  const handleVote = async (postId: number) => {
+  const selectedPost = data.posts.find((p) => p.id === selectedId);
+
+  const handleVote = async (postId: number, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (!isLoggedIn) {
       toast.error("로그인이 필요합니다");
       return;
@@ -90,11 +117,8 @@ export function FeedbackTab({ initialData, isLoggedIn }: FeedbackTabProps) {
         toast.error(result.error);
       } else {
         const newSet = new Set(votedPosts);
-        if (result.data?.voted) {
-          newSet.add(postId);
-        } else {
-          newSet.delete(postId);
-        }
+        if (result.data?.voted) newSet.add(postId);
+        else newSet.delete(postId);
         setVotedPosts(newSet);
         queryClient.invalidateQueries({ queryKey: ["support-feedback"] });
       }
@@ -103,11 +127,10 @@ export function FeedbackTab({ initialData, isLoggedIn }: FeedbackTabProps) {
     }
   };
 
-  // 글 작성 완료
   const handlePostCreated = () => {
     setShowForm(false);
     queryClient.invalidateQueries({ queryKey: ["support-feedback"] });
-    toast.success("피드백이 등록되었습니다");
+    toast.success("글이 등록되었습니다");
   };
 
   const categoryFilters: { id: SupportCategory | "all"; label: string }[] = [
@@ -117,19 +140,223 @@ export function FeedbackTab({ initialData, isLoggedIn }: FeedbackTabProps) {
     { id: "question", label: "❓ 질문" },
   ];
 
+  // 수정 저장
+  const handleSaveEdit = async () => {
+    if (!selectedId || !editTitle.trim() || !editContent.trim()) return;
+    setSaving(true);
+    try {
+      const result = await updatePost(selectedId, {
+        title: editTitle.trim(),
+        content: editContent.trim(),
+      });
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("수정되었습니다");
+        setEditing(false);
+        queryClient.invalidateQueries({ queryKey: ["support-feedback"] });
+        queryClient.invalidateQueries({ queryKey: ["support-post-detail", selectedId] });
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // 삭제
+  const handleDeleteConfirm = async () => {
+    if (!selectedId) return;
+    setDeleting(true);
+    try {
+      const result = await deleteMyPost(selectedId);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("삭제되었습니다");
+        setSelectedId(null);
+        queryClient.invalidateQueries({ queryKey: ["support-feedback"] });
+      }
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  // ── 상세 보기 (선택된 글) ──
+  if (selectedId && selectedPost) {
+    const isVoted = votedPosts.has(selectedId);
+    const isOwner = userId && selectedPost.user_id === userId;
+
+    return (
+      <div className="space-y-4">
+        {/* 뒤로가기 */}
+        <button
+          onClick={() => { setSelectedId(null); setEditing(false); }}
+          className="flex items-center gap-1 text-sm text-foreground-secondary hover:text-foreground"
+        >
+          <ChevronRight size={14} className="rotate-180" />
+          목록으로
+        </button>
+
+        {/* 글 카드 */}
+        <div className="rounded-xl border border-border bg-surface">
+          {/* 헤더 */}
+          <div className="px-5 py-4 sm:px-6 sm:py-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CategoryBadge category={selectedPost.category} />
+                <StatusBadge status={selectedPost.status} />
+                {selectedPost.is_pinned && (
+                  <Pin size={12} className="text-primary-500" fill="currentColor" />
+                )}
+              </div>
+              {isOwner && !editing && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => {
+                      setEditing(true);
+                      setEditTitle(selectedPost.title);
+                      setEditContent(detail?.content || selectedPost.content);
+                    }}
+                    className="flex items-center gap-1 rounded-full border border-border px-3 py-1 text-xs font-medium text-foreground-secondary hover:text-foreground"
+                  >
+                    <Pencil size={12} />
+                    수정
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="flex items-center gap-1 rounded-full border border-border px-3 py-1 text-xs font-medium text-foreground-secondary hover:border-red-200 hover:text-red-500"
+                  >
+                    <Trash2 size={12} />
+                    삭제
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {editing ? (
+              <input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                maxLength={200}
+                className="mt-2 w-full rounded-lg border border-border bg-surface-secondary px-3 py-2 text-lg font-bold outline-none focus:border-primary-300 focus:ring-1 focus:ring-primary-200"
+              />
+            ) : (
+              <h2 className="mt-2 text-lg font-bold text-foreground sm:text-xl">
+                {selectedPost.title}
+              </h2>
+            )}
+            <div className="mt-1.5 flex items-center gap-2 text-xs text-foreground-muted">
+              <span className="font-medium text-foreground-secondary">
+                {selectedPost.profiles?.display_name || "사용자"}
+              </span>
+              <span>·</span>
+              <span>{formatTime(selectedPost.created_at)}</span>
+            </div>
+          </div>
+
+          {/* 본문 */}
+          <div className="border-t border-border px-5 py-4 sm:px-6 sm:py-5">
+            {editing ? (
+              <div className="space-y-3">
+                <textarea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  rows={6}
+                  className="w-full rounded-lg border border-border bg-surface-secondary px-3 py-2 text-sm outline-none focus:border-primary-300 focus:ring-1 focus:ring-primary-200"
+                />
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => setEditing(false)}
+                    className="rounded-full border border-border px-4 py-1.5 text-xs font-medium text-foreground-secondary hover:bg-surface-secondary"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={handleSaveEdit}
+                    disabled={saving || !editTitle.trim() || !editContent.trim()}
+                    className="rounded-full bg-primary-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-primary-600 disabled:opacity-50"
+                  >
+                    {saving ? "저장 중..." : "저장"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground sm:text-[15px]">
+                {detail?.content || selectedPost.content}
+              </p>
+            )}
+          </div>
+
+          {/* 액션 바 */}
+          {!editing && (
+            <div className="flex items-center gap-3 border-t border-border px-5 py-3 sm:px-6">
+              <button
+                onClick={(e) => handleVote(selectedId, e)}
+                disabled={votingId === selectedId}
+                className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
+                  isVoted
+                    ? "border-red-200 bg-red-50 text-red-500"
+                    : "border-border text-foreground-secondary hover:border-red-200 hover:text-red-400"
+                }`}
+              >
+                <Heart size={13} className={isVoted ? "fill-current" : ""} />
+                공감 {selectedPost.vote_count}
+              </button>
+              <span className="flex items-center gap-1 text-xs text-foreground-muted">
+                <MessageSquare size={13} />
+                댓글 {selectedPost.comment_count}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* 댓글 섹션 */}
+        {!editing && (
+          <div className="rounded-xl border border-border bg-surface px-5 py-4 sm:px-6 sm:py-5">
+            <CommentSection
+              postId={selectedId}
+              comments={detail?.comments || []}
+              isLoggedIn={isLoggedIn}
+              onRefresh={() => {
+                queryClient.invalidateQueries({
+                  queryKey: ["support-post-detail", selectedId],
+                });
+                queryClient.invalidateQueries({
+                  queryKey: ["support-feedback"],
+                });
+              }}
+            />
+          </div>
+        )}
+
+        <ConfirmDialog
+          open={showDeleteConfirm}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setShowDeleteConfirm(false)}
+          title="이 글을 삭제하시겠습니까?"
+          description="댓글도 함께 삭제되며, 되돌릴 수 없습니다."
+          confirmLabel="삭제"
+          cancelLabel="취소"
+          variant="danger"
+          isLoading={deleting}
+        />
+      </div>
+    );
+  }
+
+  // ── 목록 보기 ──
   return (
     <div className="space-y-4">
-      {/* 필터 + 정렬 + 글쓰기 */}
+      {/* 툴바 */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {/* 카테고리 필터 */}
         <div className="flex gap-1.5">
           {categoryFilters.map((f) => (
             <button
               key={f.id}
               onClick={() => setCategory(f.id)}
-              className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all sm:text-sm ${
+              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all sm:text-sm ${
                 category === f.id
-                  ? "bg-primary-500 text-white"
+                  ? "bg-foreground text-white"
                   : "bg-surface-secondary text-foreground-secondary hover:text-foreground"
               }`}
             >
@@ -139,24 +366,22 @@ export function FeedbackTab({ initialData, isLoggedIn }: FeedbackTabProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* 정렬 */}
           <button
             onClick={() =>
               setSort((s) => (s === "latest" ? "votes" : "latest"))
             }
-            className="flex items-center gap-1 rounded-lg bg-surface-secondary px-2.5 py-1.5 text-xs font-medium text-foreground-secondary hover:text-foreground sm:text-sm"
+            className="flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-foreground-secondary hover:text-foreground sm:text-sm"
           >
-            <ArrowUpDown size={14} />
+            <ArrowUpDown size={13} />
             {sort === "latest" ? "최신순" : "공감순"}
           </button>
 
-          {/* 글쓰기 */}
           {isLoggedIn && (
             <button
               onClick={() => setShowForm((v) => !v)}
-              className="flex items-center gap-1 rounded-lg bg-primary-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-600 sm:text-sm"
+              className="flex items-center gap-1.5 rounded-full bg-primary-500 px-4 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-primary-600 sm:text-sm"
             >
-              <Plus size={14} />
+              <Pencil size={13} />
               글쓰기
             </button>
           )}
@@ -171,138 +396,126 @@ export function FeedbackTab({ initialData, isLoggedIn }: FeedbackTabProps) {
         />
       )}
 
-      {/* 목록 */}
+      {/* 게시물 목록 */}
       {data.posts.length === 0 ? (
-        <div className="rounded-xl border border-border bg-surface p-6">
-          <div className="flex flex-col items-center py-8 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-surface-secondary">
-              <MessageSquare size={24} className="text-foreground-muted" />
+        <div className="rounded-xl border border-border bg-surface px-6 py-16">
+          <div className="flex flex-col items-center text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-secondary">
+              <MessageSquare size={28} className="text-foreground-muted" />
             </div>
-            <p className="mt-3 text-sm font-medium text-foreground-secondary">
-              아직 피드백이 없습니다
+            <p className="mt-4 text-sm font-semibold text-foreground">
+              아직 등록된 글이 없습니다
             </p>
-            {isLoggedIn && (
-              <p className="mt-1 text-xs text-foreground-muted">
-                첫 번째 피드백을 남겨보세요!
-              </p>
-            )}
+            <p className="mt-1 text-xs text-foreground-muted">
+              {isLoggedIn
+                ? "첫 번째 글을 작성해 보세요!"
+                : "로그인하고 소통에 참여하세요."}
+            </p>
           </div>
         </div>
       ) : (
-        <div className="space-y-2">
-          {data.posts.map((post) => {
-            const isExpanded = expandedId === post.id;
+        <div className="overflow-hidden rounded-xl border border-border bg-surface">
+          {/* 테이블 헤더 */}
+          <div className="hidden border-b border-border bg-surface-secondary/50 px-5 py-2.5 sm:flex">
+            <span className="w-16 text-center text-[11px] font-semibold text-foreground-muted">
+              공감
+            </span>
+            <span className="flex-1 text-[11px] font-semibold text-foreground-muted">
+              제목
+            </span>
+            <span className="w-20 text-center text-[11px] font-semibold text-foreground-muted">
+              상태
+            </span>
+            <span className="w-16 text-center text-[11px] font-semibold text-foreground-muted">
+              댓글
+            </span>
+          </div>
+
+          {/* 행 */}
+          {data.posts.map((post, idx) => {
             const isVoted = votedPosts.has(post.id);
 
             return (
               <div
                 key={post.id}
-                className="rounded-xl border border-border bg-surface transition-shadow hover:shadow-sm"
+                className={`group flex items-center px-5 py-3.5 transition-colors hover:bg-surface-secondary/40 ${
+                  idx > 0 ? "border-t border-border" : ""
+                }`}
               >
-                {/* 카드 헤더 */}
+                {/* 공감 */}
                 <button
-                  onClick={() =>
-                    setExpandedId(isExpanded ? null : post.id)
-                  }
-                  className="flex w-full items-start gap-3 p-4 text-left"
+                  onClick={(e) => handleVote(post.id, e)}
+                  disabled={votingId === post.id}
+                  className={`flex w-16 shrink-0 flex-col items-center gap-0.5 rounded-lg py-1 transition-colors ${
+                    isVoted
+                      ? "text-red-500"
+                      : "text-foreground-muted hover:text-red-400"
+                  }`}
                 >
-                  <div className="min-w-0 flex-1">
-                    <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
-                      {post.is_pinned && (
-                        <Pin
-                          size={12}
-                          className="text-primary-500"
-                          fill="currentColor"
-                        />
-                      )}
-                      <CategoryBadge category={post.category} />
-                      <StatusBadge status={post.status} />
-                    </div>
-                    <h3 className="text-sm font-semibold text-foreground sm:text-base">
-                      {post.title}
-                    </h3>
-                    <div className="mt-1 flex items-center gap-3 text-[10px] text-foreground-muted sm:text-xs">
-                      <span>
-                        {post.profiles?.display_name || "사용자"}
-                      </span>
-                      <span>
-                        {new Date(post.created_at).toLocaleDateString(
-                          "ko-KR"
-                        )}
-                      </span>
-                    </div>
-                  </div>
+                  <Heart
+                    size={15}
+                    className={isVoted ? "fill-current" : ""}
+                  />
+                  <span className="text-[11px] font-bold">
+                    {post.vote_count}
+                  </span>
+                </button>
 
-                  {/* 공감 + 댓글 수 + 확장 아이콘 */}
-                  <div className="flex shrink-0 items-center gap-3">
-                    <div className="flex items-center gap-1 text-xs text-foreground-muted">
-                      <Heart
-                        size={14}
-                        className={isVoted ? "fill-red-400 text-red-400" : ""}
-                      />
-                      {post.vote_count}
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-foreground-muted">
-                      <MessageSquare size={14} />
-                      {post.comment_count}
-                    </div>
-                    {isExpanded ? (
-                      <ChevronUp size={16} className="text-foreground-muted" />
-                    ) : (
-                      <ChevronDown
-                        size={16}
-                        className="text-foreground-muted"
+                {/* 제목 + 메타 */}
+                <button
+                  onClick={() => setSelectedId(post.id)}
+                  className="min-w-0 flex-1 text-left"
+                >
+                  <div className="flex items-center gap-1.5">
+                    {post.is_pinned && (
+                      <Pin
+                        size={11}
+                        className="shrink-0 text-primary-500"
+                        fill="currentColor"
                       />
                     )}
+                    <span className="truncate text-sm font-semibold text-foreground group-hover:text-primary-600">
+                      {post.title}
+                    </span>
+                    <CategoryBadge category={post.category} />
+                  </div>
+                  <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-foreground-muted">
+                    <span>
+                      {post.profiles?.display_name || "사용자"}
+                    </span>
+                    <span>·</span>
+                    <span>{formatTime(post.created_at)}</span>
                   </div>
                 </button>
 
-                {/* 확장 영역 */}
-                {isExpanded && (
-                  <div className="border-t border-border px-4 pb-4 pt-3">
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                      {detail?.content || post.content}
-                    </p>
+                {/* 상태 */}
+                <div className="hidden w-20 justify-center sm:flex">
+                  <StatusBadge status={post.status} />
+                </div>
 
-                    {/* 공감 버튼 */}
-                    <div className="mt-3">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleVote(post.id);
-                        }}
-                        disabled={votingId === post.id}
-                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-                          isVoted
-                            ? "bg-red-50 text-red-500"
-                            : "bg-surface-secondary text-foreground-secondary hover:bg-red-50 hover:text-red-400"
-                        }`}
-                      >
-                        <Heart
-                          size={14}
-                          className={isVoted ? "fill-current" : ""}
-                        />
-                        {isVoted ? "공감 취소" : "공감"}
-                      </button>
-                    </div>
-
-                    {/* 댓글 */}
-                    <CommentSection
-                      postId={post.id}
-                      comments={detail?.comments || []}
-                      isLoggedIn={isLoggedIn}
-                      onRefresh={() =>
-                        queryClient.invalidateQueries({
-                          queryKey: ["support-post-detail", post.id],
-                        })
-                      }
-                    />
-                  </div>
-                )}
+                {/* 댓글 수 */}
+                <div className="w-16 shrink-0 text-center">
+                  {post.comment_count > 0 ? (
+                    <span className="inline-flex items-center gap-1 text-xs text-foreground-muted">
+                      <MessageSquare size={12} />
+                      {post.comment_count}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-foreground-muted/40">
+                      —
+                    </span>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
+      )}
+
+      {data.total > 0 && (
+        <p className="text-center text-xs text-foreground-muted">
+          총 {data.total}건
+        </p>
       )}
     </div>
   );

@@ -13,7 +13,7 @@ import type { SupportPost } from "@/lib/types/support";
 
 const tabs = [
   { id: "notices", label: "공지사항", icon: Megaphone },
-  { id: "feedback", label: "피드백 보드", icon: MessageSquare },
+  { id: "feedback", label: "게시판", icon: MessageSquare },
   { id: "inquiry", label: "1:1 문의", icon: Lock },
 ] as const;
 
@@ -26,6 +26,7 @@ interface SupportContentProps {
   initialFeedback: { posts: SupportPost[]; total: number };
   initialInquiries: SupportPost[];
   isLoggedIn: boolean;
+  userId: string | null;
 }
 
 /* ── 메인 컴포넌트 ── */
@@ -35,6 +36,7 @@ export function SupportContent({
   initialFeedback,
   initialInquiries,
   isLoggedIn,
+  userId,
 }: SupportContentProps) {
   const searchParams = useSearchParams();
 
@@ -82,6 +84,7 @@ export function SupportContent({
         <FeedbackTab
           initialData={initialFeedback}
           isLoggedIn={isLoggedIn}
+          userId={userId}
         />
       )}
       {activeTab === "inquiry" && (

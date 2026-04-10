@@ -211,6 +211,32 @@ export async function updatePost(
   return {};
 }
 
+// ── 글 삭제 (본인만) ──
+
+export async function deleteMyPost(postId: number): Promise<ActionResult> {
+  const { supabase, userId } = await requireUser();
+
+  // 본인 글인지 확인 후 삭제 (RLS에서도 걸리지만 명시적 확인)
+  const { data: post } = await supabase
+    .from(T.support_posts)
+    .select("user_id")
+    .eq("id", postId)
+    .single();
+
+  if (!post || post.user_id !== userId) {
+    return { error: "삭제 권한이 없습니다" };
+  }
+
+  const { error } = await supabase
+    .from(T.support_posts)
+    .delete()
+    .eq("id", postId)
+    .eq("user_id", userId);
+
+  if (error) return { error: error.message };
+  return {};
+}
+
 // ── 댓글 작성 ──
 
 export async function createComment(params: {

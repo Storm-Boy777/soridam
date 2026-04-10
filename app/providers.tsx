@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "sonner";
 import { getQueryClient } from "@/lib/react-query";
 import { createClient } from "@/lib/supabase";
 import { logUserActivity } from "@/lib/actions/activity-log";
@@ -30,6 +31,23 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      {children}
+      <Toaster
+        position="top-center"
+        offset={300}
+        duration={3000}
+        toastOptions={{
+          style: {
+            background: "#1A1A2E",
+            color: "#FAFAF7",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: "12px",
+            fontSize: "14px",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+          },
+        }}
+      />
+    </QueryClientProvider>
   );
 }

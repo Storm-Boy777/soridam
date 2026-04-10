@@ -88,10 +88,8 @@ export function Navbar({ serverAuth }: { serverAuth?: NavbarServerAuth } = {}) {
   // 초기 상태 확인 전: 최소한의 레이아웃 유지 (깜빡임 방지)
   const navItems = isLoggedIn ? appNav : publicNav;
 
-  const isLanding = pathname === "/";
-
   return (
-    <header className={`sticky top-0 z-50 backdrop-blur-md ${isLanding ? "border-b border-white/10 bg-[#12121F]/80" : "border-b border-border bg-surface/80"}`}>
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#12121F]">
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         {/* 로고 */}
         <Link
@@ -99,10 +97,10 @@ export function Navbar({ serverAuth }: { serverAuth?: NavbarServerAuth } = {}) {
           onClick={handleLogoClick}
           className="flex items-baseline gap-1.5"
         >
-          <span className={`text-[22px] font-extrabold tracking-tight ${isLanding ? "text-white" : "text-foreground"}`}>
-            소리<span className={isLanding ? "text-primary-400" : "text-primary-500"}>담</span>
+          <span className="text-[22px] font-extrabold tracking-tight text-white">
+            소리<span className="text-primary-400">담</span>
           </span>
-          <span className={`text-[11px] font-bold tracking-wide ${isLanding ? "text-white/70" : "text-foreground-muted"}`}>
+          <span className="text-[11px] font-bold tracking-wide text-white/70">
             OPIc
           </span>
         </Link>
@@ -112,12 +110,12 @@ export function Navbar({ serverAuth }: { serverAuth?: NavbarServerAuth } = {}) {
           {navItems.map((item, idx) => (
             <div key={item.label} className="flex items-center">
               {["/reviews", "/patterns", "/support"].includes(item.href) && (
-                <div className={`mx-1 h-4 w-px ${isLanding ? "bg-white/20" : "bg-border"}`} />
+                <div className="mx-1 h-4 w-px bg-white/20" />
               )}
               <Link
                 href={item.href}
                 onClick={(e) => handleNavClick(e, item.href)}
-                className={`relative rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium transition-colors ${isLanding ? "text-gray-400 hover:bg-white/5 hover:text-white" : "text-foreground-secondary hover:bg-surface-secondary hover:text-foreground"}`}
+                className="relative rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium transition-colors text-gray-400 hover:bg-white/5 hover:text-white"
               >
                 {item.label}
                 {item.soon && (
@@ -141,7 +139,7 @@ export function Navbar({ serverAuth }: { serverAuth?: NavbarServerAuth } = {}) {
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className={`inline-flex h-8 items-center justify-center rounded-[var(--radius-md)] px-3 text-sm font-medium transition-colors ${isLanding ? "text-gray-300 hover:bg-white/10" : "text-foreground hover:bg-surface-secondary"}`}
+                className="inline-flex h-8 items-center justify-center rounded-[var(--radius-md)] px-3 text-sm font-medium transition-colors text-gray-300 hover:bg-white/10"
               >
                 로그인
               </Link>

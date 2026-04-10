@@ -41,7 +41,7 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-56 shrink-0 border-r border-white/10 bg-foreground md:flex md:flex-col">
+    <aside className="hidden w-56 shrink-0 border-r border-white/10 bg-[#12121F] md:flex md:flex-col">
       <div className="flex h-14 items-center justify-between border-b border-white/10 px-4">
         <span className="font-display text-lg text-white">관리자</span>
         <Link
