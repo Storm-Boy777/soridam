@@ -170,7 +170,7 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [creditTarget, setCreditTarget] = useState<{ id: string; name: string } | null>(null);
+  const [creditTarget, setCreditTarget] = useState<{ id: string; name: string; balanceCents: number } | null>(null);
   const [planTarget, setPlanTarget] = useState<{ id: string; name: string; plan: string } | null>(null);
   const queryClient = useQueryClient();
 
@@ -193,9 +193,10 @@ export default function AdminUsersPage() {
   const handleAdjust = async (params: CreditAdjustParams) => {
     const result = await adjustCredit(params);
     if (!result.success) {
-      toast.error(result.error || "이용권 조정 실패");
+      toast.error(result.error || "잔액 조정 실패");
       return;
     }
+    toast.success("잔액이 조정되었습니다");
     // 목록 + 상세 캐시 모두 갱신
     queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     if (selectedUserId) {
@@ -237,7 +238,7 @@ export default function AdminUsersPage() {
         <UserDetailView
           userId={selectedUserId}
           onBack={() => setSelectedUserId(null)}
-          onCreditAdjust={(id, name) => setCreditTarget({ id, name })}
+          onCreditAdjust={(id, name, balanceCents) => setCreditTarget({ id, name, balanceCents })}
           onPlanChange={(id, name, plan) => setPlanTarget({ id, name, plan })}
           onBan={(id, ban) => handleToggleBan(id, ban)}
         />
@@ -245,6 +246,7 @@ export default function AdminUsersPage() {
           <CreditAdjustModal
             userId={creditTarget.id}
             userName={creditTarget.name}
+            currentBalanceCents={creditTarget.balanceCents}
             onSubmit={handleAdjust}
             onClose={() => setCreditTarget(null)}
           />
@@ -316,9 +318,9 @@ export default function AdminUsersPage() {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            setCreditTarget({ id: row.id, name: row.display_name || row.email });
+            setCreditTarget({ id: row.id, name: row.display_name || row.email, balanceCents: row.balance_cents });
           }}
-          title="이용권 조정"
+          title="잔액 조정"
           className="rounded-md p-1 text-foreground-muted hover:bg-surface-secondary hover:text-primary-600"
         >
           <Coins size={16} />
@@ -393,6 +395,7 @@ export default function AdminUsersPage() {
         <CreditAdjustModal
           userId={creditTarget.id}
           userName={creditTarget.name}
+          currentBalanceCents={creditTarget.balanceCents}
           onSubmit={handleAdjust}
           onClose={() => setCreditTarget(null)}
         />
@@ -412,7 +415,7 @@ function UserDetailView({
 }: {
   userId: string;
   onBack: () => void;
-  onCreditAdjust: (userId: string, userName: string) => void;
+  onCreditAdjust: (userId: string, userName: string, balanceCents: number) => void;
   onPlanChange: (userId: string, userName: string, currentPlan: string) => void;
   onBan: (userId: string, ban: boolean) => void;
 }) {
@@ -497,11 +500,11 @@ function UserDetailView({
             </div>
             <div className="flex flex-wrap gap-2">
               <button
-                onClick={() => onCreditAdjust(user.id, user.display_name || user.email)}
+                onClick={() => onCreditAdjust(user.id, user.display_name || user.email, user.balance_cents)}
                 className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground-secondary hover:bg-surface-secondary hover:text-primary-600"
               >
                 <Coins size={14} />
-                이용권 조정
+                잔액 조정
               </button>
               <button
                 onClick={() => onPlanChange(user.id, user.display_name || user.email, user.current_plan)}

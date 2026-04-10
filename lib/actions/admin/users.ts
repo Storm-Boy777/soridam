@@ -244,58 +244,40 @@ export async function getAdminUserDetail(userId: string): Promise<AdminUserDetai
   };
 }
 
-const ALLOWED_CREDIT_TYPES = [
-  "mock_exam_credits",
-  "script_credits",
-  "plan_mock_exam_credits",
-  "plan_script_credits",
-] as const;
-
 export async function adjustCredit(
   params: CreditAdjustParams
 ): Promise<{ success: boolean; error?: string }> {
   const { supabase, userId: adminId, userEmail: adminEmail } = await requireAdmin();
 
-  // creditType 검증 (허용된 컬럼만)
-  if (!ALLOWED_CREDIT_TYPES.includes(params.creditType)) {
-    return { success: false, error: "유효하지 않은 크레딧 유형입니다" };
+  // 유효성 검증
+  if (params.amountCents === 0) {
+    return { success: false, error: "조정 금액은 0이 될 수 없습니다" };
+  }
+  if (Math.abs(params.amountCents) > 100_000) {
+    return { success: false, error: "단일 조정 한도는 ±$1,000입니다" };
   }
 
-  // 현재 크레딧 조회
-  const { data: current, error: fetchError } = await supabase
-    .from(T.user_credits)
-    .select(params.creditType)
-    .eq("user_id", params.userId)
-    .single();
+  // polar_admin_adjust_balance RPC 호출
+  const { error: rpcError } = await supabase.rpc(RPC.polar_admin_adjust_balance, {
+    p_user_id: params.userId,
+    p_amount: params.amountCents,
+    p_description: `[관리자 조정] ${params.reason}`,
+  });
 
-  if (fetchError || !current) {
-    return { success: false, error: "사용자 크레딧 조회 실패" };
-  }
-
-  const oldValue = (current as Record<string, number>)[params.creditType] || 0;
-  const newValue = Math.max(0, oldValue + params.amount);
-
-  const { error: updateError } = await supabase
-    .from(T.user_credits)
-    .update({ [params.creditType]: newValue })
-    .eq("user_id", params.userId);
-
-  if (updateError) {
-    return { success: false, error: `크레딧 수정 실패: ${updateError.message}` };
+  if (rpcError) {
+    return { success: false, error: `잔액 조정 실패: ${rpcError.message}` };
   }
 
   // 감사 로그
   await supabase.from(T.admin_audit_log).insert({
     admin_id: adminId,
     admin_email: adminEmail,
-    action: "credit_adjust",
+    action: "balance_adjust",
     target_type: "user",
     target_id: params.userId,
     details: {
-      credit_type: params.creditType,
-      old_value: oldValue,
-      new_value: newValue,
-      amount: params.amount,
+      amount_cents: params.amountCents,
+      amount_usd: (params.amountCents / 100).toFixed(2),
       reason: params.reason,
     },
   });

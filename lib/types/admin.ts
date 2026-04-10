@@ -35,8 +35,7 @@ export interface AdminUser {
 
 export interface CreditAdjustParams {
   userId: string;
-  creditType: "mock_exam_credits" | "script_credits" | "plan_mock_exam_credits" | "plan_script_credits";
-  amount: number; // +/- 값
+  amountCents: number; // +/- 센트 단위 (예: 500 = $5.00)
   reason: string;
 }
 
