@@ -3,6 +3,15 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { getAuthClaims } from "@/lib/auth";
 import { GradeNudgeBanner } from "@/components/ui/grade-nudge-banner";
+import { AnnouncementBanner } from "@/components/ui/announcement-banner";
+import { getActiveAnnouncements } from "@/lib/actions/announcements";
+
+// 공지사항 배너 로더
+async function AnnouncementBannerLoader() {
+  const announcements = await getActiveAnnouncements();
+  if (announcements.length === 0) return null;
+  return <AnnouncementBanner announcements={announcements} />;
+}
 
 // 비동기 서버 컴포넌트: getAuthClaims()로 로컬 JWT claims에서 등급 정보를 읽어 배너에 전달
 // getAuthClaims()는 로컬 JWT 검증 (0ms, 네트워크 왕복 없음)
@@ -35,7 +44,11 @@ export default async function DashboardLayout({
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Navbar serverAuth={serverAuth} />
-      {/* 배너는 넛지 UI이므로 fallback=null — 데이터 준비되면 자연스럽게 나타남 */}
+      {/* 공지사항 배너 — 관리자가 등록한 공지를 사용자에게 표시 */}
+      <Suspense fallback={null}>
+        <AnnouncementBannerLoader />
+      </Suspense>
+      {/* 등급 넛지 배너 — 목표 등급 미설정 시 표시 */}
       <Suspense fallback={null}>
         <GradeNudgeBannerLoader />
       </Suspense>
