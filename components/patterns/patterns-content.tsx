@@ -271,7 +271,7 @@ export function PatternsContent() {
       {/* 탭 바 (가로 스크롤) */}
       <div
         ref={tabsRef}
-        className="mb-4 flex gap-1.5 overflow-x-auto rounded-xl bg-surface-secondary p-1 sm:grid sm:grid-cols-10 max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden"
+        className="mb-4 flex gap-1.5 overflow-x-auto rounded-xl bg-surface-secondary p-1 lg:grid lg:grid-cols-10 max-lg:[scrollbar-width:none] max-lg:[&::-webkit-scrollbar]:hidden"
       >
         {tabs.map((tab) => {
           const active = activeTab === tab.id;
@@ -280,7 +280,7 @@ export function PatternsContent() {
               key={tab.id}
               data-tab={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-medium transition-all sm:shrink ${
+              className={`flex shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-medium transition-all lg:shrink ${
                 active
                   ? "bg-surface text-foreground shadow-sm"
                   : "text-foreground-secondary hover:text-foreground"
@@ -397,21 +397,21 @@ export function PatternsContent() {
       {mode === "study" && currentStudyItem && (
         <div>
           {/* 현재 위치 표시 */}
-          <div className="mb-4 text-center">
-            <span className="text-sm font-bold text-foreground">
+          <div className="mb-3 text-center sm:mb-4">
+            <span className="text-xs font-bold text-foreground sm:text-sm">
               {patternSet.phases.find((p) => p.phase === currentStudyItem.phaseNum)?.title ?? ""}
             </span>
-            <span className="mx-2 text-sm text-foreground-muted">·</span>
-            <span className="text-sm font-medium text-primary-600">
+            <span className="mx-1.5 text-xs text-foreground-muted sm:mx-2 sm:text-sm">·</span>
+            <span className="text-xs font-medium text-primary-600 sm:text-sm">
               {studyIndex + 1} / {totalPatterns}
             </span>
-            <p className="mt-1 text-xs text-foreground-muted">
+            <p className="mt-1 hidden text-xs text-foreground-muted sm:block">
               {patternSet.phases.find((p) => p.phase === currentStudyItem.phaseNum)?.description ?? ""}
             </p>
           </div>
 
           {/* 진행률 바 */}
-          <div className="mb-4 h-1 overflow-hidden rounded-full bg-primary-100">
+          <div className="mb-3 h-1 overflow-hidden rounded-full bg-primary-100 sm:mb-4">
             <div
               className="h-full rounded-full bg-primary-500 transition-all duration-300"
               style={{ width: `${((studyIndex + 1) / totalPatterns) * 100}%` }}
@@ -473,7 +473,7 @@ export function PatternsContent() {
           </div>
 
           {/* 네비게이션 버튼 */}
-          <div className="mt-4 flex items-center justify-between">
+          <div className="mt-3 flex items-center justify-between sm:mt-4">
             <button
               onClick={() => {
                 const newIdx = Math.max(0, studyIndex - 1);
