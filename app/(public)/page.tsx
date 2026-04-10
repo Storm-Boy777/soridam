@@ -45,12 +45,12 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ─── 6부: FAQ (다크) ─── */}
-      <div className="bg-[#1A1A2E] text-white">
-        <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 md:py-24">
+      {/* ─── 6부: FAQ (밝음) ─── */}
+      <section className="bg-background py-12 md:py-24">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6">
           <FaqSection />
         </div>
-      </div>
+      </section>
 
       {/* ─── 7부: CTA ─── */}
       <div className="bg-[#12121F] text-white">

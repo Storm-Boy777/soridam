@@ -51,13 +51,13 @@ export default function FaqSection() {
 
   return (
     <section className="text-center">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-400">
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-500">
         FAQ
       </p>
-      <h2 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">
+      <h2 className="mt-3 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
         자주 묻는 질문
       </h2>
-      <p className="mt-3 text-sm text-gray-400">
+      <p className="mt-3 text-sm text-foreground-muted">
         궁금한 점이 있으신가요?
       </p>
 
@@ -67,25 +67,25 @@ export default function FaqSection() {
           return (
             <div
               key={i}
-              className="rounded-xl border border-white/10 bg-white/[0.04] transition-colors hover:bg-white/[0.06]"
+              className="rounded-xl border border-border bg-surface transition-colors hover:bg-surface-secondary"
             >
               <button
                 onClick={() => setOpenIndex(isOpen ? null : i)}
                 className="flex w-full items-center justify-between px-5 py-4 text-left"
               >
-                <span className="pr-4 text-sm font-medium text-white sm:text-[15px]">
+                <span className="pr-4 text-sm font-medium text-foreground sm:text-[15px]">
                   {item.q}
                 </span>
                 <ChevronDown
                   size={18}
-                  className={`shrink-0 text-gray-400 transition-transform duration-200 ${
+                  className={`shrink-0 text-foreground-muted transition-transform duration-200 ${
                     isOpen ? "rotate-180" : ""
                   }`}
                 />
               </button>
               {isOpen && (
                 <div className="px-5 pb-4">
-                  <p className="text-sm leading-relaxed text-gray-400">
+                  <p className="text-sm leading-relaxed text-foreground-secondary">
                     {item.a}
                   </p>
                 </div>
