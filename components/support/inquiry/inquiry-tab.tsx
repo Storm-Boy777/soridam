@@ -7,6 +7,8 @@ import {
   Lock,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Shield,
   Pencil,
   Trash2,
@@ -51,6 +53,8 @@ export function InquiryTab({ initialInquiries, isLoggedIn }: InquiryTabProps) {
   const [saving, setSaving] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [page, setPage] = useState(1);
+  const LIMIT = 5;
 
   const { data: inquiries = [] } = useQuery({
     queryKey: ["support-my-inquiries"],
@@ -130,14 +134,14 @@ export function InquiryTab({ initialInquiries, isLoggedIn }: InquiryTabProps) {
 
   if (!isLoggedIn) {
     return (
-      <div className="py-20 text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
-          <Lock size={24} className="text-slate-300" />
+      <div className="py-16 text-center">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-surface-secondary">
+          <Lock size={24} className="text-foreground-muted" />
         </div>
-        <p className="mt-4 text-[15px] font-medium text-slate-500">
+        <p className="mt-3 text-sm font-medium text-foreground-secondary">
           로그인 후 이용할 수 있습니다
         </p>
-        <p className="mt-1 text-[13px] text-slate-400">
+        <p className="mt-1 text-xs text-foreground-muted">
           개발자에게 안전하게 이야기를 건넬 수 있어요.
         </p>
       </div>
@@ -145,18 +149,19 @@ export function InquiryTab({ initialInquiries, isLoggedIn }: InquiryTabProps) {
   }
 
   return (
-    <div className="space-y-5">
-      {/* 안내 + 글쓰기 — 모바일 수직 배치 */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-[13px] text-slate-500 sm:text-sm">
+    <div className="space-y-4">
+      {/* 안내 + 글쓰기 — 게시판과 동일한 컴팩트 레이아웃 */}
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-foreground-secondary sm:text-sm">
           개인적인 문의는 이곳에 남겨주세요.
         </p>
         <button
           onClick={() => setShowForm((v) => !v)}
-          className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-full bg-slate-800 px-5 py-2.5 text-[13px] font-medium text-white shadow-sm hover:bg-slate-700 sm:w-auto sm:text-sm"
+          className="flex shrink-0 items-center gap-1 rounded-full bg-foreground px-3 py-1.5 text-xs font-medium text-background shadow-sm hover:bg-foreground/90 sm:gap-1.5 sm:px-4"
         >
-          <MessageCircleHeart size={14} />
-          이야기 건네기
+          <MessageCircleHeart size={12} />
+          <span className="sm:hidden">문의</span>
+          <span className="hidden sm:inline">이야기 건네기</span>
         </button>
       </div>
 
@@ -168,22 +173,22 @@ export function InquiryTab({ initialInquiries, isLoggedIn }: InquiryTabProps) {
         />
       )}
 
-      {/* 문의 목록 */}
+      {/* 문의 목록 — 클라이언트 페이지네이션 */}
       {inquiries.length === 0 ? (
-        <div className="py-20 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
-            <MessageCircleHeart size={24} className="text-slate-300" />
+        <div className="py-16 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-surface-secondary">
+            <MessageCircleHeart size={24} className="text-foreground-muted" />
           </div>
-          <p className="mt-4 text-[15px] font-medium text-slate-500">
+          <p className="mt-3 text-sm font-medium text-foreground-secondary">
             아직 문의 내역이 없습니다
           </p>
-          <p className="mt-1 text-[13px] text-slate-400">
+          <p className="mt-1 text-xs text-foreground-muted">
             궁금하신 점이 있으시면 편하게 말씀해주세요.
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {inquiries.map((post) => {
+        <div className="space-y-2">
+          {inquiries.slice((page - 1) * LIMIT, page * LIMIT).map((post) => {
             const isExpanded = expandedId === post.id;
             const isEditing = editingId === post.id;
             const hasAdminReply = detail?.comments?.some(
@@ -193,30 +198,30 @@ export function InquiryTab({ initialInquiries, isLoggedIn }: InquiryTabProps) {
             return (
               <div
                 key={post.id}
-                className="overflow-hidden rounded-2xl border border-slate-100 bg-white transition-all hover:border-slate-200"
+                className="overflow-hidden rounded-xl border border-border bg-surface transition-all"
               >
-                {/* 행 — 터치 영역 최소 44px */}
+                {/* 행 */}
                 <button
                   onClick={() =>
                     setExpandedId(isExpanded ? null : post.id)
                   }
-                  className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-slate-50/50 sm:gap-4 sm:px-5 sm:py-5"
+                  className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-surface-secondary/40 sm:gap-4 sm:px-5 sm:py-4"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate text-[15px] font-medium text-slate-800">
+                    <div className="flex items-center gap-1.5">
+                      <span className="truncate text-sm font-semibold text-foreground">
                         {post.title}
                       </span>
                       <CategoryBadge category={post.category} />
                     </div>
-                    <div className="mt-1.5 flex items-center gap-2">
+                    <div className="mt-1 flex items-center gap-2">
                       {hasAdminReply && isExpanded && (
-                        <span className="flex items-center gap-0.5 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-600">
+                        <span className="flex items-center gap-0.5 rounded-md bg-primary-50 px-1.5 py-0.5 text-[10px] font-semibold text-primary-600">
                           <Shield size={10} />
                           답변 완료
                         </span>
                       )}
-                      <span className="text-[11px] text-slate-400">
+                      <span className="text-[11px] text-foreground-muted sm:text-xs">
                         {formatTime(post.created_at)}
                       </span>
                     </div>
@@ -224,21 +229,21 @@ export function InquiryTab({ initialInquiries, isLoggedIn }: InquiryTabProps) {
 
                   <div className="flex shrink-0 items-center gap-2">
                     {post.comment_count > 0 && (
-                      <span className="text-[11px] text-slate-400">
+                      <span className="text-xs text-foreground-muted">
                         답변 {post.comment_count}
                       </span>
                     )}
                     {isExpanded ? (
-                      <ChevronUp size={16} className="text-slate-400" />
+                      <ChevronUp size={16} className="text-foreground-muted" />
                     ) : (
-                      <ChevronDown size={16} className="text-slate-400" />
+                      <ChevronDown size={16} className="text-foreground-muted" />
                     )}
                   </div>
                 </button>
 
                 {/* 확장 영역 */}
                 {isExpanded && (
-                  <div className="border-t border-slate-100 bg-slate-50/50 px-5 pb-5 pt-4">
+                  <div className="border-t border-border bg-surface-secondary/30 px-4 pb-4 pt-3 sm:px-5 sm:pb-5 sm:pt-4">
                     {/* 수정/삭제 버튼 */}
                     {!isEditing && (
                       <div className="mb-3 flex justify-end gap-1.5">
@@ -248,14 +253,14 @@ export function InquiryTab({ initialInquiries, isLoggedIn }: InquiryTabProps) {
                             setEditTitle(post.title);
                             setEditContent(detail?.content || post.content);
                           }}
-                          className="flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-500 hover:text-slate-700"
+                          className="flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground-secondary hover:text-foreground"
                         >
                           <Pencil size={11} />
                           수정
                         </button>
                         <button
                           onClick={() => setDeleteTargetId(post.id)}
-                          className="flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-500 hover:border-rose-200 hover:text-rose-500"
+                          className="flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground-secondary hover:border-red-200 hover:text-red-500"
                         >
                           <Trash2 size={11} />
                           삭제
@@ -265,44 +270,44 @@ export function InquiryTab({ initialInquiries, isLoggedIn }: InquiryTabProps) {
 
                     {/* 본문 */}
                     {isEditing ? (
-                      <div className="space-y-3 rounded-xl bg-white p-4">
+                      <div className="space-y-3 rounded-lg bg-surface p-4">
                         <input
                           value={editTitle}
                           onChange={(e) => setEditTitle(e.target.value)}
                           maxLength={200}
-                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                          className="w-full rounded-lg border border-border px-3 py-2 text-sm font-semibold text-foreground outline-none focus:border-primary-300 focus:ring-1 focus:ring-primary-200"
                         />
                         <textarea
                           value={editContent}
                           onChange={(e) => setEditContent(e.target.value)}
                           rows={5}
-                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                          className="w-full rounded-lg border border-border px-3 py-2 text-sm text-foreground outline-none focus:border-primary-300 focus:ring-1 focus:ring-primary-200"
                         />
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => setEditingId(null)}
-                            className="rounded-full border border-slate-200 px-4 py-1.5 text-[12px] font-medium text-slate-500 hover:bg-slate-100"
+                            className="rounded-lg border border-border px-4 py-1.5 text-xs font-medium text-foreground-secondary hover:bg-surface-secondary"
                           >
                             취소
                           </button>
                           <button
                             onClick={() => handleSaveEdit(post.id)}
                             disabled={saving || !editTitle.trim() || !editContent.trim()}
-                            className="rounded-full bg-slate-800 px-4 py-1.5 text-[12px] font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+                            className="rounded-lg bg-primary-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-primary-600 disabled:opacity-50"
                           >
                             {saving ? "저장 중..." : "저장"}
                           </button>
                         </div>
                       </div>
                     ) : (
-                      <p className="whitespace-pre-wrap rounded-xl bg-white p-4 text-[14px] leading-relaxed text-slate-700">
+                      <p className="whitespace-pre-wrap rounded-lg bg-surface p-4 text-sm leading-relaxed text-foreground">
                         {detail?.content || post.content}
                       </p>
                     )}
 
                     {/* 댓글 */}
                     {!isEditing && (
-                      <div className="mt-4 rounded-xl bg-white p-4">
+                      <div className="mt-4 rounded-lg bg-surface p-4">
                         <CommentSection
                           postId={post.id}
                           comments={detail?.comments || []}
@@ -318,6 +323,43 @@ export function InquiryTab({ initialInquiries, isLoggedIn }: InquiryTabProps) {
           })}
         </div>
       )}
+
+      {/* 페이지네이션 */}
+      {(() => {
+        const totalPages = Math.ceil(inquiries.length / LIMIT);
+        if (totalPages <= 1) return null;
+        return (
+          <div className="flex items-center justify-center gap-1 pt-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-foreground-muted transition-colors hover:bg-surface-secondary hover:text-foreground disabled:opacity-30"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-medium transition-colors ${
+                  page === p
+                    ? "bg-foreground text-background"
+                    : "text-foreground-secondary hover:bg-surface-secondary"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-foreground-muted transition-colors hover:bg-surface-secondary hover:text-foreground disabled:opacity-30"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        );
+      })()}
 
       <ConfirmDialog
         open={!!deleteTargetId}

@@ -51,12 +51,12 @@ export const CATEGORY_EMOJI: Record<SupportCategory, string> = {
 };
 
 export const CATEGORY_COLORS: Record<SupportCategory, string> = {
-  bug: "bg-rose-100 text-rose-700",
-  suggestion: "bg-blue-100 text-blue-700",
-  question: "bg-orange-100 text-orange-700",
-  refund: "bg-purple-100 text-purple-700",
-  account: "bg-teal-100 text-teal-700",
-  other: "bg-slate-100 text-slate-600",
+  bug: "bg-rose-50 text-rose-400",
+  suggestion: "bg-blue-50 text-blue-400",
+  question: "bg-orange-50 text-orange-400",
+  refund: "bg-purple-50 text-purple-400",
+  account: "bg-teal-50 text-teal-400",
+  other: "bg-slate-100 text-slate-400",
 };
 
 

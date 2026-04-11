@@ -46,31 +46,31 @@ export function FeedbackForm({ onSuccess, onCancel }: FeedbackFormProps) {
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all">
+    <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
       {/* 헤더 */}
-      <div className="flex items-center justify-between bg-slate-50 px-5 py-3.5">
-        <h3 className="text-[14px] font-semibold text-slate-800">
+      <div className="flex items-center justify-between bg-surface-secondary/30 px-4 py-3 sm:px-5">
+        <h3 className="text-sm font-semibold text-foreground">
           이야기 남기기
         </h3>
         <button
           onClick={onCancel}
-          className="rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-200 hover:text-slate-700"
+          className="rounded-full p-1 text-foreground-muted transition-colors hover:bg-surface-secondary hover:text-foreground"
         >
           <X size={16} />
         </button>
       </div>
 
-      <div className="space-y-4 p-4 sm:space-y-5 sm:p-5">
-        {/* 카테고리 선택 — 터치 최적화 태그 */}
-        <div className="flex flex-wrap gap-2">
+      <div className="space-y-4 p-4 sm:p-5">
+        {/* 카테고리 선택 */}
+        <div className="flex items-center gap-1">
           {CATEGORIES.map((c) => (
             <button
               key={c.id}
               onClick={() => setCategory(c.id)}
-              className={`min-h-[36px] rounded-full px-4 py-1.5 text-[13px] font-medium transition-all sm:text-sm ${
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
                 category === c.id
-                  ? "bg-slate-800 text-white shadow-sm"
-                  : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                  ? "bg-foreground text-background"
+                  : "text-foreground-muted hover:text-foreground"
               }`}
             >
               {c.label}
@@ -85,29 +85,29 @@ export function FeedbackForm({ onSuccess, onCancel }: FeedbackFormProps) {
             onChange={(e) => setTitle(e.target.value)}
             placeholder="어떤 이야기를 하고 싶으신가요?"
             maxLength={100}
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-[14px] text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-200/50"
+            className="w-full rounded-lg border border-border/50 bg-surface-secondary/30 px-3 py-2.5 text-sm text-foreground outline-none transition-all placeholder:text-foreground-muted focus:border-primary-400 focus:bg-surface focus:ring-2 focus:ring-primary-400/10"
           />
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="여기에 이야기를 적어주세요. 버그의 경우 재현 방법을 포함해주시면 큰 도움이 됩니다."
             rows={5}
-            className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-[14px] leading-relaxed text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-200/50"
+            className="w-full resize-none rounded-lg border border-border/50 bg-surface-secondary/30 px-3 py-2.5 text-sm leading-relaxed text-foreground outline-none transition-all placeholder:text-foreground-muted focus:border-primary-400 focus:bg-surface focus:ring-2 focus:ring-primary-400/10"
           />
         </div>
 
-        {/* 액션 버튼 — 모바일: 전체 너비, SM+: 우측 정렬 */}
-        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:items-center sm:justify-end">
+        {/* 액션 버튼 */}
+        <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:items-center sm:justify-end">
           <button
             onClick={onCancel}
-            className="min-h-[44px] rounded-xl px-4 py-2 text-[13px] font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 sm:min-h-0 sm:text-sm"
+            className="min-h-[44px] rounded-lg px-4 py-2 text-sm font-medium text-foreground-secondary transition-colors hover:bg-surface-secondary hover:text-foreground sm:min-h-0"
           >
             취소
           </button>
           <button
             onClick={handleSubmit}
             disabled={submitting || !title.trim() || !content.trim()}
-            className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-slate-800 px-5 py-2.5 text-[13px] font-medium text-white shadow-sm transition-all hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-400/20 disabled:opacity-50 disabled:hover:bg-slate-800 sm:min-h-0 sm:text-sm"
+            className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg bg-primary-500 px-5 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-primary-600 disabled:opacity-50 sm:min-h-0"
           >
             {submitting && <Loader2 size={14} className="animate-spin" />}
             {submitting ? "등록 중..." : "이야기 남기기"}

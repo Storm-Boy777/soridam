@@ -14,7 +14,7 @@ async function SupportDataLoader() {
   const [announcementsResult, feedbackResult, inquiriesResult] =
     await Promise.all([
       getAllAnnouncements(),
-      getFeedbackPosts({ sort: "latest", page: 1, limit: 20 }),
+      getFeedbackPosts({ sort: "latest", page: 1, limit: 5 }),
       user ? getMyInquiries() : Promise.resolve({ data: [] }),
     ]);
 
@@ -52,11 +52,11 @@ export default function SupportPage() {
   return (
     <div className="mx-auto max-w-3xl px-5 pb-16 pt-6 sm:px-6 sm:pt-10 md:px-8">
       {/* 따뜻한 인사 헤더 — "부담 없는 온기" 철학 */}
-      <header className="mb-8 sm:mb-10">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-800 sm:text-[30px]">
+      <header className="mb-6 sm:mb-8">
+        <h1 className="text-xl font-bold text-foreground sm:text-2xl">
           소리담 소통함
         </h1>
-        <p className="mt-2 text-[14px] leading-relaxed text-slate-500 sm:mt-2.5 sm:text-[15px]">
+        <p className="mt-1.5 text-sm leading-relaxed text-foreground-secondary sm:text-base">
           사용하시며 느낀 작은 불편함도, 소소한 성장의 기쁨도 모두 좋습니다.
           <br className="hidden sm:block" />
           소리담은 여러분의 이야기로 자라납니다.

@@ -9,27 +9,27 @@ const TYPE_CONFIG: Record<
 > = {
   notice: {
     icon: Bell,
-    bg: "bg-blue-50/60",
-    border: "border-blue-100",
-    iconColor: "text-blue-500",
+    bg: "bg-surface",
+    border: "border-border",
+    iconColor: "text-foreground-muted",
   },
   maintenance: {
     icon: AlertTriangle,
-    bg: "bg-rose-50/60",
-    border: "border-rose-100",
-    iconColor: "text-rose-500",
+    bg: "bg-surface",
+    border: "border-border",
+    iconColor: "text-rose-400",
   },
   event: {
     icon: PartyPopper,
-    bg: "bg-primary-50/60",
-    border: "border-primary-100",
-    iconColor: "text-primary-500",
+    bg: "bg-surface",
+    border: "border-border",
+    iconColor: "text-primary-400",
   },
   update: {
     icon: Sparkles,
-    bg: "bg-amber-50/60",
-    border: "border-amber-100",
-    iconColor: "text-amber-500",
+    bg: "bg-surface",
+    border: "border-border",
+    iconColor: "text-amber-400",
   },
 };
 
@@ -47,14 +47,14 @@ interface NoticesTabProps {
 export function NoticesTab({ initialAnnouncements }: NoticesTabProps) {
   if (initialAnnouncements.length === 0) {
     return (
-      <div className="py-20 text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
-          <Bell size={24} className="text-slate-300" />
+      <div className="py-16 text-center">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-surface-secondary">
+          <Bell size={24} className="text-foreground-muted" />
         </div>
-        <p className="mt-4 text-[15px] font-medium text-slate-500">
+        <p className="mt-3 text-sm font-medium text-foreground-secondary">
           새로운 소식이 없습니다
         </p>
-        <p className="mt-1 text-[13px] text-slate-400">
+        <p className="mt-1 text-xs text-foreground-muted">
           소리담의 소식이 생기면 이곳에서 알려드릴게요.
         </p>
       </div>
@@ -62,34 +62,34 @@ export function NoticesTab({ initialAnnouncements }: NoticesTabProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {initialAnnouncements.map((a) => {
         const config = TYPE_CONFIG[a.type] || TYPE_CONFIG.notice;
         const Icon = config.icon;
         return (
           <article
             key={a.id}
-            className={`rounded-2xl border ${config.border} ${config.bg} p-5 sm:p-6 transition-colors hover:shadow-sm`}
+            className={`rounded-xl border ${config.border} ${config.bg} p-4 sm:p-5 transition-colors`}
           >
-            <div className="flex items-start gap-3.5">
+            <div className="flex items-start gap-3">
               <div className="mt-0.5 shrink-0">
-                <Icon size={18} className={config.iconColor} />
+                <Icon size={16} className={config.iconColor} />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${config.iconColor} ${config.bg}`}
+                    className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold sm:text-xs ${config.iconColor} bg-surface-secondary`}
                   >
                     {TYPE_LABELS[a.type] || a.type}
                   </span>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-[11px] text-foreground-muted sm:text-xs">
                     {new Date(a.created_at).toLocaleDateString("ko-KR")}
                   </span>
                 </div>
-                <h3 className="mt-2 text-[15px] font-semibold leading-snug text-slate-800 sm:text-base">
+                <h3 className="mt-1.5 text-sm font-semibold text-foreground sm:text-base">
                   {a.title}
                 </h3>
-                <p className="mt-1.5 whitespace-pre-wrap text-[13px] leading-relaxed text-slate-600 sm:text-sm">
+                <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-foreground-secondary sm:text-sm">
                   {a.content}
                 </p>
               </div>

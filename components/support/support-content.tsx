@@ -56,8 +56,8 @@ export function SupportContent({
 
   return (
     <div>
-      {/* 탭 네비게이션 — 모바일 터치 최적화 (최소 44px 터치 영역) */}
-      <div className="mb-6 flex gap-1.5 overflow-x-auto pb-1 sm:mb-8 max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden">
+      {/* 탭 네비게이션 — 하단 인디케이터 (다른 페이지와 통일) */}
+      <div className="mb-4 flex border-b border-border sm:mb-6 max-sm:[&>button]:flex-1">
         {tabs.map((tab) => {
           const active = activeTab === tab.id;
           const Icon = tab.icon;
@@ -65,14 +65,17 @@ export function SupportContent({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex min-h-[44px] items-center gap-2 whitespace-nowrap rounded-full px-5 py-2.5 text-[13px] font-medium transition-all sm:text-sm ${
+              className={`relative flex items-center justify-center gap-1.5 px-4 py-3 text-xs font-medium transition-colors sm:gap-2 sm:px-6 sm:text-sm ${
                 active
-                  ? "bg-slate-800 text-white shadow-sm"
-                  : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                  ? "text-foreground"
+                  : "text-foreground-muted hover:text-foreground-secondary"
               }`}
             >
-              <Icon size={15} className={active ? "text-white/80" : ""} />
-              {tab.label}
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="truncate">{tab.label}</span>
+              {active && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-foreground" />
+              )}
             </button>
           );
         })}
