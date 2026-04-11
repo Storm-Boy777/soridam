@@ -14,6 +14,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   getAdminPosts,
   togglePinPost,
@@ -36,6 +37,9 @@ export default function AdminSupportPage() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [replyContent, setReplyContent] = useState("");
   const [replying, setReplying] = useState(false);
+  const [deletePostId, setDeletePostId] = useState<number | null>(null);
+  const [deleteCommentId, setDeleteCommentId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // 확장 게시물 변경 시 답변 입력 초기화
   useEffect(() => {
@@ -85,17 +89,22 @@ export default function AdminSupportPage() {
     }
   };
 
-  // 삭제
-  const handleDelete = async (postId: number) => {
-    if (!confirm("이 게시물을 삭제하시겠습니까? 댓글도 함께 삭제됩니다."))
-      return;
-    const result = await deletePost(postId);
-    if (result.success) {
-      toast.success("삭제됨");
-      setExpandedId(null);
-      refresh();
-    } else {
-      toast.error(result.error || "삭제 실패");
+  // 게시물 삭제 확인
+  const handleDeletePostConfirm = async () => {
+    if (!deletePostId) return;
+    setDeleting(true);
+    try {
+      const result = await deletePost(deletePostId);
+      if (result.success) {
+        toast.success("삭제됨");
+        setExpandedId(null);
+        refresh();
+      } else {
+        toast.error(result.error || "삭제 실패");
+      }
+    } finally {
+      setDeleting(false);
+      setDeletePostId(null);
     }
   };
 
@@ -120,15 +129,21 @@ export default function AdminSupportPage() {
     }
   };
 
-  // 댓글 삭제
-  const handleDeleteComment = async (commentId: number) => {
-    if (!confirm("이 댓글을 삭제하시겠습니까?")) return;
-    const result = await deleteComment(commentId);
-    if (result.success) {
-      toast.success("댓글 삭제됨");
-      refresh();
-    } else {
-      toast.error(result.error || "삭제 실패");
+  // 댓글 삭제 확인
+  const handleDeleteCommentConfirm = async () => {
+    if (!deleteCommentId) return;
+    setDeleting(true);
+    try {
+      const result = await deleteComment(deleteCommentId);
+      if (result.success) {
+        toast.success("댓글 삭제됨");
+        refresh();
+      } else {
+        toast.error(result.error || "삭제 실패");
+      }
+    } finally {
+      setDeleting(false);
+      setDeleteCommentId(null);
     }
   };
 
@@ -252,7 +267,7 @@ export default function AdminSupportPage() {
                       </button>
                     )}
                     <button
-                      onClick={() => handleDelete(post.id)}
+                      onClick={() => setDeletePostId(post.id)}
                       className="rounded-md p-1 hover:bg-red-50 hover:text-red-500"
                       title="삭제"
                     >
@@ -314,12 +329,12 @@ export default function AdminSupportPage() {
                                   ).toLocaleDateString("ko-KR")}
                                 </span>
                               </div>
-                              <p className="mt-0.5 text-foreground">
+                              <p className="mt-0.5 whitespace-pre-wrap text-foreground">
                                 {c.content}
                               </p>
                             </div>
                             <button
-                              onClick={() => handleDeleteComment(c.id)}
+                              onClick={() => setDeleteCommentId(c.id)}
                               className="shrink-0 rounded p-0.5 hover:bg-red-50 hover:text-red-500"
                             >
                               <Trash2 size={12} />
@@ -330,9 +345,8 @@ export default function AdminSupportPage() {
                     )}
 
                     {/* 관리자 답변 */}
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
+                    <div className="flex items-end gap-2 rounded-lg border border-border bg-surface p-2 transition-all focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-400/10">
+                      <textarea
                         value={replyContent}
                         onChange={(e) => setReplyContent(e.target.value)}
                         onKeyDown={(e) => {
@@ -341,16 +355,22 @@ export default function AdminSupportPage() {
                             handleReply(post.id);
                           }
                         }}
-                        placeholder="관리자 답변 입력..."
-                        className="flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-primary-300"
+                        placeholder="관리자 답변 입력... (Shift+Enter로 줄바꿈)"
+                        rows={1}
+                        className="flex-1 resize-none bg-transparent px-2 py-1.5 text-sm text-foreground outline-none placeholder:text-foreground-muted"
+                        style={{ maxHeight: "120px", overflowY: "auto" }}
+                        onInput={(e) => {
+                          const el = e.currentTarget;
+                          el.style.height = "auto";
+                          el.style.height = Math.min(el.scrollHeight, 120) + "px";
+                        }}
                       />
                       <button
                         onClick={() => handleReply(post.id)}
                         disabled={replying || !replyContent.trim()}
-                        className="flex items-center gap-1 rounded-lg bg-primary-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-600 disabled:opacity-50"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-500 text-white shadow-sm hover:bg-primary-600 disabled:opacity-40"
                       >
-                        <Shield size={12} />
-                        <Send size={12} />
+                        <Send size={14} />
                       </button>
                     </div>
                   </div>
@@ -360,6 +380,32 @@ export default function AdminSupportPage() {
           })}
         </div>
       )}
+
+      {/* 게시물 삭제 모달 */}
+      <ConfirmDialog
+        open={!!deletePostId}
+        onConfirm={handleDeletePostConfirm}
+        onCancel={() => setDeletePostId(null)}
+        title="이 게시물을 삭제하시겠습니까?"
+        description="댓글도 함께 삭제되며, 되돌릴 수 없습니다."
+        confirmLabel="삭제"
+        cancelLabel="취소"
+        variant="danger"
+        isLoading={deleting}
+      />
+
+      {/* 댓글 삭제 모달 */}
+      <ConfirmDialog
+        open={!!deleteCommentId}
+        onConfirm={handleDeleteCommentConfirm}
+        onCancel={() => setDeleteCommentId(null)}
+        title="이 댓글을 삭제하시겠습니까?"
+        description="삭제된 댓글은 되돌릴 수 없습니다."
+        confirmLabel="삭제"
+        cancelLabel="취소"
+        variant="danger"
+        isLoading={deleting}
+      />
     </div>
   );
 }
