@@ -2,7 +2,7 @@
 
 import { requireAdmin } from "@/lib/auth";
 import { T } from "@/lib/constants/tables";
-import type { AdminOrder, RevenueStats, PaginatedResult } from "@/lib/types/admin";
+import type { AdminOrder, RevenueStats, PaginatedResult, ApiUsageLog } from "@/lib/types/admin";
 
 // ── 주문 목록 조회 (polar_orders) ──
 
@@ -187,4 +187,56 @@ export async function refundOrder(params: {
   });
 
   return { success: true };
+}
+
+// ── API 사용 이력 조회 ──
+
+const ADMIN_USER_ID = "251b0655-6fd0-4566-bef2-57c07bb5dcd0";
+
+export async function getApiUsageLogs(params: {
+  page?: number;
+  pageSize?: number;
+  sessionType?: string;
+}): Promise<PaginatedResult<ApiUsageLog>> {
+  const { supabase } = await requireAdmin();
+  const page = params.page || 1;
+  const pageSize = params.pageSize || 20;
+  const offset = (page - 1) * pageSize;
+
+  let query = supabase
+    .from(T.api_usage_logs)
+    .select("id, user_id, session_type, feature, service, model, tokens_in, tokens_out, cost_usd, created_at, profiles!inner(email, display_name)", { count: "exact" })
+    .neq("user_id", ADMIN_USER_ID);
+
+  if (params.sessionType && params.sessionType !== "all") {
+    query = query.eq("session_type", params.sessionType);
+  }
+
+  const { data, count, error } = await query
+    .order("created_at", { ascending: false })
+    .range(offset, offset + pageSize - 1);
+
+  if (error || !data) {
+    return { data: [], total: 0, page, pageSize };
+  }
+
+  const logs: ApiUsageLog[] = data.map((r: Record<string, unknown>) => {
+    const profile = r.profiles as { email: string; display_name: string | null } | null;
+    return {
+      id: r.id as number,
+      user_id: r.user_id as string,
+      user_email: profile?.email || "",
+      user_name: profile?.display_name || null,
+      session_type: r.session_type as string,
+      feature: (r.feature as string) || null,
+      service: r.service as string,
+      model: (r.model as string) || null,
+      tokens_in: (r.tokens_in as number) || 0,
+      tokens_out: (r.tokens_out as number) || 0,
+      cost_usd: (r.cost_usd as number) || 0,
+      created_at: r.created_at as string,
+    };
+  });
+
+  return { data: logs, total: count || 0, page, pageSize };
 }

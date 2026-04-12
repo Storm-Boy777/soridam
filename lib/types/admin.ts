@@ -75,6 +75,23 @@ export interface RevenueStats {
   }>;
 }
 
+// ── API 사용 로그 ──
+
+export interface ApiUsageLog {
+  id: number;
+  user_id: string;
+  user_email: string;
+  user_name: string | null;
+  session_type: string;
+  feature: string | null;
+  service: string;
+  model: string | null;
+  tokens_in: number;
+  tokens_out: number;
+  cost_usd: number;
+  created_at: string;
+}
+
 // ── 플랜 변경 ──
 
 export interface PlanChangeParams {

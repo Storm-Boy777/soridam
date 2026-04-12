@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { Users, CreditCard, GraduationCap, BookOpen, Mic, Stethoscope, FileText, Cpu, Coins, HardDrive, UserPlus, ChevronRight, ChevronDown, Wallet, DollarSign, Heart } from "lucide-react";
+import { Users, CreditCard, GraduationCap, BookOpen, Mic, Stethoscope, FileText, Cpu, Coins, HardDrive, UserPlus, ChevronRight, ChevronDown, Wallet, DollarSign, Heart, Activity } from "lucide-react";
 import { getAdminDashboardStats, getRecentActivity, getLearningActivity, getAICostStats, getSystemHealthStats, getUserEngagementStats, getRecentSignups, getSponsorshipOverview } from "@/lib/actions/admin/stats";
 import { AdminStatCard } from "@/components/admin/admin-stat-card";
 import { AdminTrendCharts } from "@/components/admin/admin-trend-charts";
@@ -229,26 +229,30 @@ async function SystemHealthSection() {
         <Cpu size={16} className="text-green-500" />
         시스템 헬스
       </h2>
-      <div className="rounded-xl border border-border bg-surface p-4">
-        <div className="grid grid-cols-3 gap-3">
-          <div>
-            <p className="text-2xl font-bold tabular-nums text-foreground">{health.pendingEvals}</p>
-            <p className="text-xs text-foreground-muted">평가 대기</p>
-          </div>
-          <div>
-            <p className={`text-2xl font-bold tabular-nums ${health.failedEvals > 0 ? "text-red-600" : "text-foreground"}`}>
-              {health.failedEvals}
-            </p>
-            <p className="text-xs text-foreground-muted">실패</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold tabular-nums text-foreground">{health.avgWaitMinutes}분</p>
-            <p className="text-xs text-foreground-muted">평균 대기</p>
-          </div>
-        </div>
 
-        {/* 파이프라인 */}
-        <div className="mt-4 space-y-1.5">
+      {/* 상단 요약 카드 3개 */}
+      <div className="grid grid-cols-3 gap-3">
+        <MetricCard
+          icon={<Activity size={16} className="text-amber-500" />}
+          label="평가 대기"
+          value={`${health.pendingEvals}`}
+        />
+        <MetricCard
+          icon={<FileText size={16} className="text-red-500" />}
+          label="실패"
+          value={`${health.failedEvals}`}
+        />
+        <MetricCard
+          icon={<Cpu size={16} className="text-green-500" />}
+          label="평균 대기"
+          value={`${health.avgWaitMinutes}분`}
+        />
+      </div>
+
+      {/* 파이프라인 + Storage */}
+      <div className="rounded-xl border border-border bg-surface p-4">
+        <p className="mb-2 text-[11px] font-semibold text-foreground-muted">평가 파이프라인</p>
+        <div className="space-y-1.5">
           {health.pipelineStatus.map((p) => (
             <div key={p.stage} className="flex items-center justify-between text-xs">
               <span className="text-foreground-secondary">{p.stage}</span>
@@ -261,17 +265,16 @@ async function SystemHealthSection() {
           ))}
         </div>
 
-        {/* Storage */}
         <div className="mt-4 border-t border-border pt-3">
-          <p className="mb-1.5 flex items-center gap-1 text-xs font-medium text-foreground-secondary">
-            <HardDrive size={12} />
+          <p className="mb-2 text-[11px] font-semibold text-foreground-muted">
+            <HardDrive size={11} className="mr-1 inline" />
             Storage
           </p>
           <div className="grid grid-cols-2 gap-2">
             {health.storageUsage.map((s) => (
               <div key={s.bucket} className="flex items-center justify-between text-xs">
                 <span className="text-foreground-muted">{s.bucket}</span>
-                <span className="font-medium text-foreground">{s.fileCount.toLocaleString()}</span>
+                <span className="font-medium tabular-nums text-foreground">{s.fileCount.toLocaleString()}</span>
               </div>
             ))}
           </div>
@@ -614,14 +617,12 @@ export default function AdminDashboardPage() {
       <AdminTrendCharts />
 
       {/* AI 비용 + 시스템 헬스 */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Suspense fallback={<SectionSkeleton />}>
-          <AICostSection />
-        </Suspense>
-        <Suspense fallback={<SectionSkeleton />}>
-          <SystemHealthSection />
-        </Suspense>
-      </div>
+      <Suspense fallback={<SectionSkeleton />}>
+        <AICostSection />
+      </Suspense>
+      <Suspense fallback={<SectionSkeleton />}>
+        <SystemHealthSection />
+      </Suspense>
 
       {/* 후원금 현황 */}
       <Suspense fallback={<SectionSkeleton />}>

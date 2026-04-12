@@ -503,7 +503,7 @@ export async function getSystemHealthStats(): Promise<SystemHealthStats> {
 
   for (const a of answers || []) {
     const status = a.eval_status || "pending";
-    if (status === "complete" || status === "skipped") {
+    if (status === "completed" || status === "skipped") {
       pipeline["Report (종합)"].completed++;
     } else if (status === "error" || status === "failed") {
       failedCount++;
