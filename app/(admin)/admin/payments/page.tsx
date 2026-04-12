@@ -223,7 +223,7 @@ function ChargeHistoryTab() {
 
                 {isExpanded && (
                   <div className="border-t border-border/30 bg-surface-secondary/50 px-4 py-3.5">
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
                       <div>
                         <span className="text-xs text-foreground-muted">결제 ID</span>
                         <p className="mt-0.5 truncate font-mono text-xs text-foreground-secondary">{order.payment_id || "-"}</p>
@@ -236,18 +236,17 @@ function ChargeHistoryTab() {
                         <span className="text-xs text-foreground-muted">결제일시</span>
                         <p className="mt-0.5 text-xs text-foreground-secondary">{order.paid_at ? formatDate(order.paid_at) : "-"}</p>
                       </div>
+                      {order.status === "paid" && !isRefundTarget && (
+                        <div className="flex items-end justify-end">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setShowRefundFor(order.id); setRefundReason(""); }}
+                            className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
+                          >
+                            <RefreshCw size={12} /> 환불
+                          </button>
+                        </div>
+                      )}
                     </div>
-
-                    {order.status === "paid" && !isRefundTarget && (
-                      <div className="mt-3 flex justify-end">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setShowRefundFor(order.id); setRefundReason(""); }}
-                          className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
-                        >
-                          <RefreshCw size={12} /> 환불
-                        </button>
-                      </div>
-                    )}
 
                     {isRefundTarget && (
                       <div className="mt-3 rounded-lg border border-red-200 bg-red-50/50 p-3">
