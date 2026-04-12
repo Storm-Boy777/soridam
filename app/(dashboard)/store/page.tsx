@@ -15,7 +15,7 @@ export default async function StorePage() {
       <div className="mb-6 sm:mb-8">
         <h1 className="text-xl font-bold text-foreground sm:text-2xl">AI 스토어</h1>
         <p className="mt-0.5 text-sm text-foreground-secondary sm:mt-1 sm:text-base">
-          사용한 만큼만, 원가 그대로.
+          크레딧을 충전하고, AI 학습 기능을 바로 이용하세요.
         </p>
       </div>
       <StoreContent userId={userId} />

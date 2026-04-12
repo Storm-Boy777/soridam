@@ -285,7 +285,7 @@ export function StoreContent({ userId }: { userId: string }) {
         <div className="mx-auto mt-4 flex max-w-xl justify-end">
           <button
             onClick={() => setShowDetail(!showDetail)}
-            className="flex items-center gap-1.5 rounded-md border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/60 transition-colors hover:bg-white/15 sm:text-sm"
+            className="flex items-center gap-1.5 rounded-md border border-primary-400/30 bg-primary-500/10 px-3 py-1.5 text-xs font-semibold text-primary-300 transition-colors hover:bg-primary-500/20 sm:text-sm"
           >
             사용하는 AI 상세 보기
             <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showDetail ? "rotate-180" : ""}`} />
