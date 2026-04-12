@@ -25,8 +25,7 @@ export async function createCheckout(productKey: ProductKey): Promise<CheckoutRe
 
     return { url };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("[createCheckout]", msg);
-    return { error: `결제 오류: ${msg}` };
+    console.error("[createCheckout]", err instanceof Error ? err.message : err);
+    return { error: "결제 페이지를 준비할 수 없습니다. 잠시 후 다시 시도해주세요." };
   }
 }
