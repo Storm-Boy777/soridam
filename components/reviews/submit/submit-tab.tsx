@@ -75,11 +75,13 @@ export function SubmitTab({ initialSubmissions }: SubmitTabProps) {
         <Info size={18} className="shrink-0 text-primary-500" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-foreground">
-            후기 제출이란?
+            왜 후기를 제출하나요?
           </p>
           {bannerOpen && (
-            <p className="mt-0.5 text-xs text-foreground-secondary sm:mt-1 sm:text-sm">
-              여러분의 후기 데이터가 빈도 분석의 정확도를 높여줍니다.
+            <p className="mt-0.5 text-xs leading-relaxed text-foreground-secondary sm:mt-1 sm:text-sm">
+              여러분이 제출한 시험 후기는 전체 출제 빈도 분석에 반영됩니다.
+              더 많은 분들이 후기를 공유할수록 &ldquo;어떤 주제가 자주 나오는지&rdquo; 데이터가 정확해집니다.
+              서로의 후기가 서로의 전략이 되는 구조입니다.
             </p>
           )}
         </div>

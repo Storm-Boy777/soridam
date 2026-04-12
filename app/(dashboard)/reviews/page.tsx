@@ -94,7 +94,7 @@ export default function ReviewsPage() {
       <div className="mb-4 sm:mb-6">
         <h1 className="text-xl font-bold text-foreground sm:text-2xl">시험후기</h1>
         <p className="mt-0.5 text-sm text-foreground-secondary sm:mt-1 sm:text-base">
-          실제 시험 후기를 분석하여 출제 빈도를 파악하세요.
+          시험 후기를 제출하면, 출제 빈도 분석에 반영됩니다.
         </p>
       </div>
       {/* 탭 콘텐츠 — 데이터 로드 후 스트리밍 */}

@@ -12,9 +12,9 @@ import type { ReviewStats, FrequencyItem, Submission, SubmissionWithQuestions } 
 /* ── 상수 ── */
 
 const tabs = [
-  { id: "frequency", label: "빈도 분석", icon: BarChart3 },
   { id: "submit", label: "후기 제출", icon: Send },
   { id: "list", label: "시험 후기", icon: MessageSquare },
+  { id: "frequency", label: "빈도 분석", icon: BarChart3 },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
@@ -37,7 +37,7 @@ export function ReviewsContent({ initialStats, initialFrequency, initialSubmissi
   // useState로 즉시 탭 전환 + history.replaceState로 URL만 동기화 (Next.js 네비게이션 미발생)
   const tabParam = searchParams.get("tab") as TabId | null;
   const fromCompleted = searchParams.get("completed") === "true";
-  const initialTab: TabId = tabParam && tabs.some((t) => t.id === tabParam) ? tabParam : fromCompleted ? "submit" : "frequency";
+  const initialTab: TabId = tabParam && tabs.some((t) => t.id === tabParam) ? tabParam : "submit";
   const [activeTab, setActiveTabState] = useState<TabId>(initialTab);
 
   const setActiveTab = useCallback((id: TabId) => {
