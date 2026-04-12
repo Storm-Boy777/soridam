@@ -110,16 +110,12 @@ export function StoreContent({ userId }: { userId: string }) {
   const handleCheckout = (productKey: keyof typeof PRODUCTS) => {
     setLoadingProduct(productKey);
     startTransition(async () => {
-      try {
-        const url = await createCheckout(productKey);
-        window.location.href = url;
-      } catch (err) {
-        console.error("[handleCheckout]", err);
-        toast.error(
-          err instanceof Error ? err.message : "결제 페이지를 열 수 없습니다. 잠시 후 다시 시도해주세요."
-        );
-      } finally {
+      const result = await createCheckout(productKey);
+      if (result.error) {
+        toast.error(result.error);
         setLoadingProduct(null);
+      } else {
+        window.location.href = result.url;
       }
     });
   };
