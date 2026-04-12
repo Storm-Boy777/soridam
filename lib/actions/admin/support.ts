@@ -4,6 +4,20 @@ import { requireAdmin } from "@/lib/auth";
 import { T } from "@/lib/constants/tables";
 import type { SupportPost } from "@/lib/types/support";
 
+// ── 미답변 문의 건수 조회 ──
+
+export async function getUnansweredInquiryCount(): Promise<number> {
+  const { supabase } = await requireAdmin();
+
+  const { count } = await supabase
+    .from(T.support_posts)
+    .select("*", { count: "exact", head: true })
+    .eq("status", "open")
+    .eq("visibility", "private");
+
+  return count || 0;
+}
+
 // ── 전체 게시물 조회 (관리자) ──
 
 export async function getAdminPosts(params: {

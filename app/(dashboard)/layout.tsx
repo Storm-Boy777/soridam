@@ -5,6 +5,7 @@ import { getAuthClaims } from "@/lib/auth";
 import { GradeNudgeBanner } from "@/components/ui/grade-nudge-banner";
 import { AnnouncementBanner } from "@/components/ui/announcement-banner";
 import { getActiveAnnouncements } from "@/lib/actions/announcements";
+import { AdminInquiryToast } from "@/components/admin/admin-inquiry-toast";
 
 // 공지사항 배너 로더
 async function AnnouncementBannerLoader() {
@@ -56,6 +57,8 @@ export default async function DashboardLayout({
         {children}
       </main>
       <Footer />
+      {/* 관리자: 미답변 문의 토스트 (세션당 1회) */}
+      {serverAuth.isAdmin && <AdminInquiryToast />}
     </div>
   );
 }

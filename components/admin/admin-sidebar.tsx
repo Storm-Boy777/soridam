@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { getUnansweredInquiryCount } from "@/lib/actions/admin/support";
 import {
   LayoutDashboard,
   Users,
@@ -81,6 +83,14 @@ const menuGroups: MenuGroup[] = [
 export function AdminSidebar() {
   const pathname = usePathname();
 
+  // 미답변 1:1 문의 건수
+  const { data: unansweredCount } = useQuery({
+    queryKey: ["admin-unanswered-inquiry"],
+    queryFn: () => getUnansweredInquiryCount(),
+    staleTime: 60 * 1000,
+    refetchInterval: 60 * 1000,
+  });
+
   return (
     <aside className="hidden w-56 shrink-0 border-r border-white/10 bg-[#12121F] md:flex md:flex-col">
       <div className="flex h-14 items-center justify-between border-b border-white/10 px-4">
@@ -124,6 +134,11 @@ export function AdminSidebar() {
                 >
                   <item.icon size={16} />
                   {item.label}
+                  {item.href === "/admin/support" && unansweredCount ? (
+                    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                      {unansweredCount}
+                    </span>
+                  ) : null}
                 </Link>
               );
             })}

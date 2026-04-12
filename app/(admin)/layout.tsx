@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getAdminUser } from "@/lib/auth";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { AdminInquiryToast } from "@/components/admin/admin-inquiry-toast";
 
 export default async function AdminLayout({
   children,
@@ -25,7 +26,8 @@ export default async function AdminLayout({
           {children}
         </div>
       </main>
-      {/* Toaster는 providers.tsx에서 전역 제공 */}
+      {/* 미답변 문의 토스트 (세션당 1회) */}
+      <AdminInquiryToast />
     </div>
   );
 }
