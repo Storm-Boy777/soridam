@@ -5,6 +5,7 @@ import { T } from "@/lib/constants/tables";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import { toast } from "sonner";
 import { createCheckout } from "@/lib/actions/checkout";
 import { PRODUCTS, formatUsd } from "@/lib/constants/pricing";
 import {
@@ -110,8 +111,14 @@ export function StoreContent({ userId }: { userId: string }) {
     setLoadingProduct(productKey);
     startTransition(async () => {
       try {
-        await createCheckout(productKey);
-      } catch {
+        const url = await createCheckout(productKey);
+        window.open(url, "_blank", "noopener,noreferrer");
+      } catch (err) {
+        console.error("[handleCheckout]", err);
+        toast.error(
+          err instanceof Error ? err.message : "결제 페이지를 열 수 없습니다. 잠시 후 다시 시도해주세요."
+        );
+      } finally {
         setLoadingProduct(null);
       }
     });
