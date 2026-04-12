@@ -111,7 +111,7 @@ export function StoreContent({ userId }: { userId: string }) {
     setLoadingProduct(productKey);
     startTransition(async () => {
       const result = await createCheckout(productKey);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
         setLoadingProduct(null);
       } else {
