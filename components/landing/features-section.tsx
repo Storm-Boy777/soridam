@@ -5,7 +5,7 @@ import ScrollReveal from "@/components/motion/ScrollReveal";
 
 const FEATURE_CARDS = [
   { num: "01", title: "빈도 분석", desc: "출제 빈도를 데이터로 분석", src: "/screenshots/review-frequency.jpg" },
-  { num: "02", title: "후기 제출", desc: "콤보별 주제와 질문 선택", src: "/screenshots/review-submit.jpg" },
+  { num: "02", title: "후기 제출", desc: "시험 후기를 공유하여 빈도 분석에 기여", src: "/screenshots/review-submit.jpg" },
   { num: "03", title: "스크립트 생성", desc: "내 경험으로 맞춤 스크립트", src: "/screenshots/script-create.png" },
   { num: "04", title: "쉐도잉 훈련", desc: "문장별 하이라이트로 따라읽기", src: "/screenshots/shadowing-follow.png" },
   { num: "05", title: "실전 모의고사", desc: "15문항 실전 시뮬레이션", src: "/screenshots/mock-exam-session.png" },
