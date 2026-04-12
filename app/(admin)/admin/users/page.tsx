@@ -23,6 +23,7 @@ import { AdminDataTable } from "@/components/admin/admin-data-table";
 import { CreditAdjustModal } from "@/components/admin/credit-adjust-modal";
 import { PlanChangeModal } from "@/components/admin/plan-change-modal";
 import type { AdminUser, AdminUserDetail, CreditAdjustParams, PlanChangeParams } from "@/lib/types/admin";
+import { QUESTION_TYPE_LABELS, QUESTION_TYPE_COLORS } from "@/lib/types/reviews";
 
 // ── 유틸리티 ──
 
@@ -125,40 +126,15 @@ function GradeBadge({ level }: { level: string | null }) {
   );
 }
 
-// 질문 타입 라벨
+// 질문 타입 라벨 & 색상 — lib/types/reviews.ts SSOT 사용
 function getQuestionTypeLabel(type: string | null): string {
   if (!type) return "-";
-  const map: Record<string, string> = {
-    describe: "묘사",
-    routine: "루틴",
-    compare: "비교",
-    past_experience: "과거경험",
-    unexpected: "돌발경험",
-    memorable: "기억남는경험",
-    compare_change: "비교변화",
-    social_issue: "사회적이슈",
-    ask_question: "질문하기",
-    alternative: "대안제시",
-  };
-  return map[type] || type;
+  return QUESTION_TYPE_LABELS[type] || type;
 }
 
-// 질문 타입 색상
 function getQuestionTypeColor(type: string | null): string {
   if (!type) return "bg-gray-100 text-gray-600";
-  const map: Record<string, string> = {
-    describe: "bg-sky-50 text-sky-700",
-    routine: "bg-blue-50 text-blue-700",
-    compare: "bg-indigo-50 text-indigo-700",
-    past_experience: "bg-amber-50 text-amber-700",
-    unexpected: "bg-orange-50 text-orange-700",
-    memorable: "bg-rose-50 text-rose-700",
-    compare_change: "bg-violet-50 text-violet-700",
-    social_issue: "bg-emerald-50 text-emerald-700",
-    ask_question: "bg-teal-50 text-teal-700",
-    alternative: "bg-cyan-50 text-cyan-700",
-  };
-  return map[type] || "bg-gray-100 text-gray-600";
+  return QUESTION_TYPE_COLORS[type] || "bg-gray-100 text-gray-600";
 }
 
 // ── 메인 페이지 ──

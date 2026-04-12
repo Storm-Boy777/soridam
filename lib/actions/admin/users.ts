@@ -20,7 +20,59 @@ export async function getUsers(params: {
   const pageSize = params.pageSize || 20;
   const offset = (page - 1) * pageSize;
 
-  // auth.users에서 사용자 목록 조회 (service client — admin.listUsers)
+  // 검색어가 있으면 profiles에서 먼저 검색 (전체 DB 대상)
+  if (params.search) {
+    const q = params.search.trim();
+
+    // profiles에서 email/display_name 검색
+    let profileQuery = supabase
+      .from(T.profiles)
+      .select("id, email, display_name, created_at", { count: "exact" })
+      .or(`email.ilike.%${q}%,display_name.ilike.%${q}%`)
+      .order("created_at", { ascending: false })
+      .range(offset, offset + pageSize - 1);
+
+    const { data: profiles, count: profileCount } = await profileQuery;
+    if (!profiles || profiles.length === 0) {
+      return { data: [], total: 0, page, pageSize };
+    }
+
+    const userIds = profiles.map((p) => p.id);
+
+    // auth 정보 + credits + balances 병렬 조회
+    const [creditsResult, balancesResult] = await Promise.all([
+      supabase.from(T.user_credits).select("user_id, current_plan").in("user_id", userIds),
+      supabase.from(T.polar_balances).select("user_id, balance_cents").in("user_id", userIds),
+    ]);
+
+    const creditMap = new Map((creditsResult.data || []).map((c) => [c.user_id, c]));
+    const balanceMap = new Map((balancesResult.data || []).map((b) => [b.user_id, b.balance_cents as number]));
+
+    // auth 정보 (last_sign_in_at, banned_until 등)
+    const { data: authData } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+    const authMap = new Map((authData?.users || []).map((u) => [u.id, u]));
+
+    const data: AdminUser[] = profiles.map((p) => {
+      const auth = authMap.get(p.id);
+      const c = creditMap.get(p.id);
+      return {
+        id: p.id,
+        email: p.email || "",
+        display_name: p.display_name || auth?.user_metadata?.full_name || null,
+        current_grade: auth?.user_metadata?.current_grade || null,
+        target_grade: auth?.user_metadata?.target_grade || null,
+        created_at: p.created_at || auth?.created_at || "",
+        last_sign_in_at: auth?.last_sign_in_at || null,
+        banned_until: auth?.banned_until || null,
+        current_plan: c?.current_plan || "free",
+        balance_cents: balanceMap.get(p.id) ?? 0,
+      };
+    });
+
+    return { data, total: profileCount || 0, page, pageSize };
+  }
+
+  // 검색어 없으면 기존 방식 (auth.admin.listUsers 페이지네이션)
   const { data: authData, error: authError } = await supabase.auth.admin.listUsers({
     page,
     perPage: pageSize,
@@ -30,40 +82,19 @@ export async function getUsers(params: {
     return { data: [], total: 0, page, pageSize };
   }
 
-  let users = authData.users;
-  const total = authData.users.length < pageSize
-    ? offset + authData.users.length
-    : offset + pageSize + 1; // 다음 페이지 있음을 표시
+  const users = authData.users;
+  const total = users.length < pageSize
+    ? offset + users.length
+    : offset + pageSize + 1;
 
-  // 검색 필터 (서버 사이드 — email/display_name)
-  if (params.search) {
-    const q = params.search.toLowerCase();
-    users = users.filter(
-      (u) =>
-        u.email?.toLowerCase().includes(q) ||
-        (u.user_metadata?.display_name || "").toLowerCase().includes(q)
-    );
-  }
-
-  // user_credits + polar_balances 병렬 조인
   const userIds = users.map((u) => u.id);
   const [creditsResult, balancesResult] = await Promise.all([
-    supabase
-      .from(T.user_credits)
-      .select("user_id, current_plan")
-      .in("user_id", userIds),
-    supabase
-      .from(T.polar_balances)
-      .select("user_id, balance_cents")
-      .in("user_id", userIds),
+    supabase.from(T.user_credits).select("user_id, current_plan").in("user_id", userIds),
+    supabase.from(T.polar_balances).select("user_id, balance_cents").in("user_id", userIds),
   ]);
 
-  const creditMap = new Map(
-    (creditsResult.data || []).map((c) => [c.user_id, c])
-  );
-  const balanceMap = new Map(
-    (balancesResult.data || []).map((b) => [b.user_id, b.balance_cents as number])
-  );
+  const creditMap = new Map((creditsResult.data || []).map((c) => [c.user_id, c]));
+  const balanceMap = new Map((balancesResult.data || []).map((b) => [b.user_id, b.balance_cents as number]));
 
   const data: AdminUser[] = users.map((u) => {
     const c = creditMap.get(u.id);

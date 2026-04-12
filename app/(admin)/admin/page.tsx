@@ -508,7 +508,7 @@ async function UserEngagementSection() {
               <span className="flex-[3] text-center">-</span>
               <span className="flex-[2] text-center">시간</span>
             </div>
-            {stats.recentLogins.slice(0, 5).map((l, i) => (
+            {stats.recentLogins.slice(0, 10).map((l, i) => (
               <div key={`login-${i}`} className="flex items-center border-t border-border px-3 py-2 text-xs">
                 <span className="flex-[2] truncate font-medium text-foreground">
                   {l.display_name || l.email}
@@ -541,7 +541,7 @@ async function UserEngagementSection() {
               <span className="flex-[3] text-center">내용</span>
               <span className="flex-[2] text-center">시간</span>
             </div>
-            {activities.slice(0, 5).map((a) => {
+            {activities.slice(0, 10).map((a) => {
               const name = a.userName.split(" (")[0];
               const email = a.userName.includes("(") ? a.userName.split("(")[1]?.replace(")", "") : "";
               return (
