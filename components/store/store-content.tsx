@@ -112,7 +112,7 @@ export function StoreContent({ userId }: { userId: string }) {
     startTransition(async () => {
       try {
         const url = await createCheckout(productKey);
-        window.open(url, "_blank", "noopener,noreferrer");
+        window.location.href = url;
       } catch (err) {
         console.error("[handleCheckout]", err);
         toast.error(
