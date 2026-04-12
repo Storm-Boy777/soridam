@@ -12,8 +12,7 @@ function getServiceClient() {
 }
 
 export async function POST(req: Request) {
-  // Creem 공식 예제 방식: req.text() + headers()
-  const payload = await req.text();
+  // Creem 서명 검증: JSON.parse → JSON.stringify 정규화 방식 (Creem 기술팀 권장)
   const headerList = await headers();
   const signature = headerList.get("x-creem-signature") || headerList.get("creem-signature");
   const secret = process.env.CREEM_WEBHOOK_SECRET;
@@ -23,16 +22,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const digest = crypto.createHmac("sha256", secret).update(payload).digest("hex");
+  const body = await req.json();
+  const rawBody = JSON.stringify(body);
+  const digest = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
   const signatureValid = digest === signature;
   console.log("[creem-webhook] Signature check:", { valid: signatureValid });
   if (!signatureValid) {
-    console.warn("[creem-webhook] Signature mismatch — proceeding (verification pending)");
+    console.warn("[creem-webhook] Signature mismatch", { digest: digest.substring(0, 12), sig: signature.substring(0, 12) });
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
-
-  const rawBody = payload;
-
-  const body = JSON.parse(rawBody);
   // 전체 이벤트 구조 로깅 (디버그)
   console.log("[creem-webhook] Event body keys:", Object.keys(body));
   console.log("[creem-webhook] Event body:", JSON.stringify(body).substring(0, 500));
