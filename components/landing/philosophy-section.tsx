@@ -92,36 +92,34 @@ export default function PhilosophySection() {
         <p className="mt-8 text-sm text-gray-500">무료인데 왜 충전이 필요할까요?</p>
 
         {/* 스토리 */}
-        <div className="mt-6 space-y-6 text-sm leading-[2] text-gray-400">
+        <div className="mt-6 space-y-5 text-left text-sm leading-[1.9] text-gray-400">
           <p>
-            여러분의 답변을 분석하고, 맞춤 스크립트를 완성해 주는 건
-            <br />
+            여러분의 답변을 분석하고, 맞춤 스크립트를 완성해 주는 건{" "}
             <span className="text-primary-400">OpenAI, Google, Azure</span> 같은 첨단 AI 기술입니다.
-            <br />
-            이 친구들은 일을 참 잘하지만... <span className="text-white font-medium">공짜로 일하진 않습니다.</span> <span className="text-gray-600">:)</span>
+            이 친구들은 일을 참 잘하지만…{" "}
+            <span className="text-white font-medium">공짜로 일하진 않습니다.</span>{" "}
+            <span className="text-white font-medium">:)</span>
           </p>
 
           <p>
-            이전에는 이용자가 <span className="text-red-400">직접 복잡하게 API 키를 등록</span>하거나,
-            <br />
+            이전에는 이용자가{" "}
+            <span className="text-red-400">직접 복잡하게 API 키를 등록</span>하거나,{" "}
             <span className="text-accent-400">&lsquo;월 5달러&rsquo; 후원으로 무제한 이용</span>할 수 있도록 열어두었습니다.
-            <br />
             사실 상징적인 후원금만으로는 부족해,
-            <br />
             개발자가 API 비용을 조금씩 더 안고 가야 하는 구조였습니다.
           </p>
 
           <p>
-            하지만 괜찮았습니다.
-            <br />
-            <span className="text-white font-medium">&ldquo;소리담 덕분에 정말 큰 도움이 되었어요.&rdquo;</span>
-            <br />
-            이 한마디면 즐거움의 <span className="text-yellow-400">&ldquo;배움비용&rdquo;</span>이였습니다. <span className="text-gray-500">☕</span>
+            사실 소리담을 만드는 건, 개발자가 아닌 제게 무모한 도전에 가까웠습니다.
+            모든 게 새로운 배움의 연속이었고, 하나하나 동작할 때마다 새로운 경험이었습니다.
+            그 과정에서 API 비용이 부담이 되기도 했지만..{" "}
+            <span className="text-white font-medium">&ldquo;소리담 덕분에 정말 큰 도움이 되었어요.&rdquo;</span>{" "}
+            이 한마디가 기꺼이 감당할 수 있게 해준{" "}
+            <span className="text-yellow-400">&ldquo;수업료&rdquo;</span>였습니다. <span className="text-gray-500">☕</span>
           </p>
 
           <p>
-            그래서 이제는 복잡한 API 등록+개별충전 방식 대신,
-            <br />
+            이제는 사용성을 개선해 복잡한 API 등록 + 개별충전 방식 대신,{" "}
             <span className="text-primary-400 font-bold">&lsquo;크레딧 충전&rsquo;</span> 한 번에 모든 기능을 사용할 수 있게 하였습니다.
           </p>
         </div>
