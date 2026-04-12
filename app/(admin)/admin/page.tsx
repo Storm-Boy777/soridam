@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { Users, CreditCard, GraduationCap, BookOpen, Mic, Stethoscope, FileText, Cpu, Coins, HardDrive, UserPlus, ChevronRight, Wallet, DollarSign, Heart } from "lucide-react";
+import { Users, CreditCard, GraduationCap, BookOpen, Mic, Stethoscope, FileText, Cpu, Coins, HardDrive, UserPlus, ChevronRight, ChevronDown, Wallet, DollarSign, Heart } from "lucide-react";
 import { getAdminDashboardStats, getRecentActivity, getLearningActivity, getAICostStats, getSystemHealthStats, getUserEngagementStats, getRecentSignups, getSponsorshipOverview } from "@/lib/actions/admin/stats";
 import { AdminStatCard } from "@/components/admin/admin-stat-card";
 import { AdminTrendCharts } from "@/components/admin/admin-trend-charts";
@@ -28,7 +28,7 @@ async function DashboardStats() {
       <AdminStatCard
         icon={Wallet}
         label="크레딧 균형"
-        value={`$${(stats.creditBalanceCents / 100).toFixed(2)}`}
+        value={`$${((stats.totalChargedCents - stats.totalUsedCents) / 100).toFixed(2)}`}
       />
     </div>
   );
@@ -147,8 +147,8 @@ async function AICostSection() {
   // 충전/사용 총액도 함께 가져오기
   const stats = await getAdminDashboardStats();
 
-  const totalCharged = (stats.creditBalanceCents + Math.round(cost.totalCostUsd * 100)) / 100;
-  const balance = stats.creditBalanceCents / 100;
+  const totalCharged = stats.totalChargedCents / 100;
+  const balance = (stats.totalChargedCents - stats.totalUsedCents) / 100;
   const maxBar = Math.max(totalCharged, cost.totalCostUsd, 1);
 
   return (
@@ -298,13 +298,14 @@ async function SponsorshipSection() {
       : 0;
 
   return (
-    <div className="space-y-3">
-      <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground-secondary">
+    <details className="group space-y-3">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 text-sm font-semibold text-foreground-secondary [&::-webkit-details-marker]:hidden">
         <Heart size={16} className="text-pink-500" />
         후원금 현황
-      </h2>
+        <ChevronDown size={14} className="ml-auto text-foreground-muted transition-transform group-open:rotate-180" />
+      </summary>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-3 gap-3">
         <MetricCard
           icon={<Heart size={16} className="text-pink-500" />}
           label="활성 후원자"
@@ -319,11 +320,6 @@ async function SponsorshipSection() {
           icon={<Coins size={16} className="text-amber-500" />}
           label="누적 후원"
           value={`$${(overview.totalRevenueCents / 100).toFixed(2)}`}
-        />
-        <MetricCard
-          icon={<Wallet size={16} className="text-indigo-500" />}
-          label="평균 후원액"
-          value={`$${(avgCents / 100).toFixed(2)}`}
         />
       </div>
 
@@ -371,7 +367,7 @@ async function SponsorshipSection() {
           </div>
         </div>
       )}
-    </div>
+    </details>
   );
 }
 

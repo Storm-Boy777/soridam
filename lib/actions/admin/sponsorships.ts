@@ -19,25 +19,26 @@ export async function getSponsorshipStats(): Promise<SponsorshipStats> {
       .eq("status", "active"),
     supabase
       .from(T.polar_orders)
-      .select("amount")
+      .select("amount, product_type")
       .eq("status", "paid")
       .in("product_type", ["sponsor", "credit_sponsor"]),
     supabase
       .from(T.polar_orders)
-      .select("amount")
+      .select("amount, product_type")
       .eq("status", "paid")
       .in("product_type", ["sponsor", "credit_sponsor"])
       .gte("created_at", monthStart),
   ]);
 
-  const activeSponsorCount = activeRes.count || 0;
-  const totalRevenueCents = (totalRes.data || []).reduce((s, o) => s + (o.amount || 0), 0);
-  const monthlyRevenueCents = (monthRes.data || []).reduce((s, o) => s + (o.amount || 0), 0);
-  const avgAmountCents = activeSponsorCount > 0
-    ? Math.round(monthlyRevenueCents / activeSponsorCount)
-    : 0;
+  // 후원분 net 계산: 후원분 $5(500¢) - 수수료(3.9%+$0.40) = 440¢
+  const SPONSOR_NET_CENTS = 500 - Math.round(500 * 0.039 + 40); // 440¢
+  const sponsorPortion = () => SPONSOR_NET_CENTS;
 
-  return { activeSponsorCount, monthlyRevenueCents, totalRevenueCents, avgAmountCents };
+  const activeSponsorCount = activeRes.count || 0;
+  const totalRevenueCents = (totalRes.data || []).reduce((s, o) => s + sponsorPortion(o), 0);
+  const monthlyRevenueCents = (monthRes.data || []).reduce((s, o) => s + sponsorPortion(o), 0);
+
+  return { activeSponsorCount, monthlyRevenueCents, totalRevenueCents, avgAmountCents: 0 };
 }
 
 // ── 후원자 목록 ──
@@ -118,7 +119,7 @@ export async function getOneTimeSponsors(params: {
       user_id: r.user_id as string,
       email: profile?.email || "",
       display_name: profile?.display_name || null,
-      amount_cents: r.amount as number,
+      amount_cents: 500 - Math.round(500 * 0.039 + 40), // net $4.40 (수수료 차감)
       paid_at: r.created_at as string,
     };
   });

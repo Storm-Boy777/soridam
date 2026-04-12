@@ -216,15 +216,18 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
       .select("user_id")
       .in("action", ["mock_exam", "script", "shadowing", "tutoring"])
       .gte("created_at", today),
-    // 이번 달 AI 비용
+    // 이번 달 AI 비용 (관리자 제외)
     supabase
       .from(T.api_usage_logs)
       .select("cost_usd")
-      .gte("created_at", monthStart),
-    // 전체 크레딧 균형 (충전총액 - 사용총액)
+      .gte("created_at", monthStart)
+      .neq("user_id", "251b0655-6fd0-4566-bef2-57c07bb5dcd0"),
+    // 전체 크레딧 (관리자 제외) — 잔액/충전 있는 행만 조회
     supabase
       .from(T.polar_balances)
-      .select("total_charged, total_used"),
+      .select("balance_cents, total_charged, total_used")
+      .neq("user_id", "251b0655-6fd0-4566-bef2-57c07bb5dcd0")
+      .or("balance_cents.gt.0,total_charged.gt.0,total_used.gt.0"),
   ]);
 
   const todayLearners = new Set(
@@ -236,9 +239,16 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     0
   );
 
-  const creditBalance = (balanceRes.data || []).reduce(
-    (sum: number, r: { total_charged?: number; total_used?: number }) =>
-      sum + ((r.total_charged || 0) - (r.total_used || 0)),
+  const totalChargedCents = (balanceRes.data || []).reduce(
+    (sum: number, r: { total_charged?: number }) => sum + (r.total_charged || 0),
+    0
+  );
+  const totalUsedCents = (balanceRes.data || []).reduce(
+    (sum: number, r: { total_used?: number }) => sum + (r.total_used || 0),
+    0
+  );
+  const totalBalanceCents = (balanceRes.data || []).reduce(
+    (sum: number, r: { balance_cents?: number }) => sum + (r.balance_cents || 0),
     0
   );
 
@@ -246,7 +256,9 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     totalUsers: usersRes.count || 0,
     todayLearners,
     monthlyAICostUsd,
-    creditBalanceCents: creditBalance,
+    creditBalanceCents: totalBalanceCents,
+    totalChargedCents,
+    totalUsedCents,
   };
 }
 
@@ -551,40 +563,35 @@ export async function getRecentSignups(
 ): Promise<RecentSignup[]> {
   const { supabase } = await requireAdmin();
 
-  // auth.admin.listUsers는 최신순 정렬을 지원하지 않으므로,
-  // profiles 테이블에서 최근 가입자를 조회
-  const { data } = await supabase
-    .from(T.profiles)
-    .select("id, email, display_name, created_at")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (!data || data.length === 0) return [];
-
-  // 가입 방법 확인 (auth.users의 app_metadata.provider)
-  const userIds = data.map((u) => u.id);
+  // auth.users에서 실제 가입일 기준 최신순 조회
   const { data: authData } = await supabase.auth.admin.listUsers({
     page: 1,
-    perPage: 100,
+    perPage: 1000,
   });
 
-  const providerMap = new Map<string, string>();
-  if (authData?.users) {
-    for (const u of authData.users) {
-      if (userIds.includes(u.id)) {
-        providerMap.set(
-          u.id,
-          u.app_metadata?.provider || u.app_metadata?.providers?.[0] || "email"
-        );
-      }
-    }
-  }
+  if (!authData?.users || authData.users.length === 0) return [];
 
-  return data.map((u) => ({
+  // 가입일 기준 정렬 + 상위 N명
+  const sorted = authData.users
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, limit);
+
+  // display_name을 위해 profiles 조회
+  const userIds = sorted.map((u) => u.id);
+  const { data: profiles } = await supabase
+    .from(T.profiles)
+    .select("id, display_name")
+    .in("id", userIds);
+
+  const nameMap = new Map(
+    (profiles || []).map((p) => [p.id, p.display_name])
+  );
+
+  return sorted.map((u) => ({
     id: u.id,
     email: u.email || "",
-    display_name: u.display_name,
-    provider: providerMap.get(u.id) || "email",
+    display_name: nameMap.get(u.id) || u.user_metadata?.display_name || null,
+    provider: u.app_metadata?.provider || u.app_metadata?.providers?.[0] || "email",
     created_at: u.created_at,
   }));
 }
@@ -613,7 +620,7 @@ export async function getSponsorshipOverview(): Promise<SponsorshipOverview> {
     // 이번 달 후원 총액
     supabase
       .from(T.polar_orders)
-      .select("amount")
+      .select("amount, product_type")
       .eq("status", "paid")
       .in("product_type", ["sponsor", "credit_sponsor"])
       .gte("created_at", monthStart),
@@ -627,15 +634,21 @@ export async function getSponsorshipOverview(): Promise<SponsorshipOverview> {
 
   const activeSponsorCount = activeRes.count || 0;
 
-  // 누적 후원 총액 (센트)
+  // 후원분 계산: sponsor=$5(500¢), credit_sponsor=$5 후원분(500¢)
+  // 수수료(3.9%+$0.40) 차감한 net 금액 적용
+  // 후원분은 항상 $5(500¢), net = 500 - 수수료(3.9%+$0.40) = 440¢
+  const SPONSOR_NET = 500 - Math.round(500 * 0.039 + 40);
+  const calcSponsorNet = () => SPONSOR_NET;
+
+  // 누적 후원 총액 (센트, net)
   const totalRevenueCents = (totalOrdersRes.data || []).reduce(
-    (sum, o) => sum + (o.amount || 0),
+    (sum, o) => sum + calcSponsorNet(o),
     0
   );
 
-  // 이번 달 후원 총액 (센트)
+  // 이번 달 후원 총액 (센트, net)
   const monthlyRevenueCents = (monthOrdersRes.data || []).reduce(
-    (sum, o) => sum + (o.amount || 0),
+    (sum, o) => sum + calcSponsorNet(o),
     0
   );
 

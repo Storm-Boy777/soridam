@@ -7,6 +7,8 @@ export interface AdminDashboardStats {
   todayLearners: number;
   monthlyAICostUsd: number;
   creditBalanceCents: number;
+  totalChargedCents: number;
+  totalUsedCents: number;
 }
 
 export interface RecentActivity {

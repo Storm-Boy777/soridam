@@ -81,27 +81,38 @@ export async function getRevenueStats(): Promise<RevenueStats> {
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
   const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999).toISOString();
 
+  // 크레딧 충전 주문만 (sponsor 제외, credit + credit_sponsor의 크레딧분)
+  const creditTypes = ["credit", "credit_sponsor"];
+
   const [allPaidRes, thisMonthRes, lastMonthRes, allPaidForDist] = await Promise.all([
-    supabase.from(T.polar_orders).select("amount").eq("status", "paid"),
-    supabase.from(T.polar_orders).select("amount").eq("status", "paid").gte("created_at", thisMonthStart),
-    supabase.from(T.polar_orders).select("amount").eq("status", "paid").gte("created_at", lastMonthStart).lte("created_at", lastMonthEnd),
-    supabase.from(T.polar_orders).select("product_type, amount").eq("status", "paid"),
+    supabase.from(T.polar_orders).select("amount, product_type").eq("status", "paid").in("product_type", creditTypes),
+    supabase.from(T.polar_orders).select("amount, product_type").eq("status", "paid").in("product_type", creditTypes).gte("created_at", thisMonthStart),
+    supabase.from(T.polar_orders).select("amount, product_type").eq("status", "paid").in("product_type", creditTypes).gte("created_at", lastMonthStart).lte("created_at", lastMonthEnd),
+    supabase.from(T.polar_orders).select("product_type, amount").eq("status", "paid").in("product_type", creditTypes),
   ]);
 
-  const totalRevenue = (allPaidRes.data || []).reduce((sum, o) => sum + (o.amount || 0), 0);
-  const thisMonth = (thisMonthRes.data || []).reduce((sum, o) => sum + (o.amount || 0), 0);
-  const lastMonth = (lastMonthRes.data || []).reduce((sum, o) => sum + (o.amount || 0), 0);
+  // net 금액 계산: 결제액에서 수수료(3.9%+$0.40) 차감
+  // credit_sponsor는 크레딧분($10=1000¢)만 기준
+  const calcNetCredit = (o: { amount?: number; product_type?: string }) => {
+    const creditPortion = o.product_type === "credit_sponsor" ? 1000 : (o.amount || 0);
+    return creditPortion - Math.round(creditPortion * 0.039 + 40);
+  };
+
+  const totalRevenue = (allPaidRes.data || []).reduce((sum, o) => sum + calcNetCredit(o), 0);
+  const thisMonth = (thisMonthRes.data || []).reduce((sum, o) => sum + calcNetCredit(o), 0);
+  const lastMonth = (lastMonthRes.data || []).reduce((sum, o) => sum + calcNetCredit(o), 0);
   const monthGrowth = lastMonth > 0 ? ((thisMonth - lastMonth) / lastMonth) * 100 : 0;
 
   const distMap = new Map<string, { productName: string; count: number; revenue: number }>();
   for (const o of allPaidForDist.data || []) {
     const pid = o.product_type || "unknown";
     const existing = distMap.get(pid);
+    const net = calcNetCredit(o);
     if (existing) {
       existing.count += 1;
-      existing.revenue += o.amount || 0;
+      existing.revenue += net;
     } else {
-      distMap.set(pid, { productName: pid, count: 1, revenue: o.amount || 0 });
+      distMap.set(pid, { productName: pid, count: 1, revenue: net });
     }
   }
 

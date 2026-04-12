@@ -21,7 +21,7 @@ export default function AnalysisSection() {
                 <div className="h-2.5 w-2.5 rounded-full bg-red-500 sm:h-3 sm:w-3" />
                 <div className="h-2.5 w-2.5 rounded-full bg-yellow-500 sm:h-3 sm:w-3" />
                 <div className="h-2.5 w-2.5 rounded-full bg-green-500 sm:h-3 sm:w-3" />
-                <span className="ml-auto text-[10px] font-medium text-gray-500 sm:text-xs">소리담 평가 엔진</span>
+                <span className="ml-auto text-[10px] font-medium text-gray-500 sm:text-xs">Soridam Eval Engine</span>
               </div>
 
               {/* 평가 시작 */}

@@ -297,7 +297,7 @@ export default function AdminSponsorshipsPage() {
 
       {/* 통계 카드 */}
       {stats && (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-3 gap-3">
           <StatCard
             icon={<Heart size={16} className="text-pink-500" />}
             label="활성 후원자"
@@ -312,11 +312,6 @@ export default function AdminSponsorshipsPage() {
             icon={<Coins size={16} className="text-amber-500" />}
             label="누적 후원"
             value={formatAmount(stats.totalRevenueCents)}
-          />
-          <StatCard
-            icon={<Wallet size={16} className="text-indigo-500" />}
-            label="평균 후원액"
-            value={formatAmount(stats.avgAmountCents)}
           />
         </div>
       )}
