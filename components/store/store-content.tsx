@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { toast } from "sonner";
 import { createCheckout } from "@/lib/actions/checkout";
-import { PRODUCTS, formatUsd } from "@/lib/constants/pricing";
+import { PRODUCTS, formatUsd, calcNetAmount } from "@/lib/constants/pricing";
 import {
   Wallet,
   Loader2,
@@ -40,7 +40,8 @@ const PRODUCT_CARDS = [
     buttonClass: "bg-primary-500 hover:bg-primary-700 text-white",
     labelClass: "text-primary-600",
     checkClass: "text-primary-500",
-    features: ["크레딧 $10 충전", "사용량에 따라 차감", "모의고사 · 스크립트 · 튜터링"],
+    features: ["크레딧 충전", "사용량에 따라 차감", "모의고사 · 스크립트 · 튜터링"],
+    showFeeNote: true,
   },
   {
     key: "credit_sponsor" as const,
@@ -51,7 +52,8 @@ const PRODUCT_CARDS = [
     buttonClass: "bg-secondary-500 hover:bg-secondary-600 text-white",
     labelClass: "text-secondary-600",
     checkClass: "text-secondary-500",
-    features: ["크레딧 $10 충전", "서버 후원 $5 포함", "소리담을 지속가능하게"],
+    features: ["크레딧 충전", "서버 후원 포함", "소리담을 지속가능하게"],
+    showFeeNote: true,
   },
   {
     key: "sponsor" as const,
@@ -183,6 +185,7 @@ export function StoreContent({ userId }: { userId: string }) {
                 ))}
               </ul>
 
+
               {card.key === "sponsor" && activeSponsor ? (
                 <div className="mt-5 w-full rounded-xl bg-foreground-muted/10 py-2.5 text-center text-sm font-bold text-foreground-muted">
                   이미 후원 중입니다 💛
@@ -204,57 +207,99 @@ export function StoreContent({ userId }: { userId: string }) {
         })}
       </div>
 
-      {/* ── 소리담은 무료 플랫폼입니다 ── */}
-      <div className="rounded-2xl border border-border bg-surface p-4 sm:p-6">
-        <h3 className="text-sm font-bold text-foreground sm:text-base">
-          소리담은 &ldquo;<span className="text-primary-500">무료 플랫폼</span>&rdquo; 입니다.
+      {/* ── 수수료 안내 ── */}
+      <div className="rounded-xl border border-border bg-surface-secondary/50 px-4 py-3 sm:px-5 sm:py-4">
+        <p className="text-xs leading-relaxed text-foreground-muted sm:text-sm">
+          충전 금액에는 결제 대행 수수료(3.9% + $0.40)가 포함됩니다.
+          수수료 차감 후 실수령액이 크레딧으로 충전됩니다.
+          <span className="ml-1 font-medium text-foreground-secondary">
+            예) $10 충전 → 예상 충전액 ~{formatUsd(calcNetAmount(1000))}
+          </span>
+        </p>
+      </div>
+
+      {/* ── 크레딧이란? ── */}
+      <div className="rounded-2xl bg-[#1A1A2E] px-5 py-10 sm:px-8 sm:py-14">
+        <h3 className="text-center text-lg font-bold leading-snug text-white sm:text-xl">
+          <span className="text-primary-300">크레딧</span>이란?
         </h3>
-        <p className="mt-2 text-xs text-foreground-muted">무료인데 왜 충전이 필요할까요?</p>
+        <p className="mt-2 text-center text-sm text-white/40">소리담은 무료 플랫폼입니다. 크레딧은 AI 사용료입니다.</p>
 
-        <div className="mt-4 space-y-4 text-xs leading-relaxed text-foreground/70 sm:text-sm sm:leading-[1.8]">
-          <p>
-            여러분의 답변을 분석하고, 맞춤 스크립트를 완성해 주는 건{" "}
-            <span className="font-semibold text-primary-500">OpenAI, Google, Azure</span> 같은 첨단 AI 기술입니다.
-            이 친구들은 일을 참 잘하지만... <span className="font-medium text-foreground">공짜로 일하진 않습니다.</span>
-          </p>
-          <p>
-            이전에는 이용자가 <span className="text-red-400">직접 복잡하게 API 키를 등록</span>하거나,
-            &lsquo;월 5달러&rsquo; 후원으로 무제한 이용할 수 있도록 열어두었습니다.
-            사실 상징적인 후원금만으로는 부족해,
-            개발자가 API 비용을 조금씩 더 안고 가야 하는 구조였습니다.
-          </p>
-          <p>
-            그래서 이제는 복잡한 API 등록+개별충전 방식 대신,{" "}
-            <span className="font-bold text-primary-500">&lsquo;크레딧 충전&rsquo;</span> 한 번에 모든 기능을 사용할 수 있게 하였습니다.
-          </p>
-        </div>
+        <div className="mx-auto mt-8 max-w-xl space-y-6">
+          {/* 핵심 설명 */}
+          <div className="space-y-5 text-sm leading-[1.9] text-white/55">
+            <div className="flex gap-3">
+              <span className="mt-0.5 shrink-0 text-primary-300">①</span>
+              <div>
+                <p className="font-medium text-white/90">AI 기능을 쓸 때마다 실비용이 발생합니다</p>
+                <p className="mt-1">
+                  스크립트 생성, 모의고사 평가, 튜터링 진단 등 소리담의 핵심 기능은{" "}
+                  <span className="text-primary-300">OpenAI(GPT·Whisper)</span>,{" "}
+                  <span className="text-primary-300">Google(Gemini TTS)</span>,{" "}
+                  <span className="text-primary-300">Azure(발음 평가)</span> 등
+                  외부 AI 서비스를 호출합니다.
+                  이 서비스들은 호출할 때마다 과금되며, 소리담이 아닌{" "}
+                  <span className="font-medium text-white/80">AI 회사에 지불되는 비용</span>입니다.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <span className="mt-0.5 shrink-0 text-primary-300">②</span>
+              <div>
+                <p className="font-medium text-white/90">크레딧으로 이 비용을 간편하게 처리합니다</p>
+                <p className="mt-1">
+                  크레딧을 충전하면, AI 기능을 사용할 때{" "}
+                  <span className="font-medium text-white/80">실제 발생한 비용만큼만 자동 차감</span>됩니다.
+                  별도로 OpenAI나 Google에 가입하거나 API 키를 등록할 필요 없이,
+                  충전 한 번이면 모든 AI 기능을 바로 사용할 수 있습니다.
+                  유효기간도 없으며, 남은 크레딧은 언제든 사용 가능합니다.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <span className="mt-0.5 shrink-0 text-primary-300">③</span>
+              <div>
+                <p className="font-medium text-white/90">소리담은 이 과정에서 수익을 취하지 않습니다</p>
+                <p className="mt-1">
+                  크레딧은 소리담 이용료가 아닙니다.
+                  충전된 금액은{" "}
+                  <span className="font-medium text-white/80">전액 AI API 비용으로만 사용</span>됩니다.
+                  소리담의 서버 유지비는 후원과 개발자 자비로 운영되며,
+                  크레딧에서 마진을 붙이지 않습니다.
+                </p>
+              </div>
+            </div>
+          </div>
 
-        <div className="mt-4 rounded-xl border border-border bg-surface-secondary px-4 py-3">
-          <p className="text-xs leading-relaxed text-foreground/70 sm:text-sm">
-            크레딧은 소리담 이용료가 아닙니다.
-            AI 기능을 사용할 때 발생하는 외부 API 원가를,
-            간편하게 처리할 수 있도록 만든{" "}
-            <span className="font-medium text-primary-500">이용 수단</span>입니다.
-          </p>
+          {/* 플로우 다이어그램 */}
+          <div className="flex items-center justify-center gap-2 text-xs text-white/40 sm:gap-3 sm:text-sm">
+            <span className="rounded-lg bg-white/10 px-3 py-1.5 font-medium text-white/70">크레딧 충전</span>
+            <span>→</span>
+            <span className="rounded-lg bg-white/10 px-3 py-1.5 font-medium text-white/70">AI 기능 사용</span>
+            <span>→</span>
+            <span className="rounded-lg bg-white/10 px-3 py-1.5 font-medium text-white/70">실비용 차감</span>
+          </div>
         </div>
 
         {/* AI 상세 토글 */}
-        <button
-          onClick={() => setShowDetail(!showDetail)}
-          className="mt-3 ml-auto flex items-center gap-1.5 rounded-md border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-600 transition-colors hover:bg-primary-100 sm:mt-4 sm:text-sm"
-        >
-          사용하는 AI 상세 보기
-          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showDetail ? "rotate-180" : ""}`} />
-        </button>
+        <div className="mx-auto mt-4 flex max-w-xl justify-end">
+          <button
+            onClick={() => setShowDetail(!showDetail)}
+            className="flex items-center gap-1.5 rounded-md border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/60 transition-colors hover:bg-white/15 sm:text-sm"
+          >
+            사용하는 AI 상세 보기
+            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showDetail ? "rotate-180" : ""}`} />
+          </button>
+        </div>
 
         {showDetail && (
-          <div className="mt-3 space-y-3 sm:mt-4 sm:space-y-4">
+          <div className="mx-auto mt-4 max-w-xl space-y-3 sm:space-y-4">
             {/* 단가표 */}
-            <div className="overflow-hidden rounded-xl border border-border">
-              <div className="border-b border-border bg-surface-secondary px-3 py-2 sm:px-4 sm:py-2.5">
-                <p className="text-xs font-bold text-foreground/60 sm:text-sm">AI 사용 모델 및 서비스 원가</p>
+            <div className="overflow-hidden rounded-xl border border-white/10">
+              <div className="border-b border-white/10 bg-white/5 px-3 py-2 sm:px-4 sm:py-2.5">
+                <p className="text-xs font-bold text-white/50 sm:text-sm">AI 사용 모델 및 서비스 원가</p>
               </div>
-              <div className="divide-y divide-border text-xs sm:text-sm">
+              <div className="divide-y divide-white/10 text-xs sm:text-sm">
                 {[
                   { service: "GPT-4.1", cost: "$2.00 / $8.00 per 1M tokens" },
                   { service: "GPT-4.1 Mini", cost: "$0.40 / $1.60 per 1M tokens" },
@@ -263,21 +308,21 @@ export function StoreContent({ userId }: { userId: string }) {
                   { service: "Azure Speech", cost: "$1.32 / 시간" },
                 ].map((item) => (
                   <div key={item.service} className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-2.5">
-                    <span className="font-medium text-foreground">{item.service}</span>
-                    <span className="font-mono text-[10px] text-foreground/50 sm:text-xs">{item.cost}</span>
+                    <span className="font-medium text-white/80">{item.service}</span>
+                    <span className="font-mono text-[10px] text-white/35 sm:text-xs">{item.cost}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* 호출 수 */}
-            <div className="overflow-hidden rounded-xl border border-border">
-              <div className="border-b border-border bg-surface-secondary px-3 py-2 sm:px-4 sm:py-2.5">
-                <p className="text-xs font-bold text-foreground/60 sm:text-sm">기능별 API 호출 수</p>
+            <div className="overflow-hidden rounded-xl border border-white/10">
+              <div className="border-b border-white/10 bg-white/5 px-3 py-2 sm:px-4 sm:py-2.5">
+                <p className="text-xs font-bold text-white/50 sm:text-sm">기능별 API 호출 수</p>
               </div>
               <div className="overflow-x-auto max-sm:[scrollbar-width:none] max-sm:[&::-webkit-scrollbar]:hidden">
                 <div className="min-w-[420px]">
-                  <div className="grid grid-cols-[minmax(110px,1.5fr)_repeat(4,1fr)_50px] border-b border-border text-[10px] text-foreground/50 sm:grid-cols-[minmax(120px,1.5fr)_repeat(4,1fr)_60px] sm:text-xs">
+                  <div className="grid grid-cols-[minmax(110px,1.5fr)_repeat(4,1fr)_50px] border-b border-white/10 text-[10px] text-white/35 sm:grid-cols-[minmax(120px,1.5fr)_repeat(4,1fr)_60px] sm:text-xs">
                     <div className="px-3 py-1.5 sm:px-4 sm:py-2" />
                     <div className="px-1 py-1.5 text-center sm:px-2 sm:py-2">GPT</div>
                     <div className="px-1 py-1.5 text-center sm:px-2 sm:py-2">Whisper</div>
@@ -294,13 +339,13 @@ export function StoreContent({ userId }: { userId: string }) {
                     { feature: "튜터링 진단", gpt: "2회", whisper: "-", tts: "-", azure: "-", total: "2" },
                     { feature: "튜터링 드릴", gpt: "1~2회", whisper: "1회", tts: "-", azure: "-", total: "2~3" },
                   ].map((item, i) => (
-                    <div key={item.feature} className={`grid grid-cols-[minmax(110px,1.5fr)_repeat(4,1fr)_50px] text-xs sm:grid-cols-[minmax(120px,1.5fr)_repeat(4,1fr)_60px] sm:text-sm ${i > 0 ? "border-t border-border" : ""}`}>
-                      <div className="px-3 py-2 font-medium text-foreground sm:px-4 sm:py-2.5">{item.feature}</div>
-                      <div className="px-1 py-2 text-center text-foreground/50 sm:px-2 sm:py-2.5">{item.gpt}</div>
-                      <div className="px-1 py-2 text-center text-foreground/50 sm:px-2 sm:py-2.5">{item.whisper}</div>
-                      <div className="px-1 py-2 text-center text-foreground/50 sm:px-2 sm:py-2.5">{item.tts}</div>
-                      <div className="px-1 py-2 text-center text-foreground/50 sm:px-2 sm:py-2.5">{item.azure}</div>
-                      <div className="px-1 py-2 text-center font-mono font-bold text-primary-500 sm:px-2 sm:py-2.5">{item.total}</div>
+                    <div key={item.feature} className={`grid grid-cols-[minmax(110px,1.5fr)_repeat(4,1fr)_50px] text-xs sm:grid-cols-[minmax(120px,1.5fr)_repeat(4,1fr)_60px] sm:text-sm ${i > 0 ? "border-t border-white/10" : ""}`}>
+                      <div className="px-3 py-2 font-medium text-white/80 sm:px-4 sm:py-2.5">{item.feature}</div>
+                      <div className="px-1 py-2 text-center text-white/35 sm:px-2 sm:py-2.5">{item.gpt}</div>
+                      <div className="px-1 py-2 text-center text-white/35 sm:px-2 sm:py-2.5">{item.whisper}</div>
+                      <div className="px-1 py-2 text-center text-white/35 sm:px-2 sm:py-2.5">{item.tts}</div>
+                      <div className="px-1 py-2 text-center text-white/35 sm:px-2 sm:py-2.5">{item.azure}</div>
+                      <div className="px-1 py-2 text-center font-mono font-bold text-primary-300 sm:px-2 sm:py-2.5">{item.total}</div>
                     </div>
                   ))}
                 </div>
@@ -310,48 +355,10 @@ export function StoreContent({ userId }: { userId: string }) {
         )}
       </div>
 
-      {/* ── 비교표 (랜딩 동일) ── */}
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-        <div className="border-b border-border px-3 py-2.5 sm:px-5 sm:py-3">
-          <p className="text-center text-xs font-bold text-foreground/70 sm:text-sm">뭐가 달라졌나요?</p>
-        </div>
-        <div className="overflow-x-auto max-sm:[scrollbar-width:none] max-sm:[&::-webkit-scrollbar]:hidden">
-          <div className="min-w-[360px]">
-            <div className="grid grid-cols-3 text-[11px] sm:text-sm">
-              <div className="border-b border-r border-border px-3 py-3" />
-              <div className="border-b border-r border-border px-3 py-3 text-center font-bold text-foreground/50">이전</div>
-              <div className="border-b border-border px-3 py-3 text-center font-bold text-primary-500">지금</div>
-
-              <div className="border-b border-r border-border px-3 py-2.5 font-medium text-foreground">시작하려면</div>
-              <div className="border-b border-r border-border px-3 py-2.5 text-center text-foreground/50">AI 서비스 3개 가입 + API 키 등록 + 충전</div>
-              <div className="border-b border-border px-3 py-2.5 text-center text-primary-500">크레딧 충전만 하면 끝</div>
-
-              <div className="border-b border-r border-border px-3 py-2.5 font-medium text-foreground">결과</div>
-              <div className="border-b border-r border-border px-3 py-2.5 text-center text-red-400">대부분 포기</div>
-              <div className="border-b border-border px-3 py-2.5 text-center text-emerald-500">누구나 바로 사용</div>
-
-              <div className="border-b border-r border-border px-3 py-2.5 font-medium text-foreground">유효기간</div>
-              <div className="border-b border-r border-border px-3 py-2.5 text-center text-foreground/50">없음</div>
-              <div className="border-b border-border px-3 py-2.5 text-center text-foreground/50">없음 (동일)</div>
-
-              <div className="border-r border-border px-3 py-2.5 font-medium text-foreground">소리담 수익</div>
-              <div className="border-r border-border px-3 py-2.5 text-center text-foreground/50">없음</div>
-              <div className="px-3 py-2.5 text-center text-foreground/50">없음 (동일)</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* ── 안내 문구 ── */}
       <div className="text-center text-xs text-foreground/60 sm:text-sm">
         <p>
-          크레딧은 복잡한 API 설정을 소리담이 대신 처리하여,
-          누구나 쉽게 AI 서비스를 이용할 수 있도록 개선하였습니다.
-          <br />
-          <strong className="text-foreground">소리담은 이 과정에서 수익을 취하지 않습니다.</strong>
-        </p>
-        <p className="mt-3">
-          <span className="text-foreground">서버 유지비는 <span className="text-accent-500">후원</span>과 <span className="text-amber-500">개발자 자비</span>로 운영됩니다.</span>
+          <span className="font-bold text-foreground">서버 유지비는 <span className="text-accent-500">후원</span>과 <span className="text-amber-500">개발자 자비</span>로 운영됩니다.</span>
           <br />
           <span className="mt-1 inline-block text-foreground/50">☕ 커피 한 잔의 후원이 소리담을 유지하는 데 큰 힘이 됩니다.</span>
         </p>
