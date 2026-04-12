@@ -278,7 +278,7 @@ export default async function DashboardPage() {
               {[1, 2, 3, 4].map((i) => (
                 <div
                   key={i}
-                  className="h-[100px] animate-pulse rounded-[var(--radius-xl)] border border-border bg-surface p-3.5 sm:h-[118px] sm:p-5"
+                  className="h-[100px] animate-pulse rounded-[var(--radius-xl)] border border-border bg-surface shadow-sm p-3.5 sm:h-[118px] sm:p-5"
                 />
               ))}
             </div>
@@ -291,7 +291,7 @@ export default async function DashboardPage() {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="h-[100px] rounded-[var(--radius-xl)] border border-border bg-surface p-3.5 sm:h-[118px] sm:p-5"
+              className="h-[100px] rounded-[var(--radius-xl)] border border-border bg-surface shadow-sm p-3.5 sm:h-[118px] sm:p-5"
             />
           ))}
         </div>
@@ -314,7 +314,7 @@ export default async function DashboardPage() {
             <Link
               key={m.title}
               href={m.href}
-              className="group relative flex items-start gap-3 rounded-[var(--radius-xl)] border border-border bg-surface p-4 transition-all hover:border-border-hover hover:shadow-[var(--shadow-card)] sm:gap-4 sm:p-5"
+              className="group relative flex items-start gap-3 rounded-[var(--radius-xl)] border border-border bg-surface shadow-sm p-4 transition-all hover:border-border hover:shadow-md sm:gap-4 sm:p-5"
             >
               <div
                 className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)] sm:h-11 sm:w-11 ${m.iconBg}`}
@@ -340,7 +340,7 @@ export default async function DashboardPage() {
       {/* 학습 로드맵 + 사이드 패널 */}
       <div className="grid gap-4 sm:gap-6 md:grid-cols-5">
         {/* 학습 로드맵 — 즉시 렌더 */}
-        <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-4 sm:p-6 md:col-span-3">
+        <div className="rounded-[var(--radius-xl)] border border-border bg-surface shadow-sm p-4 sm:p-6 md:col-span-3">
           <h2 className="flex items-center gap-2 text-base font-bold text-foreground sm:text-lg">
             <TrendingUp size={20} className="text-primary-500" />
             학습 로드맵
@@ -376,8 +376,8 @@ export default async function DashboardPage() {
         {/* 사이드 패널 — getUser()로 최신 데이터 (Suspense 스트리밍) */}
         <Suspense fallback={
           <div className="space-y-3 sm:space-y-4 md:col-span-2">
-            <div className="h-[160px] animate-pulse rounded-[var(--radius-xl)] border border-border bg-surface" />
-            <div className="h-[120px] animate-pulse rounded-[var(--radius-xl)] border border-border bg-surface" />
+            <div className="h-[160px] animate-pulse rounded-[var(--radius-xl)] border border-border bg-surface shadow-sm" />
+            <div className="h-[120px] animate-pulse rounded-[var(--radius-xl)] border border-border bg-surface shadow-sm" />
           </div>
         }>
           <SidePanelLoader />

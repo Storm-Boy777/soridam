@@ -29,7 +29,7 @@ function StatsPlaceholder() {
       {[1, 2, 3].map((i) => (
         <div
           key={i}
-          className="h-[100px] rounded-[var(--radius-xl)] border border-border bg-surface p-3.5 sm:h-[118px] sm:p-5"
+          className="h-[100px] rounded-[var(--radius-xl)] border border-border bg-surface shadow-sm p-3.5 sm:h-[118px] sm:p-5"
         />
       ))}
     </div>
@@ -106,14 +106,14 @@ export function DashboardStats({
           <Link
             key={s.label}
             href={s.href}
-            className="rounded-[var(--radius-xl)] border border-border bg-surface p-3.5 transition-all hover:border-border-hover hover:shadow-[var(--shadow-card)] sm:p-5"
+            className="rounded-[var(--radius-xl)] border border-border bg-surface shadow-sm p-3.5 transition-all hover:border-border-hover hover:shadow-md sm:p-5"
           >
             {inner}
           </Link>
         ) : (
           <div
             key={s.label}
-            className="rounded-[var(--radius-xl)] border border-border bg-surface p-3.5 sm:p-5"
+            className="rounded-[var(--radius-xl)] border border-border bg-surface shadow-sm p-3.5 sm:p-5"
           >
             {inner}
           </div>

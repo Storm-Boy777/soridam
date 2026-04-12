@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { toast } from "sonner";
 import { createCheckout } from "@/lib/actions/checkout";
-import { PRODUCTS, formatUsd, calcNetAmount } from "@/lib/constants/pricing";
+import { PRODUCTS, formatUsd } from "@/lib/constants/pricing";
 import {
   Wallet,
   Loader2,
@@ -213,7 +213,7 @@ export function StoreContent({ userId }: { userId: string }) {
           충전 금액에는 결제 대행 수수료(3.9% + $0.40)가 포함됩니다.
           수수료 차감 후 실수령액이 크레딧으로 충전됩니다.
           <span className="ml-1 font-medium text-foreground-secondary">
-            예) $10 충전 → 예상 충전액 ~{formatUsd(calcNetAmount(1000))}
+            예) $10 충전 → 실제 충전액 {formatUsd(PRODUCTS.credit.creditCents)}
           </span>
         </p>
       </div>

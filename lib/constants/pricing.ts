@@ -3,13 +3,13 @@ export const PRODUCTS = {
   credit: {
     name: "AI 사용량 충전",
     priceUsd: 1000,     // $10.00
-    creditCents: 1000,  // $10.00 충전
+    creditCents: 917,   // 수수료(3.9%+$0.40) 차감 후 실수령액
     type: "credit" as const,
   },
   credit_sponsor: {
     name: "충전 + 후원",
     priceUsd: 1500,     // $15.00
-    creditCents: 1000,  // $10.00 충전 (+ $5 후원)
+    creditCents: 917,   // 충전 $10 → 수수료 차감 후 실수령액 (+ 나머지 후원)
     type: "credit_sponsor" as const,
   },
   sponsor: {
@@ -19,6 +19,15 @@ export const PRODUCTS = {
     type: "sponsor" as const,
   },
 } as const;
+
+// Creem 수수료 계산 (3.9% + $0.40)
+export function calcCreemFee(priceCents: number): number {
+  return Math.round(priceCents * 0.039 + 40);
+}
+
+export function calcNetAmount(priceCents: number): number {
+  return priceCents - calcCreemFee(priceCents);
+}
 
 export type ProductKey = keyof typeof PRODUCTS;
 
