@@ -35,8 +35,8 @@ export async function getSponsorshipStats(): Promise<SponsorshipStats> {
   const sponsorPortion = () => SPONSOR_NET_CENTS;
 
   const activeSponsorCount = activeRes.count || 0;
-  const totalRevenueCents = (totalRes.data || []).reduce((s, o) => s + sponsorPortion(o), 0);
-  const monthlyRevenueCents = (monthRes.data || []).reduce((s, o) => s + sponsorPortion(o), 0);
+  const totalRevenueCents = (totalRes.data || []).reduce((s) => s + sponsorPortion(), 0);
+  const monthlyRevenueCents = (monthRes.data || []).reduce((s) => s + sponsorPortion(), 0);
 
   return { activeSponsorCount, monthlyRevenueCents, totalRevenueCents, avgAmountCents: 0 };
 }

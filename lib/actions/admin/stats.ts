@@ -642,13 +642,13 @@ export async function getSponsorshipOverview(): Promise<SponsorshipOverview> {
 
   // 누적 후원 총액 (센트, net)
   const totalRevenueCents = (totalOrdersRes.data || []).reduce(
-    (sum, o) => sum + calcSponsorNet(o),
+    (sum) => sum + calcSponsorNet(),
     0
   );
 
   // 이번 달 후원 총액 (센트, net)
   const monthlyRevenueCents = (monthOrdersRes.data || []).reduce(
-    (sum, o) => sum + calcSponsorNet(o),
+    (sum) => sum + calcSponsorNet(),
     0
   );
 
