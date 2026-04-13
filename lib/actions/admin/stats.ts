@@ -131,35 +131,126 @@ export async function getAllActivityLogs(params: {
   const limit = params.limit || 50;
   const offset = (page - 1) * limit;
 
-  let query = supabase
-    .from(T.user_activity_log)
-    .select("*, profiles(email, display_name)", { count: "exact" });
+  // 로그인은 기존 user_activity_log 사용
+  if (!params.action || params.action === "login") {
+    let query = supabase
+      .from(T.user_activity_log)
+      .select("*, profiles(email, display_name)", { count: "exact" });
 
-  if (params.action) {
-    query = query.eq("action", params.action);
+    if (params.action) {
+      query = query.eq("action", params.action);
+    }
+
+    const { data, count } = await query
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    const entries: ActivityLogEntry[] = (data || []).map((row: any) => ({
+      id: row.id,
+      user_id: row.user_id,
+      action: row.action,
+      metadata: row.metadata,
+      created_at: row.created_at,
+      email: row.profiles?.email || "",
+      display_name: row.profiles?.display_name || null,
+    }));
+
+    return { data: entries, total: count || 0 };
   }
 
-  const { data, count, error } = await query
-    .order("created_at", { ascending: false })
-    .range(offset, offset + limit - 1);
+  // 가입 — auth.users 기준
+  if (params.action === "signup") {
+    const { data: authData } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+    const users = (authData?.users || [])
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    const total = users.length;
+    const paged = users.slice(offset, offset + limit);
 
-  if (error) {
-    console.error("[getAllActivityLogs]", error);
-    return { data: [], total: 0 };
+    const userIds = paged.map((u) => u.id);
+    const { data: profiles } = await supabase.from(T.profiles).select("id, display_name").in("id", userIds);
+    const nameMap = new Map((profiles || []).map((p) => [p.id, p.display_name]));
+
+    return {
+      data: paged.map((u, i) => ({
+        id: offset + i + 1,
+        user_id: u.id,
+        action: "signup",
+        metadata: { provider: u.app_metadata?.provider || "email" },
+        created_at: u.created_at,
+        email: u.email || "",
+        display_name: nameMap.get(u.id) || u.user_metadata?.display_name || null,
+      })),
+      total,
+    };
   }
 
-  // profiles JOIN 결과를 flatten
-  const entries: ActivityLogEntry[] = (data || []).map((row: any) => ({
-    id: row.id,
-    user_id: row.user_id,
-    action: row.action,
-    metadata: row.metadata,
-    created_at: row.created_at,
-    email: row.profiles?.email || "",
-    display_name: row.profiles?.display_name || null,
-  }));
+  // 결제 — polar_orders 기준
+  if (params.action === "order") {
+    const { data, count } = await supabase
+      .from(T.polar_orders)
+      .select("id, user_id, product_type, amount, status, created_at, profiles(email, display_name)", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
 
-  return { data: entries, total: count || 0 };
+    return {
+      data: (data || []).map((row: any) => ({
+        id: row.id,
+        user_id: row.user_id,
+        action: "order",
+        metadata: { product: row.product_type, amount: `$${(row.amount / 100).toFixed(2)}`, status: row.status },
+        created_at: row.created_at,
+        email: row.profiles?.email || "",
+        display_name: row.profiles?.display_name || null,
+      })),
+      total: count || 0,
+    };
+  }
+
+  // 모의고사 — mock_test_sessions 기준
+  if (params.action === "mock_exam") {
+    const { data, count } = await supabase
+      .from(T.mock_test_sessions)
+      .select("session_id, user_id, mode, status, started_at, profiles(email, display_name)", { count: "exact" })
+      .order("started_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    return {
+      data: (data || []).map((row: any) => ({
+        id: row.session_id,
+        user_id: row.user_id,
+        action: "mock_exam",
+        metadata: { mode: row.mode === "test" ? "실전" : "훈련", status: row.status },
+        created_at: row.started_at,
+        email: row.profiles?.email || "",
+        display_name: row.profiles?.display_name || null,
+      })),
+      total: count || 0,
+    };
+  }
+
+  // 후기 — submissions 기준
+  if (params.action === "review") {
+    const { data, count } = await supabase
+      .from(T.submissions)
+      .select("id, user_id, status, exam_date, created_at, profiles(email, display_name)", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    return {
+      data: (data || []).map((row: any) => ({
+        id: row.id,
+        user_id: row.user_id,
+        action: "review",
+        metadata: { status: row.status, exam_date: row.exam_date },
+        created_at: row.created_at,
+        email: row.profiles?.email || "",
+        display_name: row.profiles?.display_name || null,
+      })),
+      total: count || 0,
+    };
+  }
+
+  return { data: [], total: 0 };
 }
 
 // ── AI 비용 & 시스템 헬스 타입 ──
