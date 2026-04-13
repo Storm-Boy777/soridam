@@ -466,48 +466,22 @@ export async function getAICostStats(): Promise<AICostStats> {
 export async function getSystemHealthStats(): Promise<SystemHealthStats> {
   const { supabase } = await requireAdmin();
 
-  // 파이프라인 상태별 답변 수
-  const { data: answers } = await supabase
-    .from(T.mock_test_answers)
-    .select("eval_status, created_at, updated_at")
-    .limit(5000);
+  // 파이프라인 상태별 — RPC로 정확 집계
+  const { data: pipeRaw } = await supabase.rpc("admin_pipeline_stats");
+  const pipe = pipeRaw as {
+    stt_completed: number; judge_completed: number; consult_completed: number;
+    report_completed: number; pending: number; failed: number; avg_wait_minutes: number;
+  } | null;
+
+  const pendingCount = pipe?.pending ?? 0;
+  const failedCount = pipe?.failed ?? 0;
 
   const pipeline: Record<string, { pending: number; failed: number; completed: number }> = {
-    "STT (음성→텍스트)": { pending: 0, failed: 0, completed: 0 },
-    "Judge (체크박스)": { pending: 0, failed: 0, completed: 0 },
-    "Consult (소견)": { pending: 0, failed: 0, completed: 0 },
-    "Report (종합)": { pending: 0, failed: 0, completed: 0 },
+    "STT (음성→텍스트)": { pending: 0, failed: 0, completed: pipe?.stt_completed ?? 0 },
+    "Judge (체크박스)": { pending: 0, failed: 0, completed: pipe?.judge_completed ?? 0 },
+    "Consult (소견)": { pending: 0, failed: 0, completed: pipe?.consult_completed ?? 0 },
+    "Report (종합)": { pending: 0, failed: 0, completed: pipe?.report_completed ?? 0 },
   };
-
-  let pendingCount = 0;
-  let failedCount = 0;
-  let totalWaitMs = 0;
-  let waitItems = 0;
-
-  for (const a of answers || []) {
-    const status = a.eval_status || "pending";
-    if (status === "completed" || status === "skipped") {
-      pipeline["Report (종합)"].completed++;
-    } else if (status === "error" || status === "failed") {
-      failedCount++;
-      if (status === "error") pipeline["STT (음성→텍스트)"].failed++;
-      else pipeline["Judge (체크박스)"].failed++;
-    } else if (status === "pending") {
-      pendingCount++;
-      pipeline["STT (음성→텍스트)"].pending++;
-      if (a.created_at) {
-        totalWaitMs += Date.now() - new Date(a.created_at).getTime();
-        waitItems++;
-      }
-    } else if (status === "processing" || status === "stt_completed") {
-      pendingCount++;
-      pipeline["STT (음성→텍스트)"].completed++;
-      pipeline["Judge (체크박스)"].pending++;
-    } else if (status === "evaluating" || status === "judge_completed") {
-      pipeline["Judge (체크박스)"].completed++;
-      pipeline["Consult (소견)"].pending++;
-    }
-  }
 
   // Storage 버킷별 파일 수 (간접 추정)
   const [audioRes, mockAudioRes, tutoringAudioRes, scriptPkgRes] = await Promise.all([
@@ -520,7 +494,7 @@ export async function getSystemHealthStats(): Promise<SystemHealthStats> {
   return {
     pendingEvals: pendingCount,
     failedEvals: failedCount,
-    avgWaitMinutes: waitItems > 0 ? Math.round(totalWaitMs / waitItems / 60000) : 0,
+    avgWaitMinutes: pipe?.avg_wait_minutes ?? 0,
     pipelineStatus: Object.entries(pipeline).map(([stage, counts]) => ({ stage, ...counts })),
     storageUsage: [
       { bucket: "쉐도잉 녹음", fileCount: audioRes.count || 0 },
