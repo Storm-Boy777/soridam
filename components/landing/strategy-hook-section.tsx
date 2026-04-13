@@ -16,8 +16,9 @@ export default function StrategyHookSection() {
             스크립트 암기
           </h3>
           <p className="text-[0.8rem] leading-relaxed text-gray-400 sm:text-sm">
-            암기 자체가 나쁜 건 아닙니다. 하지만 통으로 외우면 한 문장이
-            막히는 순간 전부 무너집니다.
+            암기 자체가 나쁜 건 아닙니다. <span className="max-sm:hidden">하지만 </span>
+            <br className="sm:hidden" />
+            통으로 외우면 한 문장이 막히는 순간 전부 무너집니다.
           </p>
         </div>
 
@@ -27,8 +28,9 @@ export default function StrategyHookSection() {
             반복되는 재시험의 굴레
           </h3>
           <p className="text-[0.8rem] leading-relaxed text-gray-400 sm:text-sm">
-            내 답변의 약점이 무엇인지 데이터로 확인하지 않고, 운에 맡기는
-            시험만 반복합니다.
+            내 답변의 약점이 무엇인지 데이터로 확인하지 않고,
+            <br className="sm:hidden" />
+            {" "}운에 맡기는 시험만 반복합니다.
           </p>
         </div>
 
@@ -38,8 +40,9 @@ export default function StrategyHookSection() {
             정보 홍수 속의 혼란
           </h3>
           <p className="text-[0.8rem] leading-relaxed text-gray-400 sm:text-sm">
-            내 상황에 맞지 않는 파편화된 정보들에 휘둘리며 진짜 필요한 훈련을
-            놓칩니다.
+            내 상황에 맞지 않는 파편화된 정보들에 휘둘리며
+            <br className="sm:hidden" />
+            {" "}진짜 필요한 훈련을 놓칩니다.
           </p>
         </div>
       </div>
