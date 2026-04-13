@@ -561,8 +561,8 @@ export async function getSponsorshipOverview(): Promise<SponsorshipOverview> {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-  // 병렬 조회: 활성 후원, 전체 후원 주문, 이번 달 후원 주문, 최근 후원자
-  const [activeRes, totalOrdersRes, monthOrdersRes, recentRes] = await Promise.all([
+  // 병렬 조회: 활성 후원, 전체 후원 주문, 이번 달 후원 주문, 최근 정기 후원, 최근 일회성 후원
+  const [activeRes, totalOrdersRes, monthOrdersRes, recentRes, onetimeRes] = await Promise.all([
     // 활성 후원자 수
     supabase
       .from(T.sponsorships)
@@ -581,51 +581,80 @@ export async function getSponsorshipOverview(): Promise<SponsorshipOverview> {
       .eq("status", "paid")
       .in("product_type", ["sponsor", "credit_sponsor"])
       .gte("created_at", monthStart),
-    // 최근 후원자 (profiles JOIN)
+    // 최근 정기 후원자
     supabase
       .from(T.sponsorships)
-      .select("user_id, amount_cents, status, started_at, profiles!inner(email, display_name)")
+      .select("user_id, amount_cents, status, started_at, profiles(email, display_name)")
       .order("started_at", { ascending: false })
+      .limit(5),
+    // 최근 일회성 후원자 (credit_sponsor)
+    supabase
+      .from(T.polar_orders)
+      .select("user_id, amount, status, created_at, profiles(email, display_name)")
+      .eq("status", "paid")
+      .eq("product_type", "credit_sponsor")
+      .order("created_at", { ascending: false })
       .limit(5),
   ]);
 
   const activeSponsorCount = activeRes.count || 0;
+  const onetimeData = onetimeRes.data || [];
 
-  // 후원분 계산: sponsor=$5(500¢), credit_sponsor=$5 후원분(500¢)
-  // 수수료(3.9%+$0.40) 차감한 net 금액 적용
-  // 후원분은 항상 $5(500¢), net = 500 - 수수료(3.9%+$0.40) = 440¢
+  // 후원분 net: $5(500¢) - 수수료(3.9%+$0.40) = 440¢
   const SPONSOR_NET = 500 - Math.round(500 * 0.039 + 40);
   const calcSponsorNet = () => SPONSOR_NET;
 
-  // 누적 후원 총액 (센트, net)
-  const totalRevenueCents = (totalOrdersRes.data || []).reduce(
-    (sum) => sum + calcSponsorNet(),
-    0
-  );
+  // 정기/일회성 분리 집계
+  const recurringOrders = (totalOrdersRes.data || []).filter((o: { product_type?: string }) => o.product_type === "sponsor");
+  const onetimeOrders = (totalOrdersRes.data || []).filter((o: { product_type?: string }) => o.product_type === "credit_sponsor");
+  const monthRecurring = (monthOrdersRes.data || []).filter((o: { product_type?: string }) => o.product_type === "sponsor");
+  const monthOnetime = (monthOrdersRes.data || []).filter((o: { product_type?: string }) => o.product_type === "credit_sponsor");
 
-  // 이번 달 후원 총액 (센트, net)
-  const monthlyRevenueCents = (monthOrdersRes.data || []).reduce(
-    (sum) => sum + calcSponsorNet(),
-    0
-  );
+  const recurringRevenueCents = recurringOrders.length * SPONSOR_NET;
+  const onetimeRevenueCents = onetimeOrders.length * SPONSOR_NET;
+  const totalRevenueCents = recurringRevenueCents + onetimeRevenueCents;
+  const monthlyRevenueCents = (monthRecurring.length + monthOnetime.length) * SPONSOR_NET;
+  const monthlyRecurringCents = monthRecurring.length * SPONSOR_NET;
+  const monthlyOnetimeCents = monthOnetime.length * SPONSOR_NET;
 
-  // 최근 후원자 목록
-  const recentSponsors = (recentRes.data || []).map((r: Record<string, unknown>) => {
+  // 최근 후원자 — 정기 + 일회성 합쳐서 시간순
+  const recentRecurring = (recentRes.data || []).map((r: Record<string, unknown>) => {
     const profile = r.profiles as { email: string; display_name: string | null } | null;
     return {
       user_id: r.user_id as string,
       email: profile?.email || "",
       display_name: profile?.display_name || null,
-      amount_cents: r.amount_cents as number,
+      amount_cents: SPONSOR_NET,
       status: r.status as string,
       started_at: r.started_at as string,
+      type: "정기" as const,
     };
   });
+
+  const recentOnetime = onetimeData.map((r: Record<string, unknown>) => {
+    const profile = r.profiles as { email: string; display_name: string | null } | null;
+    return {
+      user_id: r.user_id as string,
+      email: profile?.email || "",
+      display_name: profile?.display_name || null,
+      amount_cents: SPONSOR_NET,
+      status: "paid" as string,
+      started_at: r.created_at as string,
+      type: "일회성" as const,
+    };
+  });
+
+  const recentSponsors = [...recentRecurring, ...recentOnetime]
+    .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())
+    .slice(0, 5);
 
   return {
     activeSponsorCount,
     monthlyRevenueCents,
     totalRevenueCents,
+    monthlyRecurringCents,
+    monthlyOnetimeCents,
+    onetimeCount: onetimeOrders.length,
     recentSponsors,
   };
 }

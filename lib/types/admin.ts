@@ -307,6 +307,9 @@ export interface SponsorshipOverview {
   activeSponsorCount: number;
   monthlyRevenueCents: number;
   totalRevenueCents: number;
+  monthlyRecurringCents: number;
+  monthlyOnetimeCents: number;
+  onetimeCount: number;
   recentSponsors: Array<{
     user_id: string;
     email: string;
@@ -314,6 +317,7 @@ export interface SponsorshipOverview {
     amount_cents: number;
     status: string;
     started_at: string;
+    type: "정기" | "일회성";
   }>;
 }
 

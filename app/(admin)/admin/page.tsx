@@ -308,11 +308,18 @@ async function SponsorshipSection() {
         <ChevronDown size={14} className="ml-auto text-foreground-muted transition-transform group-open:rotate-180" />
       </summary>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <MetricCard
           icon={<Heart size={16} className="text-pink-500" />}
-          label="활성 후원자"
+          label="정기 후원"
           value={`${overview.activeSponsorCount}명`}
+          sub={`$${(overview.monthlyRecurringCents / 100).toFixed(2)}/월`}
+        />
+        <MetricCard
+          icon={<CreditCard size={16} className="text-blue-500" />}
+          label="단기 후원"
+          value={`${overview.onetimeCount}건`}
+          sub={`$${(overview.monthlyOnetimeCents / 100).toFixed(2)}`}
         />
         <MetricCard
           icon={<DollarSign size={16} className="text-green-500" />}
@@ -333,30 +340,30 @@ async function SponsorshipSection() {
             <div className="flex bg-surface-secondary/50 px-3 py-2 text-[11px] font-semibold text-foreground-muted">
               <span className="flex-[2] text-center">사용자</span>
               <span className="flex-[2] text-center">이메일</span>
+              <span className="flex-[1] text-center">유형</span>
               <span className="flex-[1] text-center">금액</span>
-              <span className="flex-[1] text-center">상태</span>
-              <span className="flex-[1] text-center">시작일</span>
+              <span className="flex-[1] text-center">날짜</span>
             </div>
-            {overview.recentSponsors.map((s, i) => {
-              const st = STATUS_LABELS[s.status] || { label: s.status, color: "bg-gray-100 text-gray-600" };
-              return (
+            {overview.recentSponsors.map((s, i) => (
                 <div
                   key={`sponsor-${i}`}
                   className={`flex items-center px-3 py-2 text-xs ${i > 0 ? "border-t border-border" : ""}`}
                 >
-                  <span className="flex-[2] truncate font-medium text-foreground">
+                  <span className="flex-[2] truncate text-center font-medium text-foreground">
                     {s.display_name || s.email}
                   </span>
                   <span className="flex-[2] truncate text-center text-foreground-muted">
                     {s.email}
                   </span>
+                  <span className="flex-[1] text-center">
+                    <span className={`inline-block rounded-md px-1.5 py-0.5 text-[10px] font-medium ${
+                      s.type === "정기" ? "bg-pink-50 text-pink-700" : "bg-blue-50 text-blue-700"
+                    }`}>
+                      {s.type}
+                    </span>
+                  </span>
                   <span className="flex-[1] text-center font-medium tabular-nums text-foreground">
                     ${(s.amount_cents / 100).toFixed(2)}
-                  </span>
-                  <span className="flex-[1] text-center">
-                    <span className={`inline-block rounded-md px-1.5 py-0.5 text-[10px] font-medium ${st.color}`}>
-                      {st.label}
-                    </span>
                   </span>
                   <span className="flex-[1] text-center text-foreground-muted">
                     {new Date(s.started_at).toLocaleDateString("ko-KR", {
@@ -365,8 +372,7 @@ async function SponsorshipSection() {
                     })}
                   </span>
                 </div>
-              );
-            })}
+              ))}
           </div>
         </div>
       )}
