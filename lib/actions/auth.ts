@@ -85,7 +85,7 @@ export async function signup(formData: FormData): Promise<AuthResult> {
 
   try {
     const supabase = await createServerSupabaseClient();
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: parsed.data.email,
       password: parsed.data.password,
       options: {
@@ -98,7 +98,7 @@ export async function signup(formData: FormData): Promise<AuthResult> {
 
     if (error) {
       if (error.message.includes("already registered")) {
-        return { error: "이미 가입된 이메일입니다" };
+        return { error: "이미 가입된 계정입니다. 로그인해주세요." };
       }
       if (error.message.includes("email_address_invalid") || error.message.includes("invalid")) {
         return { error: "유효하지 않은 이메일 주소입니다" };
@@ -107,6 +107,12 @@ export async function signup(formData: FormData): Promise<AuthResult> {
         return { error: "잠시 후 다시 시도해주세요 (요청이 너무 많습니다)" };
       }
       return { error: "회원가입에 실패했습니다. 다시 시도해주세요" };
+    }
+
+    // Supabase는 이미 가입된 이메일로 signUp 시 에러 없이 기존 유저를 반환
+    // identities가 비어있으면 이미 가입된 이메일
+    if (data?.user?.identities?.length === 0) {
+      return { error: "이미 가입된 계정입니다. 로그인해주세요." };
     }
   } catch (err) {
     if (err instanceof Error && err.message === "NEXT_REDIRECT") throw err;
