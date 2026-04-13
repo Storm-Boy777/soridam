@@ -44,7 +44,7 @@ export function SupportContent({
   // 탭 상태 (URL 동기화)
   const tabParam = searchParams.get("tab") as TabId | null;
   const initialTab: TabId =
-    tabParam && tabs.some((t) => t.id === tabParam) ? tabParam : "notices";
+    tabParam && tabs.some((t) => t.id === tabParam) ? tabParam : "feedback";
   const [activeTab, setActiveTabState] = useState<TabId>(initialTab);
 
   const setActiveTab = useCallback((id: TabId) => {
