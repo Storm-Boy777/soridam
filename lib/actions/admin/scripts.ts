@@ -201,30 +201,34 @@ export async function deleteAdminScript(
     return { error: "스크립트를 찾을 수 없습니다" };
   }
 
-  // Storage 파일 정리
+  // 1. Storage 파일 경로 수집
   const { data: packages } = await supabase
     .from(T.script_packages)
     .select("wav_file_path, json_file_path")
     .eq("script_id", scriptId);
 
-  if (packages?.length) {
-    const filePaths = packages
-      .flatMap((p) => [p.wav_file_path, p.json_file_path])
-      .filter(Boolean) as string[];
+  const filePaths = (packages || [])
+    .flatMap((p) => [p.wav_file_path, p.json_file_path])
+    .filter(Boolean) as string[];
 
-    if (filePaths.length > 0) {
-      await supabase.storage.from("script-packages").remove(filePaths);
-    }
-  }
-
-  // DB 삭제 (CASCADE로 packages도 삭제)
+  // 2. DB 삭제 먼저 (CASCADE로 packages도 삭제)
   const { error } = await supabase
     .from(T.scripts)
     .delete()
     .eq("id", scriptId);
 
   if (error) {
-    return { error: "스크립트 삭제에 실패했습니다" };
+    console.error("[deleteAdminScript] DB error:", error.message, error.code, error.details);
+    return { error: `스크립트 삭제에 실패했습니다: ${error.message}` };
+  }
+
+  // 3. Storage 파일 삭제 (DB 삭제 성공 후, 실패해도 무시)
+  if (filePaths.length > 0) {
+    try {
+      await supabase.storage.from("script-packages").remove(filePaths);
+    } catch {
+      console.error("[deleteAdminScript] Storage cleanup failed for:", filePaths);
+    }
   }
 
   // 감사 로그 기록
