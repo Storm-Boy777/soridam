@@ -106,7 +106,6 @@ export async function signup(formData: FormData): Promise<AuthResult> {
       if (error.message.includes("rate limit")) {
         return { error: "잠시 후 다시 시도해주세요 (요청이 너무 많습니다)" };
       }
-      console.error("[signup] Supabase signUp error:", error.message, error.status);
       return { error: "회원가입에 실패했습니다. 다시 시도해주세요" };
     }
   } catch (err) {
