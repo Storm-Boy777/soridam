@@ -30,13 +30,14 @@ export async function getSponsorshipStats(): Promise<SponsorshipStats> {
       .gte("created_at", monthStart),
   ]);
 
-  // 후원분 net 계산: 후원분 $5(500¢) - 수수료(3.9%+$0.40) = 440¢
-  const SPONSOR_NET_CENTS = 500 - Math.round(500 * 0.039 + 40); // 440¢
-  const sponsorPortion = () => SPONSOR_NET_CENTS;
+  // 후원분 net (Creem 실제 정산 기준)
+  const RECURRING_NET = 438;  // 정기 $5 → net $4.38
+  const ONETIME_NET = 478;    // 일회성 후원분 → net $4.78
 
   const activeSponsorCount = activeRes.count || 0;
-  const totalRevenueCents = (totalRes.data || []).reduce((s) => s + sponsorPortion(), 0);
-  const monthlyRevenueCents = (monthRes.data || []).reduce((s) => s + sponsorPortion(), 0);
+  const sponsorNet = (o: { product_type?: string }) => o.product_type === "credit_sponsor" ? ONETIME_NET : RECURRING_NET;
+  const totalRevenueCents = (totalRes.data || []).reduce((s: number, o: { product_type?: string }) => s + sponsorNet(o), 0);
+  const monthlyRevenueCents = (monthRes.data || []).reduce((s: number, o: { product_type?: string }) => s + sponsorNet(o), 0);
 
   return { activeSponsorCount, monthlyRevenueCents, totalRevenueCents, avgAmountCents: 0 };
 }
@@ -119,7 +120,7 @@ export async function getOneTimeSponsors(params: {
       user_id: r.user_id as string,
       email: profile?.email || "",
       display_name: profile?.display_name || null,
-      amount_cents: 500 - Math.round(500 * 0.039 + 40), // net $4.40 (수수료 차감)
+      amount_cents: 478, // 일회성 후원분 net $4.78 (Creem 실정산 기준)
       paid_at: r.created_at as string,
     };
   });

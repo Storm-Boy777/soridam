@@ -600,9 +600,9 @@ export async function getSponsorshipOverview(): Promise<SponsorshipOverview> {
   const activeSponsorCount = activeRes.count || 0;
   const onetimeData = onetimeRes.data || [];
 
-  // 후원분 net: $5(500¢) - 수수료(3.9%+$0.40) = 440¢
-  const SPONSOR_NET = 500 - Math.round(500 * 0.039 + 40);
-  const calcSponsorNet = () => SPONSOR_NET;
+  // 후원분 net (Creem 실제 정산 기준, 세금 포함 금액에서 수수료 차감)
+  const RECURRING_NET = 438;  // 정기 후원 $5 → net $4.38
+  const ONETIME_NET = 478;    // 일회성 후원분 ($15 net $13.95 - 크레딧 $9.17 = $4.78)
 
   // 정기/일회성 분리 집계
   const recurringOrders = (totalOrdersRes.data || []).filter((o: { product_type?: string }) => o.product_type === "sponsor");
@@ -610,12 +610,12 @@ export async function getSponsorshipOverview(): Promise<SponsorshipOverview> {
   const monthRecurring = (monthOrdersRes.data || []).filter((o: { product_type?: string }) => o.product_type === "sponsor");
   const monthOnetime = (monthOrdersRes.data || []).filter((o: { product_type?: string }) => o.product_type === "credit_sponsor");
 
-  const recurringRevenueCents = recurringOrders.length * SPONSOR_NET;
-  const onetimeRevenueCents = onetimeOrders.length * SPONSOR_NET;
+  const recurringRevenueCents = recurringOrders.length * RECURRING_NET;
+  const onetimeRevenueCents = onetimeOrders.length * ONETIME_NET;
   const totalRevenueCents = recurringRevenueCents + onetimeRevenueCents;
-  const monthlyRevenueCents = (monthRecurring.length + monthOnetime.length) * SPONSOR_NET;
-  const monthlyRecurringCents = monthRecurring.length * SPONSOR_NET;
-  const monthlyOnetimeCents = monthOnetime.length * SPONSOR_NET;
+  const monthlyRecurringCents = monthRecurring.length * RECURRING_NET;
+  const monthlyOnetimeCents = monthOnetime.length * ONETIME_NET;
+  const monthlyRevenueCents = monthlyRecurringCents + monthlyOnetimeCents;
 
   // 최근 후원자 — 정기 + 일회성 합쳐서 시간순
   const recentRecurring = (recentRes.data || []).map((r: Record<string, unknown>) => {
@@ -624,7 +624,7 @@ export async function getSponsorshipOverview(): Promise<SponsorshipOverview> {
       user_id: r.user_id as string,
       email: profile?.email || "",
       display_name: profile?.display_name || null,
-      amount_cents: SPONSOR_NET,
+      amount_cents: RECURRING_NET,
       status: r.status as string,
       started_at: r.started_at as string,
       type: "정기" as const,
@@ -637,7 +637,7 @@ export async function getSponsorshipOverview(): Promise<SponsorshipOverview> {
       user_id: r.user_id as string,
       email: profile?.email || "",
       display_name: profile?.display_name || null,
-      amount_cents: SPONSOR_NET,
+      amount_cents: ONETIME_NET,
       status: "paid" as string,
       started_at: r.created_at as string,
       type: "일회성" as const,
