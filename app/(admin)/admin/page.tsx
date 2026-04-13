@@ -387,7 +387,7 @@ const PROVIDER_LABELS: Record<string, string> = {
 };
 
 async function RecentSignupsSection() {
-  const signups = await getRecentSignups(5);
+  const signups = await getRecentSignups(10);
 
   return (
     <div className="space-y-3">

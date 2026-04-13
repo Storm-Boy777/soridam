@@ -27,10 +27,9 @@ interface ReviewsContentProps {
   initialSubmissions: Submission[];
   initialPublicReviews: { reviews: Submission[]; total: number };
   initialSubmissionDetails: Record<number, SubmissionWithQuestions>;
-  isPaidUser?: boolean;
 }
 
-export function ReviewsContent({ initialStats, initialFrequency, initialSubmissions, initialPublicReviews, initialSubmissionDetails, isPaidUser = false }: ReviewsContentProps) {
+export function ReviewsContent({ initialStats, initialFrequency, initialSubmissions, initialPublicReviews, initialSubmissionDetails }: ReviewsContentProps) {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
 
@@ -83,7 +82,7 @@ export function ReviewsContent({ initialStats, initialFrequency, initialSubmissi
 
       {/* 탭 콘텐츠 */}
       {activeTab === "frequency" && (
-        <FrequencyTab initialStats={initialStats} initialFrequency={initialFrequency} isPaidUser={isPaidUser} />
+        <FrequencyTab initialStats={initialStats} initialFrequency={initialFrequency} />
       )}
       {activeTab === "submit" && <SubmitTab initialSubmissions={initialSubmissions} />}
       {activeTab === "list" && <ListTab initialData={initialPublicReviews} />}

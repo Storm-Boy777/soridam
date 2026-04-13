@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BarChart3, TrendingUp, FileText, Users, Info, ChevronDown, Lock } from "lucide-react";
-import Link from "next/link";
+import { BarChart3, TrendingUp, FileText, Users, Info, ChevronDown } from "lucide-react";
 import { getFrequency, getQuestionFrequency } from "@/lib/actions/reviews";
 import type {
   FrequencyItem,
@@ -21,7 +20,6 @@ import {
 interface FrequencyTabProps {
   initialStats: ReviewStats;
   initialFrequency: FrequencyItem[];
-  isPaidUser?: boolean;
 }
 
 // 카테고리별 색상 테마
@@ -31,11 +29,9 @@ const CATEGORY_THEME: Record<FrequencyCategory, { bar: string; text: string; bad
   "어드밴스": { bar: "bg-amber-500", text: "text-amber-600", badge: "bg-amber-50 text-amber-600" },
 };
 
-export function FrequencyTab({ initialStats, initialFrequency, isPaidUser = false }: FrequencyTabProps) {
+export function FrequencyTab({ initialStats, initialFrequency }: FrequencyTabProps) {
   const queryClient = useQueryClient();
-  // 무료 사용자는 어드밴스만 접근 가능
-  const [subTab, setSubTab] = useState<FrequencyCategory>(isPaidUser ? "일반" : "어드밴스");
-  const [showUpgradeHint, setShowUpgradeHint] = useState(false);
+  const [subTab, setSubTab] = useState<FrequencyCategory>("일반");
   const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
   const [displayCount, setDisplayCount] = useState<number>(10);
   const [bannerOpen, setBannerOpen] = useState(false);
@@ -58,8 +54,7 @@ export function FrequencyTab({ initialStats, initialFrequency, isPaidUser = fals
     prefetchedRef.current = true;
 
     const uniqueTopics = [...new Set(frequencyData.map((item) => item.topic))];
-    // 무료 사용자는 어드밴스만 접근 가능 → 어드밴스만 prefetch
-    const categoriesToPrefetch = isPaidUser ? FREQUENCY_CATEGORIES : (["어드밴스"] as const);
+    const categoriesToPrefetch = FREQUENCY_CATEGORIES;
     // 네트워크 요청 과다 방지: 상위 5개 토픽만 prefetch + 캐시 중복 제거
     const topicsToFetch = uniqueTopics.slice(0, 5);
     for (const cat of categoriesToPrefetch) {
@@ -195,49 +190,23 @@ export function FrequencyTab({ initialStats, initialFrequency, isPaidUser = fals
 
         {/* 서브탭 */}
         <div className="mt-4 flex gap-1 rounded-[var(--radius-lg)] bg-surface-secondary p-1">
-          {FREQUENCY_CATEGORIES.map((cat) => {
-            const isLocked = !isPaidUser && cat !== "어드밴스";
-            return (
+          {FREQUENCY_CATEGORIES.map((cat) => (
               <button
                 key={cat}
                 onClick={() => {
-                  if (isLocked) {
-                    setShowUpgradeHint(true);
-                    return;
-                  }
-                  setShowUpgradeHint(false);
                   setSubTab(cat);
                   setExpandedTopic(null);
                 }}
                 className={`flex flex-1 items-center justify-center gap-1 rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium transition-colors ${
                   subTab === cat
                     ? "bg-surface text-foreground shadow-sm"
-                    : isLocked
-                      ? "cursor-not-allowed text-foreground-muted/60"
-                      : "text-foreground-muted hover:text-foreground-secondary"
+                    : "text-foreground-muted hover:text-foreground-secondary"
                 }`}
               >
-                {isLocked && <Lock size={12} className="shrink-0" />}
                 {cat}
               </button>
-            );
-          })}
+          ))}
         </div>
-
-        {/* 무료 사용자 업그레이드 안내 */}
-        {showUpgradeHint && !isPaidUser && (
-          <div className="mt-3 flex items-center justify-between rounded-[var(--radius-lg)] border border-primary-200 bg-primary-50/50 px-4 py-3">
-            <p className="text-sm text-foreground-secondary">
-              유료 플랜에서 일반/롤플레이 빈도를 확인할 수 있습니다.
-            </p>
-            <Link
-              href="/store"
-              className="shrink-0 rounded-lg bg-primary-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-600 transition-colors"
-            >
-              크레딧 충전하기
-            </Link>
-          </div>
-        )}
 
         {/* 빈도 결과 */}
         <div className="mt-4">
