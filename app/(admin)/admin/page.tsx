@@ -490,9 +490,10 @@ async function UserEngagementSection() {
           value={`${stats.activeMonth}명`}
         />
         <MetricCard
-          icon={<Users size={16} className={stats.neverLoggedIn > 0 ? "text-red-500" : "text-gray-400"} />}
-          label="미접속"
-          value={`${stats.neverLoggedIn}명`}
+          icon={<Users size={16} className="text-green-500" />}
+          label="리텐션"
+          value={`${stats.activeMonth > 0 ? Math.round((stats.activeWeek / stats.activeMonth) * 100) : 0}%`}
+          sub="주간/월간"
         />
       </div>
 

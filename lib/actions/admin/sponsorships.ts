@@ -58,7 +58,7 @@ export async function getSponsorships(params: {
   let query = supabase
     .from(T.sponsorships)
     .select(
-      "id, user_id, creem_subscription_id, amount_cents, status, started_at, cancelled_at, current_period_end, profiles!inner(email, display_name)",
+      "id, user_id, creem_subscription_id, amount_cents, status, started_at, cancelled_at, current_period_end, profiles(email, display_name)",
       { count: "exact" }
     )
     .order("started_at", { ascending: false })

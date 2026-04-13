@@ -31,41 +31,19 @@ export interface UserEngagementStats {
 export async function getUserEngagementStats(): Promise<UserEngagementStats> {
   const { supabase } = await requireAdmin();
 
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  const week = new Date(now.getTime() - 7 * 86400000).toISOString();
-  const month = new Date(now.getTime() - 30 * 86400000).toISOString();
-
   // 1. 전체 사용자 수
   const { count: totalCount } = await supabase
     .from(T.user_credits)
     .select("*", { count: "exact", head: true });
   const totalUsers = totalCount || 0;
 
-  // 2. 기간별 활성 사용자 (고유 user_id) — 3개 쿼리 병렬
-  const [todayRes, weekRes, monthRes] = await Promise.all([
-    supabase.rpc("get_dau_count", { target_date: today.split("T")[0] }),
-    supabase
-      .from(T.user_activity_log)
-      .select("user_id")
-      .eq("action", "login")
-      .gte("created_at", week),
-    supabase
-      .from(T.user_activity_log)
-      .select("user_id")
-      .eq("action", "login")
-      .gte("created_at", month),
-  ]);
-
-  const activeToday = (todayRes.data as { count: number }[] | null)?.[0]?.count ?? 0;
-  const activeWeek = new Set((weekRes.data || []).map((r: { user_id: string }) => r.user_id)).size;
-  const activeMonth = new Set((monthRes.data || []).map((r: { user_id: string }) => r.user_id)).size;
-
-  // 3. 한 번도 로그인 안 한 사용자
-  const { data: authUsers } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-  const neverLoggedIn = (authUsers?.users || []).filter(
-    (u) => !u.last_sign_in_at
-  ).length;
+  // 2. 활성 사용자 + 미접속 — RPC로 정확 집계 (시간대/행 제한 문제 해결)
+  const { data: engagementRaw } = await supabase.rpc("admin_engagement_stats");
+  const engagement = engagementRaw as { active_today: number; active_week: number; active_month: number; never_logged_in: number } | null;
+  const activeToday = engagement?.active_today ?? 0;
+  const activeWeek = engagement?.active_week ?? 0;
+  const activeMonth = engagement?.active_month ?? 0;
+  const neverLoggedIn = engagement?.never_logged_in ?? 0;
 
   // 4. 최근 로그인 (고유 사용자, 최신 로그인만)
   const { data: recentLogs } = await supabase
@@ -375,8 +353,9 @@ export async function getDailyTrends(days: number = 30): Promise<DailyTrend[]> {
       supabase.auth.admin.listUsers({ perPage: 1000 }),
       supabase
         .from(T.polar_orders)
-        .select("amount, created_at")
+        .select("amount, product_type, created_at")
         .eq("status", "paid")
+        .in("product_type", ["credit", "credit_sponsor"])
         .gte("created_at", startIso)
         .limit(10000),
       supabase
@@ -412,10 +391,14 @@ export async function getDailyTrends(days: number = 30): Promise<DailyTrend[]> {
     if (key && dateMap.has(key)) dateMap.get(key)!.signups++;
   }
 
-  // orders — amount 합산
+  // orders — 크레딧 충전분 net 금액 합산
   for (const row of ordersRes.data || []) {
     const key = row.created_at?.split("T")[0];
-    if (key && dateMap.has(key)) dateMap.get(key)!.revenue += row.amount || 0;
+    if (key && dateMap.has(key)) {
+      const creditPortion = row.product_type === "credit_sponsor" ? 1000 : (row.amount || 0);
+      const net = creditPortion - Math.round(creditPortion * 0.039 + 40);
+      dateMap.get(key)!.revenue += net;
+    }
   }
 
   // mock_test_sessions

@@ -18,7 +18,8 @@ export async function getOrders(params: {
 
   let query = supabase
     .from(T.polar_orders)
-    .select("*", { count: "exact" });
+    .select("*", { count: "exact" })
+    .in("product_type", ["credit", "credit_sponsor"]);
 
   if (params.status && params.status !== "all") {
     query = query.eq("status", params.status);
@@ -205,7 +206,7 @@ export async function getApiUsageLogs(params: {
 
   let query = supabase
     .from(T.api_usage_logs)
-    .select("id, user_id, session_type, feature, service, model, tokens_in, tokens_out, cost_usd, created_at, profiles!inner(email, display_name)", { count: "exact" })
+    .select("id, user_id, session_type, feature, service, model, tokens_in, tokens_out, cost_usd, created_at, profiles(email, display_name)", { count: "exact" })
     .neq("user_id", ADMIN_USER_ID);
 
   if (params.sessionType && params.sessionType !== "all") {
