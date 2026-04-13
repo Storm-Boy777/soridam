@@ -331,7 +331,7 @@ async function SponsorshipSection() {
           <p className="mb-2 text-[11px] font-semibold text-foreground-muted">최근 후원자</p>
           <div className="overflow-hidden rounded-xl border border-border bg-surface">
             <div className="flex bg-surface-secondary/50 px-3 py-2 text-[11px] font-semibold text-foreground-muted">
-              <span className="flex-[2]">사용자</span>
+              <span className="flex-[2] text-center">사용자</span>
               <span className="flex-[2] text-center">이메일</span>
               <span className="flex-[1] text-center">금액</span>
               <span className="flex-[1] text-center">상태</span>
@@ -406,7 +406,7 @@ async function RecentSignupsSection() {
         ) : (
           <>
             <div className="flex bg-surface-secondary/50 px-3 py-2 text-[11px] font-semibold text-foreground-muted">
-              <span className="flex-[2]">사용자</span>
+              <span className="flex-[2] text-center">사용자</span>
               <span className="flex-[3] text-center">이메일</span>
               <span className="flex-[3] text-center">가입 방법</span>
               <span className="flex-[2] text-center">가입일</span>
@@ -416,7 +416,7 @@ async function RecentSignupsSection() {
                 key={u.id}
                 className={`flex items-center px-3 py-2 text-xs ${idx > 0 ? "border-t border-border" : ""}`}
               >
-                <span className="flex-[2] truncate font-medium text-foreground">
+                <span className="flex-[2] truncate text-center font-medium text-foreground">
                   {u.display_name || u.email}
                 </span>
                 <span className="flex-[3] truncate text-center text-foreground-muted">
@@ -502,14 +502,14 @@ async function UserEngagementSection() {
           <p className="mb-2 text-[11px] font-semibold text-foreground-muted">최근 로그인</p>
           <div className="overflow-hidden rounded-xl border border-border bg-surface">
             <div className="flex bg-surface-secondary/50 px-3 py-2 text-[11px] font-semibold text-foreground-muted">
-              <span className="flex-[2]">사용자</span>
+              <span className="flex-[2] text-center">사용자</span>
               <span className="flex-[3] text-center">이메일</span>
               <span className="flex-[3] text-center">-</span>
               <span className="flex-[2] text-center">시간</span>
             </div>
             {stats.recentLogins.slice(0, 10).map((l, i) => (
               <div key={`login-${i}`} className="flex items-center border-t border-border px-3 py-2 text-xs">
-                <span className="flex-[2] truncate font-medium text-foreground">
+                <span className="flex-[2] truncate text-center font-medium text-foreground">
                   {l.display_name || l.email}
                 </span>
                 <span className="flex-[3] truncate text-center text-foreground-muted">
@@ -535,7 +535,7 @@ async function UserEngagementSection() {
           <p className="mb-2 text-[11px] font-semibold text-foreground-muted">최근 활동</p>
           <div className="overflow-hidden rounded-xl border border-border bg-surface">
             <div className="flex bg-surface-secondary/50 px-3 py-2 text-[11px] font-semibold text-foreground-muted">
-              <span className="flex-[2]">사용자</span>
+              <span className="flex-[2] text-center">사용자</span>
               <span className="flex-[3] text-center">이메일</span>
               <span className="flex-[3] text-center">내용</span>
               <span className="flex-[2] text-center">시간</span>
@@ -545,7 +545,7 @@ async function UserEngagementSection() {
               const email = a.userName.includes("(") ? a.userName.split("(")[1]?.replace(")", "") : "";
               return (
                 <div key={`${a.type}-${a.id}`} className="flex items-center border-t border-border px-3 py-2 text-xs">
-                  <span className="flex-[2] truncate font-medium text-foreground">
+                  <span className="flex-[2] truncate text-center font-medium text-foreground">
                     {name}
                   </span>
                   <span className="flex-[3] truncate text-center text-foreground-muted">
