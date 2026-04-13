@@ -458,7 +458,7 @@ export default function AdminMockExamPage() {
                         timeZone: "Asia/Seoul",
                         month: "long",
                         day: "numeric",
-                        hour: "2-digit",
+                        hour12: false, hour: "2-digit",
                         minute: "2-digit",
                       })}
                     </div>

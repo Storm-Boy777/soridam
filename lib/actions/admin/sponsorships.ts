@@ -37,9 +37,15 @@ export async function getSponsorshipStats(): Promise<SponsorshipStats> {
   const activeSponsorCount = activeRes.count || 0;
   const sponsorNet = (o: { product_type?: string }) => o.product_type === "credit_sponsor" ? ONETIME_NET : RECURRING_NET;
   const totalRevenueCents = (totalRes.data || []).reduce((s: number, o: { product_type?: string }) => s + sponsorNet(o), 0);
-  const monthlyRevenueCents = (monthRes.data || []).reduce((s: number, o: { product_type?: string }) => s + sponsorNet(o), 0);
 
-  return { activeSponsorCount, monthlyRevenueCents, totalRevenueCents, avgAmountCents: 0 };
+  const monthRecurring = (monthRes.data || []).filter((o: { product_type?: string }) => o.product_type === "sponsor");
+  const monthOnetime = (monthRes.data || []).filter((o: { product_type?: string }) => o.product_type === "credit_sponsor");
+  const monthlyRecurringCents = monthRecurring.length * RECURRING_NET;
+  const monthlyOnetimeCents = monthOnetime.length * ONETIME_NET;
+  const monthlyRevenueCents = monthlyRecurringCents + monthlyOnetimeCents;
+  const onetimeCount = (totalRes.data || []).filter((o: { product_type?: string }) => o.product_type === "credit_sponsor").length;
+
+  return { activeSponsorCount, monthlyRevenueCents, totalRevenueCents, monthlyRecurringCents, monthlyOnetimeCents, onetimeCount };
 }
 
 // ── 후원자 목록 ──

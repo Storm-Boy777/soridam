@@ -188,12 +188,12 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
   const [usersRes, todayLearnersRes, monthlyCostRes, balanceRes] = await Promise.all([
     // 총 회원 수
     supabase.from(T.user_credits).select("*", { count: "exact", head: true }),
-    // 오늘 학습자 (모의고사/스크립트/쉐도잉/튜터링 활동)
+    // 오늘 학습자 (AI 기능 실제 사용자 — api_usage_logs 기준)
     supabase
-      .from(T.user_activity_log)
+      .from(T.api_usage_logs)
       .select("user_id")
-      .in("action", ["mock_exam", "script", "shadowing", "tutoring"])
-      .gte("created_at", today),
+      .gte("created_at", today)
+      .neq("user_id", "251b0655-6fd0-4566-bef2-57c07bb5dcd0"),
     // 이번 달 AI 비용 (관리자 제외)
     supabase
       .from(T.api_usage_logs)
@@ -306,34 +306,15 @@ export interface LearningActivity {
 export async function getLearningActivity(): Promise<LearningActivity> {
   const { supabase } = await requireAdmin();
 
-  const monthStart = `${new Date().toISOString().slice(0, 7)}-01`;
-
-  // 4개 모듈 × 2쿼리(전체/이번달) = 8개 병렬 쿼리
-  const [
-    mockAll, mockMonth,
-    scriptAll, scriptMonth,
-    shadowAll, shadowMonth,
-    tutorAll, tutorMonth,
-  ] = await Promise.all([
-    supabase.from(T.mock_test_sessions).select("user_id"),
-    supabase.from(T.mock_test_sessions).select("user_id").gte("started_at", monthStart),
-    supabase.from(T.scripts).select("user_id"),
-    supabase.from(T.scripts).select("user_id").gte("created_at", monthStart),
-    supabase.from(T.shadowing_sessions).select("user_id"),
-    supabase.from(T.shadowing_sessions).select("user_id").gte("created_at", monthStart),
-    supabase.from(T.tutoring_sessions).select("user_id"),
-    supabase.from(T.tutoring_sessions).select("user_id").gte("created_at", monthStart),
-  ]);
-
-  const distinct = (data: { user_id: string }[] | null) =>
-    new Set((data || []).map((r) => r.user_id)).size;
-  const count = (data: unknown[] | null) => (data || []).length;
+  // RPC로 정확 집계 (1000행 제한 우회)
+  const { data: raw } = await supabase.rpc("admin_learning_activity");
+  const d = raw as Record<string, number> | null;
 
   return {
-    mockExam: { totalUsers: distinct(mockAll.data), thisMonth: count(mockMonth.data) },
-    script: { totalUsers: distinct(scriptAll.data), thisMonth: count(scriptMonth.data) },
-    shadowing: { totalUsers: distinct(shadowAll.data), thisMonth: count(shadowMonth.data) },
-    tutoring: { totalUsers: distinct(tutorAll.data), thisMonth: count(tutorMonth.data) },
+    mockExam: { totalUsers: d?.mock_users ?? 0, thisMonth: d?.mock_month ?? 0 },
+    script: { totalUsers: d?.script_users ?? 0, thisMonth: d?.script_month ?? 0 },
+    shadowing: { totalUsers: d?.shadow_users ?? 0, thisMonth: d?.shadow_month ?? 0 },
+    tutoring: { totalUsers: d?.tutor_users ?? 0, thisMonth: d?.tutor_month ?? 0 },
   };
 }
 

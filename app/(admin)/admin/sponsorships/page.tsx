@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Heart, Loader2, DollarSign, Coins, Wallet } from "lucide-react";
+import { Heart, Loader2, DollarSign, Coins, Wallet, CreditCard } from "lucide-react";
 import {
   getSponsorships,
   getSponsorshipStats,
@@ -297,11 +297,16 @@ export default function AdminSponsorshipsPage() {
 
       {/* 통계 카드 */}
       {stats && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <StatCard
             icon={<Heart size={16} className="text-pink-500" />}
-            label="활성 후원자"
+            label="정기 후원"
             value={`${stats.activeSponsorCount}명`}
+          />
+          <StatCard
+            icon={<CreditCard size={16} className="text-blue-500" />}
+            label="단기 후원"
+            value={`${stats.onetimeCount}건`}
           />
           <StatCard
             icon={<DollarSign size={16} className="text-green-500" />}

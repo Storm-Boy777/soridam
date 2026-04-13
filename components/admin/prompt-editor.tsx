@@ -102,7 +102,7 @@ export function PromptEditor({ id, name, initialContent, onSave, showHistory = t
                         {new Date(h.changed_at).toLocaleString("ko-KR", {
                           month: "short",
                           day: "numeric",
-                          hour: "2-digit",
+                          hour12: false, hour: "2-digit",
                           minute: "2-digit",
                         })}
                       </span>

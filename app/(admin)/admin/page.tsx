@@ -79,7 +79,7 @@ async function RecentActivityList() {
               timeZone: "Asia/Seoul",
               month: "short",
               day: "numeric",
-              hour: "2-digit",
+              hour12: false, hour: "2-digit",
               minute: "2-digit",
             })}
           </span>
@@ -527,7 +527,7 @@ async function UserEngagementSection() {
                 </span>
                 <span className="flex-[2] text-center text-foreground-muted">
                   {new Date(l.last_login).toLocaleString("ko-KR", {
-                    timeZone: "Asia/Seoul", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+                    timeZone: "Asia/Seoul", month: "short", day: "numeric", hour12: false, hour: "2-digit", minute: "2-digit",
                   })}
                 </span>
               </div>
@@ -563,7 +563,7 @@ async function UserEngagementSection() {
                   </span>
                   <span className="flex-[2] text-center text-foreground-muted">
                     {new Date(a.created_at).toLocaleString("ko-KR", {
-                      timeZone: "Asia/Seoul", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+                      timeZone: "Asia/Seoul", month: "short", day: "numeric", hour12: false, hour: "2-digit", minute: "2-digit",
                     })}
                   </span>
                 </div>

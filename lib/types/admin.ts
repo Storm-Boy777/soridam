@@ -347,7 +347,9 @@ export interface SponsorshipStats {
   activeSponsorCount: number;
   monthlyRevenueCents: number;
   totalRevenueCents: number;
-  avgAmountCents: number;
+  monthlyRecurringCents: number;
+  monthlyOnetimeCents: number;
+  onetimeCount: number;
 }
 
 export interface AdminListParams {
