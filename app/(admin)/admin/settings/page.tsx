@@ -44,6 +44,7 @@ export default function AdminSettingsPage() {
     signup_kakao_enabled: false,
     signup_email_enabled: true,
     signup_email_whitelist: "",
+    signup_invited_emails: "",
     maintenance_mode: false,
   });
   const [saving, setSaving] = useState<string | null>(null);
@@ -62,6 +63,7 @@ export default function AdminSettingsPage() {
         signup_kakao_enabled: parseBool(settings.signup_kakao_enabled),
         signup_email_enabled: parseBool(settings.signup_email_enabled),
         signup_email_whitelist: parseVal(settings.signup_email_whitelist),
+        signup_invited_emails: parseVal(settings.signup_invited_emails),
         maintenance_mode: parseBool(settings.maintenance_mode),
       });
     }
@@ -244,6 +246,16 @@ export default function AdminSettingsPage() {
               saving={saving === "signup_email_whitelist"}
               saved={saved === "signup_email_whitelist"}
               placeholder="예: gmail.com, naver.com"
+            />
+          </Field>
+          <Field label="초대 이메일" hint="도메인 제한 우회 허용">
+            <InputWithSave
+              value={form.signup_invited_emails}
+              onChange={(v) => update("signup_invited_emails", v)}
+              onSave={() => save("signup_invited_emails", form.signup_invited_emails)}
+              saving={saving === "signup_invited_emails"}
+              saved={saved === "signup_invited_emails"}
+              placeholder="예: user@gmail.com, friend@naver.com"
             />
           </Field>
           <Field label="점검 모드" hint="프로덕션 접근 차단" right>

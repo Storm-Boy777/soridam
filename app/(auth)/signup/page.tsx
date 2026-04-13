@@ -32,10 +32,12 @@ export default function SignupPage() {
     mode: "onBlur",
   });
 
-  // 이메일 도메인 화이트리스트 실시간 검증
+  // 이메일 도메인 화이트리스트 + 초대 이메일 실시간 검증
   const watchedEmail = watch("email");
   const domainError = (() => {
     if (!signupCfg || signupCfg.emailWhitelist.length === 0 || !watchedEmail) return null;
+    // 초대 이메일이면 도메인 제한 우회
+    if (signupCfg.invitedEmails.includes(watchedEmail.toLowerCase())) return null;
     const domain = watchedEmail.split("@")[1]?.toLowerCase();
     if (!domain) return null;
     return signupCfg.emailWhitelist.includes(domain)

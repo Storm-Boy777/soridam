@@ -13,6 +13,7 @@ export type SettingKey =
   | "signup_kakao_enabled"
   | "signup_email_enabled"
   | "signup_email_whitelist"
+  | "signup_invited_emails"
   | "site_notice"
   | "site_name"
   | "site_description"
@@ -26,13 +27,14 @@ export interface SignupSettings {
   kakaoEnabled: boolean;
   emailEnabled: boolean;
   emailWhitelist: string[]; // 허용 도메인 배열
+  invitedEmails: string[]; // 초대 이메일 (도메인 제한 우회)
 }
 
 export async function getSignupSettings(): Promise<SignupSettings> {
   const { createServerSupabaseClient } = await import("@/lib/supabase-server");
   const supabase = await createServerSupabaseClient();
 
-  const keys = ["signup_google_enabled", "signup_kakao_enabled", "signup_email_enabled", "signup_email_whitelist"];
+  const keys = ["signup_google_enabled", "signup_kakao_enabled", "signup_email_enabled", "signup_email_whitelist", "signup_invited_emails"];
   const { data } = await supabase
     .from(T.system_settings)
     .select("key, value")
@@ -42,12 +44,14 @@ export async function getSignupSettings(): Promise<SignupSettings> {
   for (const row of data || []) map[row.key] = row.value;
 
   const whitelist = String(map.signup_email_whitelist ?? "").trim();
+  const invited = String(map.signup_invited_emails ?? "").trim();
 
   return {
     googleEnabled: map.signup_google_enabled === true,
     kakaoEnabled: map.signup_kakao_enabled === true,
     emailEnabled: map.signup_email_enabled !== false,
     emailWhitelist: whitelist ? whitelist.split(",").map((d) => d.trim().toLowerCase()).filter(Boolean) : [],
+    invitedEmails: invited ? invited.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean) : [],
   };
 }
 
@@ -75,8 +79,7 @@ export async function updateSetting(
 
   const { error } = await supabase
     .from(T.system_settings)
-    .update({ value, updated_at: new Date().toISOString() })
-    .eq("key", key);
+    .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
 
   if (error) {
     return { success: false, error: error.message };

@@ -73,8 +73,11 @@ export async function signup(formData: FormData): Promise<AuthResult> {
     if (!cfg.emailEnabled) {
       return { error: "현재 이메일 가입이 비활성화되어 있습니다." };
     }
-    if (cfg.emailWhitelist.length > 0) {
-      const domain = parsed.data.email.split("@")[1]?.toLowerCase();
+    // 초대 이메일이면 도메인 제한 우회
+    const emailLower = parsed.data.email.toLowerCase();
+    const isInvited = cfg.invitedEmails.includes(emailLower);
+    if (!isInvited && cfg.emailWhitelist.length > 0) {
+      const domain = emailLower.split("@")[1];
       if (!domain || !cfg.emailWhitelist.includes(domain)) {
         return { error: `현재 허용되지 않은 이메일 도메인입니다. 허용 도메인: ${cfg.emailWhitelist.join(", ")}` };
       }
