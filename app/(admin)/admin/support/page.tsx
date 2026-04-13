@@ -33,7 +33,7 @@ type AdminTab = "feedback" | "inquiry";
 
 export default function AdminSupportPage() {
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<AdminTab>("feedback");
+  const [tab, setTab] = useState<AdminTab>("inquiry");
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [replyContent, setReplyContent] = useState("");
   const [replying, setReplying] = useState(false);

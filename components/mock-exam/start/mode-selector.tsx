@@ -130,13 +130,14 @@ export function TestModeConfirm({
   onCancel,
   isLoading,
 }: TestModeConfirmProps) {
-  const [checks, setChecks] = useState([false, false, false]);
+  const [checks, setChecks] = useState([false, false, false, false]);
 
   const allChecked = checks.every(Boolean);
 
   const items = [
     "조용한 환경에서 진행합니다",
     "40분 동안 중단 없이 진행할 수 있습니다",
+    "무응답(스킵) 5회 이상 시 정확한 등급 판정이 어렵습니다",
     "크레딧이 사용량에 따라 차감됩니다",
   ];
 
