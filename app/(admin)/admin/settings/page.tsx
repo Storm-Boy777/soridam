@@ -89,6 +89,21 @@ export default function AdminSettingsPage() {
     }
   };
 
+  // 초대 이메일: 기존 목록에 추가 후 입력 필드 초기화
+  const [inviteInput, setInviteInput] = useState("");
+  const appendInvitedEmails = async () => {
+    const newEmails = inviteInput.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+    if (newEmails.length === 0) return;
+    const existing = form.signup_invited_emails
+      ? form.signup_invited_emails.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)
+      : [];
+    // 중복 제거 후 병합
+    const merged = [...new Set([...existing, ...newEmails])].join(", ");
+    update("signup_invited_emails", merged);
+    await save("signup_invited_emails", merged);
+    setInviteInput("");
+  };
+
   const toggle = async (key: "signup_google_enabled" | "signup_kakao_enabled" | "signup_email_enabled" | "maintenance_mode") => {
     const newVal = !form[key];
     setForm((f) => ({ ...f, [key]: newVal }));
@@ -250,14 +265,15 @@ export default function AdminSettingsPage() {
               placeholder="예: gmail.com, naver.com"
             />
           </Field>
-          <Field label="초대 이메일" hint="도메인 제한 우회 허용">
+          <Field label="초대 이메일" hint="입력 시 기존 목록에 추가">
             <InputWithSave
-              value={form.signup_invited_emails}
-              onChange={(v) => update("signup_invited_emails", v)}
-              onSave={() => save("signup_invited_emails", form.signup_invited_emails)}
+              value={inviteInput}
+              onChange={setInviteInput}
+              onSave={appendInvitedEmails}
               saving={saving === "signup_invited_emails"}
               saved={saved === "signup_invited_emails"}
-              placeholder="예: user@gmail.com, friend@naver.com"
+              placeholder="추가할 이메일 입력"
+              saveLabel="추가"
             />
           </Field>
           <WhitelistViewer
@@ -311,10 +327,10 @@ function Field({ label, hint, right, children }: { label: string; hint?: string;
 }
 
 function InputWithSave({
-  value, onChange, onSave, saving, saved, mono, placeholder,
+  value, onChange, onSave, saving, saved, mono, placeholder, saveLabel,
 }: {
   value: string; onChange: (v: string) => void; onSave: () => void;
-  saving: boolean; saved: boolean; mono?: boolean; placeholder?: string;
+  saving: boolean; saved: boolean; mono?: boolean; placeholder?: string; saveLabel?: string;
 }) {
   return (
     <div className="flex gap-2">
@@ -324,12 +340,12 @@ function InputWithSave({
         placeholder={placeholder}
         className={`w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm text-foreground placeholder:text-foreground-muted focus:border-primary-400 focus:outline-none ${mono ? "font-mono text-xs" : ""}`}
       />
-      <SaveIndicator onSave={onSave} saving={saving} saved={saved} />
+      <SaveIndicator onSave={onSave} saving={saving} saved={saved} label={saveLabel} />
     </div>
   );
 }
 
-function SaveIndicator({ onSave, saving, saved }: { onSave: () => void; saving: boolean; saved: boolean }) {
+function SaveIndicator({ onSave, saving, saved, label = "저장" }: { onSave: () => void; saving: boolean; saved: boolean; label?: string }) {
   return (
     <button
       onClick={onSave}
@@ -340,7 +356,7 @@ function SaveIndicator({ onSave, saving, saved }: { onSave: () => void; saving: 
           : "bg-primary-500 text-white hover:bg-primary-600"
       } disabled:opacity-50`}
     >
-      {saving ? <Loader2 size={12} className="animate-spin" /> : saved ? <><Check size={12} /> 완료</> : "저장"}
+      {saving ? <Loader2 size={12} className="animate-spin" /> : saved ? <><Check size={12} /> 완료</> : label}
     </button>
   );
 }
