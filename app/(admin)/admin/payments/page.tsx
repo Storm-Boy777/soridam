@@ -330,7 +330,7 @@ function UsageHistoryTab() {
       <div className="overflow-hidden rounded-xl border border-border bg-surface">
         {/* 헤더 */}
         <div className="flex bg-surface-secondary/50 px-4 py-2.5 text-[11px] font-semibold text-foreground-muted">
-          <span className="flex-[2]">사용자</span>
+          <span className="flex-[2] text-center">사용자</span>
           <span className="flex-[1.5] text-center">기능</span>
           <span className="flex-[1.5] text-center">서비스</span>
           <span className="flex-[1] text-center">토큰</span>
@@ -350,7 +350,7 @@ function UsageHistoryTab() {
         ) : (
           logs.map((log, idx) => (
             <div key={log.id} className={`flex items-center px-4 py-2.5 text-xs ${idx > 0 ? "border-t border-border" : ""}`}>
-              <span className="flex-[2] truncate font-medium text-foreground">
+              <span className="flex-[2] truncate text-center font-medium text-foreground">
                 {log.user_name || log.user_email}
               </span>
               <span className="flex-[1.5] text-center text-foreground-secondary">

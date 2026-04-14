@@ -5,9 +5,13 @@ import {
   Loader2,
   RefreshCw,
   AlertCircle,
+  Dices,
 } from "lucide-react";
 import { TOPIC_ICONS } from "@/components/reviews/submit/topic-pagination";
 import type { ExamPoolPreview } from "@/lib/types/mock-exam";
+
+// 랜덤 카드 식별용 센티넬 값 (실제 submission_id가 아님)
+export const RANDOM_POOL_ID = -1;
 
 // 콤보 타입 한글 라벨
 const COMBO_LABELS: Record<string, string> = {
@@ -102,7 +106,8 @@ export function ExamPoolSelector({
           </div>
         )}
         <div className="grid gap-3 sm:grid-cols-3">
-        {pools.map((pool) => {
+        {/* 앞 2개는 실제 기출 카드 */}
+        {pools.slice(0, 2).map((pool) => {
           const isSelected = selectedId === pool.submission_id;
           return (
             <button
@@ -139,6 +144,22 @@ export function ExamPoolSelector({
             </button>
           );
         })}
+
+        {/* 3번째 카드: 랜덤 선택 */}
+        <button
+          onClick={() => onSelect(RANDOM_POOL_ID)}
+          className={`rounded-xl border p-4 text-left transition-all ${
+            selectedId === RANDOM_POOL_ID
+              ? "border-primary-500 bg-primary-50/30 ring-2 ring-primary-100 shadow-sm"
+              : "border-border bg-surface hover:-translate-y-0.5 hover:border-primary-300 hover:bg-primary-50/20 hover:shadow-md"
+          }`}
+        >
+          <div className="flex h-full flex-col items-center justify-center gap-2 py-2">
+            <Dices size={28} className="text-foreground-secondary" />
+            <p className="text-sm font-semibold text-foreground">랜덤 선택</p>
+            <p className="text-[10px] text-foreground-muted">전체 기출에서 무작위</p>
+          </div>
+        </button>
         </div>
       </div>
     </div>

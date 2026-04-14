@@ -180,6 +180,59 @@ export async function getExamPool(): Promise<ActionResult<ExamPoolPreview[]>> {
 }
 
 // ============================================================
+// 1-2. 랜덤 기출 1개 추출 (getRandomSubmissionId)
+// 전체 승인된 기출 DB에서 랜덤하게 1개의 submission_id 반환
+// 사용자가 아직 응시하지 않은 것을 우선, 없으면 전체에서 선택
+// ============================================================
+
+export async function getRandomSubmissionId(): Promise<ActionResult<number>> {
+  try {
+    const { supabase, userId } = await requireUser();
+
+    // 사용자가 이미 사용한 기출 목록
+    const { data: usedSessions } = await supabase
+      .from(T.mock_test_sessions)
+      .select("submission_id")
+      .eq("user_id", userId)
+      .neq("status", "expired");
+
+    const usedIds = (usedSessions || []).map((s) => s.submission_id);
+
+    // 아직 응시하지 않은 승인 기출 조회
+    let query = supabase
+      .from(T.submissions)
+      .select("id")
+      .eq("status", "complete")
+      .eq("exam_approved", "approved");
+
+    if (usedIds.length > 0) {
+      query = query.not("id", "in", `(${usedIds.join(",")})`);
+    }
+
+    let { data: candidates } = await query;
+
+    // 안 푼 것이 없으면 전체에서 랜덤 추출
+    if (!candidates || candidates.length === 0) {
+      const { data: all } = await supabase
+        .from(T.submissions)
+        .select("id")
+        .eq("status", "complete")
+        .eq("exam_approved", "approved");
+      candidates = all || [];
+    }
+
+    if (candidates.length === 0) {
+      return { error: "응시 가능한 기출이 없습니다" };
+    }
+
+    const picked = candidates[Math.floor(Math.random() * candidates.length)];
+    return { data: picked.id };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "랜덤 기출 선택 실패" };
+  }
+}
+
+// ============================================================
 // 2. 세션 생성 (createSession)
 // ============================================================
 

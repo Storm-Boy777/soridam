@@ -30,7 +30,7 @@ const CurrentStateCard = dynamic(
   () => import("./history/grade-progress-chart").then((mod) => ({ default: mod.CurrentStateCard })),
   { loading: () => <div className="animate-pulse h-32 rounded-xl bg-surface-secondary" /> }
 );
-import { ExamPoolSelector } from "./start/exam-pool-selector";
+import { ExamPoolSelector, RANDOM_POOL_ID } from "./start/exam-pool-selector";
 import { ModeSelector, TestModeConfirm, type ExtendedMockExamMode } from "./start/mode-selector";
 import { NoCreditCard } from "@/components/trial/no-credit-card";
 import {
@@ -40,6 +40,7 @@ import {
   checkMockExamCredit,
   getHistory,
   expireSession,
+  getRandomSubmissionId,
 } from "@/lib/actions/mock-exam";
 import type {
   MockExamMode,
@@ -205,8 +206,20 @@ function StartTab({
     setError(null);
 
     try {
+      // 랜덤 선택이면 서버에서 실제 submission_id 추출
+      let submissionId = selectedPoolId;
+      if (submissionId === RANDOM_POOL_ID) {
+        const randomResult = await getRandomSubmissionId();
+        if (randomResult.error || !randomResult.data) {
+          setError(randomResult.error || "랜덤 기출 선택에 실패했습니다");
+          setIsCreating(false);
+          return;
+        }
+        submissionId = randomResult.data;
+      }
+
       const result = await createSession({
-        submission_id: selectedPoolId,
+        submission_id: submissionId,
         mode: selectedMode as MockExamMode,
       });
 
@@ -371,15 +384,6 @@ function StartTab({
         </div>
       </div>
 
-      {/* 크레딧 표시 — 크레딧 있을 때만 (없을 때는 NoCreditCard에서 표시) */}
-      {credit && credit.available && (
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-foreground-secondary">크레딧 잔액:</span>
-          <span className="font-bold text-foreground">
-            {formatUsd(credit.balanceCents ?? 0)}
-          </span>
-        </div>
-      )}
 
       {/* 크레딧 없을 때: 모드 선택 먼저 (체험판 + 잠금 모드) — 활성 세션이 없을 때만 */}
       {hasCredit === false && !activeSession && (
