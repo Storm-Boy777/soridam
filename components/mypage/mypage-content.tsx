@@ -793,16 +793,9 @@ function AccountTab({ user }: { user: UserData }) {
             )}
             <div className="mt-3 flex gap-2">
               <Button
-                variant="danger"
-                size="sm"
-                onClick={handleDeleteAccount}
-                disabled={isDeleting}
-              >
-                {isDeleting ? "탈퇴 처리 중..." : "탈퇴하기"}
-              </Button>
-              <Button
                 variant="outline"
                 size="sm"
+                className="flex-1"
                 onClick={() => {
                   setShowDeleteConfirm(false);
                   setDeleteError(null);
@@ -810,6 +803,15 @@ function AccountTab({ user }: { user: UserData }) {
                 disabled={isDeleting}
               >
                 취소
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                className="flex-1"
+                onClick={handleDeleteAccount}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "탈퇴 처리 중..." : "탈퇴하기"}
               </Button>
             </div>
           </div>
