@@ -10,6 +10,8 @@ import {
   Shield,
   Check,
   Loader2,
+  Eye,
+  X,
 } from "lucide-react";
 import { getSettings, updateSetting, type SettingKey } from "@/lib/actions/admin/settings";
 
@@ -258,6 +260,12 @@ export default function AdminSettingsPage() {
               placeholder="예: user@gmail.com, friend@naver.com"
             />
           </Field>
+          <WhitelistViewer
+            whitelist={form.signup_email_whitelist}
+            invitedEmails={form.signup_invited_emails}
+            onUpdateWhitelist={(v) => { update("signup_email_whitelist", v); save("signup_email_whitelist", v); }}
+            onUpdateInvited={(v) => { update("signup_invited_emails", v); save("signup_invited_emails", v); }}
+          />
           <Field label="점검 모드" hint="프로덕션 접근 차단" right>
             <Toggle
               enabled={form.maintenance_mode}
@@ -358,5 +366,111 @@ function Toggle({
       </span>
       {saving && <Loader2 size={10} className="animate-spin text-foreground-muted" />}
     </div>
+  );
+}
+
+function WhitelistViewer({
+  whitelist, invitedEmails, onUpdateWhitelist, onUpdateInvited,
+}: {
+  whitelist: string; invitedEmails: string;
+  onUpdateWhitelist: (v: string) => void; onUpdateInvited: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const domains = whitelist ? whitelist.split(",").map((d) => d.trim()).filter(Boolean) : [];
+  const emails = invitedEmails ? invitedEmails.split(",").map((e) => e.trim()).filter(Boolean) : [];
+
+  const removeDomain = (target: string) => {
+    const updated = domains.filter((d) => d !== target).join(", ");
+    onUpdateWhitelist(updated);
+  };
+  const removeEmail = (target: string) => {
+    const updated = emails.filter((e) => e !== target).join(", ");
+    onUpdateInvited(updated);
+  };
+
+  return (
+    <>
+      <div className="flex items-center gap-4 py-3">
+        <div className="w-28 shrink-0">
+          <p className="text-xs font-medium text-foreground">허용 현황</p>
+          <p className="text-[10px] text-foreground-muted">도메인 + 초대 이메일</p>
+        </div>
+        <div className="flex-1">
+          <button
+            onClick={() => setOpen(true)}
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground-secondary hover:bg-surface-secondary transition-colors"
+          >
+            <Eye size={12} />
+            화이트리스트 확인 ({domains.length + emails.length}건)
+          </button>
+        </div>
+      </div>
+
+      {/* 모달 */}
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setOpen(false)}>
+          <div
+            className="mx-4 w-full max-w-md rounded-xl border border-border bg-surface p-5 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-foreground">가입 허용 화이트리스트</h3>
+              <button onClick={() => setOpen(false)} className="rounded-lg p-1 hover:bg-surface-secondary">
+                <X size={16} className="text-foreground-muted" />
+              </button>
+            </div>
+
+            {/* 허용 도메인 */}
+            <div className="mb-4">
+              <p className="text-xs font-medium text-foreground-secondary mb-2">
+                허용 도메인 ({domains.length}건)
+              </p>
+              {domains.length === 0 ? (
+                <p className="text-xs text-foreground-muted">제한 없음 (모든 도메인 허용)</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {domains.map((d) => (
+                    <span key={d} className="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-600">
+                      @{d}
+                      <button onClick={() => removeDomain(d)} className="ml-0.5 rounded hover:bg-primary-100 p-0.5" title="삭제">
+                        <X size={10} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 초대 이메일 */}
+            <div>
+              <p className="text-xs font-medium text-foreground-secondary mb-2">
+                초대 이메일 ({emails.length}건)
+              </p>
+              {emails.length === 0 ? (
+                <p className="text-xs text-foreground-muted">없음</p>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {emails.map((e) => (
+                    <span key={e} className="inline-flex items-center justify-between rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700">
+                      {e}
+                      <button onClick={() => removeEmail(e)} className="ml-1 rounded hover:bg-amber-100 p-0.5" title="삭제">
+                        <X size={10} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => setOpen(false)}
+              className="mt-4 w-full rounded-lg bg-surface-secondary py-2 text-xs font-medium text-foreground-secondary hover:bg-border transition-colors"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
