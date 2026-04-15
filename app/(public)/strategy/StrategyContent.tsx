@@ -848,31 +848,27 @@ export default function StrategyContent() {
       </section>
 
       {/* ━━━ Final CTA ━━━ */}
-      <section
-        className="py-16 sm:py-32"
-        style={{ background: "linear-gradient(180deg, #FAFAF7 0%, #D6E0FF 30%, #B0C4FF 60%, #D6E0FF 100%)" }}
-      >
+      <section className="bg-[#12121F] py-16 sm:py-32">
         <div className="mx-auto max-w-2xl px-4 text-center sm:px-6">
           <ScrollReveal preset="fade-up">
-            <h2 className="font-serif text-3xl font-semibold italic tracking-tight text-[#1A1A2E] sm:text-[44px] sm:leading-[1.2]">
+            <h2 className="font-serif text-3xl font-semibold italic tracking-tight text-white sm:text-[44px] sm:leading-[1.2]">
               &ldquo;막연함&rdquo;에서<br />&ldquo;선명함&rdquo;으로.
             </h2>
           </ScrollReveal>
           <ScrollReveal preset="fade-up" delay={0.1}>
-            <p className="mt-5 text-[17px] leading-relaxed text-[#4A3F36]">
+            <p className="mt-5 text-[17px] leading-relaxed text-white/70">
               데이터 기반 전략으로, 시험의 84%를 대비한 상태로 응시하세요.
             </p>
           </ScrollReveal>
           <ScrollReveal preset="scale-up" delay={0.2}>
             <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-              <Link href="/signup" className="inline-flex h-[52px] items-center justify-center gap-2 rounded-full bg-[#1A1A2E] px-8 text-base font-semibold text-white shadow-[0_4px_16px_rgba(31,30,48,0.12)] transition-colors hover:bg-[#4A3F36]">
+              <Link href="/signup" className="inline-flex h-[52px] items-center justify-center gap-2 rounded-full bg-primary-500 px-8 text-base font-semibold text-white shadow-[0_4px_16px_rgba(58,91,199,0.3)] transition-colors hover:bg-primary-600">
                 무료로 시작하기 <ArrowRight className="h-[18px] w-[18px]" />
               </Link>
-              <Link href="/pricing" className="inline-flex h-[52px] items-center justify-center rounded-full border border-[#E8E6E1] bg-white px-8 text-base font-medium text-[#1A1A2E] transition-colors hover:bg-gray-50">요금제 보기</Link>
             </div>
           </ScrollReveal>
           <ScrollReveal preset="fade-in" delay={0.3}>
-            <p className="mt-6 text-[13px] text-[#A0A0AF]">지금 바로, 부담 없이 시작하세요</p>
+            <p className="mt-6 text-[13px] text-white/40">지금 바로, 부담 없이 시작하세요</p>
           </ScrollReveal>
         </div>
       </section>
