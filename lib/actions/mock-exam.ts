@@ -530,18 +530,18 @@ export async function completeSession(
       return { error: "세션 완료 처리 실패" };
     }
 
-    // 모든 답변 평가가 이미 완료된 경우 → Stage C 즉시 트리거
-    // (Stage B보다 completeSession이 늦게 호출되는 Case A 대응)
+    // 미완료 답변 확인 (completed/skipped/failed 제외)
     const { data: pendingAnswers } = await supabase
       .from(T.mock_test_answers)
-      .select("question_number, eval_status")
+      .select("question_number, eval_status, audio_url, audio_duration, question_id")
       .eq("session_id", parsed.data.session_id)
       .not("eval_status", "in", '("completed","skipped","failed")');
 
-    if (!pendingAnswers || pendingAnswers.length === 0) {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
+    if (!pendingAnswers || pendingAnswers.length === 0) {
+      // Case A: 모든 답변 평가 완료 → Stage C 즉시 트리거
       fetch(`${supabaseUrl}/functions/v1/mock-test-report`, {
         method: "POST",
         headers: {
@@ -549,9 +549,31 @@ export async function completeSession(
           Authorization: `Bearer ${serviceRoleKey}`,
         },
         body: JSON.stringify({ session_id: parsed.data.session_id }),
-      }).catch(() => {
-        // fire-and-forget: 실패 시 폴링에서 stuck 감지
-      });
+      }).catch(() => {});
+    } else {
+      // Case B 안전망: "processing"/"pending" 상태로 stuck된 답변 재시도
+      // EF crash 등으로 eval_status가 영구 고착되는 것을 방지
+      for (const ans of pendingAnswers) {
+        if (
+          (ans.eval_status === "processing" || ans.eval_status === "pending") &&
+          ans.audio_url
+        ) {
+          fetch(`${supabaseUrl}/functions/v1/mock-test-process`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${serviceRoleKey}`,
+            },
+            body: JSON.stringify({
+              session_id: parsed.data.session_id,
+              question_number: ans.question_number,
+              question_id: ans.question_id,
+              audio_url: ans.audio_url,
+              audio_duration: ans.audio_duration,
+            }),
+          }).catch(() => {});
+        }
+      }
     }
 
     return {};

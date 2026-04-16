@@ -162,14 +162,24 @@ Deno.serve(async (req) => {
   // 인증: --no-verify-jwt 배포 — SA에서 service_role_key로 호출
   const startTime = Date.now();
 
+  // catch 블록에서도 접근 가능하도록 body를 먼저 파싱
+  let parsedBody: Record<string, unknown> | null = null;
+
   try {
+    parsedBody = await req.json();
     const {
       session_id,
       question_number,
       question_id,
       audio_url,
       audio_duration,
-    } = await req.json();
+    } = parsedBody as {
+      session_id: string;
+      question_number: number;
+      question_id?: string;
+      audio_url: string;
+      audio_duration?: number;
+    };
 
     // 필수 파라미터 검증
     if (!session_id || !question_number || !audio_url) {
@@ -403,18 +413,19 @@ Deno.serve(async (req) => {
     const errorMessage = err instanceof Error ? err.message : String(err);
     console.error("mock-test-process 에러:", errorMessage);
 
-    // 실패 시 상태 업데이트
+    // 실패 시 상태 업데이트 (parsedBody는 try 바깥에서 선언되어 접근 가능)
     try {
-      const body = await req.clone().json().catch(() => null);
-      if (body?.session_id && body?.question_number) {
+      const sid = parsedBody?.session_id as string | undefined;
+      const qnum = parsedBody?.question_number as number | undefined;
+      if (sid && qnum) {
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
         // retry_count 조회
         const { data: answer } = await supabase
           .from("mock_test_answers")
           .select("eval_retry_count")
-          .eq("session_id", body.session_id)
-          .eq("question_number", body.question_number)
+          .eq("session_id", sid)
+          .eq("question_number", qnum)
           .single();
 
         const retryCount = (answer?.eval_retry_count || 0) + 1;
@@ -423,8 +434,8 @@ Deno.serve(async (req) => {
           // 3회 실패: failed 상태 + 에러 기록
           await updateAnswerStatus(
             supabase,
-            body.session_id,
-            body.question_number,
+            sid,
+            qnum,
             "failed",
             {
               eval_retry_count: retryCount,
@@ -435,8 +446,8 @@ Deno.serve(async (req) => {
           // 재시도 가능: pending 복귀 + retry_count 증가
           await updateAnswerStatus(
             supabase,
-            body.session_id,
-            body.question_number,
+            sid,
+            qnum,
             "pending",
             {
               eval_retry_count: retryCount,
@@ -446,7 +457,7 @@ Deno.serve(async (req) => {
         }
       }
     } catch {
-      // 상태 업데이트 실패는 무시 (폴링에서 stuck 복구)
+      // 상태 업데이트 실패는 무시 (completeSession 안전망에서 처리)
     }
 
     return new Response(

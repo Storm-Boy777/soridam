@@ -24,9 +24,17 @@ Deno.serve(async (req: Request) => {
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+  let parsedBody: Record<string, unknown> | null = null;
+
   try {
+    parsedBody = await req.json();
     const { session_id, user_id, analyzed_session_ids, target_grade } =
-      await req.json();
+      parsedBody as {
+        session_id: string;
+        user_id: string;
+        analyzed_session_ids: string[];
+        target_grade: string;
+      };
 
     console.log(`[tutoring-diagnose] 시작: ${session_id}, 세션 ${analyzed_session_ids.length}회분`);
 
@@ -261,12 +269,12 @@ Deno.serve(async (req: Request) => {
     console.error(`[tutoring-diagnose] 에러:`, message);
 
     try {
-      const body = await req.clone().json().catch(() => ({}));
-      if (body.session_id) {
+      const sid = parsedBody?.session_id as string | undefined;
+      if (sid) {
         await supabase
           .from("tutoring_sessions")
           .update({ status: "diagnosed" })
-          .eq("id", body.session_id);
+          .eq("id", sid);
       }
     } catch { /* ignore */ }
 

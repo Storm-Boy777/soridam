@@ -191,8 +191,11 @@ Deno.serve(async (req: Request) => {
 
   const startTime = Date.now();
 
+  let parsedBody: Record<string, unknown> | null = null;
+
   try {
-    const body = await req.json();
+    parsedBody = await req.json();
+    const body = parsedBody;
     const {
       evaluation_id,
       audio_url,
@@ -417,10 +420,10 @@ Deno.serve(async (req: Request) => {
 
     // 실패 시 eval_status 업데이트 시도
     try {
-      const body = await req.clone().json().catch(() => ({}));
-      if (body.evaluation_id) {
+      const evalId = parsedBody?.evaluation_id as string | undefined;
+      if (evalId) {
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-        await updateEvalStatus(supabase, body.evaluation_id, "failed", {
+        await updateEvalStatus(supabase, evalId, "failed", {
           observation: `평가 실패: ${errMsg.slice(0, 500)}`,
         });
       }
