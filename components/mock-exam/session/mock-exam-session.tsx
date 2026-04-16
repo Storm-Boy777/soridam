@@ -242,6 +242,16 @@ export function MockExamSession({
         return;
       }
 
+      // 파일 크기 제한 (10MB) — Whisper 25MB 한도 방어 + Storage 절약
+      const MAX_AUDIO_SIZE = 10 * 1024 * 1024; // 10MB
+      if (blob.size > MAX_AUDIO_SIZE) {
+        setError("녹음 파일이 너무 큽니다. 다시 녹음해 주세요.");
+        recorder.reset();
+        setUploadState("idle");
+        pendingAdvanceRef.current = false;
+        return;
+      }
+
       setUploadState("uploading");
       setError(null);
       uploadRetryRef.current = 0;
@@ -324,7 +334,7 @@ export function MockExamSession({
         }));
       }
     },
-    [sessionId, currentQ, isQ1, currentQuestion, recorder.duration, isTrialMode]
+    [sessionId, currentQ, isQ1, currentQuestion, recorder, isTrialMode]
   );
 
   // recorder blob 준비 시 자동 업로드
