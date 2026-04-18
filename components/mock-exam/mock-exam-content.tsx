@@ -14,6 +14,7 @@ import {
   Trophy,
   Calendar,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   AlertTriangle,
   Coins,
@@ -505,6 +506,8 @@ function HistoryTab({
   const [modeFilter, setModeFilter] = useState<"all" | MockExamMode>("all");
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
   const [showExpired, setShowExpired] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   const { data: historyResult, isLoading } = useQuery({
     queryKey: ["mock-exam-history"],
@@ -631,7 +634,7 @@ function HistoryTab({
             {(["all", "training", "test"] as const).map((mode) => (
               <button
                 key={mode}
-                onClick={() => setModeFilter(mode)}
+                onClick={() => { setModeFilter(mode); setCurrentPage(1); }}
                 className={`rounded-full px-2 py-1 text-[11px] transition-colors sm:px-2.5 ${
                   modeFilter === mode
                     ? "bg-primary-100 font-medium text-primary-600"
@@ -643,7 +646,7 @@ function HistoryTab({
             ))}
             <span className="mx-px h-3 w-px bg-border sm:mx-0.5" />
             <button
-              onClick={() => setShowExpired(!showExpired)}
+              onClick={() => { setShowExpired(!showExpired); setCurrentPage(1); }}
               className={`rounded-full px-2 py-1 text-[11px] transition-colors sm:px-2.5 ${
                 showExpired
                   ? "bg-foreground-muted/15 font-medium text-foreground-secondary"
@@ -655,7 +658,7 @@ function HistoryTab({
         </div>
       </div>
 
-      {filtered.map((item) => {
+      {filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((item) => {
         const isLoading = loadingSessionId === item.session_id;
         const isClickable = item.status === "completed" && !!item.final_level;
         return (
@@ -735,6 +738,45 @@ function HistoryTab({
         </button>
         );
       })}
+
+      {/* 페이지네이션 (10개 초과 시) */}
+      {filtered.length > PAGE_SIZE && (() => {
+        const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+        const safePage = Math.min(currentPage, totalPages);
+        return (
+          <div className="mt-4 flex items-center justify-center gap-1 pt-2 sm:gap-1.5">
+            <button
+              onClick={() => setCurrentPage(Math.max(1, safePage - 1))}
+              disabled={safePage === 1}
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-foreground-secondary transition-colors hover:bg-surface-secondary disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
+              aria-label="이전 페이지"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                onClick={() => setCurrentPage(p)}
+                className={`flex h-7 min-w-[1.75rem] items-center justify-center rounded-md border px-2 text-xs font-medium transition-colors sm:h-8 sm:min-w-[2rem] ${
+                  p === safePage
+                    ? "border-primary-500 bg-primary-500 text-white"
+                    : "border-border text-foreground-secondary hover:bg-surface-secondary"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+            <button
+              onClick={() => setCurrentPage(Math.min(totalPages, safePage + 1))}
+              disabled={safePage === totalPages}
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-foreground-secondary transition-colors hover:bg-surface-secondary disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
+              aria-label="다음 페이지"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        );
+      })()}
       </div>
     </div>
   );
