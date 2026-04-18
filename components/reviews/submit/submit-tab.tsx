@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Send, FileText, Trash2, ChevronDown, ChevronRight, CheckCircle2, Info } from "lucide-react";
+import { Send, FileText, Trash2, ChevronDown, ChevronRight, ChevronLeft, CheckCircle2, Info } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { SubmissionDetail } from "./submission-detail";
 import { getMySubmissions, deleteSubmission } from "@/lib/actions/reviews";
@@ -20,6 +20,8 @@ export function SubmitTab({ initialSubmissions }: SubmitTabProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [bannerOpen, setBannerOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 5;
 
   // URL params로 완료 배너 표시
   const completed = searchParams.get("completed") === "true";
@@ -185,7 +187,7 @@ export function SubmitTab({ initialSubmissions }: SubmitTabProps) {
           </div>
         ) : (
           <div className="mt-3 space-y-2 sm:mt-4 sm:space-y-3">
-            {submissions.map((sub) => {
+            {submissions.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((sub) => {
               const isExpanded = expandedId === sub.id;
               return (
                 <div
@@ -273,6 +275,48 @@ export function SubmitTab({ initialSubmissions }: SubmitTabProps) {
                 </div>
               );
             })}
+
+            {/* 페이지네이션 (5개 초과 시) */}
+            {submissions.length > PAGE_SIZE && (() => {
+              const totalPages = Math.ceil(submissions.length / PAGE_SIZE);
+              const goTo = (p: number) => {
+                setCurrentPage(p);
+                setExpandedId(null);
+              };
+              return (
+                <div className="mt-4 flex items-center justify-center gap-1 pt-2 sm:gap-1.5">
+                  <button
+                    onClick={() => goTo(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-foreground-secondary transition-colors hover:bg-surface-secondary disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
+                    aria-label="이전 페이지"
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => goTo(p)}
+                      className={`flex h-7 min-w-[1.75rem] items-center justify-center rounded-md border px-2 text-xs font-medium transition-colors sm:h-8 sm:min-w-[2rem] ${
+                        p === currentPage
+                          ? "border-primary-500 bg-primary-500 text-white"
+                          : "border-border text-foreground-secondary hover:bg-surface-secondary"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => goTo(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-foreground-secondary transition-colors hover:bg-surface-secondary disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
+                    aria-label="다음 페이지"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>
