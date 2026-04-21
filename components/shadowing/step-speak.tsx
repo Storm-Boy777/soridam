@@ -51,6 +51,7 @@ export function StepSpeak() {
   const [error, setError] = useState("");
   const [showQuestion, setShowQuestion] = useState<"hidden" | "en" | "ko">("hidden");
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const submittedBlobRef = useRef<Blob | null>(null); // 재진입 방지 (업로드 실패 시 audioBlob 유지되어 useEffect 재실행되는 무한 루프 차단)
   const avaContainerRef = useRef<HTMLDivElement>(null);
   const [avaHeight, setAvaHeight] = useState(0);
 
@@ -115,6 +116,10 @@ export function StepSpeak() {
 
   useEffect(() => {
     if (phase !== "recording" || !recorder.audioBlob || !sessionId || !scriptId) return;
+    // 동일 blob 중복 제출 방지 — 실패 시 "다시 도전" 눌러야만 재시도 가능
+    if (submittedBlobRef.current === recorder.audioBlob) return;
+    submittedBlobRef.current = recorder.audioBlob;
+
     const submit = async () => {
       setPhase("submitting");
       setError("");
@@ -127,10 +132,17 @@ export function StepSpeak() {
           binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
         }
         const result = await submitSpeakRecording({ sessionId, scriptId, audioBase64: btoa(binary) });
-        if (result.error || !result.data) { setError(result.error || "제출 실패"); setPhase("recording"); return; }
+        if (result.error || !result.data) {
+          setError(result.error || "제출 실패");
+          setPhase("ready"); // ready로 복귀 (recording으로 돌리면 useEffect 재진입 루프)
+          return;
+        }
         setEvaluationId(result.data.evaluationId);
         setPhase("evaluating");
-      } catch (err) { setError((err as Error).message); setPhase("recording"); }
+      } catch (err) {
+        setError((err as Error).message);
+        setPhase("ready");
+      }
     };
     submit();
   }, [recorder.audioBlob, phase, sessionId, scriptId]);
@@ -160,6 +172,7 @@ export function StepSpeak() {
 
   const handleRetry = useCallback(() => {
     setPhase("ready"); setSessionId(null); setEvaluationId(null); setEvalResult(null); setError("");
+    submittedBlobRef.current = null;
     recorder.reset(); questionPlayer.reset();
   }, [recorder, questionPlayer]);
 
