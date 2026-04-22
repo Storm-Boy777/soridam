@@ -609,6 +609,8 @@ function QRTab() {
     : "";
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [liveStats, setLiveStats] = useState<{ total: number; attended: number } | null>(null);
+  const [eventTitle, setEventTitle] = useState("");
+  const [eventSubtitle, setEventSubtitle] = useState("");
 
   // 실시간 폴링 (15초 간격)
   useEffect(() => {
@@ -616,6 +618,8 @@ function QRTab() {
       try {
         const data = await fetchAttendanceStatus();
         setLiveStats({ total: data.total, attended: data.attended });
+        if (typeof data.event_title === "string") setEventTitle(data.event_title);
+        if (typeof data.event_subtitle === "string") setEventSubtitle(data.event_subtitle);
       } catch { /* 무시 */ }
     };
     poll();
@@ -653,10 +657,10 @@ function QRTab() {
         </div>
 
         <div className="relative flex flex-col items-center gap-8">
-          {/* 타이틀 */}
+          {/* 타이틀 (관리자 설정 > 이벤트(참석관리) 설정에서 변경 가능) */}
           <div className="text-center">
-            <p className="text-emerald-300/80 text-sm font-semibold uppercase tracking-[0.3em] mb-2">출석 체크인</p>
-            <h1 className="text-white text-3xl sm:text-4xl font-black">2026 공정기술그룹 GWP</h1>
+            <p className="text-emerald-300/80 text-sm font-semibold uppercase tracking-[0.3em] mb-2">{eventSubtitle || "출석 체크인"}</p>
+            <h1 className="text-white text-3xl sm:text-4xl font-black">{eventTitle || "이벤트 제목을 설정하세요"}</h1>
           </div>
 
           {/* QR + 카운터 */}

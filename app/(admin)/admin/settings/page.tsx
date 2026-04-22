@@ -48,6 +48,8 @@ export default function AdminSettingsPage() {
     signup_email_whitelist: "",
     signup_invited_emails: "",
     maintenance_mode: false,
+    attendance_event_title: "",
+    attendance_event_subtitle: "",
   });
   const [saving, setSaving] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
@@ -67,6 +69,8 @@ export default function AdminSettingsPage() {
         signup_email_whitelist: parseVal(settings.signup_email_whitelist),
         signup_invited_emails: parseVal(settings.signup_invited_emails),
         maintenance_mode: parseBool(settings.maintenance_mode),
+        attendance_event_title: parseVal(settings.attendance_event_title),
+        attendance_event_subtitle: parseVal(settings.attendance_event_subtitle),
       });
     }
   }, [settings]);
@@ -176,6 +180,28 @@ export default function AdminSettingsPage() {
               saving={saving === "og_image_url"}
               saved={saved === "og_image_url"}
               mono
+            />
+          </Field>
+        </Card>
+
+        {/* ── 이벤트(참석관리) 설정 ── */}
+        <Card icon={Settings} title="이벤트(참석관리) 설정">
+          <Field label="전체화면 QR 메인 제목">
+            <InputWithSave
+              value={form.attendance_event_title}
+              onChange={(v) => update("attendance_event_title", v)}
+              onSave={() => save("attendance_event_title", form.attendance_event_title)}
+              saving={saving === "attendance_event_title"}
+              saved={saved === "attendance_event_title"}
+            />
+          </Field>
+          <Field label="전체화면 QR 부제">
+            <InputWithSave
+              value={form.attendance_event_subtitle}
+              onChange={(v) => update("attendance_event_subtitle", v)}
+              onSave={() => save("attendance_event_subtitle", form.attendance_event_subtitle)}
+              saving={saving === "attendance_event_subtitle"}
+              saved={saved === "attendance_event_subtitle"}
             />
           </Field>
         </Card>

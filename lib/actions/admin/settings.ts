@@ -17,7 +17,9 @@ export type SettingKey =
   | "site_notice"
   | "site_name"
   | "site_description"
-  | "og_image_url";
+  | "og_image_url"
+  | "attendance_event_title"
+  | "attendance_event_subtitle";
 
 export type SettingsMap = Record<SettingKey, unknown>;
 
