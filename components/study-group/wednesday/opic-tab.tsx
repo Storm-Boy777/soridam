@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { Shuffle, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { Shuffle, ChevronLeft, ChevronRight, RotateCcw, Play, Pause, Volume2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getQuestionsByTopic, getTopicsByCategory } from "@/lib/queries/master-questions";
 import { QUESTION_TYPE_LABELS, QUESTION_TYPE_COLORS } from "@/lib/types/reviews";
@@ -24,6 +24,13 @@ export function OpicTab() {
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isRandom, setIsRandom] = useState(false);
+
+  // ── 오디오 재생 상태 ──
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioProgress, setAudioProgress] = useState(0); // 0~1
+  const [audioDuration, setAudioDuration] = useState(0);
+  const [audioCurrent, setAudioCurrent] = useState(0);
 
   // 카테고리별 토픽 목록 조회 (클라이언트)
   const { data: topics = [], isLoading: isTopicsLoading, error: topicsError } = useQuery({
@@ -49,6 +56,51 @@ export function OpicTab() {
   }, [questions, isRandom]);
 
   const currentQuestion = displayQuestions[currentIndex];
+  const audioUrl = (currentQuestion as { audio_url?: string | null } | undefined)?.audio_url ?? null;
+
+  // 질문이 바뀌면 이전 오디오 정지 + 상태 초기화
+  useEffect(() => {
+    const el = audioRef.current;
+    if (el) {
+      el.pause();
+      el.currentTime = 0;
+    }
+    setIsPlaying(false);
+    setAudioProgress(0);
+    setAudioCurrent(0);
+    setAudioDuration(0);
+  }, [currentQuestion?.id]);
+
+  // 언마운트 시 정리
+  useEffect(() => {
+    return () => {
+      audioRef.current?.pause();
+    };
+  }, []);
+
+  const handleToggleAudio = useCallback(() => {
+    const el = audioRef.current;
+    if (!el || !audioUrl) return;
+    if (el.paused) {
+      el.play().catch(() => setIsPlaying(false));
+    } else {
+      el.pause();
+    }
+  }, [audioUrl]);
+
+  const handleSeek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const el = audioRef.current;
+    if (!el || !audioDuration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    el.currentTime = ratio * audioDuration;
+  }, [audioDuration]);
+
+  const fmtTime = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
 
   const handleCategoryChange = useCallback((cat: Category) => {
     setSelectedCategory(cat);
@@ -207,6 +259,65 @@ export function OpicTab() {
           <p className="mt-3 text-center text-sm text-foreground-secondary">
             {currentQuestion.question_korean}
           </p>
+
+          {/* 오디오 플레이어 (옵션 B: 큰 재생 버튼 + 진행률 바, 자유 반복) */}
+          {audioUrl && (
+            <div className="mt-6 rounded-xl border border-border bg-surface-secondary/60 px-4 py-3 sm:px-5 sm:py-4">
+              <div className="flex items-center gap-3 sm:gap-4">
+                {/* 큰 재생/일시정지 버튼 */}
+                <button
+                  onClick={handleToggleAudio}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-500 text-white shadow-md transition-all hover:bg-primary-600 active:scale-95 sm:h-12 sm:w-12"
+                  aria-label={isPlaying ? "일시정지" : "재생"}
+                >
+                  {isPlaying ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
+                </button>
+
+                {/* 진행률 바 + 시간 */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 text-[11px] text-foreground-muted sm:text-xs">
+                    <Volume2 size={12} className="text-primary-500" />
+                    <span>질문 오디오</span>
+                    <span className="ml-auto font-mono tabular-nums">
+                      {fmtTime(audioCurrent)} / {fmtTime(audioDuration)}
+                    </span>
+                  </div>
+                  <div
+                    onClick={handleSeek}
+                    className="mt-1.5 h-2 cursor-pointer overflow-hidden rounded-full bg-border/70"
+                  >
+                    <div
+                      className="h-full rounded-full bg-primary-500 transition-[width] duration-100"
+                      style={{ width: `${Math.round(audioProgress * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 숨겨진 audio 엘리먼트 */}
+              <audio
+                ref={audioRef}
+                src={audioUrl}
+                preload="metadata"
+                onLoadedMetadata={(e) => setAudioDuration((e.target as HTMLAudioElement).duration || 0)}
+                onTimeUpdate={(e) => {
+                  const t = (e.target as HTMLAudioElement).currentTime;
+                  const d = (e.target as HTMLAudioElement).duration || 0;
+                  setAudioCurrent(t);
+                  setAudioProgress(d > 0 ? t / d : 0);
+                }}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onEnded={() => {
+                  setIsPlaying(false);
+                  setAudioProgress(0);
+                  setAudioCurrent(0);
+                  // 자유 반복: 끝나면 처음으로 되돌림 (다시 누르면 0부터 재생)
+                  if (audioRef.current) audioRef.current.currentTime = 0;
+                }}
+              />
+            </div>
+          )}
         </div>
       )}
 

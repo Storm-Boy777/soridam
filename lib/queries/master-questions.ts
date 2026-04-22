@@ -97,7 +97,7 @@ export async function getQuestionsByTopic(
 
   const { data, error } = await supabase
     .from(T.questions)
-    .select("id, question_short, question_english, question_korean, question_type_eng, topic")
+    .select("id, question_short, question_english, question_korean, question_type_eng, topic, audio_url")
     .eq("category", category)
     .eq("topic", topic)
     .order("id");
