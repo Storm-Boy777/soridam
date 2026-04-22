@@ -44,6 +44,9 @@ export const T = {
   support_posts: "support_posts",
   support_comments: "support_comments",
   support_votes: "support_votes",
+  study_podcasts: "study_podcasts",
+  study_freetalk: "study_freetalk",
+  study_game_cards: "study_game_cards",
 } as const;
 
 // RPC 함수명 상수

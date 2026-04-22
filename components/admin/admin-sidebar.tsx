@@ -53,6 +53,7 @@ const menuGroups: MenuGroup[] = [
       { label: "모의고사", href: "/admin/mock-exam", icon: GraduationCap },
       { label: "스크립트", href: "/admin/scripts", icon: FileCode },
       { label: "튜터링", href: "/admin/tutoring", icon: Stethoscope },
+      { label: "스터디", href: "/admin/study-group", icon: Users },
     ],
   },
   {

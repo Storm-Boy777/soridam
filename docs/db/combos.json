@@ -1,0 +1,2354 @@
+{
+  "metadata": {
+    "source": "PDF 이현석 오픽DB전체 (p77~ 이미지 원본 기준)",
+    "created_at": "2026-04-07",
+    "description": "세트별 콤보 (실제 시험 출제 형태, 중복 포함). 롤플레이 별도 진행 예정.",
+    "progress": "일반 28개 + RP 전체 완료 (p707, p732 보완 반영)"
+  },
+  "combos": [
+    {
+      "topic": "가구",
+      "topic_en": "Furniture",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 80,
+      "questions": [
+        "FRN_GEN_COM_DESC_01",
+        "FRN_GEN_COM_RTN_02",
+        "FRN_GEN_COM_CMP_03"
+      ]
+    },
+    {
+      "topic": "가구",
+      "topic_en": "Furniture",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 81,
+      "questions": [
+        "FRN_GEN_COM_DESC_01",
+        "FRN_GEN_COM_CMP_03",
+        "FRN_GEN_COM_SPC_04"
+      ]
+    },
+    {
+      "topic": "재활용",
+      "topic_en": "Recycling",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 87,
+      "questions": [
+        "RCY_GEN_COM_DESC_01",
+        "RCY_GEN_COM_DESC_02",
+        "RCY_GEN_COM_SPC_05"
+      ]
+    },
+    {
+      "topic": "재활용",
+      "topic_en": "Recycling",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 88,
+      "questions": [
+        "RCY_GEN_COM_DESC_01",
+        "RCY_GEN_COM_DESC_02",
+        "RCY_GEN_COM_CHILD_04"
+      ]
+    },
+    {
+      "topic": "재활용",
+      "topic_en": "Recycling",
+      "survey_type": "공통형",
+      "set_number": 3,
+      "page": 89,
+      "questions": [
+        "RCY_GEN_COM_DESC_02",
+        "RCY_GEN_COM_CHILD_04",
+        "RCY_GEN_COM_SPC_06"
+      ]
+    },
+    {
+      "topic": "재활용",
+      "topic_en": "Recycling",
+      "survey_type": "공통형",
+      "set_number": 4,
+      "page": 90,
+      "questions": [
+        "RCY_GEN_COM_DESC_02",
+        "RCY_GEN_COM_RTN_03",
+        "RCY_GEN_COM_SPC_06"
+      ]
+    },
+    {
+      "topic": "재활용",
+      "topic_en": "Recycling",
+      "survey_type": "공통형",
+      "set_number": 5,
+      "page": 91,
+      "questions": [
+        "RCY_GEN_COM_RTN_03",
+        "RCY_GEN_COM_CHILD_04",
+        "RCY_GEN_COM_SPC_05"
+      ]
+    },
+    {
+      "topic": "재활용",
+      "topic_en": "Recycling",
+      "survey_type": "공통형",
+      "set_number": 6,
+      "page": 92,
+      "questions": [
+        "RCY_ADV_COM_Q14_01",
+        "RCY_ADV_COM_Q15_01"
+      ]
+    },
+    {
+      "topic": "재활용",
+      "topic_en": "Recycling",
+      "survey_type": "공통형",
+      "set_number": 7,
+      "page": 93,
+      "questions": [
+        "RCY_ADV_COM_Q14_02",
+        "RCY_ADV_COM_Q15_02"
+      ]
+    },
+    {
+      "topic": "집",
+      "topic_en": "Housing",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 105,
+      "questions": [
+        "HSG_GEN_SEL_DESC_01",
+        "HSG_GEN_SEL_RTN_03",
+        "HSG_GEN_SEL_CMP_05"
+      ]
+    },
+    {
+      "topic": "집",
+      "topic_en": "Housing",
+      "survey_type": "선택형",
+      "set_number": 2,
+      "page": 106,
+      "questions": [
+        "HSG_GEN_SEL_DESC_02",
+        "HSG_GEN_SEL_RTN_04",
+        "HSG_GEN_SEL_CMP_05"
+      ]
+    },
+    {
+      "topic": "집",
+      "topic_en": "Housing",
+      "survey_type": "선택형",
+      "set_number": 3,
+      "page": 107,
+      "questions": [
+        "HSG_GEN_SEL_DESC_02",
+        "HSG_GEN_SEL_CMP_05",
+        "HSG_GEN_SEL_SPC_08"
+      ]
+    },
+    {
+      "topic": "집",
+      "topic_en": "Housing",
+      "survey_type": "선택형",
+      "set_number": 4,
+      "page": 108,
+      "questions": [
+        "HSG_GEN_SEL_DESC_02",
+        "HSG_GEN_SEL_CMP_06",
+        "HSG_GEN_SEL_SPC_07"
+      ]
+    },
+    {
+      "topic": "집",
+      "topic_en": "Housing",
+      "survey_type": "선택형",
+      "set_number": 5,
+      "page": 109,
+      "questions": [
+        "HSG_GEN_SEL_DESC_01",
+        "HSG_GEN_SEL_RTN_03",
+        "HSG_GEN_SEL_SPC_09"
+      ]
+    },
+    {
+      "topic": "집",
+      "topic_en": "Housing",
+      "survey_type": "선택형",
+      "set_number": 6,
+      "page": 110,
+      "questions": [
+        "HSG_GEN_SEL_DESC_01",
+        "HSG_GEN_SEL_SPC_09",
+        "HSG_GEN_SEL_SPC_10"
+      ]
+    },
+    {
+      "topic": "가전/전자제품",
+      "topic_en": "Appliances",
+      "survey_type": "공통형",
+      "set_number": 7,
+      "page": 111,
+      "questions": [
+        "APL_ADV_COM_Q14_01",
+        "APL_ADV_COM_Q15_01"
+      ]
+    },
+    {
+      "topic": "가전/전자제품",
+      "topic_en": "Appliances",
+      "survey_type": "공통형",
+      "set_number": 8,
+      "page": 112,
+      "questions": [
+        "APL_ADV_COM_Q14_01",
+        "APL_ADV_COM_Q15_02"
+      ]
+    },
+    {
+      "topic": "집",
+      "topic_en": "Housing",
+      "survey_type": "선택형",
+      "set_number": 9,
+      "page": 113,
+      "questions": [
+        "HSG_ADV_SEL_Q14_01",
+        "HSG_ADV_SEL_Q15_01"
+      ]
+    },
+    {
+      "topic": "집",
+      "topic_en": "Housing",
+      "survey_type": "선택형",
+      "set_number": 10,
+      "page": 114,
+      "questions": [
+        "HSG_ADV_SEL_Q14_02",
+        "HSG_ADV_SEL_Q15_02"
+      ]
+    },
+    {
+      "topic": "산업",
+      "topic_en": "Industry",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 135,
+      "questions": [
+        "IND_GEN_COM_DESC_01",
+        "IND_GEN_COM_SPC_05",
+        "IND_GEN_COM_SPC_06"
+      ]
+    },
+    {
+      "topic": "산업",
+      "topic_en": "Industry",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 136,
+      "questions": [
+        "IND_GEN_COM_DESC_01",
+        "IND_GEN_COM_SPC_05",
+        "IND_GEN_COM_RCT_04"
+      ]
+    },
+    {
+      "topic": "산업",
+      "topic_en": "Industry",
+      "survey_type": "공통형",
+      "set_number": 3,
+      "page": 137,
+      "questions": [
+        "IND_GEN_COM_DESC_02",
+        "IND_GEN_COM_SPC_07",
+        "IND_GEN_COM_SPC_08"
+      ]
+    },
+    {
+      "topic": "산업",
+      "topic_en": "Industry",
+      "survey_type": "공통형",
+      "set_number": 4,
+      "page": 138,
+      "questions": [
+        "IND_GEN_COM_DESC_02",
+        "IND_GEN_COM_DESC_03",
+        "IND_GEN_COM_SPC_07"
+      ]
+    },
+    {
+      "topic": "산업",
+      "topic_en": "Industry",
+      "survey_type": "공통형",
+      "set_number": 5,
+      "page": 139,
+      "questions": [
+        "IND_ADV_COM_Q14_01",
+        "IND_ADV_COM_Q15_01"
+      ]
+    },
+    {
+      "topic": "산업",
+      "topic_en": "Industry",
+      "survey_type": "공통형",
+      "set_number": 6,
+      "page": 140,
+      "questions": [
+        "IND_ADV_COM_Q14_02",
+        "IND_ADV_COM_Q15_02"
+      ]
+    },
+    {
+      "topic": "음악",
+      "topic_en": "Music",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 153,
+      "questions": [
+        "MUS_GEN_SEL_DESC_01",
+        "MUS_GEN_SEL_DESC_02",
+        "MUS_GEN_SEL_CHILD_03"
+      ]
+    },
+    {
+      "topic": "음악",
+      "topic_en": "Music",
+      "survey_type": "선택형",
+      "set_number": 2,
+      "page": 154,
+      "questions": [
+        "MUS_GEN_SEL_DESC_01",
+        "MUS_GEN_SEL_CHILD_03",
+        "MUS_GEN_SEL_SPC_04"
+      ]
+    },
+    {
+      "topic": "음악",
+      "topic_en": "Music",
+      "survey_type": "선택형",
+      "set_number": 3,
+      "page": 155,
+      "questions": [
+        "MUS_ADV_SEL_Q14_01",
+        "MUS_ADV_SEL_Q15_01"
+      ]
+    },
+    {
+      "topic": "영화",
+      "topic_en": "Movies",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 164,
+      "questions": [
+        "MOV_GEN_SEL_DESC_01",
+        "MOV_GEN_SEL_RTN_02",
+        "MOV_GEN_SEL_RCT_03"
+      ]
+    },
+    {
+      "topic": "영화",
+      "topic_en": "Movies",
+      "survey_type": "선택형",
+      "set_number": 2,
+      "page": 165,
+      "questions": [
+        "MOV_GEN_SEL_DESC_01",
+        "MOV_GEN_SEL_RCT_03",
+        "MOV_GEN_SEL_SPC_04"
+      ]
+    },
+    {
+      "topic": "영화",
+      "topic_en": "Movies",
+      "survey_type": "선택형",
+      "set_number": 3,
+      "page": 166,
+      "questions": [
+        "MOV_GEN_SEL_DESC_01",
+        "MOV_GEN_SEL_RCT_03",
+        "MOV_GEN_SEL_SPC_05"
+      ]
+    },
+    {
+      "topic": "영화",
+      "topic_en": "Movies",
+      "survey_type": "선택형",
+      "set_number": 4,
+      "page": 167,
+      "questions": [
+        "MOV_ADV_SEL_Q14_01",
+        "MOV_ADV_SEL_Q15_01"
+      ]
+    },
+    {
+      "topic": "TV",
+      "topic_en": "TV",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 174,
+      "questions": [
+        "TV_GEN_SEL_DESC_01",
+        "TV_GEN_SEL_RTN_02",
+        "TV_GEN_SEL_CMP_04"
+      ]
+    },
+    {
+      "topic": "TV",
+      "topic_en": "TV",
+      "survey_type": "선택형",
+      "set_number": 2,
+      "page": 175,
+      "questions": [
+        "TV_GEN_SEL_DESC_01",
+        "TV_GEN_SEL_CMP_04",
+        "TV_GEN_SEL_RCT_06"
+      ]
+    },
+    {
+      "topic": "TV",
+      "topic_en": "TV",
+      "survey_type": "선택형",
+      "set_number": 3,
+      "page": 176,
+      "questions": [
+        "TV_GEN_SEL_DESC_01",
+        "TV_GEN_SEL_DESC_03",
+        "TV_GEN_SEL_CHILD_05"
+      ]
+    },
+    {
+      "topic": "TV",
+      "topic_en": "TV",
+      "survey_type": "선택형",
+      "set_number": 4,
+      "page": 177,
+      "questions": [
+        "TV_GEN_SEL_DESC_01",
+        "TV_GEN_SEL_CHILD_05",
+        "TV_GEN_SEL_RCT_06"
+      ]
+    },
+    {
+      "topic": "TV",
+      "topic_en": "TV",
+      "survey_type": "선택형",
+      "set_number": 5,
+      "page": 178,
+      "questions": [
+        "TV_ADV_SEL_Q14_01",
+        "TV_ADV_SEL_Q15_01"
+      ]
+    },
+    {
+      "topic": "음식점",
+      "topic_en": "Restaurant",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 188,
+      "questions": [
+        "RST_GEN_COM_DESC_01",
+        "RST_GEN_COM_DESC_02",
+        "RST_GEN_COM_DESC_03"
+      ]
+    },
+    {
+      "topic": "음식점",
+      "topic_en": "Restaurant",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 189,
+      "questions": [
+        "RST_GEN_COM_DESC_01",
+        "RST_GEN_COM_DESC_03",
+        "RST_GEN_COM_RCT_11"
+      ]
+    },
+    {
+      "topic": "음식점",
+      "topic_en": "Restaurant",
+      "survey_type": "공통형",
+      "set_number": 3,
+      "page": 190,
+      "questions": [
+        "RST_GEN_COM_DESC_04",
+        "RST_GEN_COM_RTN_07",
+        "RST_GEN_COM_CMP_10"
+      ]
+    },
+    {
+      "topic": "음식점",
+      "topic_en": "Restaurant",
+      "survey_type": "공통형",
+      "set_number": 4,
+      "page": 191,
+      "questions": [
+        "RST_GEN_COM_DESC_04",
+        "RST_GEN_COM_CMP_10",
+        "RST_GEN_COM_RCT_12"
+      ]
+    },
+    {
+      "topic": "음식점",
+      "topic_en": "Restaurant",
+      "survey_type": "공통형",
+      "set_number": 5,
+      "page": 192,
+      "questions": [
+        "RST_GEN_COM_DESC_05",
+        "RST_GEN_COM_RCT_13",
+        "RST_GEN_COM_SPC_14"
+      ]
+    },
+    {
+      "topic": "음식점",
+      "topic_en": "Restaurant",
+      "survey_type": "공통형",
+      "set_number": 6,
+      "page": 193,
+      "questions": [
+        "RST_GEN_COM_DESC_05",
+        "RST_GEN_COM_RTN_08",
+        "RST_GEN_COM_RCT_13"
+      ]
+    },
+    {
+      "topic": "음식점",
+      "topic_en": "Restaurant",
+      "survey_type": "공통형",
+      "set_number": 7,
+      "page": 194,
+      "questions": [
+        "RST_ADV_COM_Q14_01",
+        "RST_ADV_COM_Q15_01"
+      ]
+    },
+    {
+      "topic": "음식점",
+      "topic_en": "Restaurant",
+      "survey_type": "공통형",
+      "set_number": 8,
+      "page": 195,
+      "questions": [
+        "RST_ADV_COM_Q14_02",
+        "RST_ADV_COM_Q15_02"
+      ]
+    },
+    {
+      "topic": "음식점",
+      "topic_en": "Restaurant",
+      "survey_type": "공통형",
+      "set_number": 9,
+      "page": 196,
+      "questions": [
+        "RST_ADV_COM_Q14_03",
+        "RST_ADV_COM_Q15_03"
+      ]
+    },
+    {
+      "topic": "음식점",
+      "topic_en": "Restaurant",
+      "survey_type": "공통형",
+      "set_number": 10,
+      "page": 197,
+      "questions": [
+        "RST_GEN_COM_DESC_06",
+        "RST_GEN_COM_SPC_15",
+        "RST_GEN_COM_SPC_16"
+      ]
+    },
+    {
+      "topic": "음식점",
+      "topic_en": "Restaurant",
+      "survey_type": "공통형",
+      "set_number": 11,
+      "page": 198,
+      "questions": [
+        "RST_GEN_COM_DESC_06",
+        "RST_GEN_COM_RTN_09",
+        "RST_GEN_COM_SPC_15"
+      ]
+    },
+    {
+      "topic": "모임",
+      "topic_en": "Gatherings",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 213,
+      "questions": [
+        "GTH_GEN_COM_DESC_01",
+        "GTH_GEN_COM_SPC_05",
+        "GTH_GEN_COM_SPC_06"
+      ]
+    },
+    {
+      "topic": "모임",
+      "topic_en": "Gatherings",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 214,
+      "questions": [
+        "GTH_GEN_COM_DESC_02",
+        "GTH_GEN_COM_RCT_04",
+        "GTH_GEN_COM_SPC_07"
+      ]
+    },
+    {
+      "topic": "모임",
+      "topic_en": "Gatherings",
+      "survey_type": "공통형",
+      "set_number": 3,
+      "page": 215,
+      "questions": [
+        "GTH_GEN_COM_DESC_02",
+        "GTH_GEN_COM_DESC_03",
+        "GTH_GEN_COM_SPC_05"
+      ]
+    },
+    {
+      "topic": "모임",
+      "topic_en": "Gatherings",
+      "survey_type": "공통형",
+      "set_number": 4,
+      "page": 216,
+      "questions": [
+        "GTH_ADV_COM_Q14_01",
+        "GTH_ADV_COM_Q15_01"
+      ]
+    },
+    {
+      "topic": "모임",
+      "topic_en": "Gatherings",
+      "survey_type": "공통형",
+      "set_number": 5,
+      "page": 217,
+      "questions": [
+        "GTH_ADV_COM_Q14_02",
+        "GTH_ADV_COM_Q15_02"
+      ]
+    },
+    {
+      "topic": "집에서 보내는 휴가",
+      "topic_en": "Vacations at Home",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 228,
+      "questions": [
+        "STV_GEN_SEL_DESC_01",
+        "STV_GEN_SEL_DESC_02",
+        "STV_GEN_SEL_RCT_03"
+      ]
+    },
+    {
+      "topic": "집에서 보내는 휴가",
+      "topic_en": "Vacations at Home",
+      "survey_type": "선택형",
+      "set_number": 2,
+      "page": 229,
+      "questions": [
+        "STV_GEN_SEL_DESC_01",
+        "STV_GEN_SEL_RCT_03",
+        "STV_GEN_SEL_SPC_04"
+      ]
+    },
+    {
+      "topic": "집에서 보내는 휴가",
+      "topic_en": "Vacations at Home",
+      "survey_type": "선택형",
+      "set_number": 3,
+      "page": 230,
+      "questions": [
+        "STV_ADV_SEL_Q14_01",
+        "STV_ADV_SEL_Q15_01"
+      ]
+    },
+    {
+      "topic": "음식",
+      "topic_en": "Food",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 242,
+      "questions": [
+        "FOD_GEN_COM_DESC_01",
+        "FOD_GEN_COM_RTN_03",
+        "FOD_GEN_COM_CHILD_05"
+      ]
+    },
+    {
+      "topic": "음식",
+      "topic_en": "Food",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 243,
+      "questions": [
+        "FOD_GEN_COM_DESC_01",
+        "FOD_GEN_COM_CHILD_05",
+        "FOD_GEN_COM_RCT_07"
+      ]
+    },
+    {
+      "topic": "음식",
+      "topic_en": "Food",
+      "survey_type": "공통형",
+      "set_number": 3,
+      "page": 244,
+      "questions": [
+        "FOD_GEN_COM_DESC_02",
+        "FOD_GEN_COM_RTN_04",
+        "FOD_GEN_COM_SPC_08"
+      ]
+    },
+    {
+      "topic": "음식",
+      "topic_en": "Food",
+      "survey_type": "공통형",
+      "set_number": 4,
+      "page": 245,
+      "questions": [
+        "FOD_GEN_COM_DESC_02",
+        "FOD_GEN_COM_RTN_04",
+        "FOD_GEN_COM_CHILD_06"
+      ]
+    },
+    {
+      "topic": "음식",
+      "topic_en": "Food",
+      "survey_type": "공통형",
+      "set_number": 5,
+      "page": 246,
+      "questions": [
+        "FOD_GEN_COM_DESC_02",
+        "FOD_GEN_COM_CHILD_06",
+        "FOD_GEN_COM_SPC_09"
+      ]
+    },
+    {
+      "topic": "음식",
+      "topic_en": "Food",
+      "survey_type": "공통형",
+      "set_number": 6,
+      "page": 247,
+      "questions": [
+        "FOD_ADV_COM_Q14_01",
+        "FOD_ADV_COM_Q15_01"
+      ]
+    },
+    {
+      "topic": "건강",
+      "topic_en": "Health",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 258,
+      "questions": [
+        "HLT_GEN_COM_DESC_01",
+        "HLT_GEN_COM_DESC_02",
+        "HLT_GEN_COM_CMP_06"
+      ]
+    },
+    {
+      "topic": "건강",
+      "topic_en": "Health",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 259,
+      "questions": [
+        "HLT_GEN_COM_DESC_01",
+        "HLT_GEN_COM_CMP_06",
+        "HLT_GEN_COM_SPC_08"
+      ]
+    },
+    {
+      "topic": "건강",
+      "topic_en": "Health",
+      "survey_type": "공통형",
+      "set_number": 3,
+      "page": 260,
+      "questions": [
+        "HLT_GEN_COM_DESC_03",
+        "HLT_GEN_COM_DESC_04",
+        "HLT_GEN_COM_CMP_06"
+      ]
+    },
+    {
+      "topic": "건강",
+      "topic_en": "Health",
+      "survey_type": "공통형",
+      "set_number": 4,
+      "page": 261,
+      "questions": [
+        "HLT_GEN_COM_DESC_03",
+        "HLT_GEN_COM_CMP_07",
+        "HLT_GEN_COM_SPC_09"
+      ]
+    },
+    {
+      "topic": "건강",
+      "topic_en": "Health",
+      "survey_type": "공통형",
+      "set_number": 5,
+      "page": 262,
+      "questions": [
+        "HLT_GEN_COM_DESC_05",
+        "HLT_GEN_COM_SPC_10",
+        "HLT_GEN_COM_SPC_11"
+      ]
+    },
+    {
+      "topic": "건강",
+      "topic_en": "Health",
+      "survey_type": "공통형",
+      "set_number": 6,
+      "page": 263,
+      "questions": [
+        "HLT_ADV_COM_Q14_01",
+        "HLT_ADV_COM_Q15_01"
+      ]
+    },
+    {
+      "topic": "건강",
+      "topic_en": "Health",
+      "survey_type": "공통형",
+      "set_number": 7,
+      "page": 264,
+      "questions": [
+        "HLT_ADV_COM_Q14_02",
+        "HLT_ADV_COM_Q15_02"
+      ]
+    },
+    {
+      "topic": "쇼핑",
+      "topic_en": "Shopping",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 275,
+      "questions": [
+        "SHP_GEN_SEL_DESC_01",
+        "SHP_GEN_SEL_DESC_02",
+        "SHP_GEN_SEL_CHILD_05"
+      ]
+    },
+    {
+      "topic": "쇼핑",
+      "topic_en": "Shopping",
+      "survey_type": "선택형",
+      "set_number": 2,
+      "page": 276,
+      "questions": [
+        "SHP_GEN_SEL_DESC_01",
+        "SHP_GEN_SEL_RTN_04",
+        "SHP_GEN_SEL_CHILD_06"
+      ]
+    },
+    {
+      "topic": "쇼핑",
+      "topic_en": "Shopping",
+      "survey_type": "선택형",
+      "set_number": 3,
+      "page": 277,
+      "questions": [
+        "SHP_GEN_SEL_DESC_01",
+        "SHP_GEN_SEL_CHILD_06",
+        "SHP_GEN_SEL_SPC_07"
+      ]
+    },
+    {
+      "topic": "쇼핑",
+      "topic_en": "Shopping",
+      "survey_type": "선택형",
+      "set_number": 4,
+      "page": 278,
+      "questions": [
+        "SHP_GEN_SEL_DESC_03",
+        "SHP_GEN_SEL_RTN_04",
+        "SHP_GEN_SEL_CHILD_05"
+      ]
+    },
+    {
+      "topic": "쇼핑",
+      "topic_en": "Shopping",
+      "survey_type": "선택형",
+      "set_number": 5,
+      "page": 279,
+      "questions": [
+        "SHP_GEN_SEL_DESC_03",
+        "SHP_GEN_SEL_CHILD_06",
+        "SHP_GEN_SEL_SPC_08"
+      ]
+    },
+    {
+      "topic": "쇼핑",
+      "topic_en": "Shopping",
+      "survey_type": "선택형",
+      "set_number": 6,
+      "page": 280,
+      "questions": [
+        "SHP_GEN_SEL_DESC_03",
+        "SHP_GEN_SEL_CHILD_05",
+        "SHP_GEN_SEL_SPC_09"
+      ]
+    },
+    {
+      "topic": "쇼핑",
+      "topic_en": "Shopping",
+      "survey_type": "선택형",
+      "set_number": 7,
+      "page": 281,
+      "questions": [
+        "SHP_ADV_SEL_Q14_01",
+        "SHP_ADV_SEL_Q15_01"
+      ]
+    },
+    {
+      "topic": "국내여행",
+      "topic_en": "Domestic Trips",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 294,
+      "questions": [
+        "DMT_GEN_SEL_DESC_01",
+        "DMT_GEN_SEL_RTN_02",
+        "DMT_GEN_SEL_SPC_04"
+      ]
+    },
+    {
+      "topic": "국내여행",
+      "topic_en": "Domestic Trips",
+      "survey_type": "선택형",
+      "set_number": 2,
+      "page": 295,
+      "questions": [
+        "DMT_GEN_SEL_DESC_01",
+        "DMT_GEN_SEL_RTN_02",
+        "DMT_GEN_SEL_CHILD_03"
+      ]
+    },
+    {
+      "topic": "국내여행",
+      "topic_en": "Domestic Trips",
+      "survey_type": "선택형",
+      "set_number": 3,
+      "page": 296,
+      "questions": [
+        "DMT_GEN_SEL_DESC_01",
+        "DMT_GEN_SEL_CHILD_03",
+        "DMT_GEN_SEL_SPC_04"
+      ]
+    },
+    {
+      "topic": "국내여행",
+      "topic_en": "Domestic Trips",
+      "survey_type": "선택형",
+      "set_number": 4,
+      "page": 297,
+      "questions": [
+        "DMT_ADV_SEL_Q14_01",
+        "DMT_ADV_SEL_Q15_01"
+      ]
+    },
+    {
+      "topic": "해외여행",
+      "topic_en": "Overseas Trips",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 306,
+      "questions": [
+        "OVT_GEN_SEL_DESC_01",
+        "OVT_GEN_SEL_DESC_02",
+        "OVT_GEN_SEL_CHILD_03"
+      ]
+    },
+    {
+      "topic": "해외여행",
+      "topic_en": "Overseas Trips",
+      "survey_type": "선택형",
+      "set_number": 2,
+      "page": 307,
+      "questions": [
+        "OVT_GEN_SEL_DESC_01",
+        "OVT_GEN_SEL_CHILD_03",
+        "OVT_GEN_SEL_SPC_04"
+      ]
+    },
+    {
+      "topic": "해외여행",
+      "topic_en": "Overseas Trips",
+      "survey_type": "공통형",
+      "set_number": 3,
+      "page": 308,
+      "questions": [
+        "OVT_GEN_COM_DESC_05",
+        "OVT_GEN_COM_CHILD_07",
+        "OVT_GEN_COM_SPC_08"
+      ]
+    },
+    {
+      "topic": "해외여행",
+      "topic_en": "Overseas Trips",
+      "survey_type": "공통형",
+      "set_number": 4,
+      "page": 309,
+      "questions": [
+        "OVT_GEN_COM_DESC_05",
+        "OVT_GEN_COM_DESC_06",
+        "OVT_GEN_COM_CHILD_07"
+      ]
+    },
+    {
+      "topic": "해외여행",
+      "topic_en": "Overseas Trips",
+      "survey_type": "선택형",
+      "set_number": 5,
+      "page": 310,
+      "questions": [
+        "OVT_ADV_SEL_Q14_01",
+        "OVT_ADV_SEL_Q15_01"
+      ]
+    },
+    {
+      "topic": "지형",
+      "topic_en": "Geography",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 321,
+      "questions": [
+        "GEO_GEN_COM_DESC_01",
+        "GEO_GEN_COM_DESC_02",
+        "GEO_GEN_COM_CHILD_05"
+      ]
+    },
+    {
+      "topic": "지형",
+      "topic_en": "Geography",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 322,
+      "questions": [
+        "GEO_GEN_COM_DESC_01",
+        "GEO_GEN_COM_CHILD_06",
+        "GEO_GEN_COM_SPC_08"
+      ]
+    },
+    {
+      "topic": "지형",
+      "topic_en": "Geography",
+      "survey_type": "공통형",
+      "set_number": 3,
+      "page": 323,
+      "questions": [
+        "GEO_GEN_COM_DESC_03",
+        "GEO_GEN_COM_DESC_04",
+        "GEO_GEN_COM_SPC_08"
+      ]
+    },
+    {
+      "topic": "지형",
+      "topic_en": "Geography",
+      "survey_type": "공통형",
+      "set_number": 4,
+      "page": 324,
+      "questions": [
+        "GEO_GEN_COM_DESC_03",
+        "GEO_GEN_COM_CHILD_06",
+        "GEO_GEN_COM_CMP_07"
+      ]
+    },
+    {
+      "topic": "지형",
+      "topic_en": "Geography",
+      "survey_type": "공통형",
+      "set_number": 5,
+      "page": 325,
+      "questions": [
+        "GEO_ADV_COM_Q14_01",
+        "GEO_ADV_COM_Q15_01"
+      ]
+    },
+    {
+      "topic": "지형",
+      "topic_en": "Geography",
+      "survey_type": "공통형",
+      "set_number": 6,
+      "page": 326,
+      "questions": [
+        "GEO_ADV_COM_Q14_02",
+        "GEO_ADV_COM_Q15_02"
+      ]
+    },
+    {
+      "topic": "인터넷",
+      "topic_en": "Internet",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 340,
+      "questions": [
+        "INT_GEN_COM_DESC_01",
+        "INT_GEN_COM_DESC_02",
+        "INT_GEN_COM_CMP_06"
+      ]
+    },
+    {
+      "topic": "인터넷",
+      "topic_en": "Internet",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 341,
+      "questions": [
+        "INT_GEN_COM_DESC_02",
+        "INT_GEN_COM_DESC_03",
+        "INT_GEN_COM_CHILD_07"
+      ]
+    },
+    {
+      "topic": "인터넷",
+      "topic_en": "Internet",
+      "survey_type": "공통형",
+      "set_number": 3,
+      "page": 342,
+      "questions": [
+        "INT_GEN_COM_DESC_02",
+        "INT_GEN_COM_CHILD_07",
+        "INT_GEN_COM_SPC_09"
+      ]
+    },
+    {
+      "topic": "인터넷",
+      "topic_en": "Internet",
+      "survey_type": "공통형",
+      "set_number": 4,
+      "page": 343,
+      "questions": [
+        "INT_GEN_COM_DESC_02",
+        "INT_GEN_COM_CHILD_07",
+        "INT_GEN_COM_SPC_10"
+      ]
+    },
+    {
+      "topic": "인터넷",
+      "topic_en": "Internet",
+      "survey_type": "공통형",
+      "set_number": 5,
+      "page": 344,
+      "questions": [
+        "INT_GEN_COM_DESC_04",
+        "INT_GEN_COM_RTN_05",
+        "INT_GEN_COM_SPC_11"
+      ]
+    },
+    {
+      "topic": "인터넷",
+      "topic_en": "Internet",
+      "survey_type": "공통형",
+      "set_number": 6,
+      "page": 345,
+      "questions": [
+        "INT_GEN_COM_DESC_04",
+        "INT_GEN_COM_SPC_11",
+        "INT_GEN_COM_RCT_08"
+      ]
+    },
+    {
+      "topic": "인터넷",
+      "topic_en": "Internet",
+      "survey_type": "공통형",
+      "set_number": 7,
+      "page": 346,
+      "questions": [
+        "INT_ADV_COM_Q14_01",
+        "INT_ADV_COM_Q15_01"
+      ]
+    },
+    {
+      "topic": "인터넷",
+      "topic_en": "Internet",
+      "survey_type": "공통형",
+      "set_number": 8,
+      "page": 347,
+      "questions": [
+        "INT_ADV_COM_Q14_02",
+        "INT_ADV_COM_Q15_02"
+      ]
+    },
+    {
+      "topic": "전화기",
+      "topic_en": "Phone",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 360,
+      "questions": [
+        "PHN_GEN_COM_DESC_01",
+        "PHN_GEN_COM_DESC_02",
+        "PHN_GEN_COM_CMP_05"
+      ]
+    },
+    {
+      "topic": "전화기",
+      "topic_en": "Phone",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 361,
+      "questions": [
+        "PHN_GEN_COM_DESC_01",
+        "PHN_GEN_COM_CMP_05",
+        "PHN_GEN_COM_SPC_06"
+      ]
+    },
+    {
+      "topic": "전화기",
+      "topic_en": "Phone",
+      "survey_type": "공통형",
+      "set_number": 3,
+      "page": 362,
+      "questions": [
+        "PHN_ADV_COM_Q14_01",
+        "PHN_ADV_COM_Q15_01"
+      ]
+    },
+    {
+      "topic": "전화기",
+      "topic_en": "Phone",
+      "survey_type": "공통형",
+      "set_number": 4,
+      "page": 363,
+      "questions": [
+        "PHN_ADV_COM_Q14_02",
+        "PHN_ADV_COM_Q15_02"
+      ]
+    },
+    {
+      "topic": "전화기",
+      "topic_en": "Phone",
+      "survey_type": "공통형",
+      "set_number": 5,
+      "page": 364,
+      "questions": [
+        "PHN_ADV_COM_Q14_03",
+        "PHN_ADV_COM_Q15_03"
+      ]
+    },
+    {
+      "topic": "전화기",
+      "topic_en": "Phone",
+      "survey_type": "공통형",
+      "set_number": 6,
+      "page": 365,
+      "questions": [
+        "PHN_GEN_COM_DESC_03",
+        "PHN_GEN_COM_RTN_04",
+        "PHN_GEN_COM_SPC_07"
+      ]
+    },
+    {
+      "topic": "전화기",
+      "topic_en": "Phone",
+      "survey_type": "공통형",
+      "set_number": 7,
+      "page": 366,
+      "questions": [
+        "PHN_GEN_COM_DESC_03",
+        "PHN_GEN_COM_RTN_04",
+        "PHN_GEN_COM_SPC_08"
+      ]
+    },
+    {
+      "topic": "기술",
+      "topic_en": "Technology",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 368,
+      "questions": [
+        "TCH_GEN_COM_DESC_01",
+        "TCH_GEN_COM_DESC_02",
+        "TCH_GEN_COM_CMP_03"
+      ]
+    },
+    {
+      "topic": "기술",
+      "topic_en": "Technology",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 369,
+      "questions": [
+        "TCH_GEN_COM_DESC_01",
+        "TCH_GEN_COM_CMP_03",
+        "TCH_GEN_COM_SPC_04"
+      ]
+    },
+    {
+      "topic": "날씨",
+      "topic_en": "Weather",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 385,
+      "questions": [
+        "WTR_GEN_COM_DESC_01",
+        "WTR_GEN_COM_DESC_02",
+        "WTR_GEN_COM_SPC_04"
+      ]
+    },
+    {
+      "topic": "날씨",
+      "topic_en": "Weather",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 386,
+      "questions": [
+        "WTR_GEN_COM_DESC_01",
+        "WTR_GEN_COM_DESC_02",
+        "WTR_GEN_COM_CMP_03"
+      ]
+    },
+    {
+      "topic": "날씨",
+      "topic_en": "Weather",
+      "survey_type": "공통형",
+      "set_number": 3,
+      "page": 387,
+      "questions": [
+        "WTR_GEN_COM_DESC_01",
+        "WTR_GEN_COM_CMP_03",
+        "WTR_GEN_COM_SPC_04"
+      ]
+    },
+    {
+      "topic": "패션",
+      "topic_en": "Fashion",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 395,
+      "questions": [
+        "FSN_GEN_COM_DESC_01",
+        "FSN_GEN_COM_DESC_02",
+        "FSN_GEN_COM_CMP_04"
+      ]
+    },
+    {
+      "topic": "패션",
+      "topic_en": "Fashion",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 396,
+      "questions": [
+        "FSN_GEN_COM_DESC_01",
+        "FSN_GEN_COM_CMP_04",
+        "FSN_GEN_COM_SPC_05"
+      ]
+    },
+    {
+      "topic": "패션",
+      "topic_en": "Fashion",
+      "survey_type": "공통형",
+      "set_number": 3,
+      "page": 397,
+      "questions": [
+        "FSN_GEN_COM_DESC_01",
+        "FSN_GEN_COM_RTN_03",
+        "FSN_GEN_COM_SPC_05"
+      ]
+    },
+    {
+      "topic": "패션",
+      "topic_en": "Fashion",
+      "survey_type": "공통형",
+      "set_number": 4,
+      "page": 398,
+      "questions": [
+        "FSN_GEN_COM_DESC_01",
+        "FSN_GEN_COM_RTN_03",
+        "FSN_GEN_COM_CMP_04"
+      ]
+    },
+    {
+      "topic": "교통",
+      "topic_en": "Transportation",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 406,
+      "questions": [
+        "TRN_GEN_COM_DESC_01",
+        "TRN_GEN_COM_DESC_02",
+        "TRN_GEN_COM_CMP_03"
+      ]
+    },
+    {
+      "topic": "교통",
+      "topic_en": "Transportation",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 407,
+      "questions": [
+        "TRN_GEN_COM_DESC_01",
+        "TRN_GEN_COM_CMP_03",
+        "TRN_GEN_COM_SPC_04"
+      ]
+    },
+    {
+      "topic": "호텔",
+      "topic_en": "Hotel",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 416,
+      "questions": [
+        "HTL_GEN_COM_DESC_01",
+        "HTL_GEN_COM_RTN_02",
+        "HTL_GEN_COM_SPC_04"
+      ]
+    },
+    {
+      "topic": "호텔",
+      "topic_en": "Hotel",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 417,
+      "questions": [
+        "HTL_GEN_COM_DESC_01",
+        "HTL_GEN_COM_SPC_04",
+        "HTL_GEN_COM_RCT_03"
+      ]
+    },
+    {
+      "topic": "은행",
+      "topic_en": "Bank",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 424,
+      "questions": [
+        "BNK_GEN_COM_DESC_01",
+        "BNK_GEN_COM_DESC_02",
+        "BNK_GEN_COM_CMP_03"
+      ]
+    },
+    {
+      "topic": "은행",
+      "topic_en": "Bank",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 425,
+      "questions": [
+        "BNK_GEN_COM_DESC_01",
+        "BNK_GEN_COM_CMP_03",
+        "BNK_GEN_COM_SPC_04"
+      ]
+    },
+    {
+      "topic": "예약",
+      "topic_en": "Appointment",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 433,
+      "questions": [
+        "APT_GEN_COM_DESC_01",
+        "APT_GEN_COM_RTN_02",
+        "APT_GEN_COM_CHILD_03"
+      ]
+    },
+    {
+      "topic": "예약",
+      "topic_en": "Appointment",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 434,
+      "questions": [
+        "APT_GEN_COM_DESC_01",
+        "APT_GEN_COM_CHILD_03",
+        "APT_GEN_COM_SPC_04"
+      ]
+    },
+    {
+      "topic": "자유시간",
+      "topic_en": "Free Time",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 440,
+      "questions": [
+        "FRT_GEN_COM_DESC_01",
+        "FRT_GEN_COM_CMP_03",
+        "FRT_GEN_COM_RCT_04"
+      ]
+    },
+    {
+      "topic": "자유시간",
+      "topic_en": "Free Time",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 441,
+      "questions": [
+        "FRT_GEN_COM_DESC_01",
+        "FRT_GEN_COM_DESC_02",
+        "FRT_GEN_COM_CMP_03"
+      ]
+    },
+    {
+      "topic": "자유시간",
+      "topic_en": "Free Time",
+      "survey_type": "공통형",
+      "set_number": 3,
+      "page": 442,
+      "questions": [
+        "FRT_GEN_COM_DESC_02",
+        "FRT_GEN_COM_CMP_03",
+        "FRT_GEN_COM_RCT_04"
+      ]
+    },
+    {
+      "topic": "가족/친구",
+      "topic_en": "Family/Friend",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 448,
+      "questions": [
+        "FAM_GEN_COM_DESC_01",
+        "FAM_GEN_COM_DESC_02",
+        "FAM_GEN_COM_RCT_06"
+      ]
+    },
+    {
+      "topic": "가족/친구",
+      "topic_en": "Family/Friend",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 449,
+      "questions": [
+        "FAM_GEN_COM_DESC_01",
+        "FAM_GEN_COM_RCT_06",
+        "FAM_GEN_COM_SPC_07"
+      ]
+    },
+    {
+      "topic": "가족/친구",
+      "topic_en": "Family/Friend",
+      "survey_type": "공통형",
+      "set_number": 3,
+      "page": 450,
+      "questions": [
+        "FAM_GEN_COM_DESC_01",
+        "FAM_GEN_COM_RCT_06",
+        "FAM_GEN_COM_SPC_08"
+      ]
+    },
+    {
+      "topic": "가족/친구",
+      "topic_en": "Family/Friend",
+      "survey_type": "공통형",
+      "set_number": 4,
+      "page": 451,
+      "questions": [
+        "FAM_GEN_COM_DESC_03",
+        "FAM_GEN_COM_CHILD_05",
+        "FAM_GEN_COM_SPC_08"
+      ]
+    },
+    {
+      "topic": "가족/친구",
+      "topic_en": "Family/Friend",
+      "survey_type": "공통형",
+      "set_number": 5,
+      "page": 452,
+      "questions": [
+        "FAM_GEN_COM_DESC_04",
+        "FAM_GEN_COM_DESC_03",
+        "FAM_GEN_COM_CHILD_05"
+      ]
+    },
+    {
+      "topic": "가족/친구",
+      "topic_en": "Family/Friend",
+      "survey_type": "공통형",
+      "set_number": 6,
+      "page": 453,
+      "questions": [
+        "FAM_ADV_COM_Q14_01",
+        "FAM_ADV_COM_Q15_01"
+      ]
+    },
+    {
+      "topic": "휴일",
+      "topic_en": "Holidays",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 462,
+      "questions": [
+        "HLD_GEN_COM_DESC_01",
+        "HLD_GEN_COM_DESC_02",
+        "HLD_GEN_COM_CHILD_03"
+      ]
+    },
+    {
+      "topic": "휴일",
+      "topic_en": "Holidays",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 463,
+      "questions": [
+        "HLD_GEN_COM_DESC_01",
+        "HLD_GEN_COM_CHILD_03",
+        "HLD_GEN_COM_RCT_04"
+      ]
+    },
+    {
+      "topic": "휴일",
+      "topic_en": "Holidays",
+      "survey_type": "공통형",
+      "set_number": 3,
+      "page": 464,
+      "questions": [
+        "HLD_ADV_COM_Q14_01",
+        "HLD_ADV_COM_Q15_01"
+      ]
+    },
+    {
+      "topic": "옷가게",
+      "topic_en": "Clothing Store",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 490,
+      "questions": [
+        "CLT_RP_SEL_Q11_01",
+        "CLT_RP_SEL_Q12_01",
+        "CLT_RP_SEL_SPC_01"
+      ]
+    },
+    {
+      "topic": "옷가게",
+      "topic_en": "Clothing Store",
+      "survey_type": "선택형",
+      "set_number": 2,
+      "page": 491,
+      "questions": [
+        "CLT_RP_SEL_Q11_02",
+        "CLT_RP_SEL_Q12_02",
+        "CLT_RP_SEL_SPC_02"
+      ]
+    },
+    {
+      "topic": "상점 세일",
+      "topic_en": "Store Sale",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 496,
+      "questions": [
+        "STS_RP_SEL_Q11_01",
+        "STS_RP_SEL_Q12_01",
+        "STS_RP_SEL_SPC_01"
+      ]
+    },
+    {
+      "topic": "상점 세일",
+      "topic_en": "Store Sale",
+      "survey_type": "선택형",
+      "set_number": 2,
+      "page": 500,
+      "questions": [
+        "STS_RP_SEL_Q11_02",
+        "STS_RP_SEL_Q12_02",
+        "STS_RP_SEL_SPC_02"
+      ]
+    },
+    {
+      "topic": "상점 문의",
+      "topic_en": "Store Inquiry",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 504,
+      "questions": [
+        "STI_RP_SEL_Q11_01",
+        "STI_RP_SEL_Q12_01",
+        "STI_RP_SEL_SPC_01"
+      ]
+    },
+    {
+      "topic": "상점 문의",
+      "topic_en": "Store Inquiry",
+      "survey_type": "선택형",
+      "set_number": 2,
+      "page": 505,
+      "questions": [
+        "STI_RP_SEL_Q11_02",
+        "STI_RP_SEL_Q12_02",
+        "STI_RP_SEL_SPC_02"
+      ]
+    },
+    {
+      "topic": "식료품점",
+      "topic_en": "Food Store",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 511,
+      "questions": [
+        "FDS_RP_SEL_Q11_01",
+        "FDS_RP_SEL_Q12_01",
+        "FDS_RP_SEL_SPC_01"
+      ]
+    },
+    {
+      "topic": "여행",
+      "topic_en": "Trip",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 516,
+      "questions": [
+        "TRP_RP_SEL_Q11_01",
+        "TRP_RP_SEL_Q12_01",
+        "TRP_RP_SEL_SPC_01"
+      ]
+    },
+    {
+      "topic": "여행",
+      "topic_en": "Trip",
+      "survey_type": "선택형",
+      "set_number": 2,
+      "page": 517,
+      "questions": [
+        "TRP_RP_SEL_Q11_02",
+        "TRP_RP_SEL_Q12_02",
+        "TRP_RP_SEL_SPC_02"
+      ]
+    },
+    {
+      "topic": "여행",
+      "topic_en": "Trip",
+      "survey_type": "선택형",
+      "set_number": 3,
+      "page": 518,
+      "questions": [
+        "TRP_RP_SEL_Q11_03",
+        "TRP_RP_SEL_Q12_03",
+        "TRP_RP_SEL_SPC_03"
+      ]
+    },
+    {
+      "topic": "지형/여행",
+      "topic_en": "Geography Trip",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 526,
+      "questions": [
+        "GRT_RP_SEL_Q11_01",
+        "GRT_RP_SEL_Q12_01",
+        "GRT_RP_SEL_SPC_01"
+      ]
+    },
+    {
+      "topic": "친구휴가",
+      "topic_en": "Friend's Vacation",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 530,
+      "questions": [
+        "FRV_RP_SEL_Q11_01",
+        "FRV_RP_SEL_Q12_01",
+        "FRV_RP_SEL_SPC_01"
+      ]
+    },
+    {
+      "topic": "에바여행",
+      "topic_en": "Eva's Trip",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 534,
+      "questions": [
+        "EVT_RP_SEL_Q11_01",
+        "EVT_RP_SEL_Q12_01",
+        "EVT_RP_SEL_SPC_01"
+      ]
+    },
+    {
+      "topic": "여행(공항)",
+      "topic_en": "Trip Airport",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 538,
+      "questions": [
+        "TRA_RP_SEL_Q11_01",
+        "TRA_RP_SEL_Q12_01",
+        "TRA_RP_SEL_SPC_01"
+      ]
+    },
+    {
+      "topic": "영화(RP)",
+      "topic_en": "Movie",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 543,
+      "questions": [
+        "MVI_RP_SEL_Q11_01",
+        "MVI_RP_SEL_Q12_01",
+        "MVI_RP_SEL_SPC_01"
+      ]
+    },
+    {
+      "topic": "영화(RP)",
+      "topic_en": "Movie",
+      "survey_type": "선택형",
+      "set_number": 2,
+      "page": 547,
+      "questions": [
+        "MVI_RP_SEL_Q11_02",
+        "MVI_RP_SEL_Q12_02",
+        "MVI_RP_SEL_SPC_02"
+      ]
+    },
+    {
+      "topic": "TV(RP)",
+      "topic_en": "TV",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 551,
+      "questions": [
+        "TVI_RP_SEL_Q11_01",
+        "TVI_RP_SEL_Q12_01",
+        "TVI_RP_SEL_SPC_01"
+      ]
+    },
+    {
+      "topic": "가구(RP)",
+      "topic_en": "Furniture",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 556,
+      "questions": [
+        "FRN_RP_COM_Q11_01",
+        "FRN_RP_COM_Q12_01",
+        "FRN_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "가구(RP)",
+      "topic_en": "Furniture",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 557,
+      "questions": [
+        "FRN_RP_COM_Q11_02",
+        "FRN_RP_COM_Q12_02",
+        "FRN_RP_COM_SPC_02"
+      ]
+    },
+    {
+      "topic": "재활용(RP)",
+      "topic_en": "Recycling",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 562,
+      "questions": [
+        "RCY_RP_COM_Q11_01",
+        "RCY_RP_COM_Q12_01",
+        "RCY_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "재활용(RP)",
+      "topic_en": "Recycling",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 563,
+      "questions": [
+        "RCY_RP_COM_Q11_02",
+        "RCY_RP_COM_Q12_02",
+        "RCY_RP_COM_SPC_02"
+      ]
+    },
+    {
+      "topic": "친척집",
+      "topic_en": "Relative's House",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 570,
+      "questions": [
+        "RLH_RP_SEL_Q11_01",
+        "RLH_RP_SEL_Q12_01",
+        "RLH_RP_SEL_SPC_01"
+      ]
+    },
+    {
+      "topic": "부동산",
+      "topic_en": "Real Estate",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 574,
+      "questions": [
+        "RLE_RP_SEL_Q11_01",
+        "RLE_RP_SEL_Q12_01",
+        "RLE_RP_SEL_SPC_01"
+      ]
+    },
+    {
+      "topic": "MP3 플레이어",
+      "topic_en": "MP3 Player",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 579,
+      "questions": [
+        "MP3_RP_SEL_Q11_01",
+        "MP3_RP_SEL_Q12_01",
+        "MP3_RP_SEL_SPC_01"
+      ]
+    },
+    {
+      "topic": "공연",
+      "topic_en": "Performance",
+      "survey_type": "선택형",
+      "set_number": 1,
+      "page": 583,
+      "questions": [
+        "PFM_RP_SEL_Q11_01",
+        "PFM_RP_SEL_Q12_01",
+        "PFM_RP_SEL_SPC_01"
+      ]
+    },
+    {
+      "topic": "렌터카",
+      "topic_en": "Rental Car",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 588,
+      "questions": [
+        "RTC_RP_COM_Q11_01",
+        "RTC_RP_COM_Q12_01",
+        "RTC_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "렌터카",
+      "topic_en": "Rental Car",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 589,
+      "questions": [
+        "RTC_RP_COM_Q11_02",
+        "RTC_RP_COM_Q12_02",
+        "RTC_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "렌터카",
+      "topic_en": "Rental Car",
+      "survey_type": "공통형",
+      "set_number": 3,
+      "page": 594,
+      "questions": [
+        "RTC_RP_COM_Q11_03",
+        "RTC_RP_COM_Q12_03",
+        "RTC_RP_COM_SPC_02"
+      ]
+    },
+    {
+      "topic": "자동차 고장",
+      "topic_en": "Car Problem",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 598,
+      "questions": [
+        "CAR_RP_COM_Q11_01",
+        "CAR_RP_COM_Q12_01",
+        "CAR_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "자전거",
+      "topic_en": "Bicycle",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 602,
+      "questions": [
+        "BIC_RP_COM_Q11_01",
+        "BIC_RP_COM_Q12_01",
+        "BIC_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "기차",
+      "topic_en": "Train",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 606,
+      "questions": [
+        "TRN_RP_COM_Q11_01",
+        "TRN_RP_COM_Q12_01",
+        "TRN_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "호텔 예약 전화 문의",
+      "topic_en": "Hotel Reservation Call",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 611,
+      "questions": [
+        "HTL_RP_COM_Q11_01",
+        "HTL_RP_COM_Q12_01",
+        "HTL_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "호텔 해외출장 호텔 전화 문의",
+      "topic_en": "Hotel Business Trip Hotel Call",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 614,
+      "questions": [
+        "HTL_RP_COM_Q11_02",
+        "HTL_RP_COM_Q12_02",
+        "HTL_RP_COM_SPC_02"
+      ]
+    },
+    {
+      "topic": "호텔 예약 현장 문의",
+      "topic_en": "Hotel Front Desk Reservation",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 619,
+      "questions": [
+        "HTL_RP_COM_Q11_03",
+        "HTL_RP_COM_Q12_03",
+        "HTL_RP_COM_SPC_03"
+      ]
+    },
+    {
+      "topic": "호텔/날씨",
+      "topic_en": "Hotel + Weather",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 623,
+      "questions": [
+        "HTL_RP_COM_Q11_04",
+        "HTL_RP_COM_Q12_04",
+        "HTL_RP_COM_SPC_04"
+      ]
+    },
+    {
+      "topic": "호텔 자유시간 활동 문의",
+      "topic_en": "Hotel Free Time Activity",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 627,
+      "questions": [
+        "HTL_RP_COM_Q11_05",
+        "HTL_RP_COM_Q12_05",
+        "HTL_RP_COM_SPC_05"
+      ]
+    },
+    {
+      "topic": "은행 #01",
+      "topic_en": "Bank #01",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 632,
+      "questions": [
+        "BNK_RP_COM_Q11_01",
+        "BNK_RP_COM_Q12_01",
+        "BNK_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "은행 #02",
+      "topic_en": "Bank #02",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 635,
+      "questions": [
+        "BNK_RP_COM_Q11_02",
+        "BNK_RP_COM_Q12_02",
+        "BNK_RP_COM_SPC_02"
+      ]
+    },
+    {
+      "topic": "예약 (병원예약)",
+      "topic_en": "Doctor Appointment",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 640,
+      "questions": [
+        "DAP_RP_COM_Q11_01",
+        "DAP_RP_COM_Q12_01",
+        "DAP_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "예약 (회사면접)",
+      "topic_en": "Company Interview",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 644,
+      "questions": [
+        "INTV_RP_COM_Q11_01",
+        "INTV_RP_COM_Q12_01",
+        "INTV_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "휴일파티 #01",
+      "topic_en": "Holiday Party #01",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 649,
+      "questions": [
+        "HLP1_RP_COM_Q11_01",
+        "HLP1_RP_COM_Q12_01",
+        "HLP1_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "휴일파티 #02",
+      "topic_en": "Holiday Party #02",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 650,
+      "questions": [
+        "HLP2_RP_COM_Q11_01",
+        "HLP2_RP_COM_Q12_01",
+        "HLP2_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "생일파티",
+      "topic_en": "Birthday Party",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 655,
+      "questions": [
+        "BDP_RP_COM_Q11_01",
+        "BDP_RP_COM_Q12_01",
+        "BDP_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "파티",
+      "topic_en": "Party",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 658,
+      "questions": [
+        "PTY_RP_COM_Q11_01",
+        "PTY_RP_COM_Q12_01",
+        "PTY_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "휴일식사",
+      "topic_en": "Holiday Meal",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 662,
+      "questions": [
+        "HLM_RP_COM_Q11_01",
+        "HLM_RP_COM_Q12_01",
+        "HLM_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "기념 모임",
+      "topic_en": "Celebration",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 665,
+      "questions": [
+        "CLB_RP_COM_Q11_01",
+        "CLB_RP_COM_Q12_01",
+        "CLB_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "친구약속 x 자유시간",
+      "topic_en": "Gathering x Free Time",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 668,
+      "questions": [
+        "GFT_RP_COM_Q11_01",
+        "GFT_RP_COM_Q12_01",
+        "GFT_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "주말초대 x 가족/친구",
+      "topic_en": "Gathering x Friends & Family",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 672,
+      "questions": [
+        "GFF_RP_COM_Q11_01",
+        "GFF_RP_COM_Q12_01",
+        "GFF_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "헬스클럽 #01",
+      "topic_en": "Health (Gym) #01",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 680,
+      "questions": [
+        "GYM1_RP_COM_Q11_01",
+        "GYM1_RP_COM_Q12_01",
+        "GYM1_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "헬스클럽 #02",
+      "topic_en": "Health (Gym) #02",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 681,
+      "questions": [
+        "GYM2_RP_COM_Q11_01",
+        "GYM2_RP_COM_Q12_01",
+        "GYM2_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "건강식품",
+      "topic_en": "Health Food",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 686,
+      "questions": [
+        "HFD_RP_COM_Q11_01",
+        "HFD_RP_COM_Q12_01",
+        "HFD_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "영양사",
+      "topic_en": "Nutritionist",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 690,
+      "questions": [
+        "NTR_RP_COM_Q11_01",
+        "NTR_RP_COM_Q12_01",
+        "NTR_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "음식점 #01",
+      "topic_en": "Restaurant #01",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 695,
+      "questions": [
+        "RST1_RP_COM_Q11_01",
+        "RST1_RP_COM_Q12_01",
+        "RST1_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "음식점 #02",
+      "topic_en": "Restaurant #02",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 698,
+      "questions": [
+        "RST2_RP_COM_Q11_01",
+        "RST2_RP_COM_Q12_01",
+        "RST2_RP_COM_SPC_01"
+      ]
+    },
+    {
+      "topic": "인터넷 #01",
+      "topic_en": "Internet #01",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 712,
+      "questions": [
+        "INT1_RP_COM_Q11_01",
+        "INT1_RP_COM_Q12_02",
+        "INT1_RP_COM_SPC_03"
+      ]
+    },
+    {
+      "topic": "인터넷 #02",
+      "topic_en": "Internet #02",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 713,
+      "questions": [
+        "INT2_RP_COM_Q11_01",
+        "INT2_RP_COM_Q12_02",
+        "INT2_RP_COM_SPC_03"
+      ]
+    },
+    {
+      "topic": "전화기 #01",
+      "topic_en": "Phone #01",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 718,
+      "questions": [
+        "PHN1_RP_COM_Q11_01",
+        "PHN1_RP_COM_Q12_02",
+        "PHN1_RP_COM_SPC_03"
+      ]
+    },
+    {
+      "topic": "전화기 #01",
+      "topic_en": "Phone #01",
+      "survey_type": "공통형",
+      "set_number": 2,
+      "page": 719,
+      "questions": [
+        "PHN1_RP_COM_Q11_01",
+        "PHN1_RP_COM_Q12_02",
+        "PHN1_RP_COM_SPC_04"
+      ]
+    },
+    {
+      "topic": "전화기 해외요금제 문의",
+      "topic_en": "Phone International Roaming Inquiry",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 724,
+      "questions": [
+        "PHN2_RP_COM_Q11_01",
+        "PHN2_RP_COM_Q12_02",
+        "PHN2_RP_COM_SPC_03"
+      ]
+    },
+    {
+      "topic": "친구에게 신규 휴대폰 문의",
+      "topic_en": "Phone New Model Inquiry to Friend",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 728,
+      "questions": [
+        "PHN3_RP_COM_Q11_01",
+        "PHN3_RP_COM_Q12_02",
+        "PHN3_RP_COM_SPC_03"
+      ]
+    },
+    {
+      "topic": "기술산업 보고서",
+      "topic_en": "Technology Industry Report",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 732,
+      "questions": [
+        "TIR_RP_COM_Q11_01",
+        "TIR_RP_COM_Q12_02",
+        "TIR_RP_COM_SPC_03"
+      ]
+    },
+    {
+      "topic": "음식점 #03",
+      "topic_en": "Restaurant #03",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 703,
+      "questions": [
+        "RST3_RP_COM_Q11_01",
+        "RST3_RP_COM_Q12_02",
+        "RST3_RP_COM_SPC_03"
+      ]
+    },
+    {
+      "topic": "음식점에 길안내 요청",
+      "topic_en": "Restaurant Directions",
+      "survey_type": "공통형",
+      "set_number": 1,
+      "page": 707,
+      "questions": [
+        "RDR_RP_COM_Q11_01",
+        "RDR_RP_COM_Q12_02",
+        "RDR_RP_COM_SPC_03"
+      ]
+    }
+  ]
+}

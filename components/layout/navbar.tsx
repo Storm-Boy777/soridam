@@ -31,6 +31,11 @@ const appNav: NavItem[] = [
   { label: "소통함", href: "/support" },
 ];
 
+// 관리자 전용 메뉴
+const adminOnlyNav: NavItem[] = [
+  { label: "스터디", href: "/study-group" },
+];
+
 /** 서버에서 전달하는 인증 정보 (선택적). 전달 시 클라이언트 getSession() 스킵 → 깜빡임 제거 */
 export interface NavbarServerAuth {
   isLoggedIn: boolean;
@@ -86,7 +91,7 @@ export function Navbar({ serverAuth }: { serverAuth?: NavbarServerAuth } = {}) {
   }, [serverAuth]);
 
   // 초기 상태 확인 전: 최소한의 레이아웃 유지 (깜빡임 방지)
-  const navItems = isLoggedIn ? appNav : publicNav;
+  const navItems = isLoggedIn ? (isAdmin ? [...appNav, ...adminOnlyNav] : appNav) : publicNav;
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#12121F]">
