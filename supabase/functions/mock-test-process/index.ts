@@ -131,6 +131,58 @@ function fireAndForgetEval(sessionId: string, questionNumber: number) {
   });
 }
 
+// fire-and-forget → Stage C (mock-test-report: 종합 리포트)
+function fireAndForgetReport(sessionId: string) {
+  fetch(`${SUPABASE_URL}/functions/v1/mock-test-report`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    },
+    body: JSON.stringify({ session_id: sessionId }),
+  }).catch((err) => {
+    console.error("fire-and-forget report 호출 실패:", err?.message || err);
+  });
+}
+
+/**
+ * skipped 경로 마무리 후, 세션이 이미 completed 상태이고 모든 답변이
+ * done(completed/skipped/failed) 상태면 report를 fire-and-forget 트리거한다.
+ *
+ * 배경: skipped 경로는 mock-test-eval/consult 체인을 타지 않기 때문에
+ * "마지막 질문이 skipped였고 그 시점에 이미 completeSession이 호출된 경우"
+ * 어느 체인도 report를 호출하지 않는 사각지대가 발생한다.
+ * 이 헬퍼는 그 사각지대를 막는다.
+ */
+async function maybeTriggerReportAfterSkip(
+  supabase: ReturnType<typeof createClient>,
+  sessionId: string,
+) {
+  try {
+    const { data: session } = await supabase
+      .from("mock_test_sessions")
+      .select("status")
+      .eq("session_id", sessionId)
+      .single();
+
+    if (session?.status !== "completed") return;
+
+    const { data: pending } = await supabase
+      .from("mock_test_answers")
+      .select("question_number, eval_status")
+      .eq("session_id", sessionId)
+      .gte("question_number", 2)
+      .not("eval_status", "in", '("completed","skipped","failed")');
+
+    if (!pending || pending.length === 0) {
+      console.log(`[process] skipped 완료 + 세션 completed + 전체 done → report 체인`);
+      fireAndForgetReport(sessionId);
+    }
+  } catch (err) {
+    console.error("[process] report 트리거 체크 실패:", (err as Error).message);
+  }
+}
+
 // 재시도 로직 (최대 3회)
 async function withRetry<T>(
   fn: () => Promise<T>,
@@ -220,6 +272,9 @@ Deno.serve(async (req) => {
           skipped: true,
         });
       }
+
+      // 세션이 이미 completed이고 전체 답변이 done이면 report 트리거
+      await maybeTriggerReportAfterSkip(supabase, session_id);
 
       return new Response(
         JSON.stringify({ status: "skipped", reason: audioSkip.reason }),
@@ -338,6 +393,9 @@ Deno.serve(async (req) => {
           priority_prescription: rescue.priority_prescription,
         });
       }
+
+      // 세션이 이미 completed이고 전체 답변이 done이면 report 트리거
+      await maybeTriggerReportAfterSkip(supabase, session_id);
 
       return new Response(
         JSON.stringify({
