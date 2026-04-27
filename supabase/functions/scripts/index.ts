@@ -26,6 +26,8 @@ const scriptGenerationSchema = {
     properties: {
       paragraphs: {
         type: "array",
+        // ✅ 처방 1: 서론/본론/결론 3단락 모두 필수 (최소 3)
+        minItems: 3,
         items: {
           type: "object",
           properties: {
@@ -36,6 +38,8 @@ const scriptGenerationSchema = {
             label: { type: "string" },
             slots: {
               type: "array",
+              // ✅ 처방 1: 각 단락에 최소 1개 슬롯 강제
+              minItems: 1,
               items: {
                 type: "object",
                 properties: {
@@ -45,6 +49,8 @@ const scriptGenerationSchema = {
                   translation_ko: { type: "string" },
                   sentences: {
                     type: "array",
+                    // ✅ 처방 1: 슬롯당 최소 1문장
+                    minItems: 1,
                     items: {
                       type: "object",
                       properties: {
@@ -258,7 +264,13 @@ async function handleGenerate(supabase: any, body: any) {
   );
 
   const pass1Start = Date.now();
-  const { content: pass1Result, usage: pass1Usage } = await callGPT(system, user, scriptGenerationSchema, 0.8, 4000);
+  const { content: pass1Result, usage: pass1Usage } = await callGPTWithMinWordsRetry(
+    system,
+    user,
+    scriptGenerationSchema,
+    script.target_grade,
+    "generate"
+  );
   const pass1Ms = Date.now() - pass1Start;
 
   // Pass 1 사용량 로깅
@@ -370,7 +382,13 @@ async function handleCorrect(supabase: any, body: any) {
   );
 
   const pass1Start = Date.now();
-  const { content: pass1Result, usage: pass1Usage } = await callGPT(system, user, scriptGenerationSchema, 0.8, 4000);
+  const { content: pass1Result, usage: pass1Usage } = await callGPTWithMinWordsRetry(
+    system,
+    user,
+    scriptGenerationSchema,
+    script.target_grade,
+    "correct"
+  );
   const pass1Ms = Date.now() - pass1Start;
 
   // Pass 1 사용량 로깅
@@ -502,12 +520,12 @@ ${user_prompt || "전체적으로 더 자연스럽게 개선해주세요."}
 `;
 
   const pass1Start = Date.now();
-  const { content: pass1Result, usage: pass1Usage } = await callGPT(
+  const { content: pass1Result, usage: pass1Usage } = await callGPTWithMinWordsRetry(
     system,
     baseUser + refineContext,
     scriptGenerationSchema,
-    0.8,
-    4000
+    script.target_grade,
+    "refine"
   );
   const pass1Ms = Date.now() - pass1Start;
 
@@ -756,6 +774,64 @@ Extract 7 categories of learning content from this script following the density 
     console.error("Pass 2 분석 실패, 빈 리스트 반환:", err);
     return { analysisLists: EMPTY_LISTS, usage: null, processingTimeMs: 0 };
   }
+}
+
+// ── 등급별 최소 단어수 (처방 2: 짧은 응답 자동 재시도 기준) ──
+// script_specs 분량 기준의 약 80% 수준 — 너무 타이트하지 않게
+const LEVEL_MIN_WORDS: Record<string, number> = {
+  IL: 12,    // 분량 기준 15-25 → 80%
+  IM1: 20,   // 정상 분포 p5≈30
+  IM2: 32,   // 분량 기준 40-60 → 80%
+  IM3: 40,   // 정상 분포 p5≈35
+  IH: 60,    // 정상 분포 p5≈47
+  AL: 130,   // 분량 기준 160-240 → 80%
+};
+
+/**
+ * 처방 2: callGPT를 호출하되 word_count가 등급별 최소치 미만이면 1회 자동 재시도.
+ * 재시도도 짧으면 그대로 반환 (의도적으로 짧을 가능성 보호 + 무한 루프 방지).
+ *
+ * @param context 로깅용 컨텍스트 (예: "generate", "correct", "refine")
+ */
+async function callGPTWithMinWordsRetry(
+  systemPrompt: string,
+  userPrompt: string,
+  jsonSchema: any,
+  targetLevel: string,
+  context: string,
+): Promise<{
+  content: any;
+  usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
+  retried: boolean;
+}> {
+  const minWords = LEVEL_MIN_WORDS[targetLevel] ?? 12;
+
+  const first = await callGPT(systemPrompt, userPrompt, jsonSchema, 0.8, 4000);
+  const wc1 = (first.content?.word_count as number | undefined) || 0;
+
+  if (wc1 >= minWords) {
+    return { ...first, retried: false };
+  }
+
+  console.warn(
+    `[${context}] 짧은 응답 감지 (word_count=${wc1} < 최소 ${minWords}, target=${targetLevel}) → 1회 재시도`,
+  );
+
+  const second = await callGPT(systemPrompt, userPrompt, jsonSchema, 0.8, 4000);
+  const wc2 = (second.content?.word_count as number | undefined) || 0;
+
+  // 재시도 결과가 더 길면 채택, 아니면 첫 응답 사용 (둘 다 짧으면 그대로)
+  if (wc2 > wc1) {
+    console.warn(
+      `[${context}] 재시도 채택 (wc1=${wc1}, wc2=${wc2})`,
+    );
+    return { ...second, retried: true };
+  }
+
+  console.warn(
+    `[${context}] 재시도도 짧음 (wc1=${wc1}, wc2=${wc2}) — 첫 응답 사용`,
+  );
+  return { ...first, retried: true };
 }
 
 // ── GPT API 호출 (스키마 파라미터화) ──
