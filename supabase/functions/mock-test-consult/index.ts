@@ -250,6 +250,44 @@ Deno.serve(async (req: Request) => {
     // 빈 question_type 방어 (SLF, SPK 등 평가 대상 아닌 문항)
     if (!questionType) {
       console.log(`[consult] Q${question_number}: question_type 빈 문자열 — 평가 스킵`);
+
+      // 🔧 BUG FIX: answers.eval_status를 'skipped'로 업데이트해야 stuck 안 됨
+      await supabase
+        .from("mock_test_answers")
+        .update({ eval_status: "skipped", skipped: true })
+        .eq("session_id", session_id)
+        .eq("question_number", question_number);
+
+      // 세션 완료 + 전체 답변 done이면 report 트리거
+      const { data: sessionDataNoType } = await supabase
+        .from("mock_test_sessions")
+        .select("status")
+        .eq("session_id", session_id)
+        .single();
+
+      if (sessionDataNoType?.status === "completed") {
+        const { data: pendingAnswers } = await supabase
+          .from("mock_test_answers")
+          .select("question_number, eval_status")
+          .eq("session_id", session_id)
+          .gte("question_number", 2)
+          .not("eval_status", "in", '("completed","skipped","failed")');
+
+        if (!pendingAnswers || pendingAnswers.length === 0) {
+          console.log(`[consult no-type] 전체 완료 → report 체인`);
+          fetch(`${SUPABASE_URL}/functions/v1/mock-test-report`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            },
+            body: JSON.stringify({ session_id }),
+          }).catch((err) => {
+            console.error("[consult no-type] report 호출 실패:", err?.message || err);
+          });
+        }
+      }
+
       return new Response(
         JSON.stringify({ status: "skipped", reason: "question_type 빈 문자열", session_id, question_number }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -330,6 +368,49 @@ Deno.serve(async (req: Request) => {
         },
         { onConflict: "session_id,question_number" },
       );
+
+      // 🔧 BUG FIX: skipped 분기에서도 정상 분기와 동일한 후처리 수행
+      // 이전엔 여기서 바로 return 해서:
+      //   1) answers.eval_status가 stt_completed에 멈춤
+      //   2) "전체 완료 → report 트리거" 로직이 실행 안 됨
+      //   → Q3 같은 무응답이 마지막 미완료 답변일 때 report 영원히 트리거 안 됨
+
+      // 1) answers의 eval_status를 'skipped'로 업데이트
+      await supabase
+        .from("mock_test_answers")
+        .update({ eval_status: "skipped", skipped: true })
+        .eq("session_id", session_id)
+        .eq("question_number", question_number);
+
+      // 2) 세션 완료 + 전체 답변 done이면 report 트리거 (정상 분기와 동일 로직)
+      const { data: sessionDataSkip } = await supabase
+        .from("mock_test_sessions")
+        .select("status")
+        .eq("session_id", session_id)
+        .single();
+
+      if (sessionDataSkip?.status === "completed") {
+        const { data: pendingAnswers } = await supabase
+          .from("mock_test_answers")
+          .select("question_number, eval_status")
+          .eq("session_id", session_id)
+          .gte("question_number", 2)
+          .not("eval_status", "in", '("completed","skipped","failed")');
+
+        if (!pendingAnswers || pendingAnswers.length === 0) {
+          console.log(`[consult skipped] 전체 완료 → report 체인`);
+          fetch(`${SUPABASE_URL}/functions/v1/mock-test-report`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            },
+            body: JSON.stringify({ session_id }),
+          }).catch((err) => {
+            console.error("[consult skipped] report 호출 실패:", err?.message || err);
+          });
+        }
+      }
 
       return new Response(
         JSON.stringify({
