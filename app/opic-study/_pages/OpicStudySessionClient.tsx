@@ -22,6 +22,7 @@
  */
 
 import { useEffect, useState, useTransition, useCallback, useMemo, createContext, useContext } from "react";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 import { Step1, Step2, Step3, Step4, Step5 } from "../_screens/SetupSteps";
@@ -61,6 +62,7 @@ import type {
 import type { ComboItem, CategoryItem } from "../_screens/_mock";
 import { useRecorder } from "@/lib/hooks/use-recorder";
 import {
+  BpConfirmDialog,
   HfPhone,
   HfStatusBar,
   HfHeader,
@@ -449,7 +451,7 @@ export function OpicStudySessionClient({
       const qids = combo.qids;
       const sig = combo.sig;
       if (!qids || !sig) {
-        alert("콤보 데이터가 올바르지 않아요.");
+        toast.error("콤보 데이터가 올바르지 않아요.");
         return;
       }
       startTransition(async () => {
@@ -486,18 +488,49 @@ export function OpicStudySessionClient({
     });
   }, [sessionId]);
 
+  // 확인 다이얼로그 상태 (세션 종료 / 모드 전환 / 답변 패스)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    type: "end" | "skip" | "toggleMode";
+    title: string;
+    description?: string;
+    confirmLabel: string;
+    variant: "danger" | "warning";
+    icon: string;
+    onConfirm: () => void;
+  } | null>(null);
+
   const handleSkipAnswer = useCallback(() => {
-    if (!confirm("이번 질문을 건너뛸까요? 다른 멤버에게 발화권이 넘어가요.")) return;
-    startTransition(async () => {
-      await nextSpeaker(sessionId);
+    setConfirmDialog({
+      type: "skip",
+      title: "이번 질문을 건너뛸까요?",
+      description: "다른 멤버에게 발화권이 넘어가요.",
+      confirmLabel: "건너뛰기",
+      variant: "warning",
+      icon: "⏭",
+      onConfirm: () => {
+        setConfirmDialog(null);
+        startTransition(async () => {
+          await nextSpeaker(sessionId);
+        });
+      },
     });
   }, [sessionId]);
 
   const handleEndSession = useCallback(() => {
-    if (!confirm("세션을 종료할까요?")) return;
-    startTransition(async () => {
-      await endSession(sessionId);
-      router.push("/opic-study");
+    setConfirmDialog({
+      type: "end",
+      title: "세션을 종료할까요?",
+      description: "지금까지 학습한 내용은 이력에 저장돼요.",
+      confirmLabel: "종료",
+      variant: "danger",
+      icon: "🔚",
+      onConfirm: () => {
+        setConfirmDialog(null);
+        startTransition(async () => {
+          await endSession(sessionId);
+          router.push("/opic-study");
+        });
+      },
     });
   }, [sessionId, router]);
 
@@ -516,7 +549,7 @@ export function OpicStudySessionClient({
           upsert: true,
         });
       if (uploadErr) {
-        alert(`업로드 실패: ${uploadErr.message}`);
+        toast.error(`업로드 실패: ${uploadErr.message}`);
         return;
       }
 
@@ -528,7 +561,7 @@ export function OpicStudySessionClient({
         audioUrl: fileName,
       });
       if (res.error) {
-        alert(`답변 제출 실패: ${res.error}`);
+        toast.error(`답변 제출 실패: ${res.error}`);
       }
     },
     [sessionId, currentUserId, idx, session.selected_question_ids, supabase]
@@ -615,8 +648,21 @@ export function OpicStudySessionClient({
   const speaker = session.current_speaker_user_id;
 
   const handleToggleMode = useCallback(() => {
-    if (!confirm(`모드를 ${session.online_mode ? "오프라인" : "온라인"}으로 변경할까요?`)) return;
-    void selectMode(sessionId, !session.online_mode);
+    const next = session.online_mode ? "오프라인" : "온라인";
+    setConfirmDialog({
+      type: "toggleMode",
+      title: `${next} 모드로 변경할까요?`,
+      description: session.online_mode
+        ? "한 디바이스에 모여서 답변하는 모드로 바뀌어요."
+        : "각자 디바이스에서 실시간 동기화되는 모드로 바뀌어요.",
+      confirmLabel: "변경",
+      variant: "warning",
+      icon: session.online_mode ? "🏠" : "🌐",
+      onConfirm: () => {
+        setConfirmDialog(null);
+        void selectMode(sessionId, !session.online_mode);
+      },
+    });
   }, [sessionId, session.online_mode]);
 
   const stepUi = renderStep();
@@ -631,6 +677,16 @@ export function OpicStudySessionClient({
       }}
     >
       {stepUi}
+      <BpConfirmDialog
+        open={!!confirmDialog}
+        title={confirmDialog?.title ?? ""}
+        description={confirmDialog?.description}
+        confirmLabel={confirmDialog?.confirmLabel ?? "확인"}
+        variant={confirmDialog?.variant ?? "danger"}
+        icon={confirmDialog?.icon}
+        onConfirm={() => confirmDialog?.onConfirm()}
+        onCancel={() => setConfirmDialog(null)}
+      />
     </SessionFrameContext.Provider>
   );
 

@@ -10,6 +10,7 @@
 "use client";
 
 import type { ReactNode, MouseEventHandler, ButtonHTMLAttributes } from "react";
+import { useEffect, useRef } from "react";
 
 // ============================================================
 // Phone Shell (모바일 프레임 360x760)
@@ -859,6 +860,180 @@ export function PcStepBar({ now, total = 7 }: PcStepBarProps) {
       >
         Step {now} / {total}
       </span>
+    </div>
+  );
+}
+
+// ============================================================
+// BpConfirmDialog — BP 디자인 시스템 기반 확인 다이얼로그
+//
+// 용도: 세션 종료, 모드 전환, 답변 패스 등 사용자 확인 필요 액션.
+// 기존 native confirm() 대체. .bp-scope 스타일 적용.
+// ============================================================
+type BpDialogVariant = "danger" | "warning" | "neutral";
+
+interface BpConfirmDialogProps {
+  open: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+  title: string;
+  description?: ReactNode;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  /** danger: 테라코타 (세션 종료 등) | warning: 옐로우 (모드 전환 등) | neutral: 잉크 */
+  variant?: BpDialogVariant;
+  /** 좌상단 작은 이모지/아이콘 (선택) */
+  icon?: string;
+  isLoading?: boolean;
+}
+
+export function BpConfirmDialog({
+  open,
+  onConfirm,
+  onCancel,
+  title,
+  description,
+  confirmLabel = "확인",
+  cancelLabel = "취소",
+  variant = "danger",
+  icon,
+  isLoading = false,
+}: BpConfirmDialogProps) {
+  const confirmRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (open) confirmRef.current?.focus();
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !isLoading) onCancel();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, isLoading, onCancel]);
+
+  if (!open) return null;
+
+  const variantBg =
+    variant === "danger"
+      ? "var(--bp-tc)"
+      : variant === "warning"
+        ? "var(--bp-tip)"
+        : "var(--bp-ink)";
+
+  const variantTint =
+    variant === "danger"
+      ? "var(--bp-tc-tint)"
+      : variant === "warning"
+        ? "var(--bp-tip-tint)"
+        : "var(--bp-surface-2)";
+
+  const variantInk =
+    variant === "danger"
+      ? "var(--bp-tc)"
+      : variant === "warning"
+        ? "var(--bp-tip)"
+        : "var(--bp-ink)";
+
+  return (
+    <div
+      className="bp-scope"
+      onClick={isLoading ? undefined : onCancel}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(31, 27, 22, 0.45)",
+        backdropFilter: "blur(2px)",
+        animation: "bp-fade-in 0.15s ease-out",
+        padding: 16,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%",
+          maxWidth: 380,
+          background: "var(--bp-surface)",
+          borderRadius: "var(--bp-radius-lg)",
+          padding: 24,
+          boxShadow: "var(--bp-shadow-lg)",
+          animation: "bp-fade-in 0.2s ease-out",
+        }}
+      >
+        {/* 아이콘 */}
+        {icon && (
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
+            <div
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: "50%",
+                background: variantTint,
+                color: variantInk,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 24,
+              }}
+            >
+              {icon}
+            </div>
+          </div>
+        )}
+
+        {/* 텍스트 */}
+        <div style={{ textAlign: "center", marginBottom: 20 }}>
+          <div
+            className="t-h2"
+            style={{ marginBottom: description ? 8 : 0, fontWeight: 700 }}
+          >
+            {title}
+          </div>
+          {description && (
+            <p
+              className="t-sm"
+              style={{
+                margin: 0,
+                color: "var(--bp-ink-2)",
+                lineHeight: 1.55,
+              }}
+            >
+              {description}
+            </p>
+          )}
+        </div>
+
+        {/* 버튼 */}
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            onClick={onCancel}
+            disabled={isLoading}
+            className="bp-btn secondary"
+            style={{ flex: 1 }}
+          >
+            {cancelLabel}
+          </button>
+          <button
+            ref={confirmRef}
+            onClick={onConfirm}
+            disabled={isLoading}
+            className="bp-btn"
+            style={{
+              flex: 1,
+              background: variantBg,
+              color: "white",
+            }}
+          >
+            {isLoading ? "처리 중…" : confirmLabel}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

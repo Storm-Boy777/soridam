@@ -11,6 +11,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Home } from "../_screens/EntryScreens";
 import { createSession, getActiveSession } from "@/lib/actions/opic-study";
 
@@ -139,7 +140,7 @@ export function OpicStudyHomeClient({
       // 2. 없으면 새 세션 생성
       const createRes = await createSession(activeGroupId);
       if (createRes.error) {
-        alert(createRes.error);
+        toast.error(createRes.error);
         return;
       }
       if (createRes.data?.session_id) {
