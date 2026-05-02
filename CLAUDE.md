@@ -609,6 +609,13 @@ origin: https://Storm-Boy777@github.com/Storm-Boy777/soridam.git
 | 05-02 | **오픽 스터디 디자인 ✅** | Claude Design 협업 — BP 디렉션(Notion+Things 3+크림/테라코타). 별도 디자인 시스템 격리(.bp-scope, hifi.css→opic-study.css). 공통 컴포넌트 20개 + 19개 화면(Step 1~7 + 6-1~6-6 + 진입 + 엣지). 미리보기 페이지(`/opic-study/preview`) |
 | 05-02 | **오픽 스터디 라우트 ✅** | 사용자 5개 페이지(홈/마이/이력/lobby/세션) + 관리자 3개 페이지(목록/생성/상세). 세션 룸: Realtime 2채널(sessions+answers) + Step 분기 9가지 + 마이크 녹음(useRecorder)+Storage 업로드+EF fire-and-forget. 카테고리/토픽/콤보 실데이터 통합. 네비바+사이드바 메뉴. EF 배포 완료 |
 | 05-02 | **이슈 3건 수정 ✅** | (1) `study_group_members→profiles` join 실패 → 분리 쿼리 패턴 (3 파일), (2) RLS 재귀 정책 → 마이그레이션 051 + `is_study_group_member()` SECURITY DEFINER 함수 (10개 정책 단순화), (3) Home "멤버 4명" mock 하드코딩 → 실제 멤버 데이터 + 첫 글자 initial 매핑. 새 세션 인계 문서 `docs/오픽스터디_세션인계.md` 작성 |
+| 05-02 | **PC 풀 레이아웃 ✅** | Claude Design PC 시안 (hf-pc.jsx) 적용. 19개 화면 모바일/PC 분기 wrapper. Home/Step 1~5/6-1/6-2/6-3/6-4/6-6/7 = Claude Design 그대로. Lobby/MyPage/History/6-5/Edge = BP 자체 디자인. PcStepShell + PcStepBar 신규. CSS 미디어 쿼리 풀 추가 |
+| 05-02 | **P0+P1 디테일 ✅** | Live\* 5개 PC 실데이터 매핑 (mock 4명 → 실제 멤버 N명). Step 4 콤보 빈도(횟수+%)+뱃지(🔥/⭐)+질문별 등장률+✓학습. History 멤버별 ✓강점 ⚠개선 요약. Step 1~5 PC breadcrumb 실제 그룹명 |
+| 05-02 | **V2 8개 항목 ✅** | M1+M2 presence + 끊김 배너 (전역 fixed banner + 우측하단 pill), M3 모드 토글, M4 답변 패스, M5 F/B 재시도(60초 timeout + retryFeedback SA), M6 자동 step 전환(EF가 모두 답변 완료 시 feedback_share), M8 마이크 권한 거부 시 EdgeMic, W4 Step 6-6 토론 타이머 5분 |
+| 05-02 | **라우트 그룹 분리 ✅** | `(entry)/` (홈/마이/이력 + Navbar+Footer) vs `(immersive)/` (lobby/session/preview, 자체 헤더). 외곽 layout 단순화 (auth만). 사용자 지적 "홈으로 돌아가기 버튼 없음" 해결 |
+| 05-02 | **Dialog/Toast 통일 ✅** | BpConfirmDialog 신규 (BP 디자인 — terracotta/yellow variant). native confirm 3개 → BpConfirmDialog 교체. native alert 4개 → sonner toast 교체. 시스템 OS 다이얼로그 사라짐 |
+| 05-02 | **그룹 등급 폐기 ✅** | 마이그레이션 052 (study_groups.target_level 삭제). profiles.target_grade 사용 (멤버별 개인 등급). EF 둘 다 재배포 — feedback은 답변자 본인 등급으로 코칭, guide는 등급 비특정. Admin/User UI 등급 표시 모두 제거. 핵심 결정: "스터디는 함께 하지만 멤버마다 목표 다를 수 있음" |
+| 05-02 | **불필요 요소 제거 ✅** | "등급별 그룹 둘러보기" 점선 카드 삭제 (그룹 등급 폐기 + 자가 가입 X 모델과 충돌). HomeProps.onNewGroup prop 제거 |
 
 <!-- 이후 새 이력은 이 테이블에 행 추가 + memory/개발이력.md에 상세 기록 -->
 
@@ -616,8 +623,10 @@ origin: https://Storm-Boy777@github.com/Storm-Boy777/soridam.git
 
 > **⚠️ 새 세션 시작 시 필수**: `docs/오픽스터디_세션인계.md` 먼저 읽기. 직전 세션 컨텍스트 풀로 정리됨 (현재 상태/해결한 이슈/미해결/테스트 시나리오/트러블슈팅).
 
-**현재**: Phase 1~5 ✅ + **Phase 6 오픽 스터디 풀 통합 완료** (백엔드+디자인+라우트+EF 배포 + RLS 재귀 수정)
-**다음 작업**: 미니 시뮬레이션 테스트 (DB에 "테스트" 그룹 + 멤버 2명 이미 준비됨, 브라우저 새로고침 후 풀 플로우 검증)
+**현재**: Phase 1~5 ✅ + **Phase 6 오픽 스터디 풀 + PC 레이아웃 + V2 + 라우트 분리 + 그룹 등급 폐기 + Dialog/Toast 통일 완료** ✅ (코드 100% 완료, 사용자 검증 진행 중)
+**다음 작업**: 사용자 검증 계속 + 발견 이슈 수정 + 미니 시뮬레이션 테스트 (마이크 + 멤버 2명 풀 플로우)
+
+**⚠️ Claude는 프리뷰 검증 X** (사용자가 직접 브라우저로 진행). 코드 작성/수정만.
 
 ### 오픽 스터디 모듈 진행 상태
 > **설계서**: `docs/설계/오픽스터디.md` | **결정 기록**: `docs/의사결정.md` Part G (O-1~O-18)
@@ -635,17 +644,29 @@ origin: https://Storm-Boy777@github.com/Storm-Boy777/soridam.git
 | 구현 8: Realtime 통합 + 마이크 녹음 + 실데이터 | ✅ |
 | 구현 9: 네비바/사이드바 통합 | ✅ |
 | 구현 10: 직전 세션 이슈 3건 해결 (profiles join / RLS 재귀 / Home mock) | ✅ |
-| **구현 11: 미니 시뮬레이션 테스트** | ⏳ **다음** |
+| 구현 11: PC 풀 레이아웃 (Claude Design 시안 + BP 자체) | ✅ |
+| 구현 12: P0+P1 디테일 (Live\* 실데이터, Step 4 빈도, History 멤버 요약) | ✅ |
+| 구현 13: V2 8개 (presence/끊김/타이머/패스/모드/F/B 재시도/자동 step) | ✅ |
+| 구현 14: 라우트 그룹 분리 (entry+Navbar / immersive) | ✅ |
+| 구현 15: Dialog/Toast 통일 (BpConfirmDialog + sonner) | ✅ |
+| 구현 16: 그룹 등급 폐기 (마이그레이션 052, profiles.target_grade 사용) | ✅ |
+| **구현 17: 사용자 검증 + 미니 시뮬레이션** | 🔄 **진행 중** |
 
-### 오픽 스터디 라우트 카탈로그
+### 오픽 스터디 라우트 카탈로그 (2026-05-02 라우트 그룹 분리)
+
+**Entry — Navbar + Footer 표시** (`(entry)/`)
 - `/opic-study` — 홈 (활성 그룹 + 입장)
-- `/opic-study/lobby/[sessionId]` — 입장 대기실
-- `/opic-study/session/[sessionId]` — 세션 룸 (Step 1~7 + 6-1~6-6 분기)
 - `/opic-study/my` — 마이페이지 (학습 이력)
 - `/opic-study/history` — 그룹 세션 이력
+
+**Immersive — 자체 헤더만** (`(immersive)/`)
+- `/opic-study/lobby/[sessionId]` — 입장 대기실
+- `/opic-study/session/[sessionId]` — 세션 룸 (Step 1~7 + 6-1~6-6 분기)
 - `/opic-study/preview` — 디자인 시안 미리보기 (개발용)
-- `/admin/study-groups` — 관리자 그룹 목록
-- `/admin/study-groups/new` — 새 그룹 생성
+
+**관리자**
+- `/admin/study-groups` — 그룹 목록
+- `/admin/study-groups/new` — 새 그룹 생성 (등급 입력 X)
 - `/admin/study-groups/[groupId]` — 그룹 상세 (멤버/세션 관리)
 
 ### ⚠️ 반드시 해야 할 일: 크레딧 예상 비용 실측 업데이트
@@ -730,8 +751,8 @@ Stage C: mock-test-report (평가엔진 7-Step + overview/growth GPT)
 
 ### DB 현황 (39개 테이블 — 오픽 스터디 4개 추가 ✅)
 
-> **오픽 스터디 신규 4테이블** (마이그레이션 047 적용 완료):
-> - `study_groups` — 모임 자체 (월별+등급별)
+> **오픽 스터디 신규 4테이블** (마이그레이션 047 적용, 052에서 target_level 삭제):
+> - `study_groups` — 모임 자체 (월별, ~~등급별~~ — 등급은 멤버 개인 `profiles.target_grade`로)
 > - `study_group_members` — 멤버십 (관리자 등록)
 > - `opic_study_sessions` — 한 번의 스터디 룸 (Realtime 동기화)
 > - `opic_study_answers` — 멤버별 답변 + AI F/B 결과
