@@ -947,6 +947,53 @@ export async function submitAnswer(input: {
   }
 }
 
+/**
+ * 답변 EF 재시도 — F/B 생성 실패/지연 시 사용자가 수동 재시도.
+ * 이미 INSERT된 답변의 audio_url을 사용해 EF만 다시 fire-and-forget.
+ */
+export async function retryFeedback(input: {
+  sessionId: string;
+  questionIdx: number;
+}): Promise<ActionResult> {
+  try {
+    const { supabase, userId } = await requireUser();
+    await requireSessionMember(supabase, input.sessionId, userId);
+
+    const { data: ans, error: ansErr } = await supabase
+      .from(T.opic_study_answers)
+      .select("audio_url, question_id")
+      .eq("session_id", input.sessionId)
+      .eq("user_id", userId)
+      .eq("question_idx", input.questionIdx)
+      .maybeSingle();
+
+    if (ansErr || !ans?.audio_url) {
+      return { error: "답변 음성을 찾을 수 없어요" };
+    }
+
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    fetch(`${url}/functions/v1/opic-study-feedback`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${anonKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        session_id: input.sessionId,
+        user_id: userId,
+        question_id: ans.question_id,
+        question_idx: input.questionIdx,
+        audio_url: ans.audio_url,
+      }),
+    }).catch(() => undefined);
+
+    return { data: null };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "재시도 실패" };
+  }
+}
+
 // ============================================================
 // 6. 세션 답변 조회 (UI용)
 // ============================================================

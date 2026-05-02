@@ -21,7 +21,7 @@
  * - completed → LiveStep7 (종료)
  */
 
-import { useEffect, useState, useTransition, useCallback, useMemo } from "react";
+import { useEffect, useState, useTransition, useCallback, useMemo, createContext, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 import { Step1, Step2, Step3, Step4, Step5 } from "../_screens/SetupSteps";
@@ -35,7 +35,7 @@ import {
 } from "../_screens/LoopSteps";
 import { Step64Pc } from "../_screens/Step64";
 import { Step66Pc } from "../_screens/Step66";
-import { Step7Pc } from "../_screens/Step7AndEdge";
+import { Step7Pc, EdgeMic } from "../_screens/Step7AndEdge";
 import {
   selectMode,
   selectCategory,
@@ -48,6 +48,7 @@ import {
   nextSpeaker,
   nextQuestion,
   submitAnswer,
+  retryFeedback,
   getCategoryStats,
   getTopicsForStudy,
   getCombosForStudy,
@@ -107,6 +108,19 @@ interface MemberInfo {
   name: string;
   initial: string;
 }
+
+// ============================================================
+// SessionFrameContext — Shell에서 presence + 연결 상태 표시용
+// ============================================================
+type ConnectionState = "connected" | "reconnecting" | "error";
+interface SessionFrameContextValue {
+  onlineUserIds: Set<string>;
+  members: MemberInfo[];
+  connectionState: ConnectionState;
+  onlineMode: boolean;
+  onToggleMode?: () => void;
+}
+const SessionFrameContext = createContext<SessionFrameContextValue | null>(null);
 
 interface Props {
   sessionId: string;
@@ -232,6 +246,58 @@ export function OpicStudySessionClient({
       supabase.removeChannel(channel);
     };
   }, [sessionId, supabase]);
+
+  // ============================================================
+  // Realtime presence — 누가 접속 중인가 + 연결 상태 모니터링
+  // ============================================================
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
+  const [connectionState, setConnectionState] = useState<
+    "connected" | "reconnecting" | "error"
+  >("connected");
+
+  useEffect(() => {
+    const ch = supabase.channel(`opic-study-presence:${sessionId}`, {
+      config: { presence: { key: currentUserId } },
+    });
+
+    ch.on("presence", { event: "sync" }, () => {
+      const state = ch.presenceState();
+      setOnlineUserIds(new Set(Object.keys(state)));
+    })
+      .on("presence", { event: "join" }, ({ key }) => {
+        setOnlineUserIds((prev) => {
+          const next = new Set(prev);
+          next.add(key);
+          return next;
+        });
+      })
+      .on("presence", { event: "leave" }, ({ key }) => {
+        setOnlineUserIds((prev) => {
+          const next = new Set(prev);
+          next.delete(key);
+          return next;
+        });
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          setConnectionState("connected");
+          await ch.track({
+            user_id: currentUserId,
+            display_name: me?.name ?? "멤버",
+            joined_at: new Date().toISOString(),
+          });
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          setConnectionState("error");
+        } else if (status === "CLOSED") {
+          setConnectionState("reconnecting");
+        }
+      });
+
+    return () => {
+      void ch.untrack().catch(() => undefined);
+      supabase.removeChannel(ch);
+    };
+  }, [sessionId, currentUserId, supabase, me?.name]);
 
   // ============================================================
   // 자동 가이드 생성 트리거
@@ -420,6 +486,13 @@ export function OpicStudySessionClient({
     });
   }, [sessionId]);
 
+  const handleSkipAnswer = useCallback(() => {
+    if (!confirm("이번 질문을 건너뛸까요? 다른 멤버에게 발화권이 넘어가요.")) return;
+    startTransition(async () => {
+      await nextSpeaker(sessionId);
+    });
+  }, [sessionId]);
+
   const handleEndSession = useCallback(() => {
     if (!confirm("세션을 종료할까요?")) return;
     startTransition(async () => {
@@ -541,7 +614,28 @@ export function OpicStudySessionClient({
   const myAnswer = answers[`${currentUserId}_${idx}`];
   const speaker = session.current_speaker_user_id;
 
-  switch (session.step) {
+  const handleToggleMode = useCallback(() => {
+    if (!confirm(`모드를 ${session.online_mode ? "오프라인" : "온라인"}으로 변경할까요?`)) return;
+    void selectMode(sessionId, !session.online_mode);
+  }, [sessionId, session.online_mode]);
+
+  const stepUi = renderStep();
+  return (
+    <SessionFrameContext.Provider
+      value={{
+        onlineUserIds,
+        members,
+        connectionState,
+        onlineMode: session.online_mode,
+        onToggleMode: handleToggleMode,
+      }}
+    >
+      {stepUi}
+    </SessionFrameContext.Provider>
+  );
+
+  function renderStep(): React.ReactNode {
+    switch (session.step) {
     case "mode_select":
       return (
         <Shell onEnd={handleEndSession}>
@@ -633,11 +727,15 @@ export function OpicStudySessionClient({
           </Shell>
         );
       }
-      // 본인 답변 제출했지만 코칭 미도착 → 코칭 생성 중
+      // 본인 답변 제출했지만 코칭 미도착 → 코칭 생성 중 (또는 timeout 시 재시도)
       if (myAnswer) {
         return (
           <Shell onEnd={handleEndSession}>
-            <Step63 estimatedSec={20} />
+            <FeedbackWaitOrFail
+              answer={myAnswer}
+              sessionId={sessionId}
+              questionIdx={idx}
+            />
           </Shell>
         );
       }
@@ -665,6 +763,7 @@ export function OpicStudySessionClient({
               questionIdx={idx}
               totalQuestions={session.selected_question_ids.length}
               onSubmit={handleSubmitAnswer}
+              onSkip={handleSkipAnswer}
               groupName={groupName}
               topicLabel={`${session.selected_topic ?? "콤보"} 콤보`}
               realMembers={members.map((m) => ({ key: m.key, name: m.name }))}
@@ -717,11 +816,12 @@ export function OpicStudySessionClient({
 
     default:
       return null;
+    }
   }
 }
 
 // ============================================================
-// Shell — 풀스크린 wrapper + 종료 버튼
+// Shell — 풀스크린 wrapper + 종료 버튼 + presence/연결 상태 배너
 // ============================================================
 function Shell({
   children,
@@ -730,9 +830,120 @@ function Shell({
   children: React.ReactNode;
   onEnd?: () => void;
 }) {
+  const ctx = useContext(SessionFrameContext);
+  const onlineCount = ctx?.onlineUserIds.size ?? 0;
+  const totalMembers = ctx?.members.length ?? 0;
+  const offlineMembers = (ctx?.members ?? []).filter(
+    (m) => !ctx?.onlineUserIds.has(m.userId)
+  );
+  const allOnline = onlineCount === totalMembers && totalMembers > 0;
+  const connectionState = ctx?.connectionState ?? "connected";
+
   return (
     <div style={{ minHeight: "100dvh", display: "flex", position: "relative" }}>
       {children}
+
+      {/* 연결 끊김 배너 (전역, fixed top) */}
+      {connectionState !== "connected" && (
+        <div
+          role="status"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            padding: "8px 16px",
+            background:
+              connectionState === "error"
+                ? "rgba(201, 100, 66, 0.95)"
+                : "rgba(164, 129, 33, 0.95)",
+            color: "white",
+            fontSize: 12,
+            fontWeight: 600,
+            textAlign: "center",
+            zIndex: 200,
+            backdropFilter: "blur(4px)",
+          }}
+        >
+          {connectionState === "error"
+            ? "🔴 연결 오류 — 페이지를 새로고침해주세요"
+            : "🟡 연결이 불안정해요. 재연결 중…"}
+        </div>
+      )}
+
+      {/* Presence indicator (fixed bottom-right) */}
+      {ctx && totalMembers > 0 && (
+        <div
+          aria-label={`접속 멤버 ${onlineCount}/${totalMembers}`}
+          title={
+            offlineMembers.length > 0
+              ? `오프라인: ${offlineMembers.map((m) => m.name).join(", ")}`
+              : "모두 접속 중"
+          }
+          style={{
+            position: "fixed",
+            bottom: 16,
+            right: 16,
+            padding: "8px 12px",
+            fontSize: 11,
+            fontWeight: 600,
+            color: allOnline ? "#2d7a3d" : "var(--bp-tip)",
+            background: "rgba(255,255,255,0.92)",
+            backdropFilter: "blur(8px)",
+            border: "1px solid rgba(31,27,22,0.10)",
+            boxShadow: "0 2px 8px rgba(31,27,22,0.08)",
+            borderRadius: 999,
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: allOnline ? "#4ab85a" : "var(--bp-tip)",
+              display: "inline-block",
+            }}
+          />
+          멤버 {onlineCount}/{totalMembers}
+          {offlineMembers.length > 0 && offlineMembers.length <= 2 && (
+            <span style={{ color: "var(--bp-ink-3)", fontWeight: 500 }}>
+              · {offlineMembers.map((m) => m.name).join(", ")} 끊김
+            </span>
+          )}
+        </div>
+      )}
+
+      {ctx?.onToggleMode && (
+        <button
+          onClick={ctx.onToggleMode}
+          aria-label="모드 전환"
+          title={`${ctx.onlineMode ? "온라인" : "오프라인"} 모드 — 클릭해서 전환`}
+          style={{
+            position: "fixed",
+            top: 12,
+            right: onEnd ? 64 : 12,
+            padding: "6px 10px",
+            fontSize: 11,
+            color: "var(--bp-ink-3)",
+            background: "rgba(255,255,255,0.8)",
+            backdropFilter: "blur(4px)",
+            border: "1px solid rgba(31,27,22,0.10)",
+            borderRadius: 8,
+            cursor: "pointer",
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+          }}
+        >
+          {ctx.onlineMode ? "🌐 온라인" : "🏠 오프라인"}
+        </button>
+      )}
+
       {onEnd && (
         <button
           onClick={onEnd}
@@ -756,6 +967,105 @@ function Shell({
         </button>
       )}
     </div>
+  );
+}
+
+// ============================================================
+// FeedbackWaitOrFail — F/B 생성 중 대기 + 60초 timeout 시 재시도 UI
+// ============================================================
+function FeedbackWaitOrFail({
+  answer,
+  sessionId,
+  questionIdx,
+}: {
+  answer: OpicStudyAnswer;
+  sessionId: string;
+  questionIdx: number;
+}) {
+  const [elapsed, setElapsed] = useState(0);
+  const [retrying, setRetrying] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const start = answer.created_at
+      ? new Date(answer.created_at).getTime()
+      : Date.now();
+    const tick = () => setElapsed(Math.floor((Date.now() - start) / 1000));
+    tick();
+    const t = setInterval(tick, 1000);
+    return () => clearInterval(t);
+  }, [answer.created_at]);
+
+  const handleRetry = async () => {
+    setRetrying(true);
+    setRetryError(null);
+    const res = await retryFeedback({ sessionId, questionIdx });
+    setRetrying(false);
+    if (res.error) {
+      setRetryError(res.error);
+    } else {
+      // 재시도 카운터 리셋
+      setElapsed(0);
+    }
+  };
+
+  // 60초 미만 — 그냥 대기 화면
+  if (elapsed < 60) {
+    return <Step63 estimatedSec={20} />;
+  }
+
+  // 60초 이상 — 실패/지연 안내 + 재시도
+  return (
+    <HfPhone liveMode>
+      <HfBody padding="24px 20px">
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 20,
+            textAlign: "center",
+          }}
+        >
+          <div style={{ fontSize: 56, marginBottom: 4 }}>🥲</div>
+          <div className="t-h1">코칭 생성이 늦어지고 있어요</div>
+          <p
+            className="t-sm ink-3"
+            style={{ margin: 0, lineHeight: 1.6, maxWidth: 320 }}
+          >
+            평소 15~25초 정도 걸리는데 1분이 넘었어요.
+            <br />
+            네트워크 문제일 수 있으니 다시 시도해주세요.
+          </p>
+
+          {retryError && (
+            <p
+              className="t-xs"
+              style={{ color: "var(--bp-tc)", margin: 0 }}
+            >
+              {retryError}
+            </p>
+          )}
+
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <HfButton
+              variant="primary"
+              size="lg"
+              onClick={handleRetry}
+              disabled={retrying}
+            >
+              {retrying ? "재시도 중…" : "다시 시도"}
+            </HfButton>
+          </div>
+
+          <span className="t-xs ink-3">
+            대기 {Math.floor(elapsed / 60)}분 {elapsed % 60}초
+          </span>
+        </div>
+      </HfBody>
+    </HfPhone>
   );
 }
 
@@ -953,6 +1263,7 @@ function LiveStep62Self({
   questionIdx,
   totalQuestions,
   onSubmit,
+  onSkip,
   groupName,
   topicLabel,
   realMembers,
@@ -961,6 +1272,7 @@ function LiveStep62Self({
   questionIdx: number;
   totalQuestions: number;
   onSubmit: (blob: Blob) => Promise<void>;
+  onSkip?: () => void;
   groupName?: string;
   topicLabel?: string;
   realMembers?: Array<{ key: "a" | "b" | "c" | "d"; name: string }>;
@@ -976,6 +1288,16 @@ function LiveStep62Self({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 마이크 권한 거부 시 — EdgeMic 화면 (mobile + PC 공통)
+  if (recorder.error?.includes("권한")) {
+    return (
+      <EdgeMic
+        onOpenSettings={() => recorder.startRecording().catch(() => undefined)}
+        onLeave={onSkip}
+      />
+    );
+  }
 
   const handleComplete = async () => {
     if (recorder.state === "recording") {
@@ -1015,6 +1337,7 @@ function LiveStep62Self({
           topicLabel={topicLabel}
           realMembers={realMembers}
           questionText="(질문 텍스트는 답변 시작 시 표시됩니다)"
+          onSkip={onSkip}
         />
       </div>
       <div className="bp-only-mobile" style={{ flex: 1, minHeight: 0, display: "flex" }}>
@@ -1025,6 +1348,7 @@ function LiveStep62Self({
           submitting={submitting}
           handleComplete={handleComplete}
           fmtDuration={fmtDuration}
+          onSkip={onSkip}
         />
       </div>
     </>
@@ -1038,6 +1362,7 @@ function LiveStep62SelfMobile({
   submitting,
   handleComplete,
   fmtDuration,
+  onSkip,
 }: {
   questionIdx: number;
   totalQuestions: number;
@@ -1045,6 +1370,7 @@ function LiveStep62SelfMobile({
   submitting: boolean;
   handleComplete: () => void;
   fmtDuration: (sec: number) => string;
+  onSkip?: () => void;
 }) {
   return (
     <HfPhone liveMode>
@@ -1130,6 +1456,25 @@ function LiveStep62SelfMobile({
             {submitting ? "제출 중…" : "답변 완료 →"}
           </HfButton>
         </div>
+        {onSkip && (
+          <button
+            onClick={onSkip}
+            disabled={submitting}
+            style={{
+              marginTop: 10,
+              padding: "8px 12px",
+              fontSize: 12,
+              color: "var(--bp-ink-3)",
+              background: "transparent",
+              border: "none",
+              cursor: submitting ? "not-allowed" : "pointer",
+              textDecoration: "underline",
+              alignSelf: "center",
+            }}
+          >
+            이번 질문 건너뛰기
+          </button>
+        )}
 
         {recorder.error && (
           <div
@@ -1371,6 +1716,20 @@ function LiveCompareView({
     : null;
   const focusedAnswer = focused ? (answers[`${focused}_${questionIdx}`] ?? null) : null;
 
+  // 토론 타이머 (5분, 진입 시 시작)
+  const [secondsLeft, setSecondsLeft] = useState(5 * 60);
+  useEffect(() => {
+    setSecondsLeft(5 * 60);
+    const t = setInterval(() => {
+      setSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [questionIdx]);
+  const mm = Math.floor(secondsLeft / 60);
+  const ss = secondsLeft % 60;
+  const timerLabel = `${mm}:${String(ss).padStart(2, "0")}`;
+  const timerExpired = secondsLeft === 0;
+
   // PC용 MemberAnswer 구성 (실제 멤버 + 답변 데이터)
   const pcMembers = members.map((m) => {
     const ans = answers[`${m.userId}_${questionIdx}`];
@@ -1399,6 +1758,8 @@ function LiveCompareView({
           topicLabel={topicLabel}
           questionLabel={`Q${questionIdx + 1} · 함께 보기`}
           comboProgress={`콤보 ${questionIdx + 1}/${totalQuestions}`}
+          timerLabel={timerLabel}
+          timerExpired={timerExpired}
         />
       </div>
       <div className="bp-only-mobile" style={{ flex: 1, minHeight: 0, display: "flex" }}>
@@ -1412,6 +1773,8 @@ function LiveCompareView({
           setFocused={setFocused}
           focusedMember={focusedMember}
           focusedAnswer={focusedAnswer}
+          timerLabel={timerLabel}
+          timerExpired={timerExpired}
         />
       </div>
     </>
@@ -1428,6 +1791,8 @@ function LiveCompareViewMobile({
   setFocused,
   focusedMember,
   focusedAnswer,
+  timerLabel,
+  timerExpired,
 }: {
   members: MemberInfo[];
   answers: Record<string, OpicStudyAnswer>;
@@ -1438,6 +1803,8 @@ function LiveCompareViewMobile({
   setFocused: (s: string | null) => void;
   focusedMember: MemberInfo | null;
   focusedAnswer: OpicStudyAnswer | null;
+  timerLabel?: string;
+  timerExpired?: boolean;
 }) {
   return (
     <HfPhone liveMode>
@@ -1445,6 +1812,24 @@ function LiveCompareViewMobile({
         title="함께 보기"
         sub={`Q${questionIdx + 1} · ${members.length}명의 답변`}
         onBack={() => undefined}
+        right={
+          timerLabel ? (
+            <span
+              className="bp-pill"
+              style={{
+                background: timerExpired
+                  ? "rgba(201, 100, 66, 0.15)"
+                  : "rgba(74, 184, 90, 0.12)",
+                color: timerExpired ? "var(--bp-tc)" : "#2d7a3d",
+                fontWeight: 600,
+                fontSize: 11,
+              }}
+              title="토론 시간"
+            >
+              💬 {timerExpired ? "시간 종료" : timerLabel}
+            </span>
+          ) : null
+        }
       />
 
       <HfBody padding="20px">

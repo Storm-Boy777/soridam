@@ -476,6 +476,40 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // ─── 8. "모든 멤버 답변 완료" 자동 감지 → step='feedback_share' ───
+    // 현재 question_idx에 대한 답변 수 vs 그룹 멤버 수 비교
+    try {
+      const [{ count: answeredCount }, { count: memberCount }] = await Promise.all([
+        supabase
+          .from("opic_study_answers")
+          .select("*", { count: "exact", head: true })
+          .eq("session_id", sessionId)
+          .eq("question_idx", questionIdx)
+          .not("feedback_result", "is", null),
+        supabase
+          .from("study_group_members")
+          .select("*", { count: "exact", head: true })
+          .eq("group_id", session.group_id),
+      ]);
+
+      const ans = answeredCount ?? 0;
+      const total = memberCount ?? 0;
+      if (ans >= total && total > 0) {
+        await supabase
+          .from("opic_study_sessions")
+          .update({ step: "feedback_share" })
+          .eq("id", sessionId)
+          .eq("current_question_idx", questionIdx)
+          .eq("step", "recording");
+        console.log(
+          `[opic-study-feedback] 모든 멤버 답변 완료 (${ans}/${total}) — step='feedback_share' 전환`
+        );
+      }
+    } catch (autoErr) {
+      // 자동 전환 실패는 fatal X — 다음 발화자 클릭으로 수동 진행 가능
+      console.warn("[opic-study-feedback] 자동 step 전환 실패:", autoErr);
+    }
+
     return new Response(
       JSON.stringify({ ok: true, total_ms: Date.now() - totalStart }),
       {

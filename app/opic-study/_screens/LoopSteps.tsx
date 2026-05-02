@@ -671,6 +671,8 @@ interface Step62PcProps {
   realMembers?: Array<{ key: "a" | "b" | "c" | "d"; name: string }>;
   /** 실데이터 질문 텍스트 */
   questionText?: string;
+  /** 본인이 발화자일 때 — "건너뛰기" 콜백 */
+  onSkip?: () => void;
 }
 
 const STEP62_PC_MEMBERS: Array<{ key: "a" | "b" | "c" | "d"; name: string }> = [
@@ -690,6 +692,7 @@ export function Step62Pc({
   topicLabel = "음악 콤보",
   realMembers,
   questionText,
+  onSkip,
 }: Step62PcProps) {
   const members = realMembers && realMembers.length > 0 ? realMembers : STEP62_PC_MEMBERS;
   const displayQuestion = questionText ?? question.english;
@@ -718,6 +721,23 @@ export function Step62Pc({
             }}
           />
           녹음 중 · {duration}
+          {onSkip && (
+            <button
+              onClick={onSkip}
+              style={{
+                marginLeft: 10,
+                padding: "2px 8px",
+                fontSize: 10,
+                background: "transparent",
+                border: "1px solid var(--bp-tc)",
+                color: "var(--bp-tc)",
+                borderRadius: 999,
+                cursor: "pointer",
+              }}
+            >
+              건너뛰기
+            </button>
+          )}
         </span>
       }
     >

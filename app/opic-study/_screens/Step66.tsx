@@ -250,6 +250,10 @@ interface Step66PcProps {
   questionLabel?: string;
   /** 실데이터 — 콤보 진행도 ("콤보 1/3 진행 중") */
   comboProgress?: string;
+  /** 실데이터 — 토론 타이머 라벨 (예: "4:32"), 표시 시점 */
+  timerLabel?: string;
+  /** 실데이터 — 타이머 만료 여부 */
+  timerExpired?: boolean;
 }
 
 export function Step66Pc({
@@ -261,6 +265,8 @@ export function Step66Pc({
   topicLabel = "음악 콤보",
   questionLabel = "Q1 · 함께 보기",
   comboProgress,
+  timerLabel,
+  timerExpired,
 }: Step66PcProps) {
   void comboProgress;
   return (
@@ -268,6 +274,21 @@ export function Step66Pc({
       crumb={[groupName, topicLabel, questionLabel]}
       right={
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {timerLabel && (
+            <span
+              className="bp-pill"
+              style={{
+                background: timerExpired
+                  ? "rgba(201, 100, 66, 0.15)"
+                  : "rgba(74, 184, 90, 0.12)",
+                color: timerExpired ? "var(--bp-tc)" : "#2d7a3d",
+                fontWeight: 600,
+              }}
+              title="토론 시간"
+            >
+              💬 {timerExpired ? "시간 종료" : timerLabel}
+            </span>
+          )}
           <Pill tone="live">실시간</Pill>
           <HfButton variant="primary" size="sm" onClick={onNext}>
             다음 질문 →
