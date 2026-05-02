@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오픽 스터디 — 하이파이 시안 (BP)</title>
+  <link rel="stylesheet" href="hifi.css">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    body { margin: 0; padding: 0; background: #ede9e0; font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.4 } 50% { transform: scale(1.08); opacity: 0.15 } }
+    @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); opacity: 0.5 } 30% { transform: translateY(-3px); opacity: 1 } }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="hf-step1.jsx"></script>
+  <script type="text/babel" src="hf-front.jsx"></script>
+  <script type="text/babel" src="hf-step64.jsx"></script>
+  <script type="text/babel" src="hf-step66.jsx"></script>
+  <script type="text/babel" src="hf-loop.jsx"></script>
+  <script type="text/babel" src="hf-extra.jsx"></script>
+  <script type="text/babel" src="hf-pc.jsx"></script>
+
+  <script type="text/babel" data-presets="react">
+    function App() {
+      const M_W = 360, M_H = 760;
+      const PC_W = 1280, PC_H = 800;
+
+      return (
+        <DesignCanvas>
+          <DCSection id="intro" title="오픽 스터디 — 하이파이 시안 v1"
+            subtitle="BP 디렉션: Notion 골격 + Things 3 디테일 + 따뜻한 크림/테라코타. 페르소나는 추상 심볼(◐)로 절제, 코칭은 잘한 점/다듬을 부분/팁 3블록.">
+            <DCArtboard id="legend" label="디자인 노트" width={420} height={760}>
+              <div style={{ padding: 28, fontFamily: 'Pretendard Variable, Pretendard, sans-serif', fontSize: 13, lineHeight: 1.65, background: '#fbf8f3', height: '100%', overflow: 'auto', color: '#1f1b16' }}>
+                <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4, letterSpacing: '-0.02em' }}>하이파이 시안 v1</div>
+                <div style={{ fontSize: 12, color: '#7a6f63', marginBottom: 20 }}>BP 디렉션 적용 · 2026-05</div>
+
+                <div style={{ fontSize: 14, fontWeight: 600, marginTop: 14 }}>📐 디자인 BP</div>
+                <ul style={{ paddingLeft: 18, margin: '6px 0 14px' }}>
+                  <li><b>Notion</b> 베이스 — 콘텐츠 우선, 카드 기반</li>
+                  <li><b>Things 3</b> 디테일 — 부드러운 라운딩(14px), 절제된 그림자</li>
+                  <li><b>Linear</b> 정보 위계 — 잘한 점/다듬을 부분/팁 3블록</li>
+                  <li><b>Figma</b> 프레즌스 — 멤버 dot + live 표시</li>
+                </ul>
+
+                <div style={{ fontSize: 14, fontWeight: 600 }}>🎨 컬러</div>
+                <div style={{ display: 'flex', gap: 6, margin: '8px 0 14px', flexWrap: 'wrap' }}>
+                  <span style={{ width: 36, height: 36, background: '#fbf8f3', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 6 }}/>
+                  <span style={{ width: 36, height: 36, background: '#c96442', borderRadius: 6 }}/>
+                  <span style={{ width: 36, height: 36, background: '#5a8f5a', borderRadius: 6 }}/>
+                  <span style={{ width: 36, height: 36, background: '#a48121', borderRadius: 6 }}/>
+                  <span style={{ width: 36, height: 36, background: '#1f1b16', borderRadius: 6 }}/>
+                </div>
+                <ul style={{ paddingLeft: 18, margin: '6px 0 14px', fontSize: 12 }}>
+                  <li>크림 #fbf8f3 (배경)</li>
+                  <li>테라코타 #c96442 (액센트 / 다듬을 부분)</li>
+                  <li>모스 그린 #5a8f5a (잘한 점)</li>
+                  <li>오크 옐로우 #a48121 (팁)</li>
+                  <li>잉크 #1f1b16 (텍스트 / Primary CTA)</li>
+                </ul>
+
+                <div style={{ fontSize: 14, fontWeight: 600 }}>🤖 AI 스터디 코치</div>
+                <ul style={{ paddingLeft: 18, margin: '6px 0 14px' }}>
+                  <li>비주얼: <b>◐</b> 추상 심볼 (캐릭터 X)</li>
+                  <li>그라디언트 아바타: 테라코타 → 오크</li>
+                  <li>톤: 차분한 구어체 — "~해볼까요?", "~좋아요"</li>
+                  <li>금지: 점수, 등급, 순위 표현</li>
+                </ul>
+
+                <div style={{ fontSize: 14, fontWeight: 600 }}>✍️ 카피 톤 예시</div>
+                <div style={{ background: '#f6f1e8', padding: 12, borderRadius: 8, margin: '8px 0 14px', fontSize: 12, lineHeight: 1.6 }}>
+                  <div style={{ color: '#7a6f63', textDecoration: 'line-through', marginBottom: 4 }}>오! 도입 굿이에요!!</div>
+                  <div>도입이 자연스러웠어요.</div>
+                </div>
+
+                <div style={{ fontSize: 14, fontWeight: 600 }}>🎯 화면 카탈로그</div>
+                <ul style={{ paddingLeft: 18, margin: '6px 0' }}>
+                  <li>Step 1 — 모드 선택</li>
+                  <li>★ Step 6-4 — 코칭 카드 (모바일 + PC)</li>
+                  <li>★ Step 6-6 — 4명 비교 (모바일 + PC)</li>
+                </ul>
+
+                <div style={{ fontSize: 14, fontWeight: 600, marginTop: 16 }}>다음 단계 ▸</div>
+                <ul style={{ paddingLeft: 18, margin: '6px 0', color: '#7a6f63' }}>
+                  <li>나머지 Step 2~5, 6-1~6-3, 7 적용</li>
+                  <li>온라인 모드 화상통화 UI 디테일</li>
+                  <li>실시간 동기화 트랜지션</li>
+                  <li>엣지케이스 (이탈 / 재녹음)</li>
+                </ul>
+              </div>
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="entry" title="세션 룸 외 · 진입 화면" subtitle="홈 → 입장 대기 → 세션 룸">
+            <DCArtboard id="home" label="모바일 · 홈" width={M_W} height={M_H}><HomeHifi/></DCArtboard>
+            <DCArtboard id="lobby" label="모바일 · 입장 대기" width={M_W} height={M_H}><LobbyHifi/></DCArtboard>
+            <DCArtboard id="my" label="모바일 · 마이페이지 · BP 누적" width={M_W} height={M_H}><MyHifi/></DCArtboard>
+            <DCArtboard id="home-pc" label="PC · 홈" width={PC_W} height={PC_H}><HomeHifiPC/></DCArtboard>
+          </DCSection>
+
+          <DCSection id="edge" title="엣지케이스" subtitle="마이크 권한 / 멤버 이탈 · 재접속">
+            <DCArtboard id="edge-mic" label="마이크 권한 거부" width={M_W} height={M_H}><EdgeMicHifi/></DCArtboard>
+            <DCArtboard id="edge-recon" label="멤버 재접속 중" width={M_W} height={M_H}><EdgeReconnectHifi/></DCArtboard>
+          </DCSection>
+
+          <DCSection id="step1" title="Step 1 · 모드 선택" subtitle="첫 인상 — 무드 검증">
+            <DCArtboard id="s1" label="모바일" width={M_W} height={M_H}><Step1Hifi/></DCArtboard>
+            <DCArtboard id="s1pc" label="PC" width={PC_W} height={PC_H}><Step1HifiPC/></DCArtboard>
+          </DCSection>
+
+          <DCSection id="setup" title="세션 설정 · Step 2 ~ 5" subtitle="카테고리 → 주제 → 콤보 → 코치 가이드">
+            <DCArtboard id="s2" label="2 · 카테고리" width={M_W} height={M_H}><Step2Hifi/></DCArtboard>
+            <DCArtboard id="s3" label="3 · 주제" width={M_W} height={M_H}><Step3Hifi/></DCArtboard>
+            <DCArtboard id="s4" label="4 · 콤보" width={M_W} height={M_H}><Step4Hifi/></DCArtboard>
+            <DCArtboard id="s5" label="5 · 코치 가이드" width={M_W} height={M_H}><Step5Hifi/></DCArtboard>
+            <DCArtboard id="s2pc" label="PC · 2 카테고리" width={PC_W} height={PC_H}><Step2HifiPC/></DCArtboard>
+            <DCArtboard id="s3pc" label="PC · 3 주제" width={PC_W} height={PC_H}><Step3HifiPC/></DCArtboard>
+            <DCArtboard id="s4pc" label="PC · 4 콤보" width={PC_W} height={PC_H}><Step4HifiPC/></DCArtboard>
+            <DCArtboard id="s5pc" label="PC · 5 코치 가이드" width={PC_W} height={PC_H}><Step5HifiPC/></DCArtboard>
+          </DCSection>
+
+          <DCSection id="loop" title="질문 루프 · Step 6-1 ~ 6-3" subtitle="콤보 안 한 질문의 흐름: 발화자 선정 → 답변 → 코칭 생성">
+            <DCArtboard id="s61" label="6-1 · 발화자 선정" width={M_W} height={M_H}><Step61Hifi/></DCArtboard>
+            <DCArtboard id="s62self" label="6-2 · 본인 (답변)" width={M_W} height={M_H}><Step62SelfHifi/></DCArtboard>
+            <DCArtboard id="s62other" label="6-2 · 타인 (청취 + 메모)" width={M_W} height={M_H}><Step62OtherHifi/></DCArtboard>
+            <DCArtboard id="s63" label="6-3 · 코칭 생성 중" width={M_W} height={M_H}><Step63Hifi/></DCArtboard>
+            <DCArtboard id="s61pc" label="PC · 6-1 발화자 선정" width={PC_W} height={PC_H}><Step61HifiPC/></DCArtboard>
+            <DCArtboard id="s62pc" label="PC · 6-2 답변 중 (4타일)" width={PC_W} height={PC_H}><Step62HifiPC/></DCArtboard>
+            <DCArtboard id="s63pc" label="PC · 6-3 코칭 생성 중" width={PC_W} height={PC_H}><Step63HifiPC/></DCArtboard>
+          </DCSection>
+
+          <DCSection id="step64" title="★ Step 6-4 · AI 코칭 카드" subtitle="자연어만 · 잘한 점 / 다듬을 부분 / 팁 3블록">
+            <DCArtboard id="s64m" label="모바일" width={M_W} height={M_H}><Step64Hifi/></DCArtboard>
+            <DCArtboard id="s64pc" label="PC · 전사 + 코치 듀얼" width={PC_W} height={PC_H}><Step64HifiPC/></DCArtboard>
+          </DCSection>
+
+          <DCSection id="step66" title="★ Step 6-6 · 4명 동시 비교" subtitle="순위 X · BP(베스트 프랙티스) 공유 · '함께 배운다'">
+            <DCArtboard id="s66m" label="모바일 · 2x2" width={M_W} height={M_H}><Step66Hifi/></DCArtboard>
+            <DCArtboard id="s66pc" label="PC · 4컬럼" width={PC_W} height={PC_H}><Step66HifiPC/></DCArtboard>
+          </DCSection>
+
+          <DCSection id="step7" title="Step 7 · 종료 / 인사이트" subtitle="오늘의 BP 모음 + 다음 추천">
+            <DCArtboard id="s7" label="모바일 · 마무리" width={M_W} height={M_H}><Step7Hifi/></DCArtboard>
+            <DCArtboard id="s7pc" label="PC · 마무리" width={PC_W} height={PC_H}><Step7HifiPC/></DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

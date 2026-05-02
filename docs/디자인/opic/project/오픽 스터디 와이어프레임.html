@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오픽 스터디 — 와이어프레임</title>
+  <link rel="stylesheet" href="wireframes.css">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    body { margin: 0; padding: 0; background: #f0eee9; font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; -webkit-font-smoothing: antialiased; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="wf-primitives.jsx"></script>
+  <script type="text/babel" src="wf-steps-1-5.jsx"></script>
+  <script type="text/babel" src="wf-steps-6-7.jsx"></script>
+
+  <script type="text/babel" data-presets="react">
+    const TWEAKS_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "memberCount": 4,
+      "mode": "offline",
+      "perspective": "other",
+      "density": "comfortable",
+      "highlight": "pron"
+    }/*EDITMODE-END*/;
+
+    function App() {
+      const [t, setTweak] = useTweaks(TWEAKS_DEFAULTS);
+
+      // ARTBOARD dimensions
+      const M_W = 280, M_H = 580; // mobile
+      const PC_W = 880, PC_H = 540; // pc
+
+      return (
+        <>
+          <DesignCanvas>
+            {/* Notes section */}
+            <DCSection id="intro" title="오픽 스터디 — A 방향 (정석/리스트형)"
+              subtitle="A로 확정. 깔끔한 sans-serif (Pretendard) 기반. 세션 룸 Step 1~7 + 코칭 핵심.">
+              <DCArtboard id="legend" label="디자인 노트" width={420} height={520}>
+                <div style={{ padding: 24, fontFamily: 'Pretendard Variable, Pretendard, sans-serif', fontSize: 13, lineHeight: 1.65, background: '#fbf8f3', height: '100%', overflow: 'auto', color: '#2a241e' }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, letterSpacing: '-0.02em' }}>오픽 스터디 와이어프레임</div>
+                  <div style={{ fontSize: 12, color: '#7a6f63', marginBottom: 16 }}>v0.2 · A 방향 확정 · 2026-05</div>
+
+                  <div style={{ fontSize: 14, fontWeight: 600, marginTop: 16 }}>확정 방향</div>
+                  <ul style={{ paddingLeft: 18, margin: '6px 0' }}>
+                    <li><b>A — 정석/리스트형</b> (안전한 베이스, 가독성 우선)</li>
+                    <li>폰트: Pretendard Variable (디자인시스템 본문)</li>
+                  </ul>
+
+                  <div style={{ fontSize: 14, fontWeight: 600, marginTop: 16 }}>화면 카탈로그</div>
+                  <ul style={{ paddingLeft: 18, margin: '6px 0' }}>
+                    <li>Step 1~7 (10화면) — 모바일</li>
+                    <li>★ Step 6-4 코칭 카드 — 모바일 + PC 듀얼</li>
+                    <li>★ Step 6-6 4명 비교 — 모바일 + PC 4컬럼</li>
+                  </ul>
+
+                  <div style={{ fontSize: 14, fontWeight: 600, marginTop: 16 }}>읽는 법</div>
+                  <ul style={{ paddingLeft: 18, margin: '6px 0' }}>
+                    <li>📡/👥 = 온라인/오프라인 모드</li>
+                    <li>A/B/C/D 동그라미 = 멤버 (Alice/Bob/Carol/Dan)</li>
+                    <li>주황 = 강조/현재, 노랑 = 하이라이트</li>
+                    <li>우상단 ⤢ = 풀스크린 포커스</li>
+                  </ul>
+
+                  <div style={{ fontSize: 14, fontWeight: 600, marginTop: 16 }}>디자인시스템 원칙</div>
+                  <ul style={{ paddingLeft: 18, margin: '6px 0' }}>
+                    <li>점수/숫자 노출 X — 자연어만</li>
+                    <li>순위/비교 X — "함께 배운다"</li>
+                    <li>AI 스터디 코치 톤 — 친근 + 자신감</li>
+                  </ul>
+
+                  <div style={{ fontSize: 14, fontWeight: 600, marginTop: 16 }}>다음 단계 ▸</div>
+                  <ul style={{ paddingLeft: 18, margin: '6px 0', color: '#7a6f63' }}>
+                    <li>하이파이 시안 (테라코타 + 크림 컬러 적용)</li>
+                    <li>실시간 동기화 트랜지션</li>
+                    <li>엣지케이스 (이탈/재녹음/실패)</li>
+                  </ul>
+                </div>
+              </DCArtboard>
+            </DCSection>
+
+            <DCSection id="flow" title="세션 룸 플로우 · Step 1~5" subtitle="AI 스터디 코치 = 평가자가 아닌 옆에서 도와주는 코치">
+              <DCArtboard id="s1a" label="Step 1 · 모드 선택" width={M_W} height={M_H}><Step1_A/></DCArtboard>
+              <DCArtboard id="s2a" label="Step 2 · 카테고리" width={M_W} height={M_H}><Step2_A/></DCArtboard>
+              <DCArtboard id="s3a" label="Step 3 · 주제" width={M_W} height={M_H}><Step3_A/></DCArtboard>
+              <DCArtboard id="s4a" label="Step 4 · 콤보" width={M_W} height={M_H}><Step4_A/></DCArtboard>
+              <DCArtboard id="s5a" label="Step 5 · AI 스터디 코치 가이드" width={M_W} height={M_H}><Step5_A/></DCArtboard>
+            </DCSection>
+
+            <DCSection id="loop" title="질문 루프 · Step 6-1 ~ 6-3">
+              <DCArtboard id="s61a" label="6-1 · 발화자 선정" width={M_W} height={M_H}><Step61_A/></DCArtboard>
+              <DCArtboard id="s62a" label="6-2 · 본인 녹음" width={M_W} height={M_H}><Step62_A/></DCArtboard>
+              <DCArtboard id="s62c" label="6-2 · 타인 청취" width={M_W} height={M_H}><Step62_C_other/></DCArtboard>
+              <DCArtboard id="s63a" label="6-3 · 코칭 생성 중" width={M_W} height={M_H}><Step63_A/></DCArtboard>
+            </DCSection>
+
+            <DCSection id="step64" title="★ Step 6-4 · AI 코칭 카드 (브랜드 핵심)" subtitle="자연어만 · 점수 X · 잘한 점 / 다듬을 부분 / 팁">
+              <DCArtboard id="s64a" label="모바일 · 코칭 카드" width={M_W} height={M_H}><Step64_A/></DCArtboard>
+              <DCArtboard id="s64pc" label="PC · 전사 + 코칭 듀얼" width={PC_W} height={PC_H}><PCStep64/></DCArtboard>
+            </DCSection>
+
+            <DCSection id="step66" title="★ Step 6-6 · 4명 동시 비교 (브랜드 핵심)" subtitle="순위 X · 함께 배우는 인사이트">
+              <DCArtboard id="s66a" label="모바일 · 2x2 그리드" width={M_W} height={M_H}><Step66_A/></DCArtboard>
+              <DCArtboard id="s66pc" label="PC · 4컬럼 나란히" width={PC_W} height={PC_H}><PCStep66/></DCArtboard>
+            </DCSection>
+
+            <DCSection id="step7" title="Step 7 · 종료 / 요약">
+              <DCArtboard id="s7a" label="종료 · 인사이트 카드" width={M_W} height={M_H}><Step7_A/></DCArtboard>
+            </DCSection>
+          </DesignCanvas>
+
+          <TweaksPanel title="Tweaks">
+            <TweakSection label="시점">
+              <TweakRadio
+                label="화면 시점"
+                value={t.perspective}
+                onChange={(v) => setTweak('perspective', v)}
+                options={[{ value: 'self', label: '본인 (답변자)' }, { value: 'other', label: '타인 (청취)' }]}
+              />
+              <div className="t-xs muted body" style={{ marginTop: 4 }}>Step 6-2에 영향 (본인 카드 vs 청취 카드)</div>
+            </TweakSection>
+            <TweakSection label="모드">
+              <TweakRadio
+                label="세션 모드"
+                value={t.mode}
+                onChange={(v) => setTweak('mode', v)}
+                options={[{ value: 'online', label: '온라인' }, { value: 'offline', label: '오프라인' }]}
+              />
+            </TweakSection>
+            <TweakSection label="멤버 수">
+              <TweakRadio
+                label="활성 멤버"
+                value={String(t.memberCount)}
+                onChange={(v) => setTweak('memberCount', Number(v))}
+                options={[{ value: '3', label: '3명' }, { value: '4', label: '4명' }, { value: '5', label: '5명' }]}
+              />
+            </TweakSection>
+            <TweakSection label="정보 밀도">
+              <TweakRadio
+                label="레이아웃 밀도"
+                value={t.density}
+                onChange={(v) => setTweak('density', v)}
+                options={[{ value: 'comfortable', label: '여유' }, { value: 'compact', label: '컴팩트' }]}
+              />
+            </TweakSection>
+            <TweakSection label="강조 색">
+              <TweakRadio
+                label="액센트 키"
+                value={t.highlight}
+                onChange={(v) => setTweak('highlight', v)}
+                options={[{ value: 'tense', label: '시제' }, { value: 'pron', label: '발음' }, { value: 'flow', label: '흐름' }]}
+              />
+            </TweakSection>
+            <div style={{ fontSize: 11, color: '#888', padding: '8px 4px 0', borderTop: '1px solid #eee', marginTop: 8, lineHeight: 1.5 }}>
+              💡 와이어프레임은 손그림 톤으로 의도된 거예요. 방향 정해지면 하이파이로 옮길게요.
+            </div>
+          </TweaksPanel>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

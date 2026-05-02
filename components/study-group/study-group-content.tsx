@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Headphones, BookOpen, MessageCircle, type LucideIcon } from "lucide-react";
+import { Headphones, BookOpen, MessageCircle, ChevronLeft, type LucideIcon } from "lucide-react";
 import { SessionTimer } from "./session-timer";
 import { PodcastTab } from "./monday/podcast-tab";
 import { OpicTab } from "./wednesday/opic-tab";
@@ -98,11 +98,20 @@ export function StudyGroupContent() {
 
   return (
     <div>
-      {/* 상단: 세션 타이머 + 현재 스터디 표시 */}
+      {/* 상단: 스터디 선택 복귀 + 현재 스터디 표시 + 세션 타이머 */}
       <div className="mb-4 flex items-center justify-between gap-3 sm:mb-6">
-        <div className="flex items-center gap-2">
-          <current.icon size={16} className={current.color} />
-          <span className="text-sm font-semibold text-foreground">{current.day} — {current.label}</span>
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <button
+            onClick={() => setSelectedDay(null)}
+            className="flex shrink-0 items-center gap-1 text-sm text-foreground-muted transition-colors hover:text-foreground-secondary"
+          >
+            <ChevronLeft size={16} /> 스터디 선택
+          </button>
+          <span className="hidden shrink-0 text-foreground-muted sm:inline">·</span>
+          <div className="hidden min-w-0 items-center gap-2 sm:flex">
+            <current.icon size={16} className={`shrink-0 ${current.color}`} />
+            <span className="truncate text-sm font-semibold text-foreground">{current.day} — {current.label}</span>
+          </div>
         </div>
         <SessionTimer />
       </div>

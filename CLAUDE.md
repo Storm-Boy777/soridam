@@ -29,6 +29,7 @@
 | `docs/실행계획.md` | 현재 진행 상태, Phase/Step 상태, 바로 다음 작업 |
 | `docs/의사결정.md` | 구현 현황, 새 결정 사항, 미결 항목 변경 |
 | `docs/설계/*.md` | 해당 모듈 설계와 실제 구현이 다르면 설계 문서 수정 |
+| `docs/오픽스터디_세션인계.md` | 새 세션 시작 시 가장 먼저 읽기 (오픽 스터디 작업 컨텍스트 풀 정리) |
 
 ---
 
@@ -91,6 +92,7 @@ docs/
 │   ├── 튜터링-시뮬레이션-데이터.md  ← 소리담 실데이터 시뮬레이션 근거
 │   ├── 쉐도잉.md        ← 2테이블, 클라이언트 완결
 │   ├── 관리자.md        ← 관리자 시스템 전체 (11페이지, 38 SA, 평가설정)
+│   ├── 오픽스터디.md    ← **신규 모듈** (4테이블, Realtime 동기화, 일타강사 코칭, 콤보 빈도 학습)
 │   └── weak-point-tagging-prompt.md ← GPT weak_point 태깅 프롬프트 v2 (36개 코드)
 ├── OPIc 자료/이현석/    ← 이현석 DB 추출 데이터
 │   ├── questions_master.json  ← 고유 질문 431개
@@ -113,6 +115,7 @@ docs/
 | "PG사 계약 상태는?" | `docs/사업운영.md` |
 | "UI 컴포넌트 규칙은?" | `docs/디자인시스템.md` |
 | "성능 최적화 패턴은?" | `docs/가이드_Next.js+Supabase_페이지전환_성능최적화.md` |
+| "오픽 스터디 설계는?" | `docs/설계/오픽스터디.md` (1450줄, 6단계 + 보강) |
 
 ### 핵심 개념
 
@@ -266,7 +269,7 @@ docs/
 - **DB Host (Pooler)**: `aws-0-ap-northeast-2.pooler.supabase.com`
 - **DB Port**: `6543` (Transaction) / `5432` (Session)
 - **DB User**: `postgres.fkkdbnebsaecjpqhhdvl`
-- **Access Token**: `sbp_a586b7b80d9381508101d27a1bd93b9979e93637`
+- **Access Token**: 별도 보관 (1Password / 로컬 `.env.secrets`). git 커밋 X. 분실 시 [Supabase Dashboard](https://supabase.com/dashboard/account/tokens)에서 재발급
 
 ### Supabase (하루오픽 — 아카이브, 필요 시만 참조)
 - **Project ID**: `rwdsyqnrrpwkureqfxwb`
@@ -601,13 +604,49 @@ origin: https://Storm-Boy777@github.com/Storm-Boy777/soridam.git
 | 04-10 | **랜딩 FAQ** | 10개 질문 아코디언 + 대시보드 CTA 크레딧 기반 수정 |
 | 04-10 | **회원가입 채널 제어** | Google/Kakao/이메일 개별 토글 + 이메일 도메인 화이트리스트 (실시간 검증) |
 | 04-10 | **디자인 시스템 현행화** | CLAUDE.md 컬러 팔레트 실제 값으로 갱신 (테라코타→인디고 블루) |
+| 05-01 | **오픽 스터디 설계 ✅** | Phase 6 신규 모듈 설계 완료 (1450줄 6단계+리뷰). 4테이블 + Realtime 동기화 + 일타강사 톤 AI 코칭(점수 비공개) + 콤보 빈도 학습(시험후기 SSOT) + 온라인/오프라인 듀얼 모드 + 완전 무료 정책. 의사결정 18개(O-1~O-18) Part G. 마이그레이션 `047_opic_study.sql` 작성. → 구현 단계 진입 |
+| 05-02 | **오픽 스터디 백엔드 ✅** | DB 마이그레이션 047/048(프롬프트)/049(톤 v2)/050(Storage) 적용. SA 28개 (사용자 19 + 관리자 9). EF 2개(`opic-study-guide`/`opic-study-feedback`) 작성. AI 프롬프트 4 row v2 등록 (페르소나: AI 스터디 코치, 톤 절제) |
+| 05-02 | **오픽 스터디 디자인 ✅** | Claude Design 협업 — BP 디렉션(Notion+Things 3+크림/테라코타). 별도 디자인 시스템 격리(.bp-scope, hifi.css→opic-study.css). 공통 컴포넌트 20개 + 19개 화면(Step 1~7 + 6-1~6-6 + 진입 + 엣지). 미리보기 페이지(`/opic-study/preview`) |
+| 05-02 | **오픽 스터디 라우트 ✅** | 사용자 5개 페이지(홈/마이/이력/lobby/세션) + 관리자 3개 페이지(목록/생성/상세). 세션 룸: Realtime 2채널(sessions+answers) + Step 분기 9가지 + 마이크 녹음(useRecorder)+Storage 업로드+EF fire-and-forget. 카테고리/토픽/콤보 실데이터 통합. 네비바+사이드바 메뉴. EF 배포 완료 |
+| 05-02 | **이슈 3건 수정 ✅** | (1) `study_group_members→profiles` join 실패 → 분리 쿼리 패턴 (3 파일), (2) RLS 재귀 정책 → 마이그레이션 051 + `is_study_group_member()` SECURITY DEFINER 함수 (10개 정책 단순화), (3) Home "멤버 4명" mock 하드코딩 → 실제 멤버 데이터 + 첫 글자 initial 매핑. 새 세션 인계 문서 `docs/오픽스터디_세션인계.md` 작성 |
 
 <!-- 이후 새 이력은 이 테이블에 행 추가 + memory/개발이력.md에 상세 기록 -->
 
 ## 🔮 현재 상태 & 다음 단계
 
-**현재**: Phase 3 완료 + 튜터링 Phase 1 ✅ + 리브랜딩(P-5) ✅ + 결제 시스템(Creem+Provider 패턴) ✅
-**다음 작업**: 훈련모드 평가 패널 이식 (EvaluationPanelV7 → training-eval-panel) → 각 기능 실사용 테스트 → 점검 모드 해제
+> **⚠️ 새 세션 시작 시 필수**: `docs/오픽스터디_세션인계.md` 먼저 읽기. 직전 세션 컨텍스트 풀로 정리됨 (현재 상태/해결한 이슈/미해결/테스트 시나리오/트러블슈팅).
+
+**현재**: Phase 1~5 ✅ + **Phase 6 오픽 스터디 풀 통합 완료** (백엔드+디자인+라우트+EF 배포 + RLS 재귀 수정)
+**다음 작업**: 미니 시뮬레이션 테스트 (DB에 "테스트" 그룹 + 멤버 2명 이미 준비됨, 브라우저 새로고침 후 풀 플로우 검증)
+
+### 오픽 스터디 모듈 진행 상태
+> **설계서**: `docs/설계/오픽스터디.md` | **결정 기록**: `docs/의사결정.md` Part G (O-1~O-18)
+
+| 단계 | 상태 |
+|------|------|
+| 설계 (1~6단계 + 리뷰 보강) | ✅ |
+| 구현 1: DB 마이그레이션 (047/048/049/050/**051 RLS 재귀 수정**) | ✅ |
+| 구현 2: 타입 정의 (`lib/types/opic-study.ts`) | ✅ |
+| 구현 3: Server Actions (사용자 19 + 관리자 9) | ✅ |
+| 구현 4: EF 2개 작성 + 배포 (`guide`/`feedback`) | ✅ |
+| 구현 5: 프롬프트 DB 등록 (4 row v2) | ✅ |
+| 구현 6: 디자인 시스템 + 19 화면 | ✅ |
+| 구현 7: 사용자 5개 라우트 + 관리자 3개 | ✅ |
+| 구현 8: Realtime 통합 + 마이크 녹음 + 실데이터 | ✅ |
+| 구현 9: 네비바/사이드바 통합 | ✅ |
+| 구현 10: 직전 세션 이슈 3건 해결 (profiles join / RLS 재귀 / Home mock) | ✅ |
+| **구현 11: 미니 시뮬레이션 테스트** | ⏳ **다음** |
+
+### 오픽 스터디 라우트 카탈로그
+- `/opic-study` — 홈 (활성 그룹 + 입장)
+- `/opic-study/lobby/[sessionId]` — 입장 대기실
+- `/opic-study/session/[sessionId]` — 세션 룸 (Step 1~7 + 6-1~6-6 분기)
+- `/opic-study/my` — 마이페이지 (학습 이력)
+- `/opic-study/history` — 그룹 세션 이력
+- `/opic-study/preview` — 디자인 시안 미리보기 (개발용)
+- `/admin/study-groups` — 관리자 그룹 목록
+- `/admin/study-groups/new` — 새 그룹 생성
+- `/admin/study-groups/[groupId]` — 그룹 상세 (멤버/세션 관리)
 
 ### ⚠️ 반드시 해야 할 일: 크레딧 예상 비용 실측 업데이트
 - **파일**: `lib/constants/estimated-costs.ts`
@@ -676,6 +715,8 @@ Stage C: mock-test-report (평가엔진 7-Step + overview/growth GPT)
 대시보드 | 시험후기 | 스크립트 | 모의고사 | 튜터링
 ```
 
+> **오픽 스터디** (`/opic-study`)는 별도 페이지 — 멤버 전용으로 직접 진입. 일반 네비게이션에는 미노출 (또는 멤버에게만 표시).
+
 ### 레이아웃 구조 (확정)
 - **(dashboard)**: 탐색/허브 페이지 — Navbar + Footer 포함
 - **(immersive)**: 활동/몰입 페이지 — ImmersiveHeader만, Navbar/Footer 없음
@@ -685,8 +726,23 @@ Stage C: mock-test-report (평가엔진 7-Step + overview/growth GPT)
 - **스크립트** (/scripts): 스크립트 생성 | 내 스크립트 | 쉐도잉 훈련
 - **모의고사** (/mock-exam): 응시 | 결과 | 나의 이력
 - **튜터링** (/tutoring): 진단 | 훈련 | 나의 튜터링
+- **오픽 스터디** (/opic-study): 별도 디자인 시스템(.bp-scope) — 홈 / lobby / session(Step 1~7) / my / history
 
-### DB 현황 (35개 테이블 — 결제 4개 추가)
+### DB 현황 (39개 테이블 — 오픽 스터디 4개 추가 ✅)
+
+> **오픽 스터디 신규 4테이블** (마이그레이션 047 적용 완료):
+> - `study_groups` — 모임 자체 (월별+등급별)
+> - `study_group_members` — 멤버십 (관리자 등록)
+> - `opic_study_sessions` — 한 번의 스터디 룸 (Realtime 동기화)
+> - `opic_study_answers` — 멤버별 답변 + AI F/B 결과
+>
+> **오픽 스터디 Storage 버킷** (050 적용 완료):
+> - `opic-study-recordings` — 답변 음성 (private, 그룹 멤버만 접근)
+>
+> **오픽 스터디 EF** (배포 완료):
+> - `opic-study-guide` — 일타강사 가이드 생성 (CO-STAR + GPT-4.1)
+> - `opic-study-feedback` — 답변 코칭 (Whisper + Azure + GPT-4.1)
+
 - **questions**: 471행 (D-1 전면 교체 — 13컬럼, 새 ID 체계. 원본: `docs/질문 DB/questions_db.xlsx`)
 - **profiles**: 사용자 프로필 (Supabase Auth 연동)
 - **submissions**: 후기 마스터 (17컬럼 + credit_granted, RLS: 본인 CRUD + complete 전체 SELECT)
@@ -810,5 +866,5 @@ PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/1
 > 의사결정 기록은 `docs/의사결정.md` 참조
 
 ---
-*최종 업데이트: 2026-04-10*
-*상태: 전체 이관 완료 + 결제(Creem) ✅ + 회원가입 채널 제어 ✅ + 디자인 시스템 현행화 ✅*
+*최종 업데이트: 2026-05-02*
+*상태: Phase 1~5 ✅ + **Phase 6 오픽 스터디 풀 통합 완료** ✅ (백엔드+디자인+라우트+EF 배포) → 미니 시뮬레이션 테스트*

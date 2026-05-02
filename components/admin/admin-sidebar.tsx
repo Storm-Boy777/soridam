@@ -54,6 +54,7 @@ const menuGroups: MenuGroup[] = [
       { label: "스크립트", href: "/admin/scripts", icon: FileCode },
       { label: "튜터링", href: "/admin/tutoring", icon: Stethoscope },
       { label: "스터디", href: "/admin/study-group", icon: Users },
+      { label: "오픽 스터디", href: "/admin/study-groups", icon: Users },
     ],
   },
   {
