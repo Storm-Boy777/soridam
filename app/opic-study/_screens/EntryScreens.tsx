@@ -39,7 +39,6 @@ interface HomeProps {
   user?: typeof MOCK_HOME_USER;
   groups?: typeof MOCK_HOME_GROUPS;
   onEnter?: () => void;
-  onNewGroup?: () => void;
   /** 실제 라우트에서 풀스크린으로 표시 (디자인 시안 모드 X) */
   liveMode?: boolean;
   /** 다음 세션 표시 여부 (그룹 0개일 때 false) */
@@ -81,7 +80,6 @@ function HomeMobile({
   user = MOCK_HOME_USER,
   groups = MOCK_HOME_GROUPS,
   onEnter,
-  onNewGroup,
   liveMode = false,
   showNextSession = true,
   enterDisabled = false,
@@ -190,23 +188,6 @@ function HomeMobile({
           ))}
         </div>
 
-        <SectionH>새 그룹</SectionH>
-        <div
-          onClick={onNewGroup}
-          style={{
-            padding: 16,
-            textAlign: "center",
-            border: "1.5px dashed var(--bp-line-strong)",
-            borderRadius: "var(--bp-radius)",
-            background: "transparent",
-            cursor: "pointer",
-          }}
-        >
-          <div style={{ fontSize: 24, marginBottom: 6 }}>＋</div>
-          <span className="t-sm" style={{ fontWeight: 500 }}>
-            등급별 그룹 둘러보기
-          </span>
-        </div>
       </HfBody>
     </HfPhone>
   );
@@ -220,7 +201,6 @@ function HomePc({
   user = MOCK_HOME_USER,
   groups = MOCK_HOME_GROUPS,
   onEnter,
-  onNewGroup,
   showNextSession = true,
   enterDisabled = false,
   nextSessionMemberCount,
@@ -371,27 +351,6 @@ function HomePc({
                 </HfCard>
               ))
             )}
-
-            {/* 새 그룹 (점선 카드 — flat 변형) */}
-            <div
-              onClick={onNewGroup}
-              role="button"
-              tabIndex={0}
-              style={{
-                padding: 20,
-                textAlign: "center",
-                border: "1.5px dashed var(--bp-line-strong)",
-                borderRadius: "var(--bp-radius)",
-                background: "transparent",
-                cursor: "pointer",
-                transition: "all 0.18s",
-              }}
-            >
-              <div style={{ fontSize: 28, marginBottom: 6 }}>＋</div>
-              <span className="t-sm" style={{ fontWeight: 500 }}>
-                등급별 그룹 둘러보기
-              </span>
-            </div>
           </div>
 
           {/* RIGHT — 최근 학습한 베스트 표현 */}

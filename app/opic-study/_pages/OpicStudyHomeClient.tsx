@@ -158,7 +158,6 @@ export function OpicStudyHomeClient({
         showNextSession={hasActiveGroup}
         enterDisabled={!hasActiveGroup || pending}
         onEnter={handleEnter}
-        onNewGroup={() => router.push("/opic-study/my")}
         nextSessionMemberCount={nextSessionMemberCount}
         nextSessionMembers={nextSessionMembers}
       />
