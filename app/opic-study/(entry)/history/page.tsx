@@ -12,7 +12,7 @@ import {
   getMyClosedGroups,
   getGroupHistory,
 } from "@/lib/actions/opic-study";
-import { OpicStudyHistoryClient } from "../_pages/OpicStudyHistoryClient";
+import { OpicStudyHistoryClient } from "../../_pages/OpicStudyHistoryClient";
 
 export default async function OpicStudyHistoryPage({
   searchParams,

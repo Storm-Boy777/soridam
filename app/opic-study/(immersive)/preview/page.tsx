@@ -7,12 +7,12 @@
  * 실제 사용자에게 노출되는 페이지가 아닌 개발/디자인 검토 페이지.
  */
 
-import { Step64Mobile, Step64Pc } from "../_screens/Step64";
-import { Step66Mobile, Step66Pc } from "../_screens/Step66";
-import { Step1, Step2, Step3, Step4, Step5 } from "../_screens/SetupSteps";
-import { Step61, Step62Self, Step62Other, Step63 } from "../_screens/LoopSteps";
-import { Home, Lobby, MyPage } from "../_screens/EntryScreens";
-import { Step7, EdgeMic, EdgeReconnect } from "../_screens/Step7AndEdge";
+import { Step64Mobile, Step64Pc } from "../../_screens/Step64";
+import { Step66Mobile, Step66Pc } from "../../_screens/Step66";
+import { Step1, Step2, Step3, Step4, Step5 } from "../../_screens/SetupSteps";
+import { Step61, Step62Self, Step62Other, Step63 } from "../../_screens/LoopSteps";
+import { Home, Lobby, MyPage } from "../../_screens/EntryScreens";
+import { Step7, EdgeMic, EdgeReconnect } from "../../_screens/Step7AndEdge";
 
 // ============================================================
 // 섹션 헤더

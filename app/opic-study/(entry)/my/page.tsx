@@ -15,7 +15,7 @@ import {
   getMyClosedGroups,
   getGroupHistory,
 } from "@/lib/actions/opic-study";
-import { OpicStudyMyClient } from "../_pages/OpicStudyMyClient";
+import { OpicStudyMyClient } from "../../_pages/OpicStudyMyClient";
 
 export default async function OpicStudyMyPage() {
   const user = await getUser();

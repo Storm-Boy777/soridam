@@ -11,7 +11,7 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
 import { getMyActiveGroups, getMyClosedGroups } from "@/lib/actions/opic-study";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
-import { OpicStudyHomeClient } from "./_pages/OpicStudyHomeClient";
+import { OpicStudyHomeClient } from "../_pages/OpicStudyHomeClient";
 
 export default async function OpicStudyHomePage() {
   const user = await getUser();
