@@ -76,9 +76,6 @@ export function GroupDetailClient({ detail }: Props) {
             >
               {group.status === "active" ? "활성" : "종료"}
             </span>
-            <span className="inline-flex items-center rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-semibold text-primary-700">
-              {group.target_level}
-            </span>
           </div>
           <p className="mt-1 text-sm text-foreground-secondary">
             {group.start_date} ~ {group.end_date}

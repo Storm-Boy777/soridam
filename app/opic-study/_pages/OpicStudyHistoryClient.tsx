@@ -43,7 +43,7 @@ interface SessionDisplay {
 }
 
 interface Props {
-  groups: Array<{ id: string; name: string; targetLevel: string }>;
+  groups: Array<{ id: string; name: string }>;
   sessions: SessionDisplay[];
   selectedGroupId: string;
 }

@@ -49,7 +49,6 @@ export default async function OpicStudyHistoryPage({
       groups={allGroups.map((g) => ({
         id: g.id,
         name: g.name,
-        targetLevel: g.target_level,
       }))}
       sessions={sessions.map((s) => {
         const d = new Date(s.ended_at ?? s.started_at);

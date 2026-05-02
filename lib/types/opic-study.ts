@@ -38,10 +38,10 @@ export type StudyCategory = (typeof STUDY_CATEGORIES)[number];
 // ============================================================
 
 // 1. study_groups
+// 그룹 자체는 등급 보유 X — 각 멤버는 자기 profiles.target_grade로 학습.
 export interface StudyGroup {
   id: string;
   name: string;
-  target_level: string;                    // OpicLevel 가능 (자유 입력 허용)
   start_date: string;                      // 'YYYY-MM-DD'
   end_date: string;                        // 'YYYY-MM-DD'
   status: StudyGroupStatus;
@@ -149,8 +149,8 @@ export interface FeedbackResult {
   // 다음 답변 팁 (1~2개)
   tips: string[];
 
-  // 메타
-  target_level: string;
+  // 메타 — 답변자 본인의 목표 등급 (profiles.target_grade)
+  target_grade: string;
   generated_at: string;
 }
 
@@ -165,8 +165,8 @@ export interface GuideResult {
 // ============================================================
 
 // 가이드 생성 EF 입력 (`tutor-guide` 또는 `opic-study-guide`)
+// 그룹 멤버들의 목표 등급이 다양할 수 있으므로 가이드는 등급 비특정 — 콤보 자체 특성 위주.
 export interface GuideInput {
-  group_target_level: string;
   category: StudyCategory;
   topic: string;
   combo: {
@@ -183,8 +183,10 @@ export interface GuideInput {
 
 // F/B 생성 EF 입력 (`opic-study-feedback`)
 export interface FeedbackInput {
+  // 답변자 본인의 목표 등급 (profiles.target_grade) — 코칭 기준
+  answerer_target_grade: string;
+
   // 세션 컨텍스트
-  group_target_level: string;
   category: StudyCategory;
   topic: string;
   ai_guide_key_points: string[];           // 가이드 일관성
@@ -341,10 +343,9 @@ export interface AdminGroupStats {
   ai_cost_usd_cents: number;               // api_usage_logs 집계
 }
 
-// 신규 그룹 생성 입력
+// 신규 그룹 생성 입력 (그룹 등급 X — 멤버 개인의 target_grade 사용)
 export interface CreateStudyGroupInput {
   name: string;
-  target_level: string;
   start_date: string;
   end_date: string;
   description?: string;

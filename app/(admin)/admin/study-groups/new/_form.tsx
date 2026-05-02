@@ -9,15 +9,12 @@ import {
 import { Search, X, Check, Loader2 } from "lucide-react";
 import type { ProfileLite } from "@/lib/types/opic-study";
 
-const LEVELS = ["IM2", "IM3", "IH", "AL", "기타"];
-
 export function NewStudyGroupForm() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
-  // 폼 상태
+  // 폼 상태 (그룹 등급 X — 멤버 개인의 target_grade 사용)
   const [name, setName] = useState("");
-  const [level, setLevel] = useState("AL");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [description, setDescription] = useState("");
@@ -69,7 +66,6 @@ export function NewStudyGroupForm() {
     startTransition(async () => {
       const res = await createStudyGroup({
         name: name.trim(),
-        target_level: level,
         start_date: startDate,
         end_date: endDate,
         description: description.trim() || undefined,
@@ -99,26 +95,6 @@ export function NewStudyGroupForm() {
           className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
           required
         />
-      </Field>
-
-      {/* 등급 */}
-      <Field label="목표 등급" required>
-        <div className="flex flex-wrap gap-2">
-          {LEVELS.map((lv) => (
-            <button
-              type="button"
-              key={lv}
-              onClick={() => setLevel(lv)}
-              className={`rounded-lg border px-4 py-1.5 text-sm font-medium ${
-                level === lv
-                  ? "border-primary-500 bg-primary-50 text-primary-700"
-                  : "border-border bg-surface text-foreground-secondary hover:bg-surface-hover"
-              }`}
-            >
-              {lv}
-            </button>
-          ))}
-        </div>
       </Field>
 
       {/* 운영 기간 */}

@@ -56,7 +56,7 @@ export default async function OpicStudyMyPage() {
         const dateStr = s.ended_at ?? s.started_at;
         const d = new Date(dateStr);
         return {
-          name: `${s.selected_topic ?? "(미선택)"} · ${primaryGroup.target_level}`,
+          name: s.selected_topic ?? "(미선택)",
           date: `${d.getMonth() + 1}/${d.getDate()}`,
           done: true,
         };

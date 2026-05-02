@@ -24,11 +24,11 @@ export default async function OpicStudySessionPage({ params }: PageProps) {
 
   const supabase = await createServerSupabaseClient();
 
-  // 세션 + 그룹 정보 조회
+  // 세션 + 그룹 정보 조회 (그룹 등급 X — 멤버별 target_grade 사용)
   const { data: session, error } = await supabase
     .from("opic_study_sessions")
     .select(
-      "*, study_groups!inner(name, target_level)"
+      "*, study_groups!inner(name)"
     )
     .eq("id", sessionId)
     .maybeSingle();
@@ -84,8 +84,15 @@ export default async function OpicStudySessionPage({ params }: PageProps) {
 
   const groupMeta = session.study_groups as unknown as {
     name: string;
-    target_level: string;
   };
+
+  // 본인의 목표 등급 (마이페이지에서 설정한 값, 없으면 기본 AL)
+  const { data: meProfile } = await supabase
+    .from("profiles")
+    .select("target_grade")
+    .eq("id", user.id)
+    .maybeSingle();
+  const myTargetGrade = (meProfile?.target_grade as string | null) || "AL";
 
   return (
     <OpicStudySessionClient
@@ -93,7 +100,7 @@ export default async function OpicStudySessionPage({ params }: PageProps) {
       currentUserId={user.id}
       groupId={session.group_id}
       groupName={groupMeta.name}
-      groupLevel={groupMeta.target_level}
+      myTargetGrade={myTargetGrade}
       members={members}
       initialSession={{
         id: session.id,

@@ -47,7 +47,6 @@ interface SessionMeta {
   selected_topic: string;
   selected_question_ids: string[];
   ai_guide_text: string | null;
-  group: { target_level: string };
 }
 
 interface QuestionInfo {
@@ -206,10 +205,10 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // 1. 세션 메타 조회
+    // 1. 세션 메타 조회 (그룹 등급 X — 가이드는 등급 비특정)
     const { data: sessionData, error: sErr } = await supabase
       .from("opic_study_sessions")
-      .select("id, group_id, selected_category, selected_topic, selected_question_ids, ai_guide_text, study_groups!inner(target_level)")
+      .select("id, group_id, selected_category, selected_topic, selected_question_ids, ai_guide_text")
       .eq("id", sessionId)
       .single();
 
@@ -272,9 +271,9 @@ Deno.serve(async (req: Request) => {
     const systemPromptText = systemRes.data.prompt_text as string;
     const userPromptTpl = userRes.data.prompt_text as string;
 
-    // 5. 변수 치환
+    // 5. 변수 치환 (그룹 등급 X — 멤버 다양한 등급 수용 위해 비특정)
     const userPrompt = buildPrompt(userPromptTpl, {
-      group_target_level: session.group.target_level,
+      group_target_level: "다양한 등급의 멤버", // 프롬프트 호환성 위해 placeholder
       category: session.selected_category,
       topic: session.selected_topic,
       questions_text: formatQuestions(orderedQuestions),

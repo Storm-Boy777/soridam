@@ -82,7 +82,6 @@ export default async function AdminStudyGroupsPage() {
                       {g.name}
                     </h3>
                     <StatusBadge status={g.status} />
-                    <LevelBadge level={g.target_level} />
                   </div>
                   <div className="mt-1 flex items-center gap-3 text-xs text-foreground-secondary">
                     <span>
@@ -144,10 +143,3 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function LevelBadge({ level }: { level: string }) {
-  return (
-    <span className="inline-flex items-center rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-semibold text-primary-700">
-      {level}
-    </span>
-  );
-}

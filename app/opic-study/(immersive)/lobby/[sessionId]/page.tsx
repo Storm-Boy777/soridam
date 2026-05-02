@@ -28,7 +28,7 @@ export default async function OpicStudyLobbyPage({ params }: PageProps) {
   const { data: session } = await supabase
     .from("opic_study_sessions")
     .select(
-      "id, group_id, status, step, study_groups!inner(name, target_level)"
+      "id, group_id, status, step, study_groups!inner(name)"
     )
     .eq("id", sessionId)
     .maybeSingle();
@@ -94,7 +94,6 @@ export default async function OpicStudyLobbyPage({ params }: PageProps) {
 
   const groupMeta = session.study_groups as unknown as {
     name: string;
-    target_level: string;
   };
 
   return (

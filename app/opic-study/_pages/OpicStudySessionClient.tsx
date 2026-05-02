@@ -129,7 +129,8 @@ interface Props {
   currentUserId: string;
   groupId: string;
   groupName: string;
-  groupLevel: string;
+  /** 본인의 목표 등급 (profiles.target_grade) */
+  myTargetGrade: string;
   members: MemberInfo[];
   initialSession: SessionState;
 }
@@ -139,7 +140,7 @@ export function OpicStudySessionClient({
   currentUserId,
   groupId,
   groupName,
-  groupLevel,
+  myTargetGrade,
   members,
   initialSession,
 }: Props) {
@@ -750,7 +751,7 @@ export function OpicStudySessionClient({
           {session.ai_guide_text ? (
             <Step5
               topic={session.selected_topic ?? "콤보"}
-              level={groupLevel}
+              level={myTargetGrade}
               guideText={session.ai_guide_text}
               onStart={handleStartRecording}
               liveMode
@@ -863,7 +864,7 @@ export function OpicStudySessionClient({
             members={members}
             answers={answers}
             topic={session.selected_topic ?? "콤보"}
-            level={groupLevel}
+            level={myTargetGrade}
             onHome={() => router.push("/opic-study")}
             groupName={groupName}
           />

@@ -25,7 +25,6 @@ import type {
 /** 그룹 목록 + 통계 */
 export async function listStudyGroups(filter?: {
   status?: StudyGroupStatus;
-  level?: string;
 }): Promise<ActionResult<StudyGroupWithStats[]>> {
   try {
     const { supabase } = await requireAdmin();
@@ -36,7 +35,6 @@ export async function listStudyGroups(filter?: {
       .order("start_date", { ascending: false });
 
     if (filter?.status) query = query.eq("status", filter.status);
-    if (filter?.level) query = query.eq("target_level", filter.level);
 
     const { data: groups, error } = await query;
     if (error) return { error: "그룹 목록 조회 실패" };
@@ -158,18 +156,16 @@ export async function createStudyGroup(
 
     // 검증
     if (!input.name?.trim()) return { error: "그룹 이름이 필요합니다" };
-    if (!input.target_level?.trim()) return { error: "목표 등급이 필요합니다" };
     if (!input.start_date || !input.end_date) return { error: "기간이 필요합니다" };
     if (new Date(input.start_date) >= new Date(input.end_date)) {
       return { error: "종료일이 시작일보다 늦어야 합니다" };
     }
 
-    // 1. 그룹 INSERT
+    // 1. 그룹 INSERT (그룹 등급 X — 멤버 개인의 target_grade 사용)
     const { data: group, error: gErr } = await supabase
       .from(T.study_groups)
       .insert({
         name: input.name.trim(),
-        target_level: input.target_level.trim(),
         start_date: input.start_date,
         end_date: input.end_date,
         description: input.description?.trim() || null,
@@ -201,7 +197,6 @@ export async function createStudyGroup(
       target_id: group.id,
       details: {
         name: input.name,
-        target_level: input.target_level,
         member_count: input.member_user_ids.length,
       },
     });
@@ -215,7 +210,7 @@ export async function createStudyGroup(
 /** 그룹 수정 (이름/등급/기간/설명/상태) */
 export async function updateStudyGroup(
   groupId: string,
-  patch: Partial<Pick<StudyGroup, "name" | "target_level" | "start_date" | "end_date" | "description" | "status">>
+  patch: Partial<Pick<StudyGroup, "name" | "start_date" | "end_date" | "description" | "status">>
 ): Promise<ActionResult> {
   try {
     const { supabase, userId, userEmail } = await requireAdmin();

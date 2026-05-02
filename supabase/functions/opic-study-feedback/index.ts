@@ -52,7 +52,6 @@ interface SessionMeta {
   selected_category: string;
   selected_topic: string;
   ai_guide_key_points: string[] | null;
-  group: { target_level: string };
 }
 
 // ── 헬퍼 ──
@@ -237,7 +236,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: sessionData, error: sErr } = await supabase
       .from("opic_study_sessions")
-      .select("group_id, selected_category, selected_topic, ai_guide_key_points, study_groups!inner(target_level)")
+      .select("group_id, selected_category, selected_topic, ai_guide_key_points")
       .eq("id", sessionId)
       .single();
 
@@ -248,6 +247,15 @@ Deno.serve(async (req: Request) => {
       });
     }
     const session = sessionData as unknown as SessionMeta & { group_id: string };
+
+    // 답변자 본인의 목표 등급 조회 (그룹 등급 X — 멤버 개인의 target_grade 사용)
+    const { data: answererProfile } = await supabase
+      .from("profiles")
+      .select("target_grade")
+      .eq("id", userId)
+      .single();
+    const answererTargetGrade =
+      (answererProfile?.target_grade as string | null) || "AL"; // 미설정 시 기본 AL
 
     const { data: question, error: qErr } = await supabase
       .from("questions")
@@ -354,7 +362,9 @@ Deno.serve(async (req: Request) => {
       : "발음 데이터 없음";
 
     const userPrompt = buildPrompt(userPromptTpl, {
-      group_target_level: session.group.target_level,
+      // 답변자 본인의 목표 등급 (프롬프트가 group_target_level 변수명을 그대로 쓰면 호환성 위해 둘 다 주입)
+      group_target_level: answererTargetGrade,
+      answerer_target_grade: answererTargetGrade,
       category: session.selected_category,
       topic: session.selected_topic,
       ai_guide_key_points: (session.ai_guide_key_points || []).map((p, i) => `${i + 1}. ${p}`).join("\n") || "(없음)",
@@ -452,7 +462,7 @@ Deno.serve(async (req: Request) => {
       strengths: parsed.strengths,
       improvements: parsed.improvements,
       tips: parsed.tips,
-      target_level: session.group.target_level,
+      target_grade: answererTargetGrade,
       generated_at: new Date().toISOString(),
     };
 
