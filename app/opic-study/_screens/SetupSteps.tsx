@@ -27,6 +27,7 @@ import {
   PcStepShell,
 } from "../_components/bp";
 import { goHome } from "@/lib/opic-study/nav";
+import { useSessionFrame } from "../_components/session-frame-context";
 import {
   MOCK_GROUP,
   MOCK_MEMBERS_BASE,
@@ -71,6 +72,25 @@ function Step1Mobile({
   liveMode = false,
 }: Step1Props) {
   const [mode, setMode] = useState<"online" | "offline">("online");
+  const ctx = useSessionFrame();
+
+  // 실제 ctx members가 있으면 그걸 사용 + dim 분기, 없으면 mock fallback (preview용)
+  const memberDots = ctx?.members.length
+    ? ctx.members.map((m) => ({
+        color: m.key,
+        initial: m.initial,
+        dim: !ctx.onlineUserIds.has(m.userId),
+      }))
+    : MOCK_MEMBERS_BASE.map((m) => ({
+        color: m.key,
+        initial: m.initial,
+        live: true,
+      }));
+  const ctxMemberCount = ctx?.members.length ?? 0;
+  const joinedCount = ctx?.onlineUserIds.size ?? 0;
+  const memberNamesLabel = ctx?.members.length
+    ? ctx.members.map((m) => m.name).join(" · ")
+    : MOCK_MEMBERS_BASE.map((m) => m.name).join(" · ");
 
   return (
     <HfPhone liveMode={liveMode}>
@@ -132,20 +152,14 @@ function Step1Mobile({
             gap: 12,
           }}
         >
-          <MbStack
-            members={MOCK_MEMBERS_BASE.map((m) => ({
-              color: m.key,
-              initial: m.initial,
-              live: true,
-            }))}
-          />
+          <MbStack members={memberDots} />
           <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
             <span className="t-sm" style={{ fontWeight: 600 }}>
-              {memberCount}명 모두 준비 완료
+              {ctxMemberCount > 0
+                ? `${joinedCount}명 입장 / ${ctxMemberCount}명`
+                : `${memberCount}명 모두 준비 완료`}
             </span>
-            <span className="t-xs ink-3">
-              {MOCK_MEMBERS_BASE.map((m) => m.name).join(" · ")}
-            </span>
+            <span className="t-xs ink-3">{memberNamesLabel}</span>
           </div>
         </HfCard>
       </HfBody>

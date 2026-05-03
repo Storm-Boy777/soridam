@@ -32,13 +32,11 @@ export function HfPhone({ children, className = "", liveMode = false }: HfPhoneP
           width: "100%",
           maxWidth: 480,
           minHeight: "100dvh",
-          height: "100dvh",
           margin: "0 auto",
           background: "var(--bp-bg)",
           display: "flex",
           flexDirection: "column",
           position: "relative",
-          overflow: "hidden",
         }}
       >
         {children}
@@ -297,8 +295,7 @@ export function HfBody({ children, padding = "20px", className = "" }: HfBodyPro
     <div
       className={className}
       style={{
-        flex: 1,
-        overflow: "auto",
+        // 자연 스크롤 — 외곽 layout/HfPhone이 처리. 내부 overflow X.
         display: "flex",
         flexDirection: "column",
         padding,
@@ -409,6 +406,8 @@ interface MbDotProps {
   color: MbColor;
   initial: string;
   live?: boolean;
+  /** 회색 dimmed 처리 — 미입장 멤버 시각 분리. 컬러 클래스 무시 + 회색 배경 */
+  dim?: boolean;
   size?: number;
   fontSize?: number;
   style?: React.CSSProperties;
@@ -418,16 +417,23 @@ export function MbDot({
   color,
   initial,
   live = false,
+  dim = false,
   size,
   fontSize,
   style,
 }: MbDotProps) {
   return (
     <span
-      className={`bp-mb-dot ${color} ${live ? "live" : ""}`}
+      className={`bp-mb-dot ${dim ? "" : color} ${live && !dim ? "live" : ""}`}
       style={{
         ...(size ? { width: size, height: size } : {}),
         ...(fontSize ? { fontSize } : {}),
+        ...(dim
+          ? {
+              background: "var(--bp-ink-4)",
+              color: "#fff",
+            }
+          : {}),
         ...style,
       }}
     >
@@ -438,14 +444,25 @@ export function MbDot({
 
 // 멤버 dots 스택
 interface MbStackProps {
-  members: Array<{ color: MbColor; initial: string; live?: boolean }>;
+  members: Array<{
+    color: MbColor;
+    initial: string;
+    live?: boolean;
+    dim?: boolean;
+  }>;
 }
 
 export function MbStack({ members }: MbStackProps) {
   return (
     <div className="bp-mb-stack">
       {members.map((m, i) => (
-        <MbDot key={i} color={m.color} initial={m.initial} live={m.live} />
+        <MbDot
+          key={i}
+          color={m.color}
+          initial={m.initial}
+          live={m.live}
+          dim={m.dim}
+        />
       ))}
     </div>
   );

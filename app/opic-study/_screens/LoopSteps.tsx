@@ -28,6 +28,7 @@ import {
   PcStepShell,
 } from "../_components/bp";
 import { goHome } from "@/lib/opic-study/nav";
+import { useSessionFrame } from "../_components/session-frame-context";
 import {
   MOCK_QUESTION_Q1,
   MOCK_NOTE_DEFAULT,
@@ -206,7 +207,12 @@ interface Step61PcProps extends Step61Props {
   groupName?: string;
   topicLabel?: string;
   /** 실데이터 — 멤버 list (없으면 mock 4명 사용) */
-  realMembers?: Array<{ key: "a" | "b" | "c" | "d"; name: string; isMe: boolean }>;
+  realMembers?: Array<{
+    key: "a" | "b" | "c" | "d";
+    name: string;
+    isMe: boolean;
+    userId?: string;
+  }>;
   /** 실데이터 질문 텍스트 (없으면 mock 사용) */
   questionText?: string;
 }
@@ -220,15 +226,22 @@ export function Step61Pc({
   questionText,
 }: Step61PcProps) {
   const [speaker, setSpeaker] = useState<string | null>(null);
+  const ctx = useSessionFrame();
 
   // 실데이터 우선, 없으면 mock
   const members = realMembers && realMembers.length > 0
-    ? realMembers.map((m) => ({
-        key: m.key,
-        name: m.name,
-        sub: m.isMe ? "나" : "대기 중",
-      }))
-    : STEP61_MEMBERS;
+    ? realMembers.map((m) => {
+        const isOnline =
+          (m.userId && ctx?.onlineUserIds.has(m.userId)) || m.isMe;
+        return {
+          key: m.key,
+          name: m.name,
+          sub: m.isMe ? "나" : isOnline ? "입장 중" : "미입장",
+          isOnline,
+          isMe: m.isMe,
+        };
+      })
+    : STEP61_MEMBERS.map((m) => ({ ...m, isOnline: true, isMe: false }));
 
   const displayQuestion = questionText ?? question.english;
 
@@ -291,12 +304,14 @@ export function Step61Pc({
                     ? "0 0 0 4px rgba(201,100,66,0.08)"
                     : "var(--bp-shadow-sm)",
                   transition: "all 0.15s",
+                  opacity: m.isOnline ? 1 : 0.65,
                 }}
               >
                 <MbDot
                   color={m.key}
                   initial={m.name[0]}
-                  live
+                  live={m.isOnline}
+                  dim={!m.isOnline}
                   size={56}
                   fontSize={22}
                   style={{ margin: "0 auto 12px", display: "flex" }}

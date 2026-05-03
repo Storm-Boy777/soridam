@@ -21,7 +21,8 @@
  * - completed → LiveStep7 (종료)
  */
 
-import { useEffect, useState, useTransition, useCallback, useMemo, createContext, useContext } from "react";
+import { useEffect, useState, useTransition, useCallback, useMemo, useContext } from "react";
+import { SessionFrameContext } from "../_components/session-frame-context";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
@@ -114,15 +115,9 @@ interface MemberInfo {
 
 // ============================================================
 // SessionFrameContext — Shell에서 presence + 연결 상태 표시용
+// (정의는 _components/session-frame-context.tsx에서 분리됨)
 // ============================================================
 type ConnectionState = "connected" | "reconnecting" | "error";
-interface SessionFrameContextValue {
-  onlineUserIds: Set<string>;
-  members: MemberInfo[];
-  connectionState: ConnectionState;
-  onlineMode: boolean;
-}
-const SessionFrameContext = createContext<SessionFrameContextValue | null>(null);
 
 interface Props {
   sessionId: string;
@@ -881,7 +876,7 @@ function Shell({
   const connectionState = ctx?.connectionState ?? "connected";
 
   return (
-    <div style={{ minHeight: "100dvh", display: "flex", position: "relative" }}>
+    <div style={{ position: "relative" }}>
       {children}
 
       {/* 연결 끊김 배너 (전역, fixed top) */}
@@ -1161,6 +1156,7 @@ function LiveStep61({
     key: m.key,
     name: m.name,
     isMe: m.userId === currentUserId,
+    userId: m.userId,
   }));
   return (
     <>
@@ -1206,6 +1202,7 @@ function LiveStep61Mobile({
   currentUserId: string;
   onClaim: () => void;
 }) {
+  const ctx = useContext(SessionFrameContext);
   return (
     <HfPhone liveMode>
       <HfHeader
@@ -1240,6 +1237,7 @@ function LiveStep61Mobile({
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {members.map((m) => {
             const isMe = m.userId === currentUserId;
+            const isOnline = ctx?.onlineUserIds.has(m.userId) ?? isMe;
             return (
               <div
                 key={m.userId}
@@ -1251,16 +1249,26 @@ function LiveStep61Mobile({
                   borderRadius: "var(--bp-radius)",
                   background: "var(--bp-surface)",
                   boxShadow: "var(--bp-shadow-sm)",
+                  opacity: isOnline ? 1 : 0.65,
                 }}
               >
-                <MbDot color={m.key} initial={m.initial} live size={36} fontSize={13} />
+                <MbDot
+                  color={m.key}
+                  initial={m.initial}
+                  live={isOnline}
+                  dim={!isOnline}
+                  size={36}
+                  fontSize={13}
+                />
                 <div
                   style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}
                 >
                   <span className="t-sm" style={{ fontWeight: 600 }}>
                     {m.name}
                   </span>
-                  <span className="t-xs ink-3">{isMe ? "나" : "대기 중"}</span>
+                  <span className="t-xs ink-3">
+                    {isMe ? "나" : isOnline ? "입장 중" : "미입장"}
+                  </span>
                 </div>
                 {isMe && (
                   <HfButton variant="tc" size="sm" onClick={onClaim}>

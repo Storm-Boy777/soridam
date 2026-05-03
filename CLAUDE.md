@@ -616,6 +616,12 @@ origin: https://Storm-Boy777@github.com/Storm-Boy777/soridam.git
 | 05-02 | **Dialog/Toast 통일 ✅** | BpConfirmDialog 신규 (BP 디자인 — terracotta/yellow variant). native confirm 3개 → BpConfirmDialog 교체. native alert 4개 → sonner toast 교체. 시스템 OS 다이얼로그 사라짐 |
 | 05-02 | **그룹 등급 폐기 ✅** | 마이그레이션 052 (study_groups.target_level 삭제). profiles.target_grade 사용 (멤버별 개인 등급). EF 둘 다 재배포 — feedback은 답변자 본인 등급으로 코칭, guide는 등급 비특정. Admin/User UI 등급 표시 모두 제거. 핵심 결정: "스터디는 함께 하지만 멤버마다 목표 다를 수 있음" |
 | 05-02 | **불필요 요소 제거 ✅** | "등급별 그룹 둘러보기" 점선 카드 삭제 (그룹 등급 폐기 + 자가 가입 X 모델과 충돌). HomeProps.onNewGroup prop 제거 |
+| 05-03 | **오픽 스터디 풀 리뉴얼 ✅** | 멤버 홈 8가지 시간대 분기 (live/live_overtime/ready/today_soon/today_before/today_after/weekend/before_first) + ENTRY_OPEN=30분/GRACE=60분 + Realtime presence + 카피 LIVE 톤. Lobby/History/My/비멤버 풀 리뉴얼. 자연 스크롤 (HfPhone 100dvh 제거). 멤버 dot 회색 분리 (입장 vs 미입장). 운영 가이드 토글 |
+| 05-03 | **그룹별 일정/모드 ✅** | 마이그레이션 053 (study_groups.schedule jsonb) + 054 (default_mode). 운영 요일/시간/첫 시작일/모임 방식(online/offline)/요일별 override. 세션 룸 모드 토글 제거 (자동 결정). createSession 시점에 모드 자동 채움. system_settings는 "신규 그룹 기본값" |
+| 05-03 | **관리자 study-groups 풀 CRUD ✅** | deleteStudyGroup/reopenStudyGroup SA + 검색/필터/카드 액션 + EditGroupModal. ScheduleFields/ScheduleCard 신규. BpConfirmDialog + sonner toast. 사이드바 "스터디 모임"/"오픽 스터디" 라벨/아이콘 분리 + active 매칭 경로 경계 |
+| 05-03 | **lobby 의미 살림 + lazy 정리 ✅** | createSession step DEFAULT(mode_select) 사용. handleEnter step 분기 (mode_select → lobby, 그 외 → /session 직진). advanceLobby SA 신규. isSessionExpired 헬퍼 + getActiveSession/createSession 좀비 자동 정리 |
+| 05-03 | **JWT refreshSession 버그 fix ✅** | updateGoals에 supabase.auth.refreshSession() 추가. 등급 저장 후 화면에서 안 보이던 버그 (JWT 클레임 그대로) 해결 |
+| 05-03 | **1:1 문의 prefill 시스템 ✅** | lib/constants/inquiry-prefills.ts 카탈로그 + inquiry-form/tab에 initialCategory/Title/Content + URL ?prefill=key 자동 펼침. 비멤버 페이지 mailto → /support?tab=inquiry&prefill=opic-study |
 
 <!-- 이후 새 이력은 이 테이블에 행 추가 + memory/개발이력.md에 상세 기록 -->
 
