@@ -13,10 +13,48 @@ import type {
   AdminGroupStats,
   CreateStudyGroupInput,
   GroupMemberWithProfile,
+  GroupSchedule,
   ProfileLite,
   SessionHistoryItem,
   StudyGroupStatus,
 } from "@/lib/types/opic-study";
+
+// 일정 검증 — 형식/논리적 유효성. 통과 시 null 반환.
+function validateSchedule(s: GroupSchedule): string | null {
+  if (!Array.isArray(s.days) || s.days.length === 0) {
+    return "운영 요일을 1개 이상 선택해주세요";
+  }
+  if (s.days.some((d) => d < 0 || d > 6)) {
+    return "운영 요일이 유효하지 않습니다 (0~6)";
+  }
+  if (!/^\d{2}:\d{2}$/.test(s.start_time)) {
+    return "시작 시간 형식이 올바르지 않습니다 (HH:MM)";
+  }
+  if (!/^\d{2}:\d{2}$/.test(s.end_time)) {
+    return "종료 시간 형식이 올바르지 않습니다 (HH:MM)";
+  }
+  if (s.start_time >= s.end_time) {
+    return "종료 시간이 시작 시간보다 늦어야 합니다";
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s.first_session_date)) {
+    return "첫 시작일 형식이 올바르지 않습니다 (YYYY-MM-DD)";
+  }
+  if (s.default_mode !== "online" && s.default_mode !== "offline") {
+    return "모임 방식이 유효하지 않습니다 (온라인/오프라인)";
+  }
+  if (s.day_modes) {
+    for (const [key, value] of Object.entries(s.day_modes)) {
+      const dayNum = Number(key);
+      if (!Number.isInteger(dayNum) || dayNum < 0 || dayNum > 6) {
+        return "요일별 모임 방식 — 잘못된 요일 키";
+      }
+      if (value !== "online" && value !== "offline") {
+        return "요일별 모임 방식 값이 유효하지 않습니다";
+      }
+    }
+  }
+  return null;
+}
 
 // ============================================================
 // 1. 그룹 CRUD (5개)
@@ -161,6 +199,10 @@ export async function createStudyGroup(
       return { error: "종료일이 시작일보다 늦어야 합니다" };
     }
 
+    // 일정 검증
+    const sErr = validateSchedule(input.schedule);
+    if (sErr) return { error: sErr };
+
     // 1. 그룹 INSERT (그룹 등급 X — 멤버 개인의 target_grade 사용)
     const { data: group, error: gErr } = await supabase
       .from(T.study_groups)
@@ -169,6 +211,7 @@ export async function createStudyGroup(
         start_date: input.start_date,
         end_date: input.end_date,
         description: input.description?.trim() || null,
+        schedule: input.schedule,
         created_by: userId,
       })
       .select("id")
@@ -207,13 +250,24 @@ export async function createStudyGroup(
   }
 }
 
-/** 그룹 수정 (이름/등급/기간/설명/상태) */
+/** 그룹 수정 (이름/기간/설명/상태/일정) */
 export async function updateStudyGroup(
   groupId: string,
-  patch: Partial<Pick<StudyGroup, "name" | "start_date" | "end_date" | "description" | "status">>
+  patch: Partial<
+    Pick<
+      StudyGroup,
+      "name" | "start_date" | "end_date" | "description" | "status" | "schedule"
+    >
+  >
 ): Promise<ActionResult> {
   try {
     const { supabase, userId, userEmail } = await requireAdmin();
+
+    // 일정 검증 (schedule이 patch에 포함된 경우만)
+    if (patch.schedule !== undefined && patch.schedule !== null) {
+      const sErr = validateSchedule(patch.schedule);
+      if (sErr) return { error: sErr };
+    }
 
     // 변경 전 상태 조회 (감사 로그용)
     const { data: before } = await supabase.from(T.study_groups).select("*").eq("id", groupId).single();
@@ -265,6 +319,82 @@ export async function closeStudyGroup(groupId: string, reason?: string): Promise
     return { data: null };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "그룹 종료 실패" };
+  }
+}
+
+/** 그룹 재활성화 (closed → active) */
+export async function reopenStudyGroup(groupId: string): Promise<ActionResult> {
+  try {
+    const { supabase, userId, userEmail } = await requireAdmin();
+
+    const { error } = await supabase
+      .from(T.study_groups)
+      .update({ status: "active" })
+      .eq("id", groupId);
+    if (error) return { error: "그룹 재활성화 실패" };
+
+    await supabase.from(T.admin_audit_log).insert({
+      admin_id: userId,
+      admin_email: userEmail,
+      action: "reopen_study_group",
+      target_type: "study_group",
+      target_id: groupId,
+      details: {},
+    });
+
+    return { data: null };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "그룹 재활성화 실패" };
+  }
+}
+
+/**
+ * 그룹 영구 삭제
+ *
+ * FK CASCADE로 다음이 함께 삭제됨:
+ * - study_group_members (멤버)
+ * - opic_study_sessions (세션)
+ * - opic_study_answers (답변)
+ * - Storage `opic-study-recordings/{groupId}/...` 녹음은 별도 정리 X (필요 시 수동/배치)
+ */
+export async function deleteStudyGroup(groupId: string): Promise<ActionResult<{ deleted: true }>> {
+  try {
+    const { supabase, userId, userEmail } = await requireAdmin();
+
+    // 감사 로그용으로 삭제 전 메타 + 카운트 수집
+    const { data: group } = await supabase
+      .from(T.study_groups)
+      .select("name, status, start_date, end_date")
+      .eq("id", groupId)
+      .single();
+    if (!group) return { error: "그룹을 찾을 수 없습니다" };
+
+    const [{ count: memberCount }, { count: sessionCount }] = await Promise.all([
+      supabase.from(T.study_group_members).select("*", { count: "exact", head: true }).eq("group_id", groupId),
+      supabase.from(T.opic_study_sessions).select("*", { count: "exact", head: true }).eq("group_id", groupId),
+    ]);
+
+    const { error } = await supabase.from(T.study_groups).delete().eq("id", groupId);
+    if (error) return { error: "그룹 삭제 실패" };
+
+    await supabase.from(T.admin_audit_log).insert({
+      admin_id: userId,
+      admin_email: userEmail,
+      action: "delete_study_group",
+      target_type: "study_group",
+      target_id: groupId,
+      details: {
+        name: group.name,
+        status: group.status,
+        period: `${group.start_date} ~ ${group.end_date}`,
+        deleted_member_count: memberCount ?? 0,
+        deleted_session_count: sessionCount ?? 0,
+      },
+    });
+
+    return { data: { deleted: true } };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "그룹 삭제 실패" };
   }
 }
 

@@ -996,7 +996,7 @@ export function BpConfirmDialog({
             {title}
           </div>
           {description && (
-            <p
+            <div
               className="t-sm"
               style={{
                 margin: 0,
@@ -1005,7 +1005,7 @@ export function BpConfirmDialog({
               }}
             >
               {description}
-            </p>
+            </div>
           )}
         </div>
 

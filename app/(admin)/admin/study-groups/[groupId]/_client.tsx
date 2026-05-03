@@ -2,11 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   searchMemberCandidates,
   addGroupMembers,
   removeGroupMember,
   closeStudyGroup,
+  reopenStudyGroup,
+  deleteStudyGroup,
 } from "@/lib/actions/admin/study-groups";
 import {
   Users,
@@ -19,7 +22,13 @@ import {
   Loader2,
   Check,
   ArrowRight,
+  Pencil,
+  Trash2,
+  Power,
+  PowerOff,
 } from "lucide-react";
+import { BpConfirmDialog } from "@/app/opic-study/_components/bp";
+import { EditGroupModal } from "../_edit-modal";
 import type {
   AdminGroupDetail,
   ProfileLite,
@@ -29,33 +38,69 @@ interface Props {
   detail: AdminGroupDetail;
 }
 
+type ConfirmState =
+  | { kind: "close" }
+  | { kind: "reopen" }
+  | { kind: "delete" }
+  | { kind: "remove-member"; userId: string; name: string }
+  | null;
+
 export function GroupDetailClient({ detail }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [confirm, setConfirm] = useState<ConfirmState>(null);
 
   const { group, members, sessions, stats } = detail;
 
   const handleClose = () => {
-    if (!confirm(`"${group.name}" 그룹을 종료하시겠습니까?`)) return;
     startTransition(async () => {
       const res = await closeStudyGroup(group.id);
       if (res.error) {
-        alert(res.error);
+        toast.error(res.error);
         return;
       }
+      toast.success("그룹이 종료되었습니다.");
+      setConfirm(null);
       router.refresh();
     });
   };
 
-  const handleRemove = (userId: string, name: string) => {
-    if (!confirm(`${name}님을 그룹에서 제거하시겠습니까?`)) return;
+  const handleReopen = () => {
+    startTransition(async () => {
+      const res = await reopenStudyGroup(group.id);
+      if (res.error) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success("그룹이 재활성화되었습니다.");
+      setConfirm(null);
+      router.refresh();
+    });
+  };
+
+  const handleDelete = () => {
+    startTransition(async () => {
+      const res = await deleteStudyGroup(group.id);
+      if (res.error) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success("그룹이 삭제되었습니다.");
+      router.replace("/admin/study-groups");
+    });
+  };
+
+  const handleRemove = (userId: string) => {
     startTransition(async () => {
       const res = await removeGroupMember(group.id, userId);
       if (res.error) {
-        alert(res.error);
+        toast.error(res.error);
         return;
       }
+      toast.success("멤버가 제거되었습니다.");
+      setConfirm(null);
       router.refresh();
     });
   };
@@ -64,9 +109,9 @@ export function GroupDetailClient({ detail }: Props) {
     <>
       {/* 헤더 */}
       <div className="mb-6 flex items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-foreground">{group.name}</h1>
+            <h1 className="text-2xl font-bold text-foreground truncate">{group.name}</h1>
             <span
               className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                 group.status === "active"
@@ -81,21 +126,48 @@ export function GroupDetailClient({ detail }: Props) {
             {group.start_date} ~ {group.end_date}
           </p>
           {group.description && (
-            <p className="mt-2 text-sm text-foreground-secondary">
+            <p className="mt-2 text-sm text-foreground-secondary whitespace-pre-wrap">
               {group.description}
             </p>
           )}
         </div>
 
-        {group.status === "active" && (
+        {/* 헤더 액션 */}
+        <div className="flex shrink-0 items-center gap-2">
           <button
-            onClick={handleClose}
+            onClick={() => setShowEditModal(true)}
             disabled={pending}
-            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground-secondary hover:bg-surface-hover disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground hover:bg-surface-hover disabled:opacity-50"
           >
-            그룹 종료
+            <Pencil size={14} /> 수정
           </button>
-        )}
+
+          {group.status === "active" ? (
+            <button
+              onClick={() => setConfirm({ kind: "close" })}
+              disabled={pending}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground-secondary hover:bg-surface-hover disabled:opacity-50"
+            >
+              <PowerOff size={14} /> 종료
+            </button>
+          ) : (
+            <button
+              onClick={() => setConfirm({ kind: "reopen" })}
+              disabled={pending}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50 px-3 py-1.5 text-sm font-medium text-primary-700 hover:bg-primary-100 disabled:opacity-50"
+            >
+              <Power size={14} /> 재활성화
+            </button>
+          )}
+
+          <button
+            onClick={() => setConfirm({ kind: "delete" })}
+            disabled={pending}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
+          >
+            <Trash2 size={14} /> 삭제
+          </button>
+        </div>
       </div>
 
       {/* 통계 */}
@@ -138,34 +210,39 @@ export function GroupDetailClient({ detail }: Props) {
           </p>
         ) : (
           <ul className="divide-y divide-border">
-            {members.map((m) => (
-              <li
-                key={m.id}
-                className="flex items-center justify-between py-3"
-              >
-                <div>
-                  <div className="text-sm font-medium text-foreground">
-                    {m.user_display_name ?? m.display_name ?? "(이름 없음)"}
-                  </div>
-                  <div className="text-xs text-foreground-secondary">
-                    {m.email ?? "(이메일 없음)"} ·{" "}
-                    {new Date(m.joined_at).toLocaleDateString("ko-KR")}
-                  </div>
-                </div>
-                <button
-                  onClick={() =>
-                    handleRemove(
-                      m.user_id,
-                      m.user_display_name ?? m.email ?? "멤버"
-                    )
-                  }
-                  disabled={pending}
-                  className="text-xs text-red-600 hover:underline disabled:opacity-50"
+            {members.map((m) => {
+              const displayName =
+                m.user_display_name ?? m.display_name ?? "(이름 없음)";
+              return (
+                <li
+                  key={m.id}
+                  className="flex items-center justify-between py-3"
                 >
-                  제거
-                </button>
-              </li>
-            ))}
+                  <div>
+                    <div className="text-sm font-medium text-foreground">
+                      {displayName}
+                    </div>
+                    <div className="text-xs text-foreground-secondary">
+                      {m.email ?? "(이메일 없음)"} ·{" "}
+                      {new Date(m.joined_at).toLocaleDateString("ko-KR")}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() =>
+                      setConfirm({
+                        kind: "remove-member",
+                        userId: m.user_id,
+                        name: displayName,
+                      })
+                    }
+                    disabled={pending}
+                    className="text-xs text-red-600 hover:underline disabled:opacity-50"
+                  >
+                    제거
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
@@ -228,6 +305,103 @@ export function GroupDetailClient({ detail }: Props) {
           }}
         />
       )}
+
+      {/* 그룹 수정 모달 */}
+      {showEditModal && (
+        <EditGroupModal
+          group={group}
+          onClose={() => setShowEditModal(false)}
+          onSaved={() => {
+            setShowEditModal(false);
+            router.refresh();
+          }}
+        />
+      )}
+
+      {/* 확인 다이얼로그 — 종료 */}
+      <BpConfirmDialog
+        open={confirm?.kind === "close"}
+        title="그룹을 종료하시겠어요?"
+        description={
+          <div>
+            <strong>&quot;{group.name}&quot;</strong> 그룹을 종료 상태로 전환합니다.
+            <div className="mt-2 text-sm">
+              종료 후에도 데이터는 유지되며 언제든 재활성화할 수 있습니다.
+            </div>
+          </div>
+        }
+        confirmLabel="그룹 종료"
+        variant="warning"
+        icon="⏸️"
+        isLoading={pending}
+        onConfirm={handleClose}
+        onCancel={() => setConfirm(null)}
+      />
+
+      {/* 확인 다이얼로그 — 재활성화 */}
+      <BpConfirmDialog
+        open={confirm?.kind === "reopen"}
+        title="그룹을 재활성화하시겠어요?"
+        description={
+          <div>
+            <strong>&quot;{group.name}&quot;</strong> 그룹을 다시 활성 상태로 전환합니다.
+          </div>
+        }
+        confirmLabel="재활성화"
+        variant="neutral"
+        icon="🔁"
+        isLoading={pending}
+        onConfirm={handleReopen}
+        onCancel={() => setConfirm(null)}
+      />
+
+      {/* 확인 다이얼로그 — 삭제 */}
+      <BpConfirmDialog
+        open={confirm?.kind === "delete"}
+        title="그룹을 삭제하시겠어요?"
+        description={
+          <div>
+            <strong>&quot;{group.name}&quot;</strong> 그룹을 영구 삭제합니다.
+            <div className="mt-2 text-sm">
+              · 멤버 {stats.member_count}명
+              <br />· 세션{" "}
+              {stats.active_session_count + stats.completed_session_count}개 (답변
+              포함)
+            </div>
+            <div className="mt-2 text-sm">함께 삭제되며 되돌릴 수 없습니다.</div>
+          </div>
+        }
+        confirmLabel="영구 삭제"
+        variant="danger"
+        icon="🗑️"
+        isLoading={pending}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirm(null)}
+      />
+
+      {/* 확인 다이얼로그 — 멤버 제거 */}
+      <BpConfirmDialog
+        open={confirm?.kind === "remove-member"}
+        title="멤버를 제거하시겠어요?"
+        description={
+          confirm?.kind === "remove-member" ? (
+            <div>
+              <strong>{confirm.name}</strong>님을 그룹에서 제거합니다.
+              <div className="mt-2 text-sm">
+                해당 멤버의 이전 답변 기록은 그대로 유지됩니다.
+              </div>
+            </div>
+          ) : null
+        }
+        confirmLabel="멤버 제거"
+        variant="danger"
+        icon="👤"
+        isLoading={pending}
+        onConfirm={() =>
+          confirm?.kind === "remove-member" && handleRemove(confirm.userId)
+        }
+        onCancel={() => setConfirm(null)}
+      />
     </>
   );
 }
@@ -315,9 +489,10 @@ function AddMemberModal({
         selected.map((m) => m.user_id)
       );
       if (res.error) {
-        alert(res.error);
+        toast.error(res.error);
         return;
       }
+      toast.success(`${selected.length}명이 추가되었습니다.`);
       onAdded();
     });
   };

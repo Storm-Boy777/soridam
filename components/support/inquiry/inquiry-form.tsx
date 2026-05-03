@@ -15,12 +15,23 @@ const CATEGORIES: { id: SupportCategory; label: string }[] = [
 interface InquiryFormProps {
   onSuccess: () => void;
   onCancel: () => void;
+  initialCategory?: SupportCategory;
+  initialTitle?: string;
+  initialContent?: string;
 }
 
-export function InquiryForm({ onSuccess, onCancel }: InquiryFormProps) {
-  const [category, setCategory] = useState<SupportCategory>("other");
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+export function InquiryForm({
+  onSuccess,
+  onCancel,
+  initialCategory,
+  initialTitle,
+  initialContent,
+}: InquiryFormProps) {
+  const [category, setCategory] = useState<SupportCategory>(
+    initialCategory ?? "other"
+  );
+  const [title, setTitle] = useState(initialTitle ?? "");
+  const [content, setContent] = useState(initialContent ?? "");
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {

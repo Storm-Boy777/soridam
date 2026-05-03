@@ -7,9 +7,14 @@ import {
   searchMemberCandidates,
 } from "@/lib/actions/admin/study-groups";
 import { Search, X, Check, Loader2 } from "lucide-react";
-import type { ProfileLite } from "@/lib/types/opic-study";
+import type { GroupSchedule, ProfileLite } from "@/lib/types/opic-study";
+import { ScheduleFields } from "../_schedule-fields";
 
-export function NewStudyGroupForm() {
+interface Props {
+  initialSchedule: GroupSchedule;
+}
+
+export function NewStudyGroupForm({ initialSchedule }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -18,6 +23,7 @@ export function NewStudyGroupForm() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [description, setDescription] = useState("");
+  const [schedule, setSchedule] = useState<GroupSchedule>(initialSchedule);
 
   // 멤버 검색
   const [query, setQuery] = useState("");
@@ -63,12 +69,22 @@ export function NewStudyGroupForm() {
       return;
     }
 
+    if (schedule.days.length === 0) {
+      setError("운영 요일을 1개 이상 선택해주세요.");
+      return;
+    }
+    if (schedule.start_time >= schedule.end_time) {
+      setError("종료 시간이 시작 시간보다 늦어야 합니다.");
+      return;
+    }
+
     startTransition(async () => {
       const res = await createStudyGroup({
         name: name.trim(),
         start_date: startDate,
         end_date: endDate,
         description: description.trim() || undefined,
+        schedule,
         member_user_ids: selectedMembers.map((m) => m.user_id),
       });
 
@@ -128,6 +144,17 @@ export function NewStudyGroupForm() {
           className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
         />
       </Field>
+
+      {/* 일정 */}
+      <div className="rounded-lg border border-border bg-surface-secondary/40 p-4">
+        <div className="mb-3">
+          <h3 className="text-sm font-semibold text-foreground">운영 일정</h3>
+          <p className="mt-0.5 text-xs text-foreground-secondary">
+            매주 어떤 요일·시간에 모일지 정합니다.
+          </p>
+        </div>
+        <ScheduleFields value={schedule} onChange={setSchedule} showHint />
+      </div>
 
       {/* 멤버 등록 */}
       <Field label={`초기 멤버 (${selectedMembers.length}명)`}>

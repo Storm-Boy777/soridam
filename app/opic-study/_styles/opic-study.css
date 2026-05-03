@@ -154,17 +154,16 @@
 .bp-scope .bp-tag.neutral { background: var(--bp-surface-2); color: var(--bp-ink-2); }
 
 /* ============================================
- * 코칭 블록 (좌측 컬러 보더)
+ * 코칭 블록 (배경색만 — 좌측 보더 없음)
  * ============================================ */
 .bp-scope .bp-coach-block {
   padding: 14px 16px;
   border-radius: var(--bp-radius-sm);
-  background: var(--bp-surface);
-  border-left: 3px solid var(--bp-tc);
+  background: var(--bp-tc-tint);
 }
-.bp-scope .bp-coach-block.good { border-left-color: var(--bp-good); background: var(--bp-good-tint); }
-.bp-scope .bp-coach-block.tip { border-left-color: var(--bp-tip); background: var(--bp-tip-tint); }
-.bp-scope .bp-coach-block.polish { border-left-color: var(--bp-polish); background: var(--bp-polish-tint); }
+.bp-scope .bp-coach-block.good { background: var(--bp-good-tint); }
+.bp-scope .bp-coach-block.tip { background: var(--bp-tip-tint); }
+.bp-scope .bp-coach-block.polish { background: var(--bp-polish-tint); }
 
 /* ============================================
  * 하이라이트 (인라인 텍스트)
@@ -440,6 +439,22 @@
 @media (min-width: 768px) {
   .bp-only-mobile { display: none !important; }
   .bp-only-pc { display: block !important; }
+}
+
+/* ============================================
+ * 모바일 스크롤바 숨김 — opic-study 전체 화면에 적용
+ * (PC에선 스크롤바 유지)
+ * ============================================ */
+@media (max-width: 767px) {
+  .bp-scope,
+  .bp-scope * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .bp-scope::-webkit-scrollbar,
+  .bp-scope *::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* ============================================

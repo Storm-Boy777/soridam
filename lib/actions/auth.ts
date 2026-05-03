@@ -280,6 +280,10 @@ export async function updateGoals(formData: FormData): Promise<AuthResult> {
         .update({ target_grade: targetGrade || null })
         .eq("id", user.id);
     }
+
+    // JWT 클레임 갱신 — updateUser는 user_metadata만 바꾸고 access token은 그대로라
+    // refreshSession으로 새 access token을 발급해야 getAuthClaims()에서 새 값을 읽는다.
+    await supabase.auth.refreshSession();
   } catch (err) {
     console.error("updateGoals 오류:", err);
     return { error: "목표 설정 처리 중 오류가 발생했습니다" };

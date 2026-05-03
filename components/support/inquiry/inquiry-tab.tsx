@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   MessageCircleHeart,
@@ -25,6 +26,10 @@ import { CommentSection } from "../shared/comment-section";
 import { InquiryForm } from "./inquiry-form";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { SupportPost } from "@/lib/types/support";
+import {
+  getInquiryPrefill,
+  type InquiryPrefill,
+} from "@/lib/constants/inquiry-prefills";
 
 interface InquiryTabProps {
   initialInquiries: SupportPost[];
@@ -45,7 +50,9 @@ function formatTime(dateStr: string) {
 
 export function InquiryTab({ initialInquiries, isLoggedIn }: InquiryTabProps) {
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
   const [showForm, setShowForm] = useState(false);
+  const [prefill, setPrefill] = useState<InquiryPrefill | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -55,6 +62,24 @@ export function InquiryTab({ initialInquiries, isLoggedIn }: InquiryTabProps) {
   const [deleting, setDeleting] = useState(false);
   const [page, setPage] = useState(1);
   const LIMIT = 5;
+
+  // URL ?prefill=<key> 감지 → 폼 자동 펼침 + 값 채움 (한 번만)
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const prefillKey = searchParams.get("prefill");
+    const data = getInquiryPrefill(prefillKey);
+    if (!data) return;
+
+    setPrefill(data);
+    setShowForm(true);
+
+    // URL에서 prefill 파라미터 제거 (재진입 시 중복 적용 방지)
+    const url = new URL(window.location.href);
+    url.searchParams.delete("prefill");
+    window.history.replaceState(null, "", url.toString());
+    // 초기 마운트 시 1회만 — searchParams는 의존성에서 제외
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn]);
 
   const { data: inquiries = [] } = useQuery({
     queryKey: ["support-my-inquiries"],
@@ -80,6 +105,7 @@ export function InquiryTab({ initialInquiries, isLoggedIn }: InquiryTabProps) {
 
   const handlePostCreated = () => {
     setShowForm(false);
+    setPrefill(null);
     queryClient.invalidateQueries({ queryKey: ["support-my-inquiries"] });
     toast.success("이야기가 전달되었습니다");
   };
@@ -156,7 +182,13 @@ export function InquiryTab({ initialInquiries, isLoggedIn }: InquiryTabProps) {
           개인적인 문의는 이곳에 남겨주세요.
         </p>
         <button
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => {
+            setShowForm((v) => {
+              const next = !v;
+              if (!next) setPrefill(null);
+              return next;
+            });
+          }}
           className="flex shrink-0 items-center gap-1 rounded-full bg-foreground px-3 py-1.5 text-xs font-medium text-background shadow-sm hover:bg-foreground/90 sm:gap-1.5 sm:px-4"
         >
           <MessageCircleHeart size={12} />
@@ -169,7 +201,13 @@ export function InquiryTab({ initialInquiries, isLoggedIn }: InquiryTabProps) {
       {showForm && (
         <InquiryForm
           onSuccess={handlePostCreated}
-          onCancel={() => setShowForm(false)}
+          onCancel={() => {
+            setShowForm(false);
+            setPrefill(null);
+          }}
+          initialCategory={prefill?.category}
+          initialTitle={prefill?.title}
+          initialContent={prefill?.content}
         />
       )}
 

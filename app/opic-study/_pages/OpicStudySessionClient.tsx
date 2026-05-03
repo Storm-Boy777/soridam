@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 import { Step1, Step2, Step3, Step4, Step5 } from "../_screens/SetupSteps";
+import { goHome } from "@/lib/opic-study/nav";
 import {
   Step61,
   Step61Pc,
@@ -120,7 +121,6 @@ interface SessionFrameContextValue {
   members: MemberInfo[];
   connectionState: ConnectionState;
   onlineMode: boolean;
-  onToggleMode?: () => void;
 }
 const SessionFrameContext = createContext<SessionFrameContextValue | null>(null);
 
@@ -648,23 +648,8 @@ export function OpicStudySessionClient({
   const myAnswer = answers[`${currentUserId}_${idx}`];
   const speaker = session.current_speaker_user_id;
 
-  const handleToggleMode = useCallback(() => {
-    const next = session.online_mode ? "오프라인" : "온라인";
-    setConfirmDialog({
-      type: "toggleMode",
-      title: `${next} 모드로 변경할까요?`,
-      description: session.online_mode
-        ? "한 디바이스에 모여서 답변하는 모드로 바뀌어요."
-        : "각자 디바이스에서 실시간 동기화되는 모드로 바뀌어요.",
-      confirmLabel: "변경",
-      variant: "warning",
-      icon: session.online_mode ? "🏠" : "🌐",
-      onConfirm: () => {
-        setConfirmDialog(null);
-        void selectMode(sessionId, !session.online_mode);
-      },
-    });
-  }, [sessionId, session.online_mode]);
+  // 세션 룸 안에서 모드 변경 X — 모드는 그룹 schedule에서 자동 결정.
+  // (handleToggleMode 제거됨)
 
   const stepUi = renderStep();
   return (
@@ -674,7 +659,6 @@ export function OpicStudySessionClient({
         members,
         connectionState,
         onlineMode: session.online_mode,
-        onToggleMode: handleToggleMode,
       }}
     >
       {stepUi}
@@ -974,11 +958,10 @@ function Shell({
         </div>
       )}
 
-      {ctx?.onToggleMode && (
-        <button
-          onClick={ctx.onToggleMode}
-          aria-label="모드 전환"
-          title={`${ctx.onlineMode ? "온라인" : "오프라인"} 모드 — 클릭해서 전환`}
+      {ctx && (
+        <span
+          aria-label="오늘 모임 방식"
+          title="그룹 일정에서 정해진 오늘의 모드"
           style={{
             position: "fixed",
             top: 12,
@@ -990,15 +973,15 @@ function Shell({
             backdropFilter: "blur(4px)",
             border: "1px solid rgba(31,27,22,0.10)",
             borderRadius: 8,
-            cursor: "pointer",
             zIndex: 100,
-            display: "flex",
+            display: "inline-flex",
             alignItems: "center",
             gap: 4,
+            userSelect: "none",
           }}
         >
-          {ctx.onlineMode ? "🌐 온라인" : "🏠 오프라인"}
-        </button>
+          {ctx.onlineMode ? "🌐 온라인" : "🏢 오프라인"}
+        </span>
       )}
 
       {onEnd && (
@@ -1228,7 +1211,7 @@ function LiveStep61Mobile({
       <HfHeader
         title={`Q${questionIdx + 1} · 누가 먼저?`}
         sub={`${questionIdx + 1}/${totalQuestions} 질문`}
-        onBack={() => undefined}
+        onBack={goHome}
       />
 
       <HfBody padding="20px">
@@ -1434,7 +1417,7 @@ function LiveStep62SelfMobile({
       <HfHeader
         title={`Q${questionIdx + 1} · 답변 중`}
         sub="당신이 답변할 차례예요"
-        onBack={() => undefined}
+        onBack={goHome}
         right={
           <span
             className="bp-pill"
@@ -1644,7 +1627,7 @@ function LiveCoachCardMobile({
       <HfHeader
         title={`Q${questionIdx + 1} · 코칭`}
         sub={`${questionIdx + 1}/${totalQuestions} 질문 · ${speakerName}`}
-        onBack={() => undefined}
+        onBack={goHome}
         right={null}
       />
 
@@ -1868,7 +1851,7 @@ function LiveCompareViewMobile({
       <HfHeader
         title="함께 보기"
         sub={`Q${questionIdx + 1} · ${members.length}명의 답변`}
-        onBack={() => undefined}
+        onBack={goHome}
         right={
           timerLabel ? (
             <span
@@ -2159,7 +2142,7 @@ function LiveStep7Mobile({
       <HfHeader
         title="오늘의 학습"
         sub={`${topic} 콤보 · ${level}`}
-        onBack={() => undefined}
+        onBack={goHome}
         right={null}
       />
 

@@ -22,6 +22,8 @@ import {
   ScrollText,
   ArrowLeft,
   Settings,
+  Coffee,
+  UsersRound,
 } from "lucide-react";
 
 type MenuItem = { label: string; href: string; icon: React.ComponentType<{ size?: number }> };
@@ -53,8 +55,8 @@ const menuGroups: MenuGroup[] = [
       { label: "모의고사", href: "/admin/mock-exam", icon: GraduationCap },
       { label: "스크립트", href: "/admin/scripts", icon: FileCode },
       { label: "튜터링", href: "/admin/tutoring", icon: Stethoscope },
-      { label: "스터디", href: "/admin/study-group", icon: Users },
-      { label: "오픽 스터디", href: "/admin/study-groups", icon: Users },
+      { label: "스터디 모임", href: "/admin/study-group", icon: Coffee },
+      { label: "오픽 스터디", href: "/admin/study-groups", icon: UsersRound },
     ],
   },
   {
@@ -123,7 +125,8 @@ export function AdminSidebar() {
               const isActive =
                 item.href === "/admin"
                   ? pathname === "/admin"
-                  : pathname.startsWith(item.href);
+                  : pathname === item.href ||
+                    pathname.startsWith(item.href + "/");
               return (
                 <Link
                   key={item.href}

@@ -26,6 +26,7 @@ import {
   SectionH,
   PcStepShell,
 } from "../_components/bp";
+import { goHome } from "@/lib/opic-study/nav";
 import {
   MOCK_GROUP,
   MOCK_MEMBERS_BASE,
@@ -77,7 +78,7 @@ function Step1Mobile({
       <HfHeader
         title={groupName}
         sub={`멤버 ${memberCount}명 · 세션 룸`}
-        onBack={() => undefined}
+        onBack={goHome}
       />
 
       <HfBody padding="24px 20px 0">
@@ -328,7 +329,7 @@ function Step2Mobile({
   return (
     <HfPhone liveMode={liveMode}>
       {!liveMode && <HfStatusBar />}
-      <HfHeader title="카테고리" sub="오늘 어떤 결로 갈까요?" onBack={() => undefined} />
+      <HfHeader title="카테고리" sub="오늘 어떤 결로 갈까요?" onBack={goHome} />
       <HfStepBar now={2} />
 
       <HfBody padding="20px">
@@ -368,7 +369,7 @@ function Step2Pc({ categories = MOCK_CATEGORIES, onNext, groupName = MOCK_GROUP.
 
   return (
     <PcStepShell
-      onBack={() => undefined}
+      onBack={goHome}
       crumb={[groupName, "카테고리"]}
       stepNow={2}
     >
@@ -493,7 +494,7 @@ function Step3Mobile({
   return (
     <HfPhone liveMode={liveMode}>
       {!liveMode && <HfStatusBar />}
-      <HfHeader title="주제 선택" sub="자주 출제되는 순" onBack={() => undefined} />
+      <HfHeader title="주제 선택" sub="자주 출제되는 순" onBack={goHome} />
       <HfStepBar now={3} />
 
       <HfBody padding="20px">
@@ -602,7 +603,7 @@ function Step3Pc({
 
   return (
     <PcStepShell
-      onBack={() => undefined}
+      onBack={goHome}
       crumb={[groupName, "카테고리", "주제 선택"]}
       stepNow={3}
     >
@@ -762,7 +763,7 @@ function Step4Mobile({
       <HfHeader
         title="콤보 선택"
         sub={`${topic} · 3개 질문 묶음`}
-        onBack={() => undefined}
+        onBack={goHome}
       />
       <HfStepBar now={4} />
 
@@ -886,7 +887,7 @@ function Step4Pc({
 
   return (
     <PcStepShell
-      onBack={() => undefined}
+      onBack={goHome}
       crumb={[groupName, topic, "콤보 선택"]}
       stepNow={4}
     >
@@ -1127,7 +1128,7 @@ function Step5Mobile({
       <HfHeader
         title="시작 전 가이드"
         sub={`${topic} 콤보 · ${level}`}
-        onBack={() => undefined}
+        onBack={goHome}
       />
       <HfStepBar now={5} />
 
@@ -1267,7 +1268,7 @@ function Step5Pc({
 
   return (
     <PcStepShell
-      onBack={() => undefined}
+      onBack={goHome}
       crumb={[groupName, `${topic} 콤보`, "시작 전 가이드"]}
       stepNow={5}
     >

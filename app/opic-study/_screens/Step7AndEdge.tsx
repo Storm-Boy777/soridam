@@ -25,6 +25,7 @@ import {
   SectionH,
   PcStepShell,
 } from "../_components/bp";
+import { goHome } from "@/lib/opic-study/nav";
 import {
   MOCK_STEP7,
   MOCK_MIC_STEPS,
@@ -62,7 +63,7 @@ function Step7Mobile({ data = MOCK_STEP7, onHome, onNextCombo }: Step7Props) {
       <HfHeader
         title="오늘의 학습"
         sub="음악 콤보 · 5월 2일"
-        onBack={() => undefined}
+        onBack={goHome}
         right={null}
       />
 

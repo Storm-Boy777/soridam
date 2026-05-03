@@ -16,9 +16,11 @@ import type {
   CategoryStat,
   TopicForStudy,
   ComboForStudy,
+  GroupSchedule,
   StudyCategory,
   SessionStep,
 } from "@/lib/types/opic-study";
+import { isSessionExpired, getModeForDate } from "@/lib/opic-study/schedule";
 
 // ============================================================
 // 헬퍼
@@ -266,6 +268,24 @@ export async function getActiveSession(groupId: string): Promise<ActionResult<Ac
     if (error) return { error: "활성 세션 조회 실패" };
     if (!data) return { data: null };
 
+    // ──────────────────────────────────────────────────────
+    // Lazy 정리 — 운영 종료 + grace(60분) 지난 세션은 자동 abandoned
+    // ──────────────────────────────────────────────────────
+    const { data: groupRow } = await supabase
+      .from(T.study_groups)
+      .select("schedule")
+      .eq("id", groupId)
+      .maybeSingle();
+    const schedule = (groupRow?.schedule as GroupSchedule | null) ?? null;
+
+    if (schedule && isSessionExpired(data.started_at as string, schedule)) {
+      await supabase
+        .from(T.opic_study_sessions)
+        .update({ status: "abandoned", ended_at: new Date().toISOString() })
+        .eq("id", data.id);
+      return { data: null };
+    }
+
     // 발화자 이름 조회 (있을 때)
     let speakerName: string | null = null;
     if (data.current_speaker_user_id) {
@@ -317,24 +337,45 @@ export async function createSession(groupId: string): Promise<ActionResult<{ ses
     const { supabase, userId } = await requireUser();
     await requireGroupMember(supabase, groupId, userId);
 
-    // 활성 세션 체크 (있으면 합류 권유)
+    // 활성 세션 체크 (있으면 합류 권유) — 만료된 좀비는 자동 정리
     const { data: existing } = await supabase
       .from(T.opic_study_sessions)
-      .select("id")
+      .select("id, started_at")
       .eq("group_id", groupId)
       .eq("status", "active")
       .maybeSingle();
 
+    // 그룹 schedule 조회 — 좀비 정리 + 모드 결정 양쪽에 사용
+    const { data: groupRow } = await supabase
+      .from(T.study_groups)
+      .select("schedule")
+      .eq("id", groupId)
+      .maybeSingle();
+    const schedule = (groupRow?.schedule as GroupSchedule | null) ?? null;
+
     if (existing) {
-      return { error: `이미 진행 중인 세션이 있습니다 (id: ${existing.id})` };
+      if (schedule && isSessionExpired(existing.started_at as string, schedule)) {
+        // 만료된 좀비 세션 → 자동 abandoned 처리 후 새 세션 생성 진행
+        await supabase
+          .from(T.opic_study_sessions)
+          .update({ status: "abandoned", ended_at: new Date().toISOString() })
+          .eq("id", existing.id);
+      } else {
+        return { error: `이미 진행 중인 세션이 있습니다 (id: ${existing.id})` };
+      }
     }
 
+    // 오늘 모드 결정 — 그룹 schedule 기반 (요일별 override 우선, 없으면 default_mode)
+    const todayMode = schedule ? getModeForDate(schedule) : "online";
+
+    // step은 DB DEFAULT('mode_select') 사용 — 첫 입장자는 lobby에서 멤버 모이는 거 보고 시작.
+    // 두 번째 이후 합류자는 step 보고 자동으로 세션 룸 직진(라우팅 단에서 분기).
     const { data, error } = await supabase
       .from(T.opic_study_sessions)
       .insert({
         group_id: groupId,
         created_by: userId,
-        // 나머지 필드는 DEFAULT
+        online_mode: todayMode === "online",
       })
       .select("id")
       .single();
@@ -666,6 +707,33 @@ export async function selectMode(sessionId: string, online: boolean): Promise<Ac
     return { data: null };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "모드 선택 실패" };
+  }
+}
+
+/**
+ * lobby에서 "세션 룸 입장" 누를 때 — step만 category_select로 변경.
+ *
+ * 모드는 그룹 schedule에서 createSession 시점에 이미 결정·저장됨.
+ * first-write-wins: 누가 먼저 누르면 step 진입, 다른 멤버는 다음 진입 시 자동 합류.
+ */
+export async function advanceLobby(sessionId: string): Promise<ActionResult> {
+  try {
+    const { supabase, userId } = await requireUser();
+    await requireSessionMember(supabase, sessionId, userId);
+
+    const { data, error } = await supabase
+      .from(T.opic_study_sessions)
+      .update({ step: "category_select" })
+      .eq("id", sessionId)
+      .eq("step", "mode_select")
+      .select("id");
+
+    if (error) return { error: "세션 시작 실패" };
+    // 이미 진행 중이면 OK — 다른 멤버가 먼저 시작했을 뿐
+    return { data: null };
+    void data;
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "세션 시작 실패" };
   }
 }
 

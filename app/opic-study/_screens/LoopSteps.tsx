@@ -27,6 +27,7 @@ import {
   SectionH,
   PcStepShell,
 } from "../_components/bp";
+import { goHome } from "@/lib/opic-study/nav";
 import {
   MOCK_QUESTION_Q1,
   MOCK_NOTE_DEFAULT,
@@ -74,7 +75,7 @@ function Step61Mobile({ question = MOCK_QUESTION_Q1, onStart }: Step61Props) {
       <HfHeader
         title={`Q${question.num} · 누가 먼저?`}
         sub={`음악 콤보 · ${question.num}/${question.total} 질문`}
-        onBack={() => undefined}
+        onBack={goHome}
       />
 
       <HfBody padding="20px">
@@ -405,7 +406,7 @@ function Step62SelfMobile({
       <HfHeader
         title={`Q${question.num} · 답변 중`}
         sub="당신이 답변할 차례예요"
-        onBack={() => undefined}
+        onBack={goHome}
         right={
           <span
             className="bp-pill"
@@ -527,7 +528,7 @@ function Step62OtherMobile({
       <HfHeader
         title={`Q${question.num} · 듣는 중`}
         sub={`${speakerName}의 답변`}
-        onBack={() => undefined}
+        onBack={goHome}
       />
 
       <HfBody padding="20px">
@@ -960,7 +961,7 @@ function Step63Mobile({
       <HfHeader
         title="Q1 · 코치가 듣는 중"
         sub="잠시만요"
-        onBack={() => undefined}
+        onBack={goHome}
         right={null}
       />
 

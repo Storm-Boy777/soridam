@@ -46,9 +46,29 @@ export interface StudyGroup {
   end_date: string;                        // 'YYYY-MM-DD'
   status: StudyGroupStatus;
   description: string | null;
+  schedule: GroupSchedule | null;          // 그룹별 운영 일정 (매주 N요일 HH:MM~HH:MM)
   created_by: string;                      // user_id
   created_at: string;
   updated_at: string;
+}
+
+// 모임 방식
+export type MeetingMode = "online" | "offline";
+
+// 그룹 일정 — study_groups.schedule (jsonb)
+export interface GroupSchedule {
+  /** 0=일, 1=월, …, 6=토 */
+  days: number[];
+  /** "HH:MM" KST */
+  start_time: string;
+  /** "HH:MM" KST */
+  end_time: string;
+  /** "YYYY-MM-DD" — 이 날짜 이전엔 "첫 스터디 전" 상태 */
+  first_session_date: string;
+  /** 그룹 기본 모임 방식 */
+  default_mode: MeetingMode;
+  /** 요일별 모드 override — key는 dayOfWeek 문자열 ("0"~"6"). 없으면 default_mode */
+  day_modes?: Record<string, MeetingMode>;
 }
 
 // 2. study_group_members
@@ -349,6 +369,7 @@ export interface CreateStudyGroupInput {
   start_date: string;
   end_date: string;
   description?: string;
+  schedule: GroupSchedule;
   member_user_ids: string[];
 }
 
