@@ -6,7 +6,7 @@
  * 디자인: docs/디자인/opic/project/hf-loop.jsx (Step 7) + hf-extra.jsx (Edge)
  */
 
-import { Sprout, Sparkles } from "lucide-react";
+import { Sprout, Sparkles, Mic, ArrowLeft } from "lucide-react";
 import {
   HfPhone,
   HfStatusBar,
@@ -428,7 +428,73 @@ interface EdgeMicProps {
   onLeave?: () => void;
 }
 
-export function EdgeMic({
+/** EdgeMic — 마이크 권한 거부 (모바일/PC 분기 wrapper) */
+export function EdgeMic(props: EdgeMicProps) {
+  return (
+    <>
+      <div
+        className="bp-only-mobile"
+        style={{ flex: 1, minHeight: 0, display: "flex" }}
+      >
+        <EdgeMicMobile {...props} />
+      </div>
+      <div className="bp-only-pc" style={{ flex: 1, minHeight: 0 }}>
+        <EdgeMicPc {...props} />
+      </div>
+    </>
+  );
+}
+
+function MicSteps({ steps }: { steps: string[] }) {
+  return (
+    <HfCard
+      padding={16}
+      style={{
+        background: "var(--bp-surface-2)",
+        boxShadow: "none",
+        textAlign: "left",
+      }}
+    >
+      <SectionH>설정 방법</SectionH>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {steps.map((t, i) => (
+          <div
+            key={i}
+            style={{
+              display: "flex",
+              gap: 10,
+              alignItems: "center",
+            }}
+          >
+            <span
+              className="t-num"
+              aria-hidden="true"
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: "50%",
+                background: "var(--bp-surface)",
+                color: "var(--bp-ink)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 11,
+                fontWeight: 700,
+                flexShrink: 0,
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {i + 1}
+            </span>
+            <span className="t-sm">{t}</span>
+          </div>
+        ))}
+      </div>
+    </HfCard>
+  );
+}
+
+function EdgeMicMobile({
   steps = MOCK_MIC_STEPS,
   onOpenSettings,
   onLeave,
@@ -450,7 +516,8 @@ export function EdgeMic({
       >
         <button
           style={{
-            fontSize: 18,
+            display: "inline-flex",
+            alignItems: "center",
             color: "var(--bp-ink-2)",
             cursor: "pointer",
             background: "transparent",
@@ -459,7 +526,7 @@ export function EdgeMic({
           }}
           aria-label="뒤로"
         >
-          ←
+          <ArrowLeft size={18} strokeWidth={1.6} aria-hidden="true" />
         </button>
         <span className="t-h3">마이크 필요</span>
       </div>
@@ -476,11 +543,10 @@ export function EdgeMic({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: 32,
               margin: "0 auto 16px",
             }}
           >
-            🎤
+            <Mic size={32} strokeWidth={1.6} aria-hidden="true" />
           </div>
           <div className="t-h1" style={{ marginBottom: 8 }}>
             마이크 사용을 허용해주세요
@@ -493,48 +559,9 @@ export function EdgeMic({
           </p>
         </div>
 
-        <HfCard
-          padding={16}
-          style={{
-            marginBottom: 16,
-            background: "var(--bp-surface-2)",
-            boxShadow: "none",
-          }}
-        >
-          <SectionH>설정 방법</SectionH>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {steps.map((t, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  gap: 10,
-                  alignItems: "center",
-                }}
-              >
-                <span
-                  className="t-num"
-                  style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: "50%",
-                    background: "var(--bp-surface)",
-                    color: "var(--bp-ink)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 11,
-                    fontWeight: 700,
-                    flexShrink: 0,
-                  }}
-                >
-                  {i + 1}
-                </span>
-                <span className="t-sm">{t}</span>
-              </div>
-            ))}
-          </div>
-        </HfCard>
+        <div style={{ marginBottom: 16 }}>
+          <MicSteps steps={steps} />
+        </div>
       </HfBody>
 
       <HfFooter>
@@ -548,6 +575,103 @@ export function EdgeMic({
         </div>
       </HfFooter>
     </HfPhone>
+  );
+}
+
+function EdgeMicPc({
+  steps = MOCK_MIC_STEPS,
+  onOpenSettings,
+  onLeave,
+}: EdgeMicProps) {
+  return (
+    <PcStepShell crumb={["오픽 스터디", "마이크 필요"]} right={null}>
+      <div
+        className="bp-pc-content"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flex: 1,
+          padding: "48px 24px",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 520,
+            width: "100%",
+            padding: "40px 36px",
+            background: "var(--bp-surface)",
+            borderRadius: "var(--bp-radius-lg)",
+            boxShadow: "var(--bp-shadow)",
+            textAlign: "center",
+            display: "flex",
+            flexDirection: "column",
+            gap: 20,
+          }}
+        >
+          <div
+            aria-hidden="true"
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: "50%",
+              background: "var(--bp-polish-tint)",
+              color: "var(--bp-tc)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto",
+            }}
+          >
+            <Mic size={36} strokeWidth={1.6} />
+          </div>
+
+          <div>
+            <div
+              className="t-display"
+              style={{
+                marginBottom: 8,
+                fontSize: 24,
+                textWrap: "balance" as const,
+              }}
+            >
+              마이크 사용을 허용해주세요
+            </div>
+            <p
+              className="t-body ink-3"
+              style={{
+                margin: 0,
+                lineHeight: 1.6,
+                textWrap: "pretty" as const,
+              }}
+            >
+              답변을 녹음하려면 마이크가 필요해요. 설정에서 권한을 허용한 다음 다시 시도해주세요.
+            </p>
+          </div>
+
+          <MicSteps steps={steps} />
+
+          <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+            <HfButton
+              variant="ghost"
+              size="lg"
+              onClick={onLeave}
+              style={{ flex: "0 0 auto" }}
+            >
+              스터디 나가기
+            </HfButton>
+            <HfButton
+              variant="primary"
+              size="lg"
+              onClick={onOpenSettings}
+              style={{ flex: 1 }}
+            >
+              설정 열기
+            </HfButton>
+          </div>
+        </div>
+      </div>
+    </PcStepShell>
   );
 }
 
