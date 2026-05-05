@@ -90,6 +90,47 @@ export function MemberLobby({ sessionId, groupName, members }: Props) {
     };
   }, [sessionId, me?.userId, me?.name, me]);
 
+  // Realtime sessions UPDATE listen — 다른 멤버가 "세션 룸 입장하기" 누르면
+  // step이 mode_select → category_select로 바뀐다. 모든 멤버가 자동으로 따라감.
+  // 세션이 abandoned/completed로 바뀌면 멤버 홈으로 돌아감.
+  useEffect(() => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const ch = supabase
+      .channel(`opic-study-session:${sessionId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "opic_study_sessions",
+          filter: `id=eq.${sessionId}`,
+        },
+        (payload) => {
+          const next = payload.new as {
+            step?: string;
+            status?: string;
+          };
+          // 세션 종료 → 멤버 홈으로
+          if (next.status && next.status !== "active") {
+            router.push("/opic-study");
+            return;
+          }
+          // step 진행 → 세션 룸으로 자동 따라가기
+          if (next.step && next.step !== "mode_select") {
+            router.push(`/opic-study/session/${sessionId}`);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [sessionId, router]);
+
   const handleStart = () => {
     startTransition(async () => {
       const res = await advanceLobby(sessionId);
@@ -97,6 +138,7 @@ export function MemberLobby({ sessionId, groupName, members }: Props) {
         toast.error(res.error);
         return;
       }
+      // 본인은 즉시 이동 (Realtime listen은 안전망 + 다른 멤버 자동 따라가기 용)
       router.push(`/opic-study/session/${sessionId}`);
     });
   };
