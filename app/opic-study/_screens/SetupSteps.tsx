@@ -437,7 +437,7 @@ function Step2Pc({ categories = MOCK_CATEGORIES, onNext, groupName = MOCK_GROUP.
                 role="button"
                 tabIndex={0}
                 aria-pressed={selected}
-                aria-label={`${c.name}${c.tag ? ` (${c.tag})` : ""} — ${c.desc}`}
+                aria-label={`${c.name} — ${c.desc}`}
                 style={{ padding: 24 }}
               >
                 <div className="check" aria-hidden="true">
@@ -462,16 +462,8 @@ function Step2Pc({ categories = MOCK_CATEGORIES, onNext, groupName = MOCK_GROUP.
                 >
                   {CATEGORY_ICON_MAP[c.key] ?? null}
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    marginBottom: 6,
-                  }}
-                >
+                <div style={{ marginBottom: 6 }}>
                   <span className="t-h2">{c.name}</span>
-                  {c.tag && <Pill tone="tc">{c.tag}</Pill>}
                 </div>
                 <p
                   className="t-sm ink-3"
