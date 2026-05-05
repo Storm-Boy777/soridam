@@ -729,6 +729,13 @@ export function OpicStudySessionClient({
         title="오픽 스터디"
         subtitle={stepSubtitle}
         backHref="/opic-study"
+        onBack={
+          session.step === "topic_select"
+            ? handleRollbackToCategory
+            : session.step === "combo_select"
+              ? handleRollbackToTopic
+              : undefined
+        }
         rightContent={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span
