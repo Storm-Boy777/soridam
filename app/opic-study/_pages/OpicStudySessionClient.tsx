@@ -1502,6 +1502,9 @@ function LiveStep62Self({
           currentUserId={currentUserId}
           questionText="(질문 텍스트는 답변 시작 시 표시됩니다)"
           onSkip={onSkip}
+          onComplete={handleComplete}
+          submitting={submitting}
+          isSelf
         />
       </div>
       <div className="bp-only-mobile" style={{ flex: 1, minHeight: 0, display: "flex" }}>

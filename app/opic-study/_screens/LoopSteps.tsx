@@ -761,6 +761,12 @@ interface Step62PcProps {
   questionText?: string;
   /** 본인이 발화자일 때 — "건너뛰기" 콜백 */
   onSkip?: () => void;
+  /** 본인이 발화자일 때 — "답변 완료" 콜백 (Self 시점 시 우측 컬럼 큰 버튼 표시) */
+  onComplete?: () => void;
+  /** 답변 제출 중 (버튼 disabled + 라벨 변경) */
+  submitting?: boolean;
+  /** 본인이 발화자인지 — true면 헤더 "내 답변 녹음 중", false면 "{speakerName} 답변 중" */
+  isSelf?: boolean;
 }
 
 const STEP62_PC_MEMBERS: Array<{
@@ -786,7 +792,12 @@ export function Step62Pc({
   currentUserId,
   questionText,
   onSkip,
+  onComplete,
+  submitting = false,
+  isSelf,
 }: Step62PcProps) {
+  // isSelf 미지정 시 — onComplete/onSkip 있으면 self로 추정 (시안 호환)
+  const selfMode = isSelf ?? !!onComplete;
   const ctx = useSessionFrame();
   const members = realMembers && realMembers.length > 0 ? realMembers : STEP62_PC_MEMBERS;
   const displayQuestion = questionText ?? question.english;
@@ -823,7 +834,7 @@ export function Step62Pc({
                 animation: "bp-pulse 1.4s ease-in-out infinite",
               }}
             />
-            녹음 중
+            {selfMode ? "내 답변 녹음 중" : `${speakerName} 답변 중`}
             <span
               style={{
                 fontVariantNumeric: "tabular-nums",
@@ -1119,9 +1130,23 @@ export function Step62Pc({
                 flex: 1,
               }}
             >
-              마음에 드는 표현 메모해두면 다음에 활용할 수 있어요.
+              {selfMode
+                ? "끝나면 아래 '답변 완료'를 눌러주세요."
+                : "마음에 드는 표현 메모해두면 다음에 활용할 수 있어요."}
             </p>
           </HfCard>
+          {onComplete && (
+            <HfButton
+              variant="primary"
+              size="lg"
+              full
+              onClick={onComplete}
+              disabled={submitting}
+              style={{ marginTop: 14 }}
+            >
+              {submitting ? "제출 중…" : "답변 완료 →"}
+            </HfButton>
+          )}
         </HfCard>
       </div>
     </PcStepShell>
