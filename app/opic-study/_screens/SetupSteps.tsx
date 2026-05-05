@@ -474,19 +474,19 @@ function Step2Pc({ categories = MOCK_CATEGORIES, onNext, groupName = MOCK_GROUP.
           })}
         </div>
 
-        <div className="bp-pc-actions" style={{ alignItems: "center", gap: 14 }}>
-          <span className="t-xs ink-3" aria-live="polite">
-            먼저 누른 사람이 카테고리를 정해요
-          </span>
-          <HfButton
-            variant="primary"
-            size="lg"
-            onClick={() => onNext?.(sel)}
-            style={{ minWidth: 160 }}
-          >
-            다음 →
-          </HfButton>
-        </div>
+      </div>
+      <div className="bp-pc-actions" style={{ alignItems: "center", gap: 14 }}>
+        <span className="t-xs ink-3" aria-live="polite">
+          먼저 누른 사람이 카테고리를 정해요
+        </span>
+        <HfButton
+          variant="primary"
+          size="lg"
+          onClick={() => onNext?.(sel)}
+          style={{ minWidth: 160 }}
+        >
+          다음 →
+        </HfButton>
       </div>
     </PcStepShell>
   );
@@ -758,20 +758,20 @@ function Step3Pc({
           })}
         </div>
 
-        <div className="bp-pc-actions" style={{ alignItems: "center", gap: 14 }}>
-          <span className="t-xs ink-3" aria-live="polite">
-            먼저 누른 사람이 주제를 정해요
-          </span>
-          <HfButton
-            variant="primary"
-            size="lg"
-            onClick={() => onNext?.(sel)}
-            style={{ minWidth: 160 }}
-            disabled={!sel || topics.length === 0}
-          >
-            다음 →
-          </HfButton>
-        </div>
+      </div>
+      <div className="bp-pc-actions" style={{ alignItems: "center", gap: 14 }}>
+        <span className="t-xs ink-3" aria-live="polite">
+          먼저 누른 사람이 주제를 정해요
+        </span>
+        <HfButton
+          variant="primary"
+          size="lg"
+          onClick={() => onNext?.(sel)}
+          style={{ minWidth: 160 }}
+          disabled={!sel || topics.length === 0}
+        >
+          다음 →
+        </HfButton>
       </div>
     </PcStepShell>
   );
@@ -1152,20 +1152,20 @@ function Step4Pc({
           })}
         </div>
 
-        <div className="bp-pc-actions">
-          <HfButton
-            variant="primary"
-            size="lg"
-            onClick={() => {
-              const found = combos.find((c) => c.key === sel);
-              if (found) onNext?.(found);
-            }}
-            disabled={!sel || combos.length === 0}
-            style={{ minWidth: 200 }}
-          >
-            이 콤보로 시작 →
-          </HfButton>
-        </div>
+      </div>
+      <div className="bp-pc-actions">
+        <HfButton
+          variant="primary"
+          size="lg"
+          onClick={() => {
+            const found = combos.find((c) => c.key === sel);
+            if (found) onNext?.(found);
+          }}
+          disabled={!sel || combos.length === 0}
+          style={{ minWidth: 200 }}
+        >
+          이 콤보로 시작 →
+        </HfButton>
       </div>
     </PcStepShell>
   );

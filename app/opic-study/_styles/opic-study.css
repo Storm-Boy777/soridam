@@ -703,22 +703,19 @@
     max-width: 1280px;
   }
 
-  /* 본문 끝 액션 — 콘텐츠 직후 자연 위치 + sticky bottom
-   * - 짧은 콘텐츠 (Step 2 카테고리 등): 카드 + margin-top 32px 후 표시 (적당한 시각 호흡)
-   * - 긴 콘텐츠 (Step 3 토픽 27개 등): 본문 끝 + sticky 효과로 화면 하단 유지
+  /* 본문 끝 액션 — App Shell footer (항상 화면 하단 고정)
+   * - .bp-pc-content sibling으로 (자식 X) — .bp-pc-shell flex column 마지막
+   * - flex: 0 0 auto — 자체 height (콘텐츠 길이 무관)
+   * - 본문 영역(.bp-pc-content)이 자체 스크롤 → footer는 항상 화면 하단
    */
   .bp-pc-actions {
-    margin-top: 32px;          /* 콘텐츠와 액션 사이 호흡 (Fitts 거리는 짧게 유지) */
-    padding: 14px 0 16px;
+    flex: 0 0 auto;
+    padding: 14px 64px 16px;
     display: flex;
     justify-content: flex-end;
     gap: 10px;
-    /* sticky */
-    position: sticky;
-    bottom: 0;
     background: var(--bp-bg);
     border-top: 1px solid var(--bp-line);
-    z-index: 5;
   }
   .bp-pc-actions.between {
     justify-content: space-between;

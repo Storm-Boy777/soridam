@@ -391,28 +391,25 @@ export function Step7Pc({
           </HfButton>
         </HfCard>
 
-        {/* Actions */}
-        <div
-          className="bp-pc-actions"
-          style={{ marginTop: 0, justifyContent: "flex-end", gap: 10 }}
+      </div>
+      {/* Actions — App Shell footer */}
+      <div className="bp-pc-actions" style={{ gap: 10 }}>
+        <HfButton
+          variant="secondary"
+          size="lg"
+          onClick={onHome}
+          style={{ minWidth: 140 }}
         >
-          <HfButton
-            variant="secondary"
-            size="lg"
-            onClick={onHome}
-            style={{ minWidth: 140 }}
-          >
-            홈으로
-          </HfButton>
-          <HfButton
-            variant="primary"
-            size="lg"
-            onClick={onNextCombo}
-            style={{ minWidth: 200 }}
-          >
-            이어서 다음 콤보 →
-          </HfButton>
-        </div>
+          홈으로
+        </HfButton>
+        <HfButton
+          variant="primary"
+          size="lg"
+          onClick={onNextCombo}
+          style={{ minWidth: 200 }}
+        >
+          이어서 다음 콤보 →
+        </HfButton>
       </div>
     </PcStepShell>
   );
