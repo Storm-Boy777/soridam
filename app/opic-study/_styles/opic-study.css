@@ -701,9 +701,11 @@
     max-width: 1280px;
   }
 
-  /* 본문 끝 액션 — sticky bottom (긴 콘텐츠에서 항상 다음 버튼 보이게) */
+  /* 본문 끝 액션 — 콘텐츠 직후 자연 위치 + sticky bottom
+   * - 짧은 콘텐츠 (Step 2 카테고리 등): 카드 직후 자연 표시 → Fitts 법칙 클릭 거리 짧음
+   * - 긴 콘텐츠 (Step 3 토픽 27개 등): 본문 끝 + sticky 효과로 화면 하단 유지
+   */
   .bp-pc-actions {
-    margin-top: auto;          /* flex 안 마지막 자식 — 끝으로 밀어내기 */
     padding: 14px 0 16px;
     display: flex;
     justify-content: flex-end;
