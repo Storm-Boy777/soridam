@@ -11,12 +11,10 @@ import {
   Leaf,
   Drama,
   Target,
-  Search,
   Sprout,
   Flame,
   Star,
   Sparkles,
-  ChevronRight,
   Mic,
   Layers,
   Pen,
@@ -644,18 +642,6 @@ function Step3Pc({
   groupName = MOCK_GROUP.name,
 }: Step3Props) {
   const [sel, setSel] = useState<string>(topics[0]?.key ?? "");
-  const [query, setQuery] = useState<string>("");
-
-  // 클라이언트 측 검색 — 이름/메타 부분 일치
-  const filteredTopics = query.trim()
-    ? topics.filter((t) => {
-        const q = query.trim().toLowerCase();
-        return (
-          t.name.toLowerCase().includes(q) ||
-          (t.meta?.toLowerCase() ?? "").includes(q)
-        );
-      })
-    : topics;
 
   return (
     <PcStepShell
@@ -672,47 +658,8 @@ function Step3Pc({
           최근에 안 한 주제일수록 좋아요.
         </p>
 
-        {/* 검색 — 실 input */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "10px 16px",
-            marginBottom: 16,
-            background: "var(--bp-surface-2)",
-            borderRadius: "var(--bp-radius)",
-            border: "1px solid transparent",
-          }}
-        >
-          <Search
-            size={16}
-            strokeWidth={1.6}
-            color="var(--bp-ink-3)"
-            aria-hidden="true"
-          />
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="주제 검색…"
-            aria-label="주제 검색"
-            spellCheck={false}
-            autoComplete="off"
-            style={{
-              flex: 1,
-              border: "none",
-              outline: "none",
-              background: "transparent",
-              fontFamily: "var(--bp-font)",
-              fontSize: 14,
-              color: "var(--bp-ink)",
-            }}
-          />
-        </div>
-
         {/* 빈 상태 */}
-        {!loading && filteredTopics.length === 0 && (
+        {!loading && topics.length === 0 && (
           <div
             style={{
               padding: "60px 16px",
@@ -729,9 +676,7 @@ function Step3Pc({
               style={{ marginBottom: 12 }}
             />
             <p className="t-body" style={{ margin: 0 }}>
-              {query
-                ? `"${query}"와 일치하는 주제가 없어요.`
-                : "아직 출제된 주제가 없어요."}
+              아직 출제된 주제가 없어요.
             </p>
           </div>
         )}
@@ -740,7 +685,7 @@ function Step3Pc({
           className="bp-pc-grid-4"
           style={{ flex: 1, alignContent: "start" }}
         >
-          {filteredTopics.map((t) => {
+          {topics.map((t) => {
             const selected = sel === t.key;
             return (
               <HfCard
@@ -750,7 +695,7 @@ function Step3Pc({
                 role="button"
                 tabIndex={0}
                 aria-pressed={selected}
-                aria-label={`${t.name} (${t.meta ?? ""})${t.recent ? " · 최근 학습" : ""}`}
+                aria-label={`${t.name}${t.meta ? `, ${t.meta}` : ""}${t.recent ? ", 최근 학습" : ""}`}
                 padding={12}
                 style={{
                   cursor: "pointer",
@@ -822,7 +767,7 @@ function Step3Pc({
             size="lg"
             onClick={() => onNext?.(sel)}
             style={{ minWidth: 160 }}
-            disabled={!sel || filteredTopics.length === 0}
+            disabled={!sel || topics.length === 0}
           >
             다음 →
           </HfButton>

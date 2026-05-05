@@ -637,18 +637,14 @@ export function OpicStudySessionClient({
     });
   }, [categoryStats]);
 
-  // Step3: TopicForStudy[] → mock 형식
+  // Step3: TopicForStudy[] → mock 형식 (콤보 수 표시)
   const step3Topics = useMemo(() => {
     if (!topics) return undefined;
     return topics.map((t) => ({
       key: t.topic,
       name: t.topic,
       meta:
-        t.combo_count >= 10
-          ? "출제율 ↑↑↑"
-          : t.combo_count >= 5
-            ? "출제율 ↑↑"
-            : "출제율 ↑",
+        t.combo_count > 0 ? `콤보 ${t.combo_count}개` : "콤보 없음",
       recent: t.studied_count > 0,
     }));
   }, [topics]);

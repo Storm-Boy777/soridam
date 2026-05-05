@@ -146,12 +146,12 @@ export interface TopicItem {
 }
 
 export const MOCK_TOPICS: TopicItem[] = [
-  { key: "music", name: "음악", meta: "출제율 ↑↑↑", recent: false },
-  { key: "travel", name: "여행", meta: "출제율 ↑↑↑", recent: true },
-  { key: "movie", name: "영화", meta: "출제율 ↑↑", recent: false },
-  { key: "sports", name: "스포츠", meta: "출제율 ↑↑", recent: false },
-  { key: "cook", name: "요리", meta: "출제율 ↑", recent: false },
-  { key: "park", name: "공원", meta: "출제율 ↑", recent: false },
+  { key: "music", name: "음악", meta: "콤보 12개", recent: false },
+  { key: "travel", name: "여행", meta: "콤보 11개", recent: true },
+  { key: "movie", name: "영화", meta: "콤보 7개", recent: false },
+  { key: "sports", name: "스포츠", meta: "콤보 6개", recent: false },
+  { key: "cook", name: "요리", meta: "콤보 4개", recent: false },
+  { key: "park", name: "공원", meta: "콤보 3개", recent: false },
 ];
 
 export interface ComboItem {
