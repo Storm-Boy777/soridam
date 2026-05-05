@@ -505,6 +505,8 @@ interface Step3Props {
   loading?: boolean;
   /** 선택된 topic의 key 또는 name. 실제 라우트에서는 한글 topic name */
   onNext?: (topicKey: string) => void;
+  /** ← 뒤로 버튼 override. 미전달 시 goHome (홈으로) */
+  onBack?: () => void;
   liveMode?: boolean;
   groupName?: string;
 }
@@ -638,6 +640,7 @@ function Step3Pc({
   topics = MOCK_TOPICS,
   loading = false,
   onNext,
+  onBack,
   groupName = MOCK_GROUP.name,
 }: Step3Props) {
   const [sel, setSel] = useState<string>(topics[0]?.key ?? "");
@@ -656,7 +659,7 @@ function Step3Pc({
 
   return (
     <PcStepShell
-      onBack={goHome}
+      onBack={onBack ?? goHome}
       crumb={[groupName, "카테고리", "주제 선택"]}
       stepNow={3}
       right={null}
@@ -825,6 +828,8 @@ interface Step4Props {
   loading?: boolean;
   /** 선택된 콤보 객체 전달 (sig + qids 포함) */
   onNext?: (combo: ComboItem) => void;
+  /** ← 뒤로 버튼 override. 미전달 시 goHome (홈으로) */
+  onBack?: () => void;
   liveMode?: boolean;
   groupName?: string;
 }
@@ -976,13 +981,14 @@ function Step4Pc({
   combos = MOCK_COMBOS,
   loading = false,
   onNext,
+  onBack,
   groupName = MOCK_GROUP.name,
 }: Step4Props) {
   const [sel, setSel] = useState<string>(combos[0]?.key ?? "");
 
   return (
     <PcStepShell
-      onBack={goHome}
+      onBack={onBack ?? goHome}
       crumb={[groupName, topic, "콤보 선택"]}
       stepNow={4}
       right={null}
@@ -1217,6 +1223,8 @@ interface Step5Props {
   /** 외부에서 전달된 가이드 텍스트 (선택) */
   guideText?: string | null;
   onStart?: () => void;
+  /** ← 뒤로 버튼 override. 미전달 시 goHome (홈으로) */
+  onBack?: () => void;
   liveMode?: boolean;
   groupName?: string;
 }
@@ -1379,6 +1387,7 @@ function Step5Pc({
   points = MOCK_GUIDE_POINTS,
   guideText,
   onStart,
+  onBack,
   groupName = MOCK_GROUP.name,
 }: Step5Props) {
   // 콤보 질문 mock (실제로는 props로 받아야 하지만, 디자인 시안에 맞춰 placeholder)
@@ -1419,7 +1428,7 @@ function Step5Pc({
 
   return (
     <PcStepShell
-      onBack={goHome}
+      onBack={onBack ?? goHome}
       crumb={[groupName, `${topic} 콤보`, "시작 전 가이드"]}
       stepNow={5}
       right={null}

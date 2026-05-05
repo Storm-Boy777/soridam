@@ -62,6 +62,7 @@ import {
   getCategoryStats,
   getTopicsForStudy,
   getCombosForStudy,
+  rollbackStep,
 } from "@/lib/actions/opic-study";
 import type {
   CategoryStat,
@@ -491,9 +492,9 @@ export function OpicStudySessionClient({
     });
   }, [sessionId]);
 
-  // 확인 다이얼로그 상태 (세션 종료 / 모드 전환 / 답변 패스)
+  // 확인 다이얼로그 상태 (세션 종료 / 모드 전환 / 답변 패스 / 단계 되돌리기)
   const [confirmDialog, setConfirmDialog] = useState<{
-    type: "end" | "skip" | "toggleMode";
+    type: "end" | "skip" | "toggleMode" | "rollback";
     title: string;
     description?: string;
     confirmLabel: string;
@@ -536,6 +537,43 @@ export function OpicStudySessionClient({
       },
     });
   }, [sessionId, router]);
+
+  // 단계 되돌리기 (Step 3 → Step 2: 카테고리 다시 / Step 4 → Step 3: 주제 다시)
+  const handleRollbackToCategory = useCallback(() => {
+    setConfirmDialog({
+      type: "rollback",
+      title: "카테고리를 다시 고를까요?",
+      description: "모든 멤버 화면이 카테고리 선택으로 함께 돌아가요.",
+      confirmLabel: "돌아가기",
+      variant: "warning",
+      icon: "⏮",
+      onConfirm: () => {
+        setConfirmDialog(null);
+        startTransition(async () => {
+          const res = await rollbackStep(sessionId, "category_select");
+          if (res.error) toast.error(res.error);
+        });
+      },
+    });
+  }, [sessionId]);
+
+  const handleRollbackToTopic = useCallback(() => {
+    setConfirmDialog({
+      type: "rollback",
+      title: "주제를 다시 고를까요?",
+      description: "모든 멤버 화면이 주제 선택으로 함께 돌아가요.",
+      confirmLabel: "돌아가기",
+      variant: "warning",
+      icon: "⏮",
+      onConfirm: () => {
+        setConfirmDialog(null);
+        startTransition(async () => {
+          const res = await rollbackStep(sessionId, "topic_select");
+          if (res.error) toast.error(res.error);
+        });
+      },
+    });
+  }, [sessionId]);
 
   const handleSubmitAnswer = useCallback(
     async (audioBlob: Blob) => {
@@ -711,6 +749,7 @@ export function OpicStudySessionClient({
             topics={step3Topics}
             loading={contentLoading}
             onNext={handleSelectTopic}
+            onBack={handleRollbackToCategory}
             liveMode
             groupName={groupName}
           />
@@ -725,6 +764,7 @@ export function OpicStudySessionClient({
             combos={step4Combos}
             loading={contentLoading}
             onNext={handleSelectCombo}
+            onBack={handleRollbackToTopic}
             liveMode
             groupName={groupName}
           />

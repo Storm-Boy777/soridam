@@ -737,6 +737,59 @@ export async function advanceLobby(sessionId: string): Promise<ActionResult> {
   }
 }
 
+/**
+ * 단계 되돌리기 (Step 3/4의 ← 뒤로 버튼) — 그룹 모두 함께 이전 단계로
+ *
+ * - "category_select" 으로 되돌리면: selected_category null. 현재 step이 topic_select일 때만.
+ * - "topic_select" 으로 되돌리면: selected_topic, selected_combo_sig, selected_question_ids 모두 reset.
+ *   현재 step이 combo_select일 때만.
+ *
+ * Realtime sync로 모든 멤버 화면이 자동으로 이전 단계로 이동.
+ * 답변(recording) 단계 이후에는 사용 불가 — 답변/코칭 손실 방지.
+ */
+export async function rollbackStep(
+  sessionId: string,
+  targetStep: "category_select" | "topic_select"
+): Promise<ActionResult> {
+  try {
+    const { supabase, userId } = await requireUser();
+    await requireSessionMember(supabase, sessionId, userId);
+
+    if (targetStep === "category_select") {
+      // Step 3 (topic_select) → Step 2 (category_select)
+      const { error } = await supabase
+        .from(T.opic_study_sessions)
+        .update({
+          step: "category_select",
+          selected_category: null,
+        })
+        .eq("id", sessionId)
+        .eq("step", "topic_select");
+      if (error) return { error: "단계 되돌리기 실패" };
+    } else if (targetStep === "topic_select") {
+      // Step 4 (combo_select) → Step 3 (topic_select)
+      const { error } = await supabase
+        .from(T.opic_study_sessions)
+        .update({
+          step: "topic_select",
+          selected_topic: null,
+          selected_combo_sig: null,
+          selected_question_ids: [],
+        })
+        .eq("id", sessionId)
+        .eq("step", "combo_select");
+      if (error) return { error: "단계 되돌리기 실패" };
+    } else {
+      return { error: "지원하지 않는 단계입니다" };
+    }
+    return { data: null };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "단계 되돌리기 실패",
+    };
+  }
+}
+
 /** Step 2: 카테고리 선택 */
 export async function selectCategory(sessionId: string, category: StudyCategory): Promise<ActionResult> {
   try {
