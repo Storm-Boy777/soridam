@@ -454,7 +454,8 @@
 
 @media (min-width: 768px) {
   .bp-only-mobile { display: none !important; }
-  .bp-only-pc { display: block !important; }
+  /* PC에서 display: flex (자식 inline style + flex chain 작동 위해) */
+  .bp-only-pc { display: flex !important; }
 }
 
 /* ============================================
