@@ -808,66 +808,7 @@ export function Step62Pc({
         topicLabel,
         `Q${question.num} · 답변 중`,
       ]}
-      right={
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "5px 12px",
-              borderRadius: 999,
-              background: "rgba(201,100,66,0.12)",
-              color: "var(--bp-tc)",
-              fontWeight: 600,
-              fontSize: 12,
-            }}
-            aria-live="polite"
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                width: 7,
-                height: 7,
-                background: "var(--bp-tc)",
-                borderRadius: "50%",
-                animation: "bp-pulse 1.4s ease-in-out infinite",
-              }}
-            />
-            {selfMode ? "내 답변 녹음 중" : `${speakerName} 답변 중`}
-            <span
-              style={{
-                fontVariantNumeric: "tabular-nums",
-                marginLeft: 2,
-              }}
-            >
-              {duration}
-            </span>
-          </span>
-          {onSkip && (
-            <button
-              onClick={onSkip}
-              aria-label="이번 답변 건너뛰기"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "5px 12px",
-                fontSize: 12,
-                fontWeight: 600,
-                background: "transparent",
-                border: "1px solid var(--bp-line-strong)",
-                color: "var(--bp-ink-2)",
-                borderRadius: 999,
-                cursor: "pointer",
-              }}
-            >
-              <SkipForward size={13} strokeWidth={1.8} aria-hidden="true" />
-              건너뛰기
-            </button>
-          )}
-        </div>
-      }
+      right={null}
     >
       <div
         className="bp-pc-content"
@@ -1136,16 +1077,37 @@ export function Step62Pc({
             </p>
           </HfCard>
           {onComplete && (
-            <HfButton
-              variant="primary"
-              size="lg"
-              full
-              onClick={onComplete}
-              disabled={submitting}
-              style={{ marginTop: 14 }}
-            >
-              {submitting ? "제출 중…" : "답변 완료 →"}
-            </HfButton>
+            <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+              {onSkip && (
+                <HfButton
+                  variant="secondary"
+                  onClick={onSkip}
+                  aria-label="이번 답변 건너뛰기"
+                  style={{
+                    flex: "0 0 auto",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  <SkipForward
+                    size={13}
+                    strokeWidth={1.8}
+                    aria-hidden="true"
+                  />
+                  건너뛰기
+                </HfButton>
+              )}
+              <HfButton
+                variant="primary"
+                size="lg"
+                onClick={onComplete}
+                disabled={submitting}
+                style={{ flex: 1 }}
+              >
+                {submitting ? "제출 중…" : "답변 완료 →"}
+              </HfButton>
+            </div>
           )}
         </HfCard>
       </div>
