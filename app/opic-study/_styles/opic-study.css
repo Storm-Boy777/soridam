@@ -479,7 +479,9 @@
 @media (min-width: 768px) {
   .bp-pc-shell {
     width: 100%;
-    min-height: 100dvh;
+    /* App Shell — 부모(main flex 영역)에 맞춰 채움 + 자체 100dvh 강제 X */
+    flex: 1;
+    min-height: 0;
     background: var(--bp-bg);
     color: var(--bp-ink);
     font-family: var(--bp-font);
