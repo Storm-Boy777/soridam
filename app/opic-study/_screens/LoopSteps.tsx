@@ -256,6 +256,7 @@ export function Step61Pc({
   return (
     <PcStepShell
       crumb={[groupName, topicLabel, `Q${question.num} · 누가 먼저?`]}
+      right={null}
     >
       <div className="bp-pc-content" style={{ padding: "32px 64px" }}>
         {/* 질문 카드 */}

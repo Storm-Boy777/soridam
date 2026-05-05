@@ -22,6 +22,13 @@
  */
 
 import { useEffect, useState, useTransition, useCallback, useMemo, useContext } from "react";
+import {
+  Globe,
+  Building2,
+  AlertCircle,
+  Loader2,
+  X,
+} from "lucide-react";
 import { SessionFrameContext } from "../_components/session-frame-context";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -900,6 +907,7 @@ function Shell({
       {connectionState !== "connected" && (
         <div
           role="status"
+          aria-live="polite"
           style={{
             position: "fixed",
             top: 0,
@@ -916,11 +924,32 @@ function Shell({
             textAlign: "center",
             zIndex: 200,
             backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
           }}
         >
-          {connectionState === "error"
-            ? "🔴 연결 오류 — 페이지를 새로고침해주세요"
-            : "🟡 연결이 불안정해요. 재연결 중…"}
+          {connectionState === "error" ? (
+            <>
+              <AlertCircle
+                size={14}
+                strokeWidth={2}
+                aria-hidden="true"
+              />
+              연결 오류 — 페이지를 새로고침해주세요
+            </>
+          ) : (
+            <>
+              <Loader2
+                size={14}
+                strokeWidth={2}
+                aria-hidden="true"
+                style={{ animation: "bp-spin 1s linear infinite" }}
+              />
+              연결이 불안정해요. 재연결 중…
+            </>
+          )}
         </div>
       )}
 
@@ -972,27 +1001,33 @@ function Shell({
 
       {ctx && (
         <span
-          aria-label="오늘 모임 방식"
+          aria-label={`오늘 모임 방식: ${ctx.onlineMode ? "온라인" : "오프라인"}`}
           title="그룹 일정에서 정해진 오늘의 모드"
           style={{
             position: "fixed",
             top: 12,
-            right: onEnd ? 64 : 12,
+            right: onEnd ? 76 : 12,
             padding: "6px 10px",
             fontSize: 11,
+            fontWeight: 500,
             color: "var(--bp-ink-3)",
-            background: "rgba(255,255,255,0.8)",
+            background: "rgba(255,255,255,0.85)",
             backdropFilter: "blur(4px)",
             border: "1px solid rgba(31,27,22,0.10)",
             borderRadius: 8,
             zIndex: 100,
             display: "inline-flex",
             alignItems: "center",
-            gap: 4,
+            gap: 6,
             userSelect: "none",
           }}
         >
-          {ctx.onlineMode ? "🌐 온라인" : "🏢 오프라인"}
+          {ctx.onlineMode ? (
+            <Globe size={12} strokeWidth={1.8} aria-hidden="true" />
+          ) : (
+            <Building2 size={12} strokeWidth={1.8} aria-hidden="true" />
+          )}
+          {ctx.onlineMode ? "온라인" : "오프라인"}
         </span>
       )}
 
@@ -1006,15 +1041,20 @@ function Shell({
             right: 12,
             padding: "6px 10px",
             fontSize: 11,
+            fontWeight: 500,
             color: "var(--bp-ink-3)",
-            background: "rgba(255,255,255,0.8)",
+            background: "rgba(255,255,255,0.85)",
             backdropFilter: "blur(4px)",
             border: "1px solid rgba(31,27,22,0.10)",
             borderRadius: 8,
             cursor: "pointer",
             zIndex: 100,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
           }}
         >
+          <X size={12} strokeWidth={2} aria-hidden="true" />
           종료
         </button>
       )}

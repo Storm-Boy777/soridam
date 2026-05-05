@@ -412,6 +412,7 @@ function Step2Pc({ categories = MOCK_CATEGORIES, onNext, groupName = MOCK_GROUP.
       onBack={goHome}
       crumb={[groupName, "카테고리"]}
       stepNow={2}
+      right={null}
     >
       <div className="bp-pc-content">
         <h1
@@ -666,6 +667,7 @@ function Step3Pc({
       onBack={goHome}
       crumb={[groupName, "카테고리", "주제 선택"]}
       stepNow={3}
+      right={null}
     >
       <div className="bp-pc-content tight">
         <h1 className="t-h1" style={{ margin: "0 0 6px" }}>
@@ -991,6 +993,7 @@ function Step4Pc({
       onBack={goHome}
       crumb={[groupName, topic, "콤보 선택"]}
       stepNow={4}
+      right={null}
     >
       <div className="bp-pc-content tight">
         <h1 className="t-h1" style={{ margin: "0 0 6px" }}>
