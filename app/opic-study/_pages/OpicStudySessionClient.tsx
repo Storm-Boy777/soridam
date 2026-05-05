@@ -783,7 +783,7 @@ export function OpicStudySessionClient({
           </div>
         }
       />
-      <main className="flex h-0 min-h-0 flex-grow flex-col md:h-auto md:flex-1">
+      <main className="flex h-0 min-h-0 flex-grow flex-col">
         {stepUi}
       </main>
       <BpConfirmDialog
