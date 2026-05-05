@@ -30,6 +30,7 @@ import {
   X,
 } from "lucide-react";
 import { SessionFrameContext } from "../_components/session-frame-context";
+import { ImmersiveHeader } from "@/components/layout/immersive-header";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
@@ -692,6 +693,32 @@ export function OpicStudySessionClient({
   // (handleToggleMode 제거됨)
 
   const stepUi = renderStep();
+  // Step별 ImmersiveHeader subtitle 매핑
+  const stepSubtitle = (() => {
+    switch (session.step) {
+      case "mode_select":
+        return "입장 대기";
+      case "category_select":
+        return "카테고리";
+      case "topic_select":
+        return "주제";
+      case "combo_select":
+        return "콤보";
+      case "guide":
+        return "시작 전 가이드";
+      case "recording":
+        return `Q${idx + 1} · 답변`;
+      case "feedback_share":
+        return `Q${idx + 1} · 함께 보기`;
+      case "discussion":
+        return `Q${idx + 1} · 토론`;
+      case "completed":
+        return "오늘의 학습";
+      default:
+        return undefined;
+    }
+  })();
+
   return (
     <SessionFrameContext.Provider
       value={{
@@ -699,9 +726,63 @@ export function OpicStudySessionClient({
         members,
         connectionState,
         onlineMode: session.online_mode,
+        isImmersiveLayout: true,
       }}
     >
-      {stepUi}
+      <ImmersiveHeader
+        title="오픽 스터디"
+        subtitle={stepSubtitle}
+        backHref="/opic-study"
+        rightContent={
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span
+              aria-label={`오늘 모임 방식: ${session.online_mode ? "온라인" : "오프라인"}`}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "5px 9px",
+                fontSize: 11,
+                fontWeight: 500,
+                color: "var(--foreground-secondary, #6B6B7B)",
+                background: "var(--surface-secondary, #F3F2EF)",
+                border: "1px solid var(--border, #E8E6E1)",
+                borderRadius: 8,
+              }}
+            >
+              {session.online_mode ? (
+                <Globe size={12} strokeWidth={1.8} aria-hidden="true" />
+              ) : (
+                <Building2 size={12} strokeWidth={1.8} aria-hidden="true" />
+              )}
+              {session.online_mode ? "온라인" : "오프라인"}
+            </span>
+            <button
+              onClick={handleEndSession}
+              aria-label="세션 종료"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                padding: "5px 10px",
+                fontSize: 11,
+                fontWeight: 500,
+                color: "var(--foreground-secondary, #6B6B7B)",
+                background: "transparent",
+                border: "1px solid var(--border, #E8E6E1)",
+                borderRadius: 8,
+                cursor: "pointer",
+              }}
+            >
+              <X size={12} strokeWidth={2} aria-hidden="true" />
+              종료
+            </button>
+          </div>
+        }
+      />
+      <main className="flex h-0 min-h-0 flex-grow flex-col md:h-auto md:flex-1">
+        {stepUi}
+      </main>
       <BpConfirmDialog
         open={!!confirmDialog}
         title={confirmDialog?.title ?? ""}
@@ -1039,65 +1120,7 @@ function Shell({
         </div>
       )}
 
-      {ctx && (
-        <span
-          aria-label={`오늘 모임 방식: ${ctx.onlineMode ? "온라인" : "오프라인"}`}
-          title="그룹 일정에서 정해진 오늘의 모드"
-          style={{
-            position: "fixed",
-            top: 12,
-            right: onEnd ? 76 : 12,
-            padding: "6px 10px",
-            fontSize: 11,
-            fontWeight: 500,
-            color: "var(--bp-ink-3)",
-            background: "rgba(255,255,255,0.85)",
-            backdropFilter: "blur(4px)",
-            border: "1px solid rgba(31,27,22,0.10)",
-            borderRadius: 8,
-            zIndex: 100,
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            userSelect: "none",
-          }}
-        >
-          {ctx.onlineMode ? (
-            <Globe size={12} strokeWidth={1.8} aria-hidden="true" />
-          ) : (
-            <Building2 size={12} strokeWidth={1.8} aria-hidden="true" />
-          )}
-          {ctx.onlineMode ? "온라인" : "오프라인"}
-        </span>
-      )}
-
-      {onEnd && (
-        <button
-          onClick={onEnd}
-          aria-label="세션 종료"
-          style={{
-            position: "fixed",
-            top: 12,
-            right: 12,
-            padding: "6px 10px",
-            fontSize: 11,
-            fontWeight: 500,
-            color: "var(--bp-ink-3)",
-            background: "rgba(255,255,255,0.85)",
-            backdropFilter: "blur(4px)",
-            border: "1px solid rgba(31,27,22,0.10)",
-            borderRadius: 8,
-            cursor: "pointer",
-            zIndex: 100,
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 4,
-          }}
-        >
-          <X size={12} strokeWidth={2} aria-hidden="true" />
-          종료
-        </button>
-      )}
+      {/* 모드 뱃지/종료 버튼은 ImmersiveHeader rightContent로 이동됨 (OpicStudySessionClient 최상위) */}
     </div>
   );
 }

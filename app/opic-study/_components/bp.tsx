@@ -16,6 +16,7 @@ import type {
   HTMLAttributes,
 } from "react";
 import { useEffect, useRef } from "react";
+import { useSessionFrame } from "./session-frame-context";
 
 // ============================================================
 // Phone Shell (모바일 프레임 360x760)
@@ -784,6 +785,8 @@ interface PcStepShellProps {
   right?: ReactNode | null;
   stepNow?: number;
   stepTotal?: number;
+  /** headbar(crumb 헤더) 숨김 — 외곽 ImmersiveHeader가 단계 정보를 담당할 때 사용 */
+  hideHeadbar?: boolean;
   children: ReactNode;
 }
 
@@ -793,48 +796,58 @@ export function PcStepShell({
   right,
   stepNow,
   stepTotal = 7,
+  hideHeadbar,
   children,
 }: PcStepShellProps) {
+  // hideHeadbar 명시 X 시 SessionFrameContext.isImmersiveLayout으로 자동 감지
+  // (Immersive layout 안에선 ImmersiveHeader가 헤더 역할 → 자체 headbar 숨김)
+  const ctx = useSessionFrame();
+  const shouldHideHeadbar = hideHeadbar ?? ctx?.isImmersiveLayout ?? false;
+
   return (
     <div className="bp-scope bp-pc-shell">
-      {/* Breadcrumb 헤더 */}
-      <div className="bp-pc-headbar">
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {onBack && (
-            <button
-              onClick={onBack}
-              style={{
-                fontSize: 18,
-                color: "var(--bp-ink-2)",
-                cursor: "pointer",
-                background: "transparent",
-                border: "none",
-                padding: 0,
-                lineHeight: 1,
-              }}
-              aria-label="뒤로"
-            >
-              ←
-            </button>
-          )}
-          <div className="bp-pc-crumbs">
-            {crumb.map((c, i) => (
-              <span
-                key={i}
-                style={{ display: "flex", alignItems: "center", gap: 8 }}
+      {/* Breadcrumb 헤더 — shouldHideHeadbar 시 숨김 (ImmersiveHeader가 대체) */}
+      {!shouldHideHeadbar && (
+        <div className="bp-pc-headbar">
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {onBack && (
+              <button
+                onClick={onBack}
+                style={{
+                  fontSize: 18,
+                  color: "var(--bp-ink-2)",
+                  cursor: "pointer",
+                  background: "transparent",
+                  border: "none",
+                  padding: 0,
+                  lineHeight: 1,
+                }}
+                aria-label="뒤로"
               >
-                {i > 0 && <span className="bp-pc-crumb-sep">›</span>}
-                <span className={i === crumb.length - 1 ? "now" : ""}>{c}</span>
-              </span>
-            ))}
+                ←
+              </button>
+            )}
+            <div className="bp-pc-crumbs">
+              {crumb.map((c, i) => (
+                <span
+                  key={i}
+                  style={{ display: "flex", alignItems: "center", gap: 8 }}
+                >
+                  {i > 0 && <span className="bp-pc-crumb-sep">›</span>}
+                  <span className={i === crumb.length - 1 ? "now" : ""}>
+                    {c}
+                  </span>
+                </span>
+              ))}
+            </div>
           </div>
+          {right === null ? null : right === undefined ? (
+            <span className="bp-pill live">실시간</span>
+          ) : (
+            right
+          )}
         </div>
-        {right === null
-          ? null
-          : right === undefined
-            ? <span className="bp-pill live">실시간</span>
-            : right}
-      </div>
+      )}
 
       {/* Step bar (옵션) — 풀폭 */}
       {typeof stepNow === "number" && (

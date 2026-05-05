@@ -24,6 +24,8 @@ export interface SessionFrameContextValue {
   members: SessionFrameMember[];
   connectionState: "connected" | "reconnecting" | "error";
   onlineMode: boolean;
+  /** Immersive layout 안에서 사용 — PcStepShell이 자체 headbar 숨김 (ImmersiveHeader가 대체) */
+  isImmersiveLayout?: boolean;
 }
 
 export const SessionFrameContext =
