@@ -705,18 +705,24 @@
   }
 
   /* 본문 끝 액션 — App Shell footer (항상 화면 하단 고정)
-   * - .bp-pc-content sibling으로 (자식 X) — .bp-pc-shell flex column 마지막
-   * - flex: 0 0 auto — 자체 height (콘텐츠 길이 무관)
-   * - 본문 영역(.bp-pc-content)이 자체 스크롤 → footer는 항상 화면 하단
+   * - 외곽: 풀 폭 (background + border-top 화면 끝까지)
+   * - 내부 .bp-pc-actions-inner: max-width 1040 가운데 정렬 (본문 .bp-pc-content와 너비 일치)
+   *   → ImmersiveHeader의 max-w-6xl 같은 패턴 (외곽 풀 + 내부 가운데)
    */
   .bp-pc-actions {
     flex: 0 0 auto;
+    width: 100%;
+    background: var(--bp-bg);
+    border-top: 1px solid var(--bp-line);
+  }
+  .bp-pc-actions-inner {
+    max-width: 1040px;
+    margin: 0 auto;
     padding: 14px 64px 16px;
     display: flex;
     justify-content: flex-end;
     gap: 10px;
-    background: var(--bp-bg);
-    border-top: 1px solid var(--bp-line);
+    box-sizing: border-box;
   }
   .bp-pc-actions.between {
     justify-content: space-between;
@@ -748,6 +754,7 @@
 @media (min-width: 768px) and (max-width: 1023px) {
   .bp-pc-content { padding: 24px 32px; }
   .bp-pc-content.tight { padding: 20px 32px; }
+  .bp-pc-actions-inner { padding: 12px 32px 14px; }
   .bp-pc-stepbar { padding: 12px 16px 0; }
   .bp-home-pc-content { padding: 20px 32px 40px; }
   .bp-home-pc-dual { grid-template-columns: 1fr; gap: 16px; }
