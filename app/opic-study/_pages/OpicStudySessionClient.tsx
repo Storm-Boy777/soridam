@@ -45,7 +45,7 @@ import {
 } from "../_screens/LoopSteps";
 import { Step64Pc } from "../_screens/Step64";
 import { Step66Pc } from "../_screens/Step66";
-import { Step7Pc, EdgeMic } from "../_screens/Step7AndEdge";
+import { Step7Pc } from "../_screens/Step7AndEdge";
 import {
   selectMode,
   selectCategory,
@@ -1452,15 +1452,17 @@ function LiveStep62Self({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 마이크 권한 거부 시 — EdgeMic 화면 (mobile + PC 공통)
-  if (recorder.error?.includes("권한")) {
-    return (
-      <EdgeMic
-        onOpenSettings={() => recorder.startRecording().catch(() => undefined)}
-        onLeave={onSkip}
-      />
-    );
-  }
+  // 마이크 권한 거부 등 에러 — toast 1회 표시 (인라인 안내는 Step62Pc/Mobile 안에서 처리)
+  // EdgeMic 풀 페이지 분기는 제거 — 모의고사와 동일 inline 패턴 적용
+  useEffect(() => {
+    if (recorder.error) {
+      toast.error(recorder.error);
+    }
+  }, [recorder.error]);
+
+  const handleRetry = useCallback(() => {
+    recorder.startRecording().catch(() => undefined);
+  }, [recorder]);
 
   const handleComplete = async () => {
     if (recorder.state === "recording") {
@@ -1505,6 +1507,8 @@ function LiveStep62Self({
           onComplete={handleComplete}
           submitting={submitting}
           isSelf
+          recorderError={recorder.error ?? null}
+          onRetry={handleRetry}
         />
       </div>
       <div className="bp-only-mobile" style={{ flex: 1, minHeight: 0, display: "flex" }}>
@@ -1516,6 +1520,7 @@ function LiveStep62Self({
           handleComplete={handleComplete}
           fmtDuration={fmtDuration}
           onSkip={onSkip}
+          onRetry={handleRetry}
         />
       </div>
     </>
@@ -1530,6 +1535,7 @@ function LiveStep62SelfMobile({
   handleComplete,
   fmtDuration,
   onSkip,
+  onRetry,
 }: {
   questionIdx: number;
   totalQuestions: number;
@@ -1538,7 +1544,9 @@ function LiveStep62SelfMobile({
   handleComplete: () => void;
   fmtDuration: (sec: number) => string;
   onSkip?: () => void;
+  onRetry?: () => void;
 }) {
+  const hasError = !!recorder.error;
   return (
     <HfPhone liveMode>
       <HfHeader
@@ -1548,19 +1556,30 @@ function LiveStep62SelfMobile({
         right={
           <span
             className="bp-pill"
-            style={{ background: "rgba(201,100,66,0.12)", color: "var(--bp-tc)" }}
+            style={{
+              background: hasError
+                ? "rgba(31,27,22,0.06)"
+                : "rgba(201,100,66,0.12)",
+              color: hasError ? "var(--bp-ink-3)" : "var(--bp-tc)",
+            }}
           >
-            <span
-              style={{
-                width: 6,
-                height: 6,
-                background: "var(--bp-tc)",
-                borderRadius: "50%",
-                display: "inline-block",
-                animation: "bp-pulse 1.2s infinite",
-              }}
-            />
-            {recorder.state === "recording" ? "녹음 중" : "준비 중"}
+            {!hasError && (
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  background: "var(--bp-tc)",
+                  borderRadius: "50%",
+                  display: "inline-block",
+                  animation: "bp-pulse 1.2s infinite",
+                }}
+              />
+            )}
+            {hasError
+              ? "마이크 권한 필요"
+              : recorder.state === "recording"
+                ? "녹음 중"
+                : "준비 중"}
           </span>
         }
       />
@@ -1588,40 +1607,80 @@ function LiveStep62SelfMobile({
             style={{
               fontSize: 48,
               fontWeight: 700,
-              color: "var(--bp-ink)",
+              color: hasError ? "var(--bp-ink-3)" : "var(--bp-ink)",
               letterSpacing: "-0.02em",
             }}
           >
-            {fmtDuration(recorder.duration)}
+            {hasError ? "—" : fmtDuration(recorder.duration)}
           </div>
 
-          <HfWave bars={32} height={56} amplitude={44} color="tc" gap={3} />
+          {!hasError && (
+            <HfWave bars={32} height={56} amplitude={44} color="tc" gap={3} />
+          )}
 
-          {recorder.warningMessage && (
+          {recorder.warningMessage && !hasError && (
             <span className="t-xs" style={{ color: "var(--bp-tc)" }}>
               {recorder.warningMessage}
             </span>
           )}
-          <span className="t-sm ink-3">권장 답변 길이 · 40~60초</span>
+          {!hasError && (
+            <span className="t-sm ink-3">권장 답변 길이 · 40~60초</span>
+          )}
         </div>
 
+        {/* 권한 거부 — inline 안내 (모의고사 패턴) */}
+        {hasError && (
+          <div
+            role="alert"
+            style={{
+              marginTop: 12,
+              marginBottom: 4,
+              padding: "10px 12px",
+              borderRadius: "var(--bp-radius)",
+              background: "rgba(201, 100, 66, 0.10)",
+              color: "var(--bp-tc)",
+              fontSize: 13,
+              fontWeight: 500,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              border: "1px solid rgba(201, 100, 66, 0.20)",
+            }}
+          >
+            <span style={{ flex: 1 }}>{recorder.error}</span>
+          </div>
+        )}
+
         <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-          <HfButton
-            variant="secondary"
-            style={{ flex: 1 }}
-            onClick={() => recorder.reset()}
-            disabled={submitting}
-          >
-            다시 시작
-          </HfButton>
-          <HfButton
-            variant="primary"
-            style={{ flex: 2 }}
-            onClick={handleComplete}
-            disabled={submitting || recorder.duration < 1}
-          >
-            {submitting ? "제출 중…" : "답변 완료 →"}
-          </HfButton>
+          {hasError && onRetry ? (
+            <HfButton
+              variant="primary"
+              style={{ flex: 1 }}
+              onClick={onRetry}
+              disabled={submitting}
+            >
+              다시 시도
+            </HfButton>
+          ) : (
+            <>
+              <HfButton
+                variant="secondary"
+                style={{ flex: 1 }}
+                onClick={() => recorder.reset()}
+                disabled={submitting}
+              >
+                다시 시작
+              </HfButton>
+              <HfButton
+                variant="primary"
+                style={{ flex: 2 }}
+                onClick={handleComplete}
+                disabled={submitting || recorder.duration < 1}
+              >
+                {submitting ? "제출 중…" : "답변 완료 →"}
+              </HfButton>
+            </>
+          )}
         </div>
         {onSkip && (
           <button
@@ -1643,20 +1702,6 @@ function LiveStep62SelfMobile({
           </button>
         )}
 
-        {recorder.error && (
-          <div
-            className="t-xs"
-            style={{
-              marginTop: 12,
-              padding: 10,
-              borderRadius: 8,
-              background: "var(--bp-polish-tint)",
-              color: "var(--bp-tc)",
-            }}
-          >
-            {recorder.error}
-          </div>
-        )}
       </HfBody>
     </HfPhone>
   );

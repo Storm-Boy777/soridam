@@ -17,6 +17,8 @@ import {
   Sparkles,
   SkipForward,
   X,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import {
   HfPhone,
@@ -767,6 +769,10 @@ interface Step62PcProps {
   submitting?: boolean;
   /** 본인이 발화자인지 — true면 헤더 "내 답변 녹음 중", false면 "{speakerName} 답변 중" */
   isSelf?: boolean;
+  /** 마이크 권한 등 녹음 에러 — Self 시점에 inline 안내 + 다시 시도 버튼 표시 */
+  recorderError?: string | null;
+  /** 권한 거부 시 다시 시도 콜백 */
+  onRetry?: () => void;
 }
 
 const STEP62_PC_MEMBERS: Array<{
@@ -795,9 +801,13 @@ export function Step62Pc({
   onComplete,
   submitting = false,
   isSelf,
+  recorderError,
+  onRetry,
 }: Step62PcProps) {
   // isSelf 미지정 시 — onComplete/onSkip 있으면 self로 추정 (시안 호환)
   const selfMode = isSelf ?? !!onComplete;
+  // 본인 발화 + 마이크 권한 거부 등 에러 — inline 안내 표시
+  const showError = selfMode && !!recorderError;
   const ctx = useSessionFrame();
   const members = realMembers && realMembers.length > 0 ? realMembers : STEP62_PC_MEMBERS;
   const displayQuestion = questionText ?? question.english;
@@ -895,11 +905,11 @@ export function Step62Pc({
                 >
                   {speaking ? (
                     <>
-                      {/* 발화자 — dot + 큰 시간 + 큰 웨이브 */}
+                      {/* 발화자 — dot + 큰 시간 + 큰 웨이브 (권한 거부 시 시간/웨이브 비활성) */}
                       <MbDot
                         color={m.key}
                         initial={displayName[0]}
-                        live
+                        live={!showError}
                         size={68}
                         fontSize={26}
                       />
@@ -908,20 +918,24 @@ export function Step62Pc({
                           fontSize: 28,
                           fontWeight: 700,
                           fontVariantNumeric: "tabular-nums",
-                          color: "var(--bp-tc)",
+                          color: showError
+                            ? "var(--bp-ink-3)"
+                            : "var(--bp-tc)",
                           letterSpacing: "-0.02em",
                           lineHeight: 1,
                         }}
                       >
-                        {duration}
+                        {showError ? "—" : duration}
                       </div>
-                      <HfWave
-                        bars={36}
-                        height={32}
-                        amplitude={26}
-                        color="tc"
-                        style={{ width: "100%", justifyContent: "center" }}
-                      />
+                      {!showError && (
+                        <HfWave
+                          bars={36}
+                          height={32}
+                          amplitude={26}
+                          color="tc"
+                          style={{ width: "100%", justifyContent: "center" }}
+                        />
+                      )}
                     </>
                   ) : (
                     <>
@@ -1071,13 +1085,50 @@ export function Step62Pc({
                 flex: 1,
               }}
             >
-              {selfMode
-                ? "끝나면 아래 '답변 완료'를 눌러주세요."
-                : "마음에 드는 표현 메모해두면 다음에 활용할 수 있어요."}
+              {showError
+                ? "마이크 권한이 필요해요. 브라우저 주소창에서 허용 후 다시 시도해주세요."
+                : selfMode
+                  ? "끝나면 아래 '답변 완료'를 눌러주세요."
+                  : "마음에 드는 표현 메모해두면 다음에 활용할 수 있어요."}
             </p>
           </HfCard>
-          {onComplete && (
-            <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+
+          {/* 마이크 권한 거부 등 — inline 안내 (모의고사 패턴) */}
+          {showError && (
+            <div
+              role="alert"
+              style={{
+                marginTop: 12,
+                padding: "10px 12px",
+                borderRadius: "var(--bp-radius)",
+                background: "rgba(201, 100, 66, 0.10)",
+                color: "var(--bp-tc)",
+                fontSize: 13,
+                fontWeight: 500,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                border: "1px solid rgba(201, 100, 66, 0.20)",
+              }}
+            >
+              <AlertCircle
+                size={14}
+                strokeWidth={2}
+                aria-hidden="true"
+                style={{ flexShrink: 0 }}
+              />
+              <span>{recorderError}</span>
+            </div>
+          )}
+
+          {selfMode && (
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                marginTop: showError ? 10 : 14,
+              }}
+            >
               {onSkip && (
                 <HfButton
                   variant="secondary"
@@ -1098,15 +1149,39 @@ export function Step62Pc({
                   건너뛰기
                 </HfButton>
               )}
-              <HfButton
-                variant="primary"
-                size="lg"
-                onClick={onComplete}
-                disabled={submitting}
-                style={{ flex: 1 }}
-              >
-                {submitting ? "제출 중…" : "답변 완료 →"}
-              </HfButton>
+              {showError && onRetry ? (
+                <HfButton
+                  variant="primary"
+                  size="lg"
+                  onClick={onRetry}
+                  style={{
+                    flex: 1,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                  }}
+                >
+                  <RefreshCw
+                    size={14}
+                    strokeWidth={1.8}
+                    aria-hidden="true"
+                  />
+                  다시 시도
+                </HfButton>
+              ) : (
+                onComplete && (
+                  <HfButton
+                    variant="primary"
+                    size="lg"
+                    onClick={onComplete}
+                    disabled={submitting}
+                    style={{ flex: 1 }}
+                  >
+                    {submitting ? "제출 중…" : "답변 완료 →"}
+                  </HfButton>
+                )
+              )}
             </div>
           )}
         </HfCard>
