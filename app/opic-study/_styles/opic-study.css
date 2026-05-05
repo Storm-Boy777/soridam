@@ -701,12 +701,19 @@
     max-width: 1280px;
   }
 
-  /* 본문 끝 액션 (inline 오른쪽 정렬) */
+  /* 본문 끝 액션 — sticky bottom (긴 콘텐츠에서 항상 다음 버튼 보이게) */
   .bp-pc-actions {
-    margin-top: 24px;
+    margin-top: auto;          /* flex 안 마지막 자식 — 끝으로 밀어내기 */
+    padding: 14px 0 16px;
     display: flex;
     justify-content: flex-end;
     gap: 10px;
+    /* sticky */
+    position: sticky;
+    bottom: 0;
+    background: var(--bp-bg);
+    border-top: 1px solid var(--bp-line);
+    z-index: 5;
   }
   .bp-pc-actions.between {
     justify-content: space-between;
@@ -723,6 +730,13 @@
   .bp-pc-shell .t-h1 { font-size: 24px; }
   .bp-pc-shell .t-h2 { font-size: 20px; }
   .bp-pc-shell .t-body { font-size: 14px; }
+}
+
+/* ============================================
+ * 1280px 이상 (큰 PC) — 그리드 5 column (긴 그리드 압축)
+ * ============================================ */
+@media (min-width: 1280px) {
+  .bp-pc-grid-4 { grid-template-columns: repeat(5, 1fr); }
 }
 
 /* ============================================

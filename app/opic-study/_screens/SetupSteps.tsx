@@ -751,7 +751,7 @@ function Step3Pc({
                 tabIndex={0}
                 aria-pressed={selected}
                 aria-label={`${t.name} (${t.meta ?? ""})${t.recent ? " · 최근 학습" : ""}`}
-                padding={16}
+                padding={12}
                 style={{
                   cursor: "pointer",
                   border: selected
@@ -772,10 +772,15 @@ function Step3Pc({
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    marginBottom: 6,
+                    marginBottom: 4,
                   }}
                 >
-                  <span className="t-h3">{t.name}</span>
+                  <span
+                    className="t-sm"
+                    style={{ fontWeight: 600 }}
+                  >
+                    {t.name}
+                  </span>
                   {selected && (
                     <span
                       aria-hidden="true"
@@ -786,9 +791,19 @@ function Step3Pc({
                   )}
                 </div>
                 <div
-                  style={{ display: "flex", alignItems: "center", gap: 6 }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    flexWrap: "wrap",
+                  }}
                 >
-                  <span className="t-xs ink-3">{t.meta}</span>
+                  <span
+                    className="t-xs ink-3"
+                    style={{ lineHeight: 1.3 }}
+                  >
+                    {t.meta}
+                  </span>
                   {t.recent && (
                     <Pill style={{ fontSize: 10 }}>최근 학습</Pill>
                   )}
