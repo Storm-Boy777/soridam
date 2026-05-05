@@ -6,6 +6,7 @@
  * 디자인: docs/디자인/opic/project/hf-loop.jsx (Step 7) + hf-extra.jsx (Edge)
  */
 
+import { Sprout, Sparkles } from "lucide-react";
 import {
   HfPhone,
   HfStatusBar,
@@ -208,14 +209,37 @@ export function Step7Pc({
       <div className="bp-pc-content" style={{ padding: "32px 64px" }}>
         {/* Hero */}
         <div style={{ textAlign: "center", padding: "16px 0 28px" }}>
-          <div style={{ fontSize: 56, marginBottom: 8 }}>🌱</div>
+          <div
+            aria-hidden="true"
+            style={{
+              width: 88,
+              height: 88,
+              borderRadius: "50%",
+              background:
+                "linear-gradient(140deg, var(--bp-tc-tint) 0%, var(--bp-surface-2) 100%)",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 14,
+              boxShadow: "0 8px 24px rgba(201,100,66,0.12)",
+            }}
+          >
+            <Sprout size={42} strokeWidth={1.6} color="var(--bp-tc)" />
+          </div>
           <div
             className="t-display"
-            style={{ marginBottom: 6, fontSize: 32 }}
+            style={{
+              marginBottom: 6,
+              fontSize: 32,
+              textWrap: "balance" as const,
+            }}
           >
             {data.title}
           </div>
-          <p className="t-body ink-3" style={{ margin: 0 }}>
+          <p
+            className="t-body ink-3"
+            style={{ margin: 0, textWrap: "pretty" as const }}
+          >
             {data.subtitle}
           </p>
         </div>
@@ -234,11 +258,16 @@ export function Step7Pc({
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
+                gap: 10,
                 marginBottom: 10,
               }}
             >
-              <span style={{ fontSize: 18 }}>✨</span>
+              <Sparkles
+                size={18}
+                strokeWidth={1.8}
+                color="var(--bp-tc)"
+                aria-hidden="true"
+              />
               <span className="t-h2">오늘의 베스트 표현</span>
             </div>
             <Quote
@@ -294,13 +323,13 @@ export function Step7Pc({
           </HfCard>
         </div>
 
-        {/* Members 4-column */}
+        {/* Members — 멤버 수 동적 */}
         <HfCard padding={20} style={{ marginBottom: 16 }}>
           <SectionH style={{ marginBottom: 14 }}>오늘 함께한 멤버</SectionH>
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
+              gridTemplateColumns: `repeat(${Math.max(data.memberNotes.length, 1)}, minmax(0, 1fr))`,
               gap: 12,
             }}
           >
@@ -325,7 +354,7 @@ export function Step7Pc({
                   {m.name}
                 </div>
                 <Tag tone="good" style={{ fontSize: 10 }}>
-                  BP · {m.note}
+                  오늘 베스트 · {m.note}
                 </Tag>
               </HfCard>
             ))}

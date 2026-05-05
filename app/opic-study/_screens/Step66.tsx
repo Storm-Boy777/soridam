@@ -12,6 +12,7 @@
  */
 
 import { useState } from "react";
+import { Sparkles, Timer, Play } from "lucide-react";
 import {
   HfPhone,
   HfStatusBar,
@@ -276,23 +277,33 @@ export function Step66Pc({
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {timerLabel && (
             <span
-              className="bp-pill"
               style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "6px 12px",
+                borderRadius: 999,
                 background: timerExpired
                   ? "rgba(201, 100, 66, 0.15)"
                   : "rgba(74, 184, 90, 0.12)",
                 color: timerExpired ? "var(--bp-tc)" : "#2d7a3d",
                 fontWeight: 600,
+                fontSize: 13,
               }}
               title="토론 시간"
+              aria-live="polite"
             >
-              💬 {timerExpired ? "시간 종료" : timerLabel}
+              <Timer size={14} strokeWidth={1.8} aria-hidden="true" />
+              {timerExpired ? (
+                "토론 시간 종료"
+              ) : (
+                <span style={{ fontVariantNumeric: "tabular-nums" }}>
+                  {timerLabel}
+                </span>
+              )}
             </span>
           )}
-          <Pill tone="live">실시간</Pill>
-          <HfButton variant="primary" size="sm" onClick={onNext}>
-            다음 질문 →
-          </HfButton>
+          <Pill tone="live">함께 보기</Pill>
         </div>
       }
     >
@@ -305,24 +316,59 @@ export function Step66Pc({
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
+              gap: 16,
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 18 }}>✨</span>
-              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <span className="t-h3">오늘 {members.length}명에게서 배운 점</span>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                minWidth: 0,
+              }}
+            >
+              <Sparkles
+                size={20}
+                strokeWidth={1.8}
+                color="var(--bp-tc)"
+                aria-hidden="true"
+                style={{ flexShrink: 0 }}
+              />
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 2,
+                  minWidth: 0,
+                }}
+              >
+                <span
+                  className="t-h3"
+                  style={{ textWrap: "balance" as const }}
+                >
+                  오늘 {members.length}명에게서 배운 점
+                </span>
                 <p
                   className="t-sm"
-                  style={{ margin: 0, color: "var(--bp-ink-2)" }}
-                  dangerouslySetInnerHTML={{
-                    __html: insightText
-                      .replace(/"into \/ hooked on \/ love"/g, '<b>"into / hooked on / love"</b>')
-                      .replace(/몰입 표현/g, "<b>몰입 표현</b>"),
+                  style={{
+                    margin: 0,
+                    color: "var(--bp-ink-2)",
+                    lineHeight: 1.55,
+                    textWrap: "pretty" as const,
                   }}
-                />
+                >
+                  {insightText}
+                </p>
               </div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                flexShrink: 0,
+              }}
+            >
               <CoachAvatar size="sm" />
               <span className="t-xs ink-3">AI 스터디 코치 정리</span>
             </div>
@@ -351,8 +397,22 @@ export function Step66Pc({
                 </span>
                 <span className="t-micro ink-3">{m.duration}</span>
               </div>
-              <HfButton variant="ghost" size="sm" onClick={onReplay}>
-                ▶
+              <HfButton
+                variant="ghost"
+                size="sm"
+                onClick={onReplay}
+                aria-label={`${m.name} 답변 재생`}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 28,
+                  height: 28,
+                  padding: 0,
+                  flexShrink: 0,
+                }}
+              >
+                <Play size={12} strokeWidth={2} aria-hidden="true" />
               </HfButton>
             </div>
 
@@ -399,21 +459,26 @@ export function Step66Pc({
       {/* Footer */}
       <div
         style={{
-          padding: "12px 20px 16px",
+          padding: "14px 20px 18px",
           borderTop: "1px solid var(--bp-line)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          gap: 16,
         }}
       >
-        <span className="t-xs ink-3">
-          콤보 1/3 · 다음 질문에서 마음에 든 표현 한 가지씩 써보세요
+        <span
+          className="t-xs ink-3"
+          style={{ fontVariantNumeric: "tabular-nums" }}
+        >
+          {comboProgress ?? "콤보 1/3"} · 마음에 든 표현 한 가지씩
+          메모해두세요
         </span>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
           <HfButton variant="secondary" size="sm" onClick={onReplay}>
             전체 다시 듣기
           </HfButton>
-          <HfButton variant="primary" size="sm" onClick={onNext}>
+          <HfButton variant="primary" onClick={onNext}>
             다음 질문 →
           </HfButton>
         </div>

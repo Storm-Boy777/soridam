@@ -6,7 +6,17 @@
  * 디자인: docs/디자인/opic/project/hf-step1.jsx + hf-front.jsx
  */
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import {
+  Leaf,
+  Drama,
+  Target,
+  Search,
+  Sprout,
+  Flame,
+  Star,
+  Sparkles,
+} from "lucide-react";
 import {
   HfPhone,
   HfStatusBar,
@@ -25,9 +35,20 @@ import {
   Insight,
   SectionH,
   PcStepShell,
+  Hl,
 } from "../_components/bp";
 import { goHome } from "@/lib/opic-study/nav";
+import { onCardKey } from "@/lib/opic-study/keyboard";
 import { useSessionFrame } from "../_components/session-frame-context";
+
+// ============================================================
+// 카테고리 아이콘 매핑 (Lucide — AI 티 없게)
+// ============================================================
+const CATEGORY_ICON_MAP: Record<string, ReactNode> = {
+  general: <Leaf size={22} strokeWidth={1.6} aria-hidden="true" />,
+  rp: <Drama size={22} strokeWidth={1.6} aria-hidden="true" />,
+  adv: <Target size={22} strokeWidth={1.6} aria-hidden="true" />,
+};
 import {
   MOCK_GROUP,
   MOCK_MEMBERS_BASE,
@@ -238,7 +259,8 @@ function Step1Pc({
                     justifyContent: "center",
                     fontSize: 26,
                     marginBottom: 16,
-                    transition: "all 0.15s",
+                    transition:
+                      "border-color 0.15s, background 0.15s, box-shadow 0.15s, color 0.15s",
                   }}
                 >
                   {m.icon}
@@ -406,11 +428,16 @@ function Step2Pc({ categories = MOCK_CATEGORIES, onNext, groupName = MOCK_GROUP.
                 key={c.key}
                 className={`bp-mode-card ${selected ? "selected" : ""}`}
                 onClick={() => setSel(c.key)}
+                onKeyDown={onCardKey(() => setSel(c.key))}
                 role="button"
                 tabIndex={0}
+                aria-pressed={selected}
+                aria-label={`${c.name}${c.tag ? ` (${c.tag})` : ""} — ${c.desc}`}
                 style={{ padding: 24 }}
               >
-                <div className="check">✓</div>
+                <div className="check" aria-hidden="true">
+                  ✓
+                </div>
                 <div
                   style={{
                     width: 48,
@@ -423,12 +450,12 @@ function Step2Pc({ categories = MOCK_CATEGORIES, onNext, groupName = MOCK_GROUP.
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: 22,
                     marginBottom: 14,
-                    transition: "all 0.15s",
+                    transition:
+                      "border-color 0.15s, background 0.15s, box-shadow 0.15s, color 0.15s",
                   }}
                 >
-                  {c.icon}
+                  {CATEGORY_ICON_MAP[c.key] ?? null}
                 </div>
                 <div
                   style={{
@@ -452,7 +479,10 @@ function Step2Pc({ categories = MOCK_CATEGORIES, onNext, groupName = MOCK_GROUP.
           })}
         </div>
 
-        <div className="bp-pc-actions">
+        <div className="bp-pc-actions" style={{ alignItems: "center", gap: 14 }}>
+          <span className="t-xs ink-3" aria-live="polite">
+            먼저 누른 사람이 카테고리를 정해요
+          </span>
           <HfButton
             variant="primary"
             size="lg"
@@ -614,6 +644,18 @@ function Step3Pc({
   groupName = MOCK_GROUP.name,
 }: Step3Props) {
   const [sel, setSel] = useState<string>(topics[0]?.key ?? "");
+  const [query, setQuery] = useState<string>("");
+
+  // 클라이언트 측 검색 — 이름/메타 부분 일치
+  const filteredTopics = query.trim()
+    ? topics.filter((t) => {
+        const q = query.trim().toLowerCase();
+        return (
+          t.name.toLowerCase().includes(q) ||
+          (t.meta?.toLowerCase() ?? "").includes(q)
+        );
+      })
+    : topics;
 
   return (
     <PcStepShell
@@ -629,24 +671,47 @@ function Step3Pc({
           최근에 안 한 주제일수록 좋아요.
         </p>
 
-        {/* 검색 (시각용) */}
-        <HfCard
-          padding={"12px 16px"}
+        {/* 검색 — 실 input */}
+        <div
           style={{
             display: "flex",
             alignItems: "center",
             gap: 10,
+            padding: "10px 16px",
             marginBottom: 16,
             background: "var(--bp-surface-2)",
-            boxShadow: "none",
+            borderRadius: "var(--bp-radius)",
+            border: "1px solid transparent",
           }}
         >
-          <span style={{ color: "var(--bp-ink-3)" }}>🔍</span>
-          <span className="t-sm ink-3">주제 검색…</span>
-        </HfCard>
+          <Search
+            size={16}
+            strokeWidth={1.6}
+            color="var(--bp-ink-3)"
+            aria-hidden="true"
+          />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="주제 검색…"
+            aria-label="주제 검색"
+            spellCheck={false}
+            autoComplete="off"
+            style={{
+              flex: 1,
+              border: "none",
+              outline: "none",
+              background: "transparent",
+              fontFamily: "var(--bp-font)",
+              fontSize: 14,
+              color: "var(--bp-ink)",
+            }}
+          />
+        </div>
 
         {/* 빈 상태 */}
-        {!loading && topics.length === 0 && (
+        {!loading && filteredTopics.length === 0 && (
           <div
             style={{
               padding: "60px 16px",
@@ -655,9 +720,17 @@ function Step3Pc({
               flex: 1,
             }}
           >
-            <div style={{ fontSize: 40, marginBottom: 12 }}>🌱</div>
+            <Sprout
+              size={40}
+              strokeWidth={1.4}
+              color="var(--bp-ink-3)"
+              aria-hidden="true"
+              style={{ marginBottom: 12 }}
+            />
             <p className="t-body" style={{ margin: 0 }}>
-              아직 출제된 주제가 없어요.
+              {query
+                ? `"${query}"와 일치하는 주제가 없어요.`
+                : "아직 출제된 주제가 없어요."}
             </p>
           </div>
         )}
@@ -666,12 +739,17 @@ function Step3Pc({
           className="bp-pc-grid-4"
           style={{ flex: 1, alignContent: "start" }}
         >
-          {topics.map((t) => {
+          {filteredTopics.map((t) => {
             const selected = sel === t.key;
             return (
               <HfCard
                 key={t.key}
                 onClick={() => setSel(t.key)}
+                onKeyDown={onCardKey(() => setSel(t.key))}
+                role="button"
+                tabIndex={0}
+                aria-pressed={selected}
+                aria-label={`${t.name} (${t.meta ?? ""})${t.recent ? " · 최근 학습" : ""}`}
                 padding={16}
                 style={{
                   cursor: "pointer",
@@ -684,7 +762,8 @@ function Step3Pc({
                   boxShadow: selected
                     ? "0 0 0 4px rgba(201,100,66,0.08)"
                     : "var(--bp-shadow-sm)",
-                  transition: "all 0.15s",
+                  transition:
+                    "border-color 0.15s, background 0.15s, box-shadow 0.15s",
                 }}
               >
                 <div
@@ -698,6 +777,7 @@ function Step3Pc({
                   <span className="t-h3">{t.name}</span>
                   {selected && (
                     <span
+                      aria-hidden="true"
                       style={{ color: "var(--bp-tc)", fontWeight: 700 }}
                     >
                       ✓
@@ -717,13 +797,16 @@ function Step3Pc({
           })}
         </div>
 
-        <div className="bp-pc-actions">
+        <div className="bp-pc-actions" style={{ alignItems: "center", gap: 14 }}>
+          <span className="t-xs ink-3" aria-live="polite">
+            먼저 누른 사람이 주제를 정해요
+          </span>
           <HfButton
             variant="primary"
             size="lg"
             onClick={() => onNext?.(sel)}
             style={{ minWidth: 160 }}
-            disabled={!sel || topics.length === 0}
+            disabled={!sel || filteredTopics.length === 0}
           >
             다음 →
           </HfButton>
@@ -923,7 +1006,13 @@ function Step4Pc({
               flex: 1,
             }}
           >
-            <div style={{ fontSize: 40, marginBottom: 12 }}>🌱</div>
+            <Sprout
+              size={40}
+              strokeWidth={1.4}
+              color="var(--bp-ink-3)"
+              aria-hidden="true"
+              style={{ marginBottom: 12 }}
+            />
             <p className="t-body" style={{ margin: 0 }}>
               이 토픽으로 출제된 콤보가 아직 없어요.
             </p>
@@ -933,10 +1022,31 @@ function Step4Pc({
         <div className="bp-pc-grid-3">
           {combos.map((c, idx) => {
             const selected = sel === c.key;
+            const freqIcon =
+              c.frequency && c.frequency >= 3 ? (
+                <Flame
+                  size={16}
+                  strokeWidth={1.8}
+                  color="var(--bp-tc)"
+                  aria-label="자주 출제"
+                />
+              ) : c.frequency === 2 ? (
+                <Star
+                  size={16}
+                  strokeWidth={1.8}
+                  color="var(--bp-tc)"
+                  aria-label="중간 빈도"
+                />
+              ) : null;
             return (
               <HfCard
                 key={c.key}
                 onClick={() => setSel(c.key)}
+                onKeyDown={onCardKey(() => setSel(c.key))}
+                role="button"
+                tabIndex={0}
+                aria-pressed={selected}
+                aria-label={`콤보 ${idx + 1} (${c.tag}${c.frequency ? `, ${c.frequency}회 출제` : ""}${c.learned ? ", 이미 학습" : ""})`}
                 padding={20}
                 style={{
                   cursor: "pointer",
@@ -949,7 +1059,8 @@ function Step4Pc({
                   boxShadow: selected
                     ? "0 0 0 4px rgba(201,100,66,0.08)"
                     : "var(--bp-shadow-sm)",
-                  transition: "all 0.15s",
+                  transition:
+                    "border-color 0.15s, background 0.15s, box-shadow 0.15s",
                 }}
               >
                 <div
@@ -963,10 +1074,8 @@ function Step4Pc({
                   <div
                     style={{ display: "flex", alignItems: "center", gap: 8 }}
                   >
-                    <span className="t-h2">
-                      {c.frequency && c.frequency >= 3 ? "🔥 " : c.frequency === 2 ? "⭐ " : ""}
-                      콤보 {idx + 1}
-                    </span>
+                    {freqIcon}
+                    <span className="t-h2">콤보 {idx + 1}</span>
                     <Pill tone="tc" style={{ fontSize: 10 }}>
                       {c.tag}
                     </Pill>
@@ -1294,54 +1403,123 @@ function Step5Pc({
           gap: 24,
         }}
       >
-        {/* LEFT — 콤보 정보 */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* LEFT — AI 코치 Hero + 3개 질문 */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {/* Hero 카드 — 그라데이션 + 큰 페르소나 */}
           <div
             style={{
-              display: "flex",
-              gap: 14,
-              alignItems: "center",
+              position: "relative",
+              padding: "28px 26px",
+              borderRadius: "var(--bp-radius-lg)",
+              background:
+                "linear-gradient(140deg, var(--bp-tc-tint) 0%, var(--bp-surface) 100%)",
+              boxShadow: "var(--bp-shadow-sm)",
+              overflow: "hidden",
             }}
           >
-            <CoachAvatar size="lg" />
+            {/* 배경 장식 */}
             <div
-              style={{ display: "flex", flexDirection: "column", gap: 2 }}
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                right: -42,
+                top: -42,
+                width: 180,
+                height: 180,
+                borderRadius: "50%",
+                background: "var(--bp-tc)",
+                opacity: 0.06,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "relative",
+                display: "flex",
+                flexDirection: "column",
+                gap: 18,
+              }}
             >
-              <span className="t-h3">AI 스터디 코치</span>
-              <span className="t-xs ink-3">오늘의 학습 인트로</span>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 14,
+                }}
+              >
+                <CoachAvatar size="xl" />
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 4,
+                  }}
+                >
+                  <span
+                    className="t-xs"
+                    style={{
+                      color: "var(--bp-tc)",
+                      fontWeight: 700,
+                      letterSpacing: "0.1em",
+                    }}
+                  >
+                    오늘의 학습 인트로
+                  </span>
+                  <span
+                    className="t-h2"
+                    style={{ letterSpacing: "-0.01em" }}
+                  >
+                    AI 스터디 코치
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <span
+                  className="t-xs ink-3"
+                  style={{
+                    display: "block",
+                    marginBottom: 4,
+                    fontWeight: 600,
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  오늘의 콤보
+                </span>
+                <div
+                  className="t-h1"
+                  style={{
+                    fontVariantNumeric: "tabular-nums",
+                    textWrap: "balance" as const,
+                  }}
+                >
+                  {topic} <span className="ink-3">·</span> {level}
+                </div>
+              </div>
+
+              <p
+                className="t-body"
+                style={{
+                  margin: 0,
+                  lineHeight: 1.65,
+                  color: "var(--bp-ink)",
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {guideText ? (
+                  guideText
+                ) : (
+                  <>
+                    이 콤보는 일반 주제 자리에서{" "}
+                    <Hl>{appearancePct}% 확률</Hl>로 등장하는
+                    정형화된 패턴이에요.
+                  </>
+                )}
+              </p>
             </div>
           </div>
 
-          <Insight>
-            <span
-              className="t-xs ink-3"
-              style={{ marginBottom: 4, display: "block" }}
-            >
-              오늘의 콤보
-            </span>
-            <div className="t-h1" style={{ marginBottom: 10 }}>
-              {topic} · {level}
-            </div>
-            <p
-              className="t-body"
-              style={{
-                margin: 0,
-                lineHeight: 1.6,
-                color: "var(--bp-ink)",
-                whiteSpace: "pre-wrap",
-              }}
-            >
-              {guideText ? (
-                guideText
-              ) : (
-                <>
-                  이 콤보는 일반 주제 자리에서{" "}
-                  <b>{appearancePct}% 확률</b>로 등장하는 정형화된 패턴이에요.
-                </>
-              )}
-            </p>
-          </Insight>
-
+          {/* 3개 질문 카드 */}
           <HfCard
             padding={16}
             style={{
@@ -1351,20 +1529,38 @@ function Step5Pc({
           >
             <SectionH>3개 질문</SectionH>
             <div
-              style={{ display: "flex", flexDirection: "column", gap: 6 }}
+              style={{ display: "flex", flexDirection: "column", gap: 8 }}
             >
               {comboQuestions.map((q, i) => (
                 <div
                   key={i}
-                  style={{ display: "flex", gap: 8 }}
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    alignItems: "flex-start",
+                  }}
                 >
                   <span
-                    className="t-num t-xs ink-3"
-                    style={{ minWidth: 20 }}
+                    className="t-num t-xs"
+                    style={{
+                      minWidth: 24,
+                      height: 22,
+                      borderRadius: 6,
+                      background: "var(--bp-surface)",
+                      color: "var(--bp-ink-2)",
+                      fontWeight: 600,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                    aria-hidden="true"
                   >
                     Q{i + 1}
                   </span>
-                  <span className="t-sm">{q}</span>
+                  <span className="t-sm" style={{ lineHeight: 1.55 }}>
+                    {q}
+                  </span>
                 </div>
               ))}
             </div>
@@ -1373,7 +1569,24 @@ function Step5Pc({
 
         {/* RIGHT — 포인트 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <SectionH>오늘 함께 배울 포인트</SectionH>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              marginBottom: 2,
+            }}
+          >
+            <Sparkles
+              size={16}
+              strokeWidth={1.6}
+              color="var(--bp-tc)"
+              aria-hidden="true"
+            />
+            <SectionH style={{ marginBottom: 0 }}>
+              오늘 함께 배울 포인트
+            </SectionH>
+          </div>
           {points.map((p, i) => (
             <HfCard
               key={i}
@@ -1386,6 +1599,7 @@ function Step5Pc({
             >
               <span
                 className="t-num"
+                aria-hidden="true"
                 style={{
                   width: 32,
                   height: 32,
@@ -1398,6 +1612,7 @@ function Step5Pc({
                   fontSize: 14,
                   fontWeight: 700,
                   flexShrink: 0,
+                  fontVariantNumeric: "tabular-nums",
                 }}
               >
                 {i + 1}
@@ -1408,6 +1623,7 @@ function Step5Pc({
                   flexDirection: "column",
                   gap: 6,
                   flex: 1,
+                  minWidth: 0,
                 }}
               >
                 <Tag
@@ -1430,7 +1646,17 @@ function Step5Pc({
             </HfCard>
           ))}
 
-          <div className="bp-pc-actions" style={{ marginTop: 8 }}>
+          <div
+            className="bp-pc-actions"
+            style={{
+              marginTop: 8,
+              alignItems: "center",
+              gap: 14,
+            }}
+          >
+            <span className="t-xs ink-3" aria-live="polite">
+              준비됐으면 함께 시작해요
+            </span>
             <HfButton
               variant="primary"
               size="lg"

@@ -10,7 +10,14 @@
  * 디자인: docs/디자인/opic/project/hf-loop.jsx
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import {
+  Mic,
+  Headphones,
+  Sparkles,
+  SkipForward,
+  X,
+} from "lucide-react";
 import {
   HfPhone,
   HfStatusBar,
@@ -28,6 +35,7 @@ import {
   PcStepShell,
 } from "../_components/bp";
 import { goHome } from "@/lib/opic-study/nav";
+import { onCardKey } from "@/lib/opic-study/keyboard";
 import { useSessionFrame } from "../_components/session-frame-context";
 import {
   MOCK_QUESTION_Q1,
@@ -281,18 +289,37 @@ export function Step61Pc({
           <span className="t-sm ink-3">먼저 누른 사람이 답변해요</span>
         </div>
 
-        {/* 4-column 멤버 카드 */}
-        <div className="bp-pc-grid-4">
+        {/* 멤버 수 동적 그리드 */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: `repeat(${Math.min(Math.max(members.length, 1), 4)}, minmax(0, 1fr))`,
+            gap: 14,
+          }}
+        >
           {members.map((m) => {
             const isMe = m.sub === "나";
             const selected = speaker === m.key;
+            const interactive = isMe && m.isOnline;
             return (
               <HfCard
                 key={m.key}
-                onClick={() => isMe && setSpeaker(m.key)}
+                onClick={interactive ? () => setSpeaker(m.key) : undefined}
+                onKeyDown={
+                  interactive ? onCardKey(() => setSpeaker(m.key)) : undefined
+                }
+                role={interactive ? "button" : undefined}
+                tabIndex={interactive ? 0 : undefined}
+                aria-pressed={interactive ? selected : undefined}
+                aria-disabled={!interactive ? true : undefined}
+                aria-label={
+                  interactive
+                    ? `내가 먼저 답변하기${selected ? " (선택됨)" : ""}`
+                    : `${m.name} — ${m.sub}`
+                }
                 padding={20}
                 style={{
-                  cursor: isMe ? "pointer" : "default",
+                  cursor: interactive ? "pointer" : "default",
                   textAlign: "center",
                   border: selected
                     ? "1.5px solid var(--bp-tc)"
@@ -303,7 +330,8 @@ export function Step61Pc({
                   boxShadow: selected
                     ? "0 0 0 4px rgba(201,100,66,0.08)"
                     : "var(--bp-shadow-sm)",
-                  transition: "all 0.15s",
+                  transition:
+                    "border-color 0.15s, background 0.15s, box-shadow 0.15s, opacity 0.15s",
                   opacity: m.isOnline ? 1 : 0.65,
                 }}
               >
@@ -320,17 +348,19 @@ export function Step61Pc({
                   {m.name}
                 </div>
                 <span className="t-xs ink-3">{m.sub}</span>
-                {isMe && !selected && (
+                {isMe && !selected && m.isOnline && (
                   <HfButton
                     variant="tc"
                     size="sm"
                     style={{ marginTop: 12, width: "100%" }}
+                    tabIndex={-1}
                   >
                     내가 답변
                   </HfButton>
                 )}
                 {selected && (
                   <div
+                    aria-hidden="true"
                     style={{
                       color: "var(--bp-tc)",
                       fontWeight: 600,
@@ -767,41 +797,64 @@ export function Step62Pc({
         `Q${question.num} · 답변 중`,
       ]}
       right={
-        <span
-          className="bp-pill"
-          style={{
-            background: "rgba(201,100,66,0.12)",
-            color: "var(--bp-tc)",
-          }}
-        >
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span
             style={{
-              width: 6,
-              height: 6,
-              background: "var(--bp-tc)",
-              borderRadius: "50%",
-              display: "inline-block",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "5px 12px",
+              borderRadius: 999,
+              background: "rgba(201,100,66,0.12)",
+              color: "var(--bp-tc)",
+              fontWeight: 600,
+              fontSize: 12,
             }}
-          />
-          녹음 중 · {duration}
+            aria-live="polite"
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: 7,
+                height: 7,
+                background: "var(--bp-tc)",
+                borderRadius: "50%",
+                animation: "bp-pulse 1.4s ease-in-out infinite",
+              }}
+            />
+            녹음 중
+            <span
+              style={{
+                fontVariantNumeric: "tabular-nums",
+                marginLeft: 2,
+              }}
+            >
+              {duration}
+            </span>
+          </span>
           {onSkip && (
             <button
               onClick={onSkip}
+              aria-label="이번 답변 건너뛰기"
               style={{
-                marginLeft: 10,
-                padding: "2px 8px",
-                fontSize: 10,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "5px 12px",
+                fontSize: 12,
+                fontWeight: 600,
                 background: "transparent",
-                border: "1px solid var(--bp-tc)",
-                color: "var(--bp-tc)",
+                border: "1px solid var(--bp-line-strong)",
+                color: "var(--bp-ink-2)",
                 borderRadius: 999,
                 cursor: "pointer",
               }}
             >
+              <SkipForward size={13} strokeWidth={1.8} aria-hidden="true" />
               건너뛰기
             </button>
           )}
-        </span>
+        </div>
       }
     >
       <div
@@ -814,7 +867,7 @@ export function Step62Pc({
           overflow: "hidden",
         }}
       >
-        {/* MAIN — 질문 + 4 타일 */}
+        {/* MAIN — 질문 + 동적 타일 */}
         <div
           style={{
             display: "flex",
@@ -842,7 +895,14 @@ export function Step62Pc({
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr 1fr",
+              gridTemplateColumns:
+                members.length === 1
+                  ? "1fr"
+                  : members.length === 4
+                    ? "1fr 1fr"
+                    : `repeat(${members.length}, minmax(0, 1fr))`,
+              gridTemplateRows:
+                members.length === 4 ? "1fr 1fr" : undefined,
               gap: 10,
               flex: 1,
             }}
@@ -870,71 +930,131 @@ export function Step62Pc({
                     background: speaking
                       ? "var(--bp-tc-tint)"
                       : "var(--bp-surface-2)",
-                    minHeight: 180,
+                    minHeight: 200,
                     display: "flex",
+                    flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
+                    gap: speaking ? 16 : 10,
+                    padding: "28px 18px 48px",
                     opacity: speaking ? 1 : isOnline ? 1 : 0.6,
                   }}
                 >
-                  <MbDot
-                    color={m.key}
-                    initial={displayName[0]}
-                    live={speaking || isOnline}
-                    dim={dim}
-                    size={64}
-                    fontSize={24}
-                  />
+                  {speaking ? (
+                    <>
+                      {/* 발화자 — dot + 큰 시간 + 큰 웨이브 */}
+                      <MbDot
+                        color={m.key}
+                        initial={displayName[0]}
+                        live
+                        size={68}
+                        fontSize={26}
+                      />
+                      <div
+                        style={{
+                          fontSize: 28,
+                          fontWeight: 700,
+                          fontVariantNumeric: "tabular-nums",
+                          color: "var(--bp-tc)",
+                          letterSpacing: "-0.02em",
+                          lineHeight: 1,
+                        }}
+                      >
+                        {duration}
+                      </div>
+                      <HfWave
+                        bars={36}
+                        height={32}
+                        amplitude={26}
+                        color="tc"
+                        style={{ width: "100%", justifyContent: "center" }}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      {/* 청취자 — dot + 듣는 중 라벨 */}
+                      <MbDot
+                        color={m.key}
+                        initial={displayName[0]}
+                        live={isOnline}
+                        dim={dim}
+                        size={56}
+                        fontSize={22}
+                      />
+                      {isOnline && (
+                        <div
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                            fontSize: 11,
+                            color: "var(--bp-ink-3)",
+                            fontWeight: 500,
+                          }}
+                        >
+                          <Headphones
+                            size={13}
+                            strokeWidth={1.6}
+                            aria-hidden="true"
+                          />
+                          듣는 중
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {/* 하단 라벨 */}
                   <div
                     style={{
                       position: "absolute",
                       bottom: 10,
-                      left: 12,
+                      left: 14,
+                      right: 14,
                       display: "flex",
                       alignItems: "center",
+                      justifyContent: "space-between",
                       gap: 8,
                     }}
                   >
                     <span
                       className="t-sm"
-                      style={{ fontWeight: 600 }}
+                      style={{
+                        fontWeight: 600,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        minWidth: 0,
+                      }}
                     >
                       {displayName}
                     </span>
                     {speaking && (
                       <span
-                        className="bp-pill"
                         style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          padding: "2px 8px",
+                          borderRadius: 999,
                           background: "var(--bp-tc)",
                           color: "white",
                           fontSize: 10,
+                          fontWeight: 600,
+                          flexShrink: 0,
                         }}
                       >
-                        ● 답변 중
+                        <Mic size={10} strokeWidth={2} aria-hidden="true" />
+                        답변 중
                       </span>
                     )}
                     {!speaking && !isOnline && (
                       <span
                         className="t-xs ink-3"
-                        style={{ fontSize: 10 }}
+                        style={{ fontSize: 10, flexShrink: 0 }}
                       >
                         미입장
                       </span>
                     )}
                   </div>
-                  {speaking && (
-                    <HfWave
-                      bars={14}
-                      height={18}
-                      amplitude={14}
-                      color="tc"
-                      style={{
-                        position: "absolute",
-                        bottom: 12,
-                        right: 12,
-                      }}
-                    />
-                  )}
                 </HfCard>
               );
             })}
@@ -1014,6 +1134,12 @@ export function Step62Pc({
 interface Step63Props {
   steps?: ProcessStep[];
   estimatedSec?: number;
+  /** 실데이터 — crumb */
+  groupName?: string;
+  topicLabel?: string;
+  questionLabel?: string;
+  /** "N명의 답변" 동적 */
+  memberCount?: number;
 }
 
 /** Step 6-3 — 모바일/PC 분기 wrapper */
@@ -1177,12 +1303,18 @@ function Step63Mobile({
 export function Step63Pc({
   steps = MOCK_PROCESS_STEPS,
   estimatedSec = 8,
+  groupName = "5월 오픽 AL 스터디",
+  topicLabel = "음악 콤보",
+  questionLabel = "Q1 · 코치가 듣는 중",
+  memberCount = 4,
 }: Step63Props) {
+  // 진행률 계산 — done/total
+  const totalSteps = steps.length;
+  const doneSteps = steps.filter((s) => s.state === "done").length;
+  const progressPct = totalSteps > 0 ? (doneSteps / totalSteps) * 100 : 0;
+
   return (
-    <PcStepShell
-      crumb={["5월 오픽 AL 스터디", "음악 콤보", "Q1 · 코치가 듣는 중"]}
-      right={null}
-    >
+    <PcStepShell crumb={[groupName, topicLabel, questionLabel]} right={null}>
       <div
         style={{
           flex: 1,
@@ -1191,11 +1323,13 @@ export function Step63Pc({
           alignItems: "center",
           justifyContent: "center",
           gap: 28,
-          padding: "64px",
+          padding: "48px 64px",
+          maxWidth: 720,
+          margin: "0 auto",
         }}
       >
-        {/* Animated avatar */}
-        <div style={{ position: "relative" }}>
+        {/* Animated avatar — 펄스 + 큰 페르소나 */}
+        <div style={{ position: "relative" }} aria-hidden="true">
           <CoachAvatar size="xl" />
           <div
             className="bp-pulse-ring"
@@ -1220,66 +1354,117 @@ export function Step63Pc({
           />
         </div>
 
-        <div style={{ textAlign: "center", maxWidth: 480 }}>
-          <div className="t-display" style={{ marginBottom: 8 }}>
+        <div
+          style={{ textAlign: "center", maxWidth: 480 }}
+          aria-live="polite"
+        >
+          <div
+            className="t-display"
+            style={{ marginBottom: 8, textWrap: "balance" as const }}
+          >
             코치가 듣고 있어요
           </div>
-          <p className="t-body ink-3" style={{ margin: 0, lineHeight: 1.6 }}>
-            4명의 답변을 함께 살펴보고 있어요. 잠시만 기다려주세요.
+          <p
+            className="t-body ink-3"
+            style={{ margin: 0, lineHeight: 1.6, textWrap: "pretty" as const }}
+          >
+            {memberCount}명의 답변을 함께 살펴보고 있어요. 잠시만 기다려주세요.
           </p>
         </div>
 
-        {/* Progress steps */}
-        <HfCard padding={24} style={{ width: 480 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {steps.map((s, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                }}
-              >
-                <span
+        {/* 진행률 바 — countdown 시각화 */}
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 480,
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+          }}
+        >
+          <div
+            style={{
+              height: 4,
+              borderRadius: 999,
+              background: "var(--bp-line)",
+              overflow: "hidden",
+            }}
+            role="progressbar"
+            aria-valuenow={progressPct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="코칭 생성 진행률"
+          >
+            <div
+              style={{
+                width: `${progressPct}%`,
+                height: "100%",
+                background:
+                  "linear-gradient(90deg, var(--bp-tc) 0%, var(--bp-tip, var(--bp-tc)) 100%)",
+                transition: "width 0.4s ease",
+              }}
+            />
+          </div>
+
+          {/* Progress steps */}
+          <HfCard padding={20} style={{ width: "100%" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {steps.map((s, i) => (
+                <div
+                  key={i}
                   style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: "50%",
-                    background:
-                      s.state === "done"
-                        ? "var(--bp-good)"
-                        : s.state === "doing"
-                          ? "var(--bp-tc)"
-                          : "var(--bp-line-strong)",
-                    color: "white",
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 11,
-                    fontWeight: 700,
+                    gap: 12,
                   }}
                 >
-                  {s.state === "done" ? "✓" : ""}
-                </span>
-                <span
-                  className="t-body"
-                  style={{
-                    color:
-                      s.state === "wait"
-                        ? "var(--bp-ink-3)"
-                        : "var(--bp-ink)",
-                    fontWeight: s.state === "doing" ? 600 : 500,
-                  }}
-                >
-                  {s.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </HfCard>
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: "50%",
+                      background:
+                        s.state === "done"
+                          ? "var(--bp-good)"
+                          : s.state === "doing"
+                            ? "var(--bp-tc)"
+                            : "var(--bp-line-strong)",
+                      color: "white",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {s.state === "done" ? "✓" : ""}
+                  </span>
+                  <span
+                    className="t-body"
+                    style={{
+                      color:
+                        s.state === "wait"
+                          ? "var(--bp-ink-3)"
+                          : "var(--bp-ink)",
+                      fontWeight: s.state === "doing" ? 600 : 500,
+                    }}
+                  >
+                    {s.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </HfCard>
+        </div>
 
-        <div className="t-sm ink-3">약 {estimatedSec}초 소요</div>
+        <div
+          className="t-sm ink-3"
+          style={{ fontVariantNumeric: "tabular-nums" }}
+        >
+          약 {estimatedSec}초 소요
+        </div>
       </div>
     </PcStepShell>
   );
@@ -1287,3 +1472,5 @@ export function Step63Pc({
 
 // 미사용 import
 void Pill;
+void Sparkles;
+void X;

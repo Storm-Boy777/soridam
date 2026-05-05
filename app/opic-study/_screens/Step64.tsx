@@ -10,6 +10,7 @@
  */
 
 import { useState } from "react";
+import { Play, Sparkles } from "lucide-react";
 import {
   HfPhone,
   HfStatusBar,
@@ -254,7 +255,7 @@ export function Step64Pc({
       crumb={[groupName, topicLabel, displayQuestionLabel]}
       right={
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <Pill tone="live">실시간</Pill>
+          <Pill tone="live">함께 보기</Pill>
           <MbStack
             members={displayMembers.map((m) => ({
               color: m.key,
@@ -262,7 +263,12 @@ export function Step64Pc({
               live: m.live ?? true,
             }))}
           />
-          <span className="t-sm ink-3">{comboProgress}</span>
+          <span
+            className="t-sm ink-3"
+            style={{ fontVariantNumeric: "tabular-nums" }}
+          >
+            {comboProgress}
+          </span>
         </div>
       }
     >
@@ -333,9 +339,29 @@ export function Step64Pc({
               borderTop: "1px solid var(--bp-line)",
             }}
           >
-            <HfButton variant="ghost" size="sm" onClick={onReplay}>▶</HfButton>
+            <HfButton
+              variant="ghost"
+              size="sm"
+              onClick={onReplay}
+              aria-label="답변 재생"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 36,
+                height: 36,
+                padding: 0,
+              }}
+            >
+              <Play size={14} strokeWidth={2} aria-hidden="true" />
+            </HfButton>
             <HfWave bars={60} height={28} amplitude={22} style={{ flex: 1 }} />
-            <span className="t-xs ink-3 t-num">0:12 / {data.duration}</span>
+            <span
+              className="t-xs ink-3 t-num"
+              style={{ fontVariantNumeric: "tabular-nums" }}
+            >
+              0:12 / {data.duration}
+            </span>
           </div>
         </HfCard>
 
@@ -355,8 +381,23 @@ export function Step64Pc({
                     justifyContent: "space-between",
                   }}
                 >
-                  <span className="t-h3">AI 스터디 코치</span>
-                  <span className="t-xs ink-3">방금 도착</span>
+                  <span
+                    className="t-h3"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    <Sparkles
+                      size={14}
+                      strokeWidth={1.8}
+                      color="var(--bp-tc)"
+                      aria-hidden="true"
+                    />
+                    AI 스터디 코치
+                  </span>
+                  <span className="t-xs ink-3">코칭 도착</span>
                 </div>
                 <p
                   className="t-body"

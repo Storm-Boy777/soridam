@@ -771,6 +771,10 @@ export function OpicStudySessionClient({
               answer={myAnswer}
               sessionId={sessionId}
               questionIdx={idx}
+              memberCount={members.length}
+              groupName={groupName}
+              topicLabel={`${session.selected_topic ?? "콤보"} 콤보`}
+              questionLabel={`Q${idx + 1} · 코치가 듣는 중`}
             />
           </Shell>
         );
@@ -1025,10 +1029,18 @@ function FeedbackWaitOrFail({
   answer,
   sessionId,
   questionIdx,
+  memberCount,
+  groupName,
+  topicLabel,
+  questionLabel,
 }: {
   answer: OpicStudyAnswer;
   sessionId: string;
   questionIdx: number;
+  memberCount?: number;
+  groupName?: string;
+  topicLabel?: string;
+  questionLabel?: string;
 }) {
   const [elapsed, setElapsed] = useState(0);
   const [retrying, setRetrying] = useState(false);
@@ -1059,7 +1071,15 @@ function FeedbackWaitOrFail({
 
   // 60초 미만 — 그냥 대기 화면
   if (elapsed < 60) {
-    return <Step63 estimatedSec={20} />;
+    return (
+      <Step63
+        estimatedSec={20}
+        memberCount={memberCount}
+        groupName={groupName}
+        topicLabel={topicLabel}
+        questionLabel={questionLabel}
+      />
+    );
   }
 
   // 60초 이상 — 실패/지연 안내 + 재시도
@@ -2107,6 +2127,22 @@ function LiveStep7({
     return { text: "오늘 함께 배운 표현이 모였어요", from: "스터디" };
   })();
 
+  // 종료 헤드라인 — 날짜 기반 variation (매일 다른 따뜻한 카피)
+  const endingTitle = (() => {
+    const titles = [
+      "오늘도 한 걸음",
+      "함께 만든 한 페이지",
+      "한 콤보 더 가까워졌어요",
+      "오늘의 영어가 또렷해졌어요",
+      "잘 다녀왔어요",
+      "한 걸음씩 자연스러워져요",
+    ];
+    const dayKey = new Date().toISOString().slice(0, 10);
+    let sum = 0;
+    for (const c of dayKey) sum += c.charCodeAt(0);
+    return titles[sum % titles.length];
+  })();
+
   return (
     <>
       <div className="bp-only-pc" style={{ flex: 1, minHeight: 0 }}>
@@ -2115,7 +2151,7 @@ function LiveStep7({
           groupName={groupName}
           topicLabel={`${topic} 콤보`}
           data={{
-            title: "오늘도 한 걸음",
+            title: endingTitle,
             subtitle: `${members.length}명이 함께 ${topic} 콤보를 끝냈어요 · ${level}`,
             bestExpression: allBestExpression.text,
             bestFrom: allBestExpression.from,

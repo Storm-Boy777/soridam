@@ -273,9 +273,17 @@
   background: var(--bp-surface);
   box-shadow: var(--bp-shadow-sm);
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
   position: relative;
   border: 1.5px solid transparent;
+}
+.bp-scope .bp-mode-card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(201, 100, 66, 0.35);
 }
 .bp-scope .bp-mode-card:hover {
   transform: translateY(-1px);
@@ -333,7 +341,15 @@
   letter-spacing: -0.01em;
   cursor: pointer;
   border: none;
-  transition: all 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease,
+    opacity 0.15s ease;
+}
+.bp-scope .bp-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(201, 100, 66, 0.35);
 }
 .bp-scope .bp-btn:disabled {
   opacity: 0.4;
@@ -721,4 +737,20 @@
   .bp-pc-grid-3 { grid-template-columns: repeat(2, 1fr); }
   .bp-pc-grid-4 { grid-template-columns: repeat(2, 1fr); }
   .bp-lobby-pc-hero { padding: 36px 24px; }
+}
+
+/* =================================================
+ * 접근성 — prefers-reduced-motion 가드
+ * 사용자 시스템 설정에서 모션 줄이기 활성 시
+ * 애니메이션/transition 최소화
+ * ================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .bp-scope *,
+  .bp-scope *::before,
+  .bp-scope *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

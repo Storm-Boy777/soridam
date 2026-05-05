@@ -9,7 +9,12 @@
 
 "use client";
 
-import type { ReactNode, MouseEventHandler, ButtonHTMLAttributes } from "react";
+import type {
+  ReactNode,
+  MouseEventHandler,
+  ButtonHTMLAttributes,
+  HTMLAttributes,
+} from "react";
 import { useEffect, useRef } from "react";
 
 // ============================================================
@@ -367,13 +372,9 @@ export function HfButton({
 
 type CardVariant = "default" | "lift" | "flat";
 
-interface HfCardProps {
-  children: ReactNode;
+interface HfCardProps extends Omit<HTMLAttributes<HTMLDivElement>, "color"> {
   variant?: CardVariant;
   padding?: number | string;
-  className?: string;
-  style?: React.CSSProperties;
-  onClick?: MouseEventHandler<HTMLDivElement>;
 }
 
 export function HfCard({
@@ -382,14 +383,14 @@ export function HfCard({
   padding,
   className = "",
   style,
-  onClick,
+  ...rest
 }: HfCardProps) {
   const variantCls = variant === "lift" ? "lift" : variant === "flat" ? "flat" : "";
   return (
     <div
       className={`bp-card ${variantCls} ${className}`}
       style={{ padding, ...style }}
-      onClick={onClick}
+      {...rest}
     >
       {children}
     </div>
@@ -717,7 +718,7 @@ export function ModeCard({
             justifyContent: "center",
             fontSize: 20,
             flexShrink: 0,
-            transition: "all 0.15s",
+            transition: "background 0.15s, color 0.15s",
           }}
         >
           {icon}
