@@ -1024,7 +1024,15 @@ function Shell({
   const connectionState = ctx?.connectionState ?? "connected";
 
   return (
-    <div style={{ position: "relative" }}>
+    <div
+      style={{
+        position: "relative",
+        flex: 1,
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       {children}
 
       {/* 연결 끊김 배너 (전역, fixed top) */}
