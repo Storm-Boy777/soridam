@@ -9,7 +9,11 @@
 
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
-import { getMyActiveGroups, getMyClosedGroups } from "@/lib/actions/opic-study";
+import {
+  getMyActiveGroups,
+  getMyClosedGroups,
+  getMyLearnStats,
+} from "@/lib/actions/opic-study";
 import { getOpicStudySchedule } from "@/lib/actions/opic-study-schedule";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { OpicStudyHomeClient } from "../_pages/OpicStudyHomeClient";
@@ -28,10 +32,11 @@ export default async function OpicStudyHomePage() {
   const user = await getUser();
   if (!user) redirect("/login?next=/opic-study");
 
-  const [activeRes, closedRes, fallbackScheduleRes] = await Promise.all([
+  const [activeRes, closedRes, fallbackScheduleRes, learnStatsRes] = await Promise.all([
     getMyActiveGroups(),
     getMyClosedGroups(),
     getOpicStudySchedule(),
+    getMyLearnStats(),
   ]);
 
   const fallbackSchedule = fallbackScheduleRes.data ?? FALLBACK_SCHEDULE;
@@ -162,6 +167,13 @@ export default async function OpicStudyHomePage() {
     }
   }
 
+  // 학습 통계 — 답변 0건 멤버는 totalAnswers=0, lastParticipationDaysAgo=null
+  const learnStats = {
+    lastParticipationDaysAgo: learnStatsRes.data?.lastParticipationDaysAgo ?? null,
+    totalAnswers: learnStatsRes.data?.totalAnswers ?? null,
+    examDday,
+  };
+
   return (
     <OpicStudyHomeClient
       user={{
@@ -178,7 +190,7 @@ export default async function OpicStudyHomePage() {
       nextSessionMemberCount={nextSessionMemberCount}
       nextSessionMembers={nextSessionMembers}
       schedule={schedule}
-      examDday={examDday}
+      learnStats={learnStats}
       activeSessionId={activeSessionId}
       currentUserId={user.id}
     />

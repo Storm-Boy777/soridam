@@ -37,7 +37,12 @@ interface Props {
     userId: string;
   }>;
   schedule: OpicStudySchedule;
-  examDday: number | null;
+  /** 학습 통계 — 마지막 참여 / 누적 답변 / 시험 D-day */
+  learnStats: {
+    lastParticipationDaysAgo: number | null;
+    totalAnswers: number | null;
+    examDday: number | null;
+  };
   activeSessionId: string | null;
   currentUserId: string;
 }
@@ -51,7 +56,7 @@ export function OpicStudyHomeClient({
   nextSessionMemberCount,
   nextSessionMembers,
   schedule,
-  examDday,
+  learnStats,
   activeSessionId,
   currentUserId,
 }: Props) {
@@ -76,11 +81,7 @@ export function OpicStudyHomeClient({
       nextSessionMemberCount={nextSessionMemberCount}
       activeSessionId={activeSessionId}
       currentUserId={currentUserId}
-      learnStats={
-        examDday !== null
-          ? { examDday, totalAnswers: null, lastParticipationDaysAgo: null }
-          : undefined
-      }
+      learnStats={learnStats}
     />
   );
 }

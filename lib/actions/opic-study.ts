@@ -1085,3 +1085,62 @@ export async function getSessionAnswers(sessionId: string): Promise<ActionResult
     return { error: err instanceof Error ? err.message : "답변 조회 실패" };
   }
 }
+
+// ============================================================
+// 7. 학습 통계 (멤버 홈 LearnStatsRow)
+// ============================================================
+
+/**
+ * 내 오픽 스터디 학습 통계 — 마지막 참여일 + 누적 답변 수
+ *
+ * - 답변 0건: { totalAnswers: 0, lastParticipationDaysAgo: null }
+ * - 답변 1건+: { totalAnswers: N, lastParticipationDaysAgo: Math.floor((now - max(created_at)) / day) }
+ *
+ * 두 쿼리 병렬 (count head + 최신 1건)
+ */
+export async function getMyLearnStats(): Promise<
+  ActionResult<{
+    lastParticipationDaysAgo: number | null;
+    totalAnswers: number;
+  }>
+> {
+  try {
+    const { supabase, userId } = await requireUser();
+
+    const [countRes, latestRes] = await Promise.all([
+      supabase
+        .from(T.opic_study_answers)
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId),
+      supabase
+        .from(T.opic_study_answers)
+        .select("created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+    if (countRes.error) return { error: "학습 통계 조회 실패" };
+
+    const totalAnswers = countRes.count ?? 0;
+    let lastParticipationDaysAgo: number | null = null;
+
+    if (totalAnswers > 0 && latestRes.data?.created_at) {
+      const lastAt = new Date(latestRes.data.created_at as string);
+      const diffMs = Date.now() - lastAt.getTime();
+      lastParticipationDaysAgo = Math.max(0, Math.floor(diffMs / 86400_000));
+    }
+
+    return {
+      data: {
+        lastParticipationDaysAgo,
+        totalAnswers,
+      },
+    };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "학습 통계 조회 실패",
+    };
+  }
+}

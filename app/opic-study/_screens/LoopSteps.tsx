@@ -508,6 +508,14 @@ interface Step62OtherProps {
   speakerKey?: "a" | "b" | "c" | "d";
   duration?: string;
   defaultNote?: string;
+  /** 실데이터 — 멤버 list (없으면 mock 3명) */
+  realMembers?: Array<{ key: "a" | "b" | "c" | "d"; name: string; userId: string }>;
+  /** 실데이터 — 본인 user_id (입장 판정 시 본인은 항상 online 처리) */
+  currentUserId?: string;
+  /** 실데이터 — 그룹명/토픽명/질문 텍스트 (PC crumb 용) */
+  groupName?: string;
+  topicLabel?: string;
+  questionText?: string;
 }
 
 /** Step 6-2 (Other) — 모바일/PC 분기 wrapper */
@@ -524,6 +532,11 @@ export function Step62Other(props: Step62OtherProps) {
           speakerKey={props.speakerKey ?? "a"}
           speakerName={props.speakerName ?? "Alice"}
           defaultNote={props.defaultNote}
+          realMembers={props.realMembers}
+          currentUserId={props.currentUserId}
+          groupName={props.groupName}
+          topicLabel={props.topicLabel}
+          questionText={props.questionText}
         />
       </div>
     </>
@@ -536,7 +549,25 @@ function Step62OtherMobile({
   speakerKey = "a",
   duration = "0:23",
   defaultNote = MOCK_NOTE_DEFAULT,
+  realMembers,
+  currentUserId,
 }: Step62OtherProps) {
+  const ctx = useSessionFrame();
+  // 발화자 외 listening 멤버 (본인 포함)
+  const listenMembers = realMembers
+    ? realMembers
+        .filter((m) => m.key !== speakerKey)
+        .map((m) => {
+          const isMe = !!currentUserId && m.userId === currentUserId;
+          const isOnline = isMe || (ctx?.onlineUserIds.has(m.userId) ?? false);
+          return {
+            color: m.key,
+            initial: m.name[0] ?? "?",
+            live: isOnline,
+            dim: !isOnline,
+          };
+        })
+    : null;
   return (
     <HfPhone>
       <HfStatusBar />
@@ -658,11 +689,15 @@ function Step62OtherMobile({
             듣는 중
           </span>
           <MbStack
-            members={[
-              { color: "b", initial: "B", live: true },
-              { color: "c", initial: "C", live: true },
-              { color: "d", initial: "D", live: true },
-            ]}
+            members={
+              listenMembers && listenMembers.length > 0
+                ? listenMembers
+                : [
+                    { color: "b", initial: "B", live: true },
+                    { color: "c", initial: "C", live: true },
+                    { color: "d", initial: "D", live: true },
+                  ]
+            }
           />
         </div>
       </HfBody>
@@ -683,15 +718,25 @@ interface Step62PcProps {
   /** 실데이터 — 그룹명/토픽명 (없으면 mock) */
   groupName?: string;
   topicLabel?: string;
-  /** 실데이터 — 멤버 list (없으면 mock 4명) */
-  realMembers?: Array<{ key: "a" | "b" | "c" | "d"; name: string }>;
+  /** 실데이터 — 멤버 list (없으면 mock 4명). userId 있으면 dim 판정 */
+  realMembers?: Array<{
+    key: "a" | "b" | "c" | "d";
+    name: string;
+    userId?: string;
+  }>;
+  /** 실데이터 — 본인 user_id (입장 판정 시 본인은 항상 online 처리) */
+  currentUserId?: string;
   /** 실데이터 질문 텍스트 */
   questionText?: string;
   /** 본인이 발화자일 때 — "건너뛰기" 콜백 */
   onSkip?: () => void;
 }
 
-const STEP62_PC_MEMBERS: Array<{ key: "a" | "b" | "c" | "d"; name: string }> = [
+const STEP62_PC_MEMBERS: Array<{
+  key: "a" | "b" | "c" | "d";
+  name: string;
+  userId?: string;
+}> = [
   { key: "a", name: "Alice" },
   { key: "b", name: "Bob" },
   { key: "c", name: "Carol" },
@@ -707,9 +752,11 @@ export function Step62Pc({
   groupName = "5월 오픽 AL 스터디",
   topicLabel = "음악 콤보",
   realMembers,
+  currentUserId,
   questionText,
   onSkip,
 }: Step62PcProps) {
+  const ctx = useSessionFrame();
   const members = realMembers && realMembers.length > 0 ? realMembers : STEP62_PC_MEMBERS;
   const displayQuestion = questionText ?? question.english;
   return (
@@ -803,6 +850,13 @@ export function Step62Pc({
             {members.map((m) => {
               const speaking = m.key === speakerKey;
               const displayName = speaking ? speakerName : m.name;
+              // userId 있을 때만 입장 판정 (본인은 항상 online). userId 없으면 mock 처리 — 항상 online
+              const isOnline = m.userId
+                ? m.userId === currentUserId ||
+                  (ctx?.onlineUserIds.has(m.userId) ?? false)
+                : true;
+              // 발화자 X + 미입장 = dim
+              const dim = !speaking && !isOnline;
               return (
                 <HfCard
                   key={m.key}
@@ -820,12 +874,14 @@ export function Step62Pc({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    opacity: speaking ? 1 : isOnline ? 1 : 0.6,
                   }}
                 >
                   <MbDot
                     color={m.key}
                     initial={displayName[0]}
-                    live={speaking}
+                    live={speaking || isOnline}
+                    dim={dim}
                     size={64}
                     fontSize={24}
                   />
@@ -855,6 +911,14 @@ export function Step62Pc({
                         }}
                       >
                         ● 답변 중
+                      </span>
+                    )}
+                    {!speaking && !isOnline && (
+                      <span
+                        className="t-xs ink-3"
+                        style={{ fontSize: 10 }}
+                      >
+                        미입장
                       </span>
                     )}
                   </div>

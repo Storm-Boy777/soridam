@@ -802,7 +802,12 @@ export function OpicStudySessionClient({
               onSkip={handleSkipAnswer}
               groupName={groupName}
               topicLabel={`${session.selected_topic ?? "콤보"} 콤보`}
-              realMembers={members.map((m) => ({ key: m.key, name: m.name }))}
+              realMembers={members.map((m) => ({
+                key: m.key,
+                name: m.name,
+                userId: m.userId,
+              }))}
+              currentUserId={currentUserId}
               meKey={me?.key ?? "a"}
             />
           </Shell>
@@ -815,6 +820,14 @@ export function OpicStudySessionClient({
           <Step62Other
             speakerName={speakerInfo?.name ?? "멤버"}
             speakerKey={speakerInfo?.key ?? "a"}
+            realMembers={members.map((m) => ({
+              key: m.key,
+              name: m.name,
+              userId: m.userId,
+            }))}
+            currentUserId={currentUserId}
+            groupName={groupName}
+            topicLabel={`${session.selected_topic ?? "콤보"} 콤보`}
           />
         </Shell>
       );
@@ -1315,6 +1328,7 @@ function LiveStep62Self({
   groupName,
   topicLabel,
   realMembers,
+  currentUserId,
   meKey,
 }: {
   questionIdx: number;
@@ -1323,7 +1337,8 @@ function LiveStep62Self({
   onSkip?: () => void;
   groupName?: string;
   topicLabel?: string;
-  realMembers?: Array<{ key: "a" | "b" | "c" | "d"; name: string }>;
+  realMembers?: Array<{ key: "a" | "b" | "c" | "d"; name: string; userId: string }>;
+  currentUserId?: string;
   meKey?: "a" | "b" | "c" | "d";
 }) {
   const recorder = useRecorder({ maxDuration: 120, minDuration: 1 });
@@ -1384,6 +1399,7 @@ function LiveStep62Self({
           groupName={groupName}
           topicLabel={topicLabel}
           realMembers={realMembers}
+          currentUserId={currentUserId}
           questionText="(질문 텍스트는 답변 시작 시 표시됩니다)"
           onSkip={onSkip}
         />
