@@ -15,7 +15,8 @@ import type {
   ButtonHTMLAttributes,
   HTMLAttributes,
 } from "react";
-import { useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef } from "react";
+import { Check } from "lucide-react";
 import { useSessionFrame } from "./session-frame-context";
 
 // ============================================================
@@ -860,37 +861,121 @@ export function PcStepShell({
 }
 
 // ============================================================
-// PcStepBar — 풀폭 스텝 바 (Claude Design 시안)
+// PcStepBar — 풀폭 스텝 바 (원형 번호 + 레이블 + connector)
+// scripts/create 패턴 BM
 // ============================================================
 interface PcStepBarProps {
   now: number;
   total?: number;
+  /** 단계 이름. 미전달 시 default 7단계 (오픽 스터디) */
+  labels?: string[];
 }
 
-export function PcStepBar({ now, total = 7 }: PcStepBarProps) {
+const DEFAULT_STEP_LABELS = [
+  "입장",
+  "카테고리",
+  "주제",
+  "콤보",
+  "가이드",
+  "답변",
+  "마무리",
+];
+
+export function PcStepBar({
+  now,
+  total = 7,
+  labels = DEFAULT_STEP_LABELS,
+}: PcStepBarProps) {
   return (
-    <div className="bp-pc-stepbar">
-      {Array.from({ length: total }).map((_, i) => (
-        <div
-          key={i}
-          className="bp-pc-stepbar-cell"
-          style={{
-            flex: i + 1 === now ? "0 0 32px" : 1,
-            background:
-              i + 1 < now
-                ? "var(--bp-ink-2)"
-                : i + 1 === now
-                  ? "var(--bp-tc)"
-                  : "var(--bp-line-strong)",
-          }}
-        />
-      ))}
-      <span
-        className="t-micro ink-3 t-num"
-        style={{ marginLeft: 8 }}
-      >
-        Step {now} / {total}
-      </span>
+    <div
+      className="bp-pc-stepbar"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        padding: "16px 24px 0",
+        flexWrap: "wrap",
+      }}
+    >
+      {Array.from({ length: total }).map((_, i) => {
+        const num = i + 1;
+        const isPast = num < now;
+        const isCurrent = num === now;
+        const label = labels[i] ?? `Step ${num}`;
+
+        return (
+          <Fragment key={i}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 7,
+              }}
+            >
+              <div
+                aria-hidden="true"
+                style={{
+                  width: 26,
+                  height: 26,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  fontVariantNumeric: "tabular-nums",
+                  background: isPast
+                    ? "var(--bp-good, #4ab85a)"
+                    : isCurrent
+                      ? "var(--bp-tc)"
+                      : "var(--bp-surface-2)",
+                  color:
+                    isPast || isCurrent ? "#fff" : "var(--bp-ink-3)",
+                  border:
+                    !isPast && !isCurrent
+                      ? "1px solid var(--bp-line-strong)"
+                      : "none",
+                  flexShrink: 0,
+                  transition:
+                    "background 0.2s ease, color 0.2s ease",
+                }}
+              >
+                {isPast ? (
+                  <Check size={13} strokeWidth={2.4} />
+                ) : (
+                  num
+                )}
+              </div>
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: isCurrent ? 600 : 500,
+                  color: isCurrent
+                    ? "var(--bp-ink)"
+                    : isPast
+                      ? "var(--bp-good, #4ab85a)"
+                      : "var(--bp-ink-3)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {label}
+              </span>
+            </div>
+            {i < total - 1 && (
+              <div
+                aria-hidden="true"
+                style={{
+                  width: 14,
+                  height: 1,
+                  background: "var(--bp-line-strong)",
+                  flexShrink: 0,
+                }}
+              />
+            )}
+          </Fragment>
+        );
+      })}
     </div>
   );
 }
