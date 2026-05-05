@@ -16,6 +16,10 @@ import {
   Flame,
   Star,
   Sparkles,
+  ChevronRight,
+  Mic,
+  Layers,
+  Pen,
 } from "lucide-react";
 import {
   HfPhone,
@@ -1389,23 +1393,53 @@ function Step5Pc({
     "기억에 남는 공연 경험",
   ];
 
+  // 포인트 카드 시각 차별화 — 도입/구조/디테일 (3개 — 4번째부터는 순환)
+  const POINT_TONES: Array<"good" | "polish" | "tip"> = [
+    "good",
+    "polish",
+    "tip",
+  ];
+  const POINT_NUM_STYLE = [
+    {
+      bg: "var(--bp-tc-tint)",
+      color: "var(--bp-tc)",
+      icon: <Mic size={13} strokeWidth={1.8} aria-hidden="true" />,
+    },
+    {
+      bg: "rgba(74, 184, 90, 0.12)",
+      color: "#2d7a3d",
+      icon: <Layers size={13} strokeWidth={1.8} aria-hidden="true" />,
+    },
+    {
+      bg: "rgba(98, 138, 204, 0.14)",
+      color: "#3b5fa0",
+      icon: <Pen size={13} strokeWidth={1.8} aria-hidden="true" />,
+    },
+  ];
+
+  // GUIDE TEXT 문단 분리 — 첫 문단(오프닝) + 본문 + 마지막 문단(클로징) 시각 차별화
+  const guideParagraphs = guideText
+    ? guideText.split(/\n\n+/).map((p) => p.trim()).filter(Boolean)
+    : null;
+
   return (
     <PcStepShell
       onBack={goHome}
       crumb={[groupName, `${topic} 콤보`, "시작 전 가이드"]}
       stepNow={5}
+      right={null}
     >
       <div
         className="bp-pc-content tight"
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1.4fr",
+          gridTemplateColumns: "1fr 1.1fr",
           gap: 24,
         }}
       >
-        {/* LEFT — AI 코치 Hero + 3개 질문 */}
+        {/* LEFT — AI 코치 Hero + 3개 질문 흐름 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {/* Hero 카드 — 그라데이션 + 큰 페르소나 */}
+          {/* Hero 카드 — 그라데이션 + 큰 페르소나 + 펄스 + 마지막 한 줄 */}
           <div
             style={{
               position: "relative",
@@ -1447,7 +1481,24 @@ function Step5Pc({
                   gap: 14,
                 }}
               >
-                <CoachAvatar size="xl" />
+                {/* CoachAvatar + 펄스 ring (페르소나 강화) */}
+                <div
+                  style={{ position: "relative", flexShrink: 0 }}
+                  aria-hidden="true"
+                >
+                  <CoachAvatar size="xl" />
+                  <div
+                    className="bp-pulse-ring"
+                    style={{
+                      position: "absolute",
+                      inset: -6,
+                      borderRadius: "50%",
+                      border: "1.5px solid var(--bp-tc)",
+                      opacity: 0.25,
+                      pointerEvents: "none",
+                    }}
+                  />
+                </div>
                 <div
                   style={{
                     display: "flex",
@@ -1463,7 +1514,7 @@ function Step5Pc({
                       letterSpacing: "0.1em",
                     }}
                   >
-                    오늘의 학습 인트로
+                    오늘의 코치 인사
                   </span>
                   <span
                     className="t-h2"
@@ -1497,29 +1548,56 @@ function Step5Pc({
                 </div>
               </div>
 
-              <p
-                className="t-body"
-                style={{
-                  margin: 0,
-                  lineHeight: 1.65,
-                  color: "var(--bp-ink)",
-                  whiteSpace: "pre-wrap",
-                }}
-              >
-                {guideText ? (
-                  guideText
-                ) : (
-                  <>
-                    이 콤보는 일반 주제 자리에서{" "}
-                    <Hl>{appearancePct}% 확률</Hl>로 등장하는
-                    정형화된 패턴이에요.
-                  </>
-                )}
-              </p>
+              {/* GUIDE TEXT — 문단 분리 + 마지막 단락 따뜻한 강조 */}
+              {guideParagraphs && guideParagraphs.length > 0 ? (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 14,
+                  }}
+                >
+                  {guideParagraphs.map((para, i) => {
+                    const isLast =
+                      guideParagraphs.length > 1 &&
+                      i === guideParagraphs.length - 1;
+                    return (
+                      <p
+                        key={i}
+                        className="t-body"
+                        style={{
+                          margin: 0,
+                          lineHeight: 1.7,
+                          color: isLast
+                            ? "var(--bp-tc)"
+                            : "var(--bp-ink)",
+                          fontWeight: isLast ? 600 : 400,
+                          fontStyle: isLast ? "italic" : undefined,
+                        }}
+                      >
+                        {para}
+                      </p>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p
+                  className="t-body"
+                  style={{
+                    margin: 0,
+                    lineHeight: 1.7,
+                    color: "var(--bp-ink)",
+                  }}
+                >
+                  이 콤보는 일반 주제 자리에서{" "}
+                  <Hl>{appearancePct}% 확률</Hl>로 등장하는 정형화된
+                  패턴이에요.
+                </p>
+              )}
             </div>
           </div>
 
-          {/* 3개 질문 카드 */}
+          {/* 3개 질문 — 흐름 indicator (dotted line) */}
           <HfCard
             padding={16}
             style={{
@@ -1527,48 +1605,82 @@ function Step5Pc({
               boxShadow: "none",
             }}
           >
-            <SectionH>3개 질문</SectionH>
             <div
-              style={{ display: "flex", flexDirection: "column", gap: 8 }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 12,
+              }}
+            >
+              <SectionH style={{ marginBottom: 0 }}>오늘의 흐름</SectionH>
+              <span className="t-xs ink-3">3개 질문</span>
+            </div>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: 0 }}
             >
               {comboQuestions.map((q, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: "flex",
-                    gap: 10,
-                    alignItems: "flex-start",
-                  }}
-                >
-                  <span
-                    className="t-num t-xs"
+                <div key={i}>
+                  <div
                     style={{
-                      minWidth: 24,
-                      height: 22,
-                      borderRadius: 6,
-                      background: "var(--bp-surface)",
-                      color: "var(--bp-ink-2)",
-                      fontWeight: 600,
-                      display: "inline-flex",
+                      display: "flex",
+                      gap: 12,
                       alignItems: "center",
-                      justifyContent: "center",
-                      fontVariantNumeric: "tabular-nums",
+                      padding: "8px 0",
                     }}
-                    aria-hidden="true"
                   >
-                    Q{i + 1}
-                  </span>
-                  <span className="t-sm" style={{ lineHeight: 1.55 }}>
-                    {q}
-                  </span>
+                    <span
+                      className="t-num t-xs"
+                      style={{
+                        minWidth: 28,
+                        height: 24,
+                        borderRadius: 8,
+                        background: "var(--bp-surface)",
+                        color: "var(--bp-ink-2)",
+                        fontWeight: 700,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontVariantNumeric: "tabular-nums",
+                        flexShrink: 0,
+                        border: "1px solid var(--bp-line)",
+                      }}
+                      aria-hidden="true"
+                    >
+                      Q{i + 1}
+                    </span>
+                    <span
+                      className="t-sm"
+                      style={{ lineHeight: 1.5, fontWeight: 500 }}
+                    >
+                      {q}
+                    </span>
+                  </div>
+                  {i < comboQuestions.length - 1 && (
+                    <div
+                      aria-hidden="true"
+                      style={{
+                        marginLeft: 13,
+                        width: 2,
+                        height: 14,
+                        borderLeft: "2px dotted var(--bp-line-strong)",
+                      }}
+                    />
+                  )}
                 </div>
               ))}
             </div>
           </HfCard>
         </div>
 
-        {/* RIGHT — 포인트 */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {/* RIGHT — 포인트 + 시작 카드 */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}
+        >
           <div
             style={{
               display: "flex",
@@ -1587,81 +1699,119 @@ function Step5Pc({
               오늘 함께 배울 포인트
             </SectionH>
           </div>
-          {points.map((p, i) => (
-            <HfCard
-              key={i}
-              padding={18}
-              style={{
-                display: "flex",
-                gap: 14,
-                alignItems: "flex-start",
-              }}
-            >
-              <span
-                className="t-num"
-                aria-hidden="true"
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 10,
-                  background: "var(--bp-tc-tint)",
-                  color: "var(--bp-tc)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 14,
-                  fontWeight: 700,
-                  flexShrink: 0,
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
-                {i + 1}
-              </span>
-              <div
+          {points.map((p, i) => {
+            const visualIdx = i % 3;
+            const numStyle = POINT_NUM_STYLE[visualIdx];
+            const tone = POINT_TONES[visualIdx];
+            return (
+              <HfCard
+                key={i}
+                padding={18}
                 style={{
                   display: "flex",
-                  flexDirection: "column",
-                  gap: 6,
-                  flex: 1,
-                  minWidth: 0,
+                  gap: 14,
+                  alignItems: "flex-start",
                 }}
               >
-                <Tag
-                  tone="good"
-                  style={{ fontSize: 10, alignSelf: "flex-start" }}
-                >
-                  {p.tag}
-                </Tag>
-                <span
-                  className="t-body"
+                {/* 번호 + 작은 아이콘 박스 — tone별 색상 */}
+                <div
+                  aria-hidden="true"
                   style={{
-                    lineHeight: 1.55,
-                    color: "var(--bp-ink)",
-                    fontWeight: 500,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 4,
+                    flexShrink: 0,
                   }}
                 >
-                  {p.text}
-                </span>
-              </div>
-            </HfCard>
-          ))}
+                  <span
+                    className="t-num"
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 10,
+                      background: numStyle.bg,
+                      color: numStyle.color,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    {i + 1}
+                  </span>
+                  <span style={{ color: numStyle.color }}>
+                    {numStyle.icon}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                    flex: 1,
+                    minWidth: 0,
+                  }}
+                >
+                  <Tag
+                    tone={tone}
+                    style={{ fontSize: 10, alignSelf: "flex-start" }}
+                  >
+                    {p.tag}
+                  </Tag>
+                  <span
+                    className="t-body"
+                    style={{
+                      lineHeight: 1.55,
+                      color: "var(--bp-ink)",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {p.text}
+                  </span>
+                </div>
+              </HfCard>
+            );
+          })}
 
+          {/* 시작 카드 — 강조 (큰 카드) */}
           <div
-            className="bp-pc-actions"
             style={{
-              marginTop: 8,
+              marginTop: 4,
+              padding: "20px 24px",
+              borderRadius: "var(--bp-radius-lg)",
+              background: "var(--bp-tc-tint)",
+              border: "1px solid rgba(201, 100, 66, 0.18)",
+              display: "flex",
               alignItems: "center",
-              gap: 14,
+              gap: 16,
             }}
           >
-            <span className="t-xs ink-3" aria-live="polite">
-              준비됐으면 함께 시작해요
-            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                className="t-h3"
+                style={{
+                  marginBottom: 2,
+                  textWrap: "balance" as const,
+                }}
+              >
+                준비됐으면 함께 시작해요
+              </div>
+              <span
+                className="t-xs ink-3"
+                aria-live="polite"
+                style={{ lineHeight: 1.5 }}
+              >
+                먼저 누른 사람이 시작하면 모두 다음 단계로 이동해요
+              </span>
+            </div>
             <HfButton
               variant="primary"
               size="lg"
               onClick={onStart}
-              style={{ minWidth: 180 }}
+              style={{ minWidth: 160, flexShrink: 0 }}
             >
               시작할게요 →
             </HfButton>
