@@ -128,14 +128,19 @@ export interface CategoryItem {
   key: "general" | "rp" | "adv";
   name: string;
   desc: string;
+  /** 카드 보조 메타 (예: "2~10번 문제") — scripts/create BM */
+  questions?: string;
+  /** 통계 라벨 (실데이터에서 채워짐) — "12개 토픽 · 35개 콤보" */
+  stat?: string;
   tag: string | null;
-  icon: string;
+  /** 단일 emoji 또는 ReactNode 미사용 — 실제 렌더는 CATEGORY_ICON_MAP에서 Lucide */
+  icon?: string;
 }
 
 export const MOCK_CATEGORIES: CategoryItem[] = [
-  { key: "general", name: "일반 주제", desc: "음악·여행·영화 등 일상 카테고리", tag: "추천", icon: "🌿" },
-  { key: "rp", name: "롤플레이", desc: "주어진 상황에서 역할극 답변", tag: null, icon: "🎭" },
-  { key: "adv", name: "어드밴스", desc: "복합 질문 · IH~AL 도전", tag: "AL 도전", icon: "🎯" },
+  { key: "general", name: "일반", desc: "일상·습관·선호", questions: "2~10번 문제", tag: null },
+  { key: "rp", name: "롤플레이", desc: "상황극·문제해결", questions: "11~13번 문제", tag: null },
+  { key: "adv", name: "어드밴스", desc: "비교·변화·의견", questions: "14~15번 문제", tag: null },
 ];
 
 export interface TopicItem {
@@ -154,10 +159,27 @@ export const MOCK_TOPICS: TopicItem[] = [
   { key: "park", name: "공원", meta: "콤보 3개", recent: false },
 ];
 
+/**
+ * 콤보 카드 안 질문 1개
+ * - 영어 원문(메인) + [질문 유형] 한글 짧은 요약(보조) + 등장률
+ */
+export interface ComboQuestionItem {
+  english: string;            // 영어 원문 (메인 표시)
+  short?: string;             // 한글 짧은 요약 (보조 표시, optional)
+  typeLabel?: string;         // 질문 유형 한글 라벨 ("묘사" / "대안제시" 등)
+  appearancePct?: number;     // 토픽 내 이 질문 등장률 (%)
+  studiedByUser?: boolean;    // 사용자가 이미 답변한 적 있는 질문
+}
+
 export interface ComboItem {
   key: string;
   tag: string;
-  questions: string[];
+  /**
+   * 콤보 안 질문 3개 (Q1/Q2/Q3 순서)
+   * - 시안/preview에서는 string[] 호환 위해 string도 받지만,
+   *   실데이터는 ComboQuestionItem 객체 사용
+   */
+  questions: Array<string | ComboQuestionItem>;
   learned: boolean;
   /** 실제 데이터: 콤보 시그니처 (정렬된 question_id|로 join) */
   sig?: string;
@@ -167,7 +189,10 @@ export interface ComboItem {
   frequency?: number;
   /** 실제 데이터: 토픽 내 출제 비율 (%) */
   appearancePct?: number;
-  /** 실제 데이터: 질문별 메타 (등장률 + 사용자 학습 여부) */
+  /**
+   * @deprecated questions 객체 안에 appearancePct/studiedByUser 포함됨.
+   * preview용 string[] 호환 시에만 사용.
+   */
   questionMeta?: Array<{
     appearancePct: number;
     studiedByUser: boolean;

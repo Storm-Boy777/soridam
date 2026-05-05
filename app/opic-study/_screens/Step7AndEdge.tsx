@@ -25,6 +25,7 @@ import {
   Quote,
   SectionH,
   PcStepShell,
+  PcStepBar,
 } from "../_components/bp";
 import { goHome } from "@/lib/opic-study/nav";
 import {
@@ -43,172 +44,29 @@ interface Step7Props {
   onNextCombo?: () => void;
 }
 
-/** Step 7 — 모바일/PC 분기 wrapper */
-export function Step7(props: Step7Props) {
-  return (
-    <>
-      <div className="bp-only-mobile" style={{ flex: 1, minHeight: 0, display: "flex" }}>
-        <Step7Mobile {...props} />
-      </div>
-      <div className="bp-only-pc" style={{ flex: 1, minHeight: 0 }}>
-        <Step7Pc {...props} />
-      </div>
-    </>
-  );
-}
-
-function Step7Mobile({ data = MOCK_STEP7, onHome, onNextCombo }: Step7Props) {
-  return (
-    <HfPhone>
-      <HfStatusBar />
-      <HfHeader
-        title="오늘의 학습"
-        sub="음악 콤보 · 5월 2일"
-        onBack={goHome}
-        right={null}
-      />
-
-      <HfBody padding="20px">
-        {/* Hero */}
-        <div style={{ textAlign: "center", padding: "20px 0 24px" }}>
-          <div style={{ fontSize: 48, marginBottom: 8 }}>🌱</div>
-          <div className="t-display" style={{ marginBottom: 6 }}>
-            {data.title}
-          </div>
-          <p className="t-sm ink-3" style={{ margin: 0 }}>
-            {data.subtitle}
-          </p>
-        </div>
-
-        {/* Today's BP */}
-        <Insight style={{ marginBottom: 16 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              marginBottom: 8,
-            }}
-          >
-            <span style={{ fontSize: 16 }}>✨</span>
-            <span className="t-h3">오늘의 베스트 표현</span>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <Quote style={{ background: "rgba(255,255,255,0.6)" }}>
-              {data.bestExpression}
-            </Quote>
-            <span className="t-xs ink-3" style={{ marginLeft: 12 }}>
-              — {data.bestFrom}
-            </span>
-          </div>
-        </Insight>
-
-        {/* Coach note */}
-        <HfCard padding={16} style={{ marginBottom: 16 }}>
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              alignItems: "flex-start",
-              marginBottom: 12,
-            }}
-          >
-            <CoachAvatar />
-            <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
-              <span className="t-sm" style={{ fontWeight: 600 }}>
-                AI 스터디 코치
-              </span>
-              <span className="t-xs ink-3">오늘의 마무리</span>
-            </div>
-          </div>
-          <p
-            className="t-body"
-            style={{ margin: 0, lineHeight: 1.6, color: "var(--bp-ink)" }}
-          >
-            오늘은 <Hl>"{data.coachNote.keyword}"</Hl>으로 도입을 시작하는 패턴을 함께 배웠어요. 다음 세션에서는 <b>{data.coachNote.detailKeyword}</b>을 하나씩 더 넣는 연습을 해볼까요?
-          </p>
-        </HfCard>
-
-        {/* Members */}
-        <HfCard padding={16} style={{ marginBottom: 16 }}>
-          <SectionH>오늘 함께한 멤버</SectionH>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {data.memberNotes.map((m) => (
-              <div
-                key={m.key}
-                style={{ display: "flex", alignItems: "center", gap: 10 }}
-              >
-                <MbDot color={m.key} initial={m.name[0]} size={28} fontSize={11} />
-                <span
-                  className="t-sm"
-                  style={{ fontWeight: 500, flex: 1 }}
-                >
-                  {m.name}
-                </span>
-                <Tag tone="good" style={{ fontSize: 10 }}>
-                  BP · {m.note}
-                </Tag>
-              </div>
-            ))}
-          </div>
-        </HfCard>
-
-        {/* Next */}
-        <HfCard variant="flat" padding={14}>
-          <span className="t-xs ink-3" style={{ marginBottom: 4, display: "block" }}>
-            다음 추천 콤보
-          </span>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <span className="t-sm" style={{ fontWeight: 600 }}>
-              {data.nextRecommend.name}
-            </span>
-            <span className="t-xs ink-3">{data.nextRecommend.meta}</span>
-          </div>
-        </HfCard>
-      </HfBody>
-
-      <HfFooter>
-        <div style={{ display: "flex", gap: 8 }}>
-          <HfButton variant="secondary" style={{ flex: 1 }} onClick={onHome}>
-            홈으로
-          </HfButton>
-          <HfButton variant="primary" style={{ flex: 2 }} onClick={onNextCombo}>
-            이어서 다음 콤보 →
-          </HfButton>
-        </div>
-      </HfFooter>
-    </HfPhone>
-  );
-}
-
 interface Step7PcExtraProps {
-  /** 실데이터 그룹명 (브레드크럼) */
+  /** 실데이터 그룹명 (브레드크럼) — ImmersiveHeader에서 처리 */
   groupName?: string;
   /** 실데이터 토픽 라벨 (브레드크럼) */
   topicLabel?: string;
 }
 
-export function Step7Pc({
-  data = MOCK_STEP7,
+/** Step 7 — 종료/인사이트 (단일 컴포넌트, PC 우선 + 반응형) */
+export function Step7({
+  data,
   onHome,
   onNextCombo,
-  groupName = "5월 오픽 AL 스터디",
-  topicLabel = "음악 콤보",
 }: Step7Props & Step7PcExtraProps) {
+  if (!data) return null;
+  const memberCols = Math.max(data.memberNotes.length, 1);
+
   return (
-    <PcStepShell
-      crumb={[groupName, topicLabel, "오늘의 학습"]}
-      right={null}
-    >
-      <div className="bp-pc-content" style={{ padding: "32px 64px" }}>
+    <div className="bp-scope bp-shell">
+      <PcStepBar now={6} total={6} />
+
+      <div className="bp-shell-content">
         {/* Hero */}
-        <div style={{ textAlign: "center", padding: "16px 0 28px" }}>
+        <div style={{ textAlign: "center", padding: "8px 0 24px" }}>
           <div
             aria-hidden="true"
             style={{
@@ -230,7 +88,7 @@ export function Step7Pc({
             className="t-display"
             style={{
               marginBottom: 6,
-              fontSize: 32,
+              fontWeight: 700,
               textWrap: "balance" as const,
             }}
           >
@@ -244,15 +102,8 @@ export function Step7Pc({
           </p>
         </div>
 
-        {/* 1.2fr / 1fr — Today's BP + Coach note */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1.2fr 1fr",
-            gap: 16,
-            marginBottom: 16,
-          }}
-        >
+        {/* Today's BP + Coach note — 모바일 stack, PC 1.2fr/1fr */}
+        <div className="bp-grid-feedback" style={{ marginBottom: 16 }}>
           <Insight>
             <div
               style={{
@@ -315,23 +166,20 @@ export function Step7Pc({
               className="t-body"
               style={{ margin: 0, lineHeight: 1.6 }}
             >
-              오늘은 <Hl>"{data.coachNote.keyword}"</Hl>으로 도입을 시작하는
-              패턴을 함께 배웠어요. 다음 세션에서는{" "}
+              오늘은 <Hl>&ldquo;{data.coachNote.keyword}&rdquo;</Hl>으로 도입을
+              시작하는 패턴을 함께 배웠어요. 다음 세션에서는{" "}
               <b>{data.coachNote.detailKeyword}</b>을 하나씩 더 넣는 연습을
               해볼까요?
             </p>
           </HfCard>
         </div>
 
-        {/* Members — 멤버 수 동적 */}
+        {/* Members — 모바일 1열, PC 멤버 수만큼 */}
         <HfCard padding={20} style={{ marginBottom: 16 }}>
           <SectionH style={{ marginBottom: 14 }}>오늘 함께한 멤버</SectionH>
           <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: `repeat(${Math.max(data.memberNotes.length, 1)}, minmax(0, 1fr))`,
-              gap: 12,
-            }}
+            className="bp-grid-members"
+            style={{ ["--member-cols" as string]: memberCols } as React.CSSProperties}
           >
             {data.memberNotes.map((m) => (
               <HfCard
@@ -361,40 +209,48 @@ export function Step7Pc({
           </div>
         </HfCard>
 
-        {/* Next combo */}
-        <HfCard
-          variant="flat"
-          padding={16}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            marginBottom: 24,
-          }}
-        >
-          <span className="t-xs ink-3">다음 추천 콤보</span>
-          <div
+        {/* Next combo — 실데이터 추천 있을 때만 */}
+        {data.nextRecommend?.name && (
+          <HfCard
+            variant="flat"
+            padding={16}
             style={{
               display: "flex",
-              flexDirection: "column",
-              gap: 0,
-              flex: 1,
+              alignItems: "center",
+              gap: 12,
+              marginBottom: 16,
+              flexWrap: "wrap",
             }}
           >
-            <span className="t-sm" style={{ fontWeight: 600 }}>
-              {data.nextRecommend.name}
-            </span>
-            <span className="t-xs ink-3">{data.nextRecommend.meta}</span>
-          </div>
-          <HfButton variant="secondary" size="sm">
-            살펴보기
-          </HfButton>
-        </HfCard>
-
+            <span className="t-xs ink-3">다음 추천 콤보</span>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 0,
+                flex: 1,
+                minWidth: 120,
+              }}
+            >
+              <span className="t-sm" style={{ fontWeight: 600 }}>
+                {data.nextRecommend.name}
+              </span>
+              {data.nextRecommend.meta && (
+                <span className="t-xs ink-3">
+                  {data.nextRecommend.meta}
+                </span>
+              )}
+            </div>
+            <HfButton variant="secondary" size="sm">
+              살펴보기
+            </HfButton>
+          </HfCard>
+        )}
       </div>
-      {/* Actions — App Shell footer */}
-      <div className="bp-pc-actions">
-        <div className="bp-pc-actions-inner" style={{ gap: 10 }}>
+
+      {/* Actions */}
+      <div className="bp-shell-actions">
+        <div className="bp-shell-actions-inner" style={{ gap: 10 }}>
           <HfButton
             variant="secondary"
             size="lg"
@@ -413,9 +269,14 @@ export function Step7Pc({
           </HfButton>
         </div>
       </div>
-    </PcStepShell>
+    </div>
   );
 }
+
+/** @deprecated Step7 단일 컴포넌트 사용 — 호환용 alias */
+export const Step7Pc = Step7;
+
+void PcStepShell;
 
 // ============================================================
 // EdgeMic · 마이크 권한 거부
@@ -427,20 +288,100 @@ interface EdgeMicProps {
   onLeave?: () => void;
 }
 
-/** EdgeMic — 마이크 권한 거부 (모바일/PC 분기 wrapper) */
-export function EdgeMic(props: EdgeMicProps) {
+/** EdgeMic — 마이크 권한 거부 (단일 컴포넌트, PC 우선 + 반응형) */
+export function EdgeMic({
+  steps = MOCK_MIC_STEPS,
+  onOpenSettings,
+  onLeave,
+}: EdgeMicProps) {
   return (
-    <>
+    <div className="bp-scope bp-shell">
       <div
-        className="bp-only-mobile"
-        style={{ flex: 1, minHeight: 0, display: "flex" }}
+        className="bp-shell-content"
+        style={{
+          alignItems: "center",
+          justifyContent: "center",
+        }}
       >
-        <EdgeMicMobile {...props} />
+        <div
+          style={{
+            maxWidth: 520,
+            width: "100%",
+            padding: "32px 24px",
+            background: "var(--bp-surface)",
+            borderRadius: "var(--bp-radius-lg)",
+            boxShadow: "var(--bp-shadow)",
+            textAlign: "center",
+            display: "flex",
+            flexDirection: "column",
+            gap: 20,
+          }}
+        >
+          <div
+            aria-hidden="true"
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: "50%",
+              background: "var(--bp-polish-tint)",
+              color: "var(--bp-tc)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto",
+            }}
+          >
+            <Mic size={32} strokeWidth={1.6} />
+          </div>
+
+          <div>
+            <div
+              className="t-h1"
+              style={{
+                marginBottom: 8,
+                textWrap: "balance" as const,
+              }}
+            >
+              마이크 사용을 허용해주세요
+            </div>
+            <p
+              className="t-body ink-3"
+              style={{
+                margin: 0,
+                lineHeight: 1.6,
+                textWrap: "pretty" as const,
+              }}
+            >
+              답변을 녹음하려면 마이크가 필요해요. 설정에서 권한을 허용한 다음
+              다시 시도해주세요.
+            </p>
+          </div>
+
+          <MicSteps steps={steps} />
+        </div>
       </div>
-      <div className="bp-only-pc" style={{ flex: 1, minHeight: 0 }}>
-        <EdgeMicPc {...props} />
+
+      <div className="bp-shell-actions">
+        <div className="bp-shell-actions-inner">
+          <HfButton
+            variant="ghost"
+            size="lg"
+            onClick={onLeave}
+            style={{ minWidth: 140 }}
+          >
+            스터디 나가기
+          </HfButton>
+          <HfButton
+            variant="primary"
+            size="lg"
+            onClick={onOpenSettings}
+            style={{ minWidth: 200 }}
+          >
+            설정 열기
+          </HfButton>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -490,187 +431,6 @@ function MicSteps({ steps }: { steps: string[] }) {
         ))}
       </div>
     </HfCard>
-  );
-}
-
-function EdgeMicMobile({
-  steps = MOCK_MIC_STEPS,
-  onOpenSettings,
-  onLeave,
-}: EdgeMicProps) {
-  return (
-    <HfPhone>
-      <HfStatusBar />
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          padding: "12px 20px",
-          borderBottom: "1px solid var(--bp-line)",
-          background: "var(--bp-bg)",
-          flex: "0 0 auto",
-          gap: 8,
-        }}
-      >
-        <button
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            color: "var(--bp-ink-2)",
-            cursor: "pointer",
-            background: "transparent",
-            border: "none",
-            padding: 0,
-          }}
-          aria-label="뒤로"
-        >
-          <ArrowLeft size={18} strokeWidth={1.6} aria-hidden="true" />
-        </button>
-        <span className="t-h3">마이크 필요</span>
-      </div>
-
-      <HfBody padding="24px 20px">
-        <div style={{ textAlign: "center", padding: "32px 0" }}>
-          <div
-            style={{
-              width: 72,
-              height: 72,
-              borderRadius: "50%",
-              background: "var(--bp-polish-tint)",
-              color: "var(--bp-tc)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              margin: "0 auto 16px",
-            }}
-          >
-            <Mic size={32} strokeWidth={1.6} aria-hidden="true" />
-          </div>
-          <div className="t-h1" style={{ marginBottom: 8 }}>
-            마이크 사용을 허용해주세요
-          </div>
-          <p
-            className="t-sm ink-3"
-            style={{ margin: 0, lineHeight: 1.6, padding: "0 16px" }}
-          >
-            답변을 녹음하려면 마이크가 필요해요. 설정에서 권한을 허용한 다음 다시 시도해주세요.
-          </p>
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <MicSteps steps={steps} />
-        </div>
-      </HfBody>
-
-      <HfFooter>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <HfButton variant="primary" size="lg" full onClick={onOpenSettings}>
-            설정 열기
-          </HfButton>
-          <HfButton variant="ghost" full onClick={onLeave}>
-            스터디 나가기
-          </HfButton>
-        </div>
-      </HfFooter>
-    </HfPhone>
-  );
-}
-
-function EdgeMicPc({
-  steps = MOCK_MIC_STEPS,
-  onOpenSettings,
-  onLeave,
-}: EdgeMicProps) {
-  return (
-    <PcStepShell crumb={["오픽 스터디", "마이크 필요"]} right={null}>
-      <div
-        className="bp-pc-content"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flex: 1,
-          padding: "48px 24px",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 520,
-            width: "100%",
-            padding: "40px 36px",
-            background: "var(--bp-surface)",
-            borderRadius: "var(--bp-radius-lg)",
-            boxShadow: "var(--bp-shadow)",
-            textAlign: "center",
-            display: "flex",
-            flexDirection: "column",
-            gap: 20,
-          }}
-        >
-          <div
-            aria-hidden="true"
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: "50%",
-              background: "var(--bp-polish-tint)",
-              color: "var(--bp-tc)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              margin: "0 auto",
-            }}
-          >
-            <Mic size={36} strokeWidth={1.6} />
-          </div>
-
-          <div>
-            <div
-              className="t-display"
-              style={{
-                marginBottom: 8,
-                fontSize: 24,
-                textWrap: "balance" as const,
-              }}
-            >
-              마이크 사용을 허용해주세요
-            </div>
-            <p
-              className="t-body ink-3"
-              style={{
-                margin: 0,
-                lineHeight: 1.6,
-                textWrap: "pretty" as const,
-              }}
-            >
-              답변을 녹음하려면 마이크가 필요해요. 설정에서 권한을 허용한 다음 다시 시도해주세요.
-            </p>
-          </div>
-
-          <MicSteps steps={steps} />
-
-          <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-            <HfButton
-              variant="ghost"
-              size="lg"
-              onClick={onLeave}
-              style={{ flex: "0 0 auto" }}
-            >
-              스터디 나가기
-            </HfButton>
-            <HfButton
-              variant="primary"
-              size="lg"
-              onClick={onOpenSettings}
-              style={{ flex: 1 }}
-            >
-              설정 열기
-            </HfButton>
-          </div>
-        </div>
-      </div>
-    </PcStepShell>
   );
 }
 

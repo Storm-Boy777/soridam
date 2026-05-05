@@ -9,6 +9,7 @@ import {
   ArrowRight,
   TrendingUp,
   Target,
+  Lock,
 } from "lucide-react";
 import { getAuthClaims, getUser } from "@/lib/auth";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
@@ -61,6 +62,7 @@ const modules = [
     title: "튜터링",
     desc: "자동 진단 · 맞춤 처방 · 레벨별 훈련",
     href: "/tutoring",
+    adminOnly: true,
   },
 ];
 
@@ -259,6 +261,7 @@ async function BetaSectionLoader({ userId }: { userId: string }) {
 export default async function DashboardPage() {
   const claims = await getAuthClaims();
   const userId = claims?.sub as string | undefined;
+  const isAdmin = (claims?.app_metadata as { role?: string } | undefined)?.role === "admin";
 
   return (
     <div className="space-y-6 pb-6 pt-1 sm:space-y-8 sm:pb-8 sm:pt-2 lg:pt-0">
@@ -310,30 +313,67 @@ export default async function DashboardPage() {
           학습 모듈
         </h2>
         <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
-          {modules.map((m) => (
-            <Link
-              key={m.title}
-              href={m.href}
-              className="group relative flex items-start gap-3 rounded-[var(--radius-xl)] border border-border bg-surface shadow-sm p-4 transition-all hover:border-border hover:shadow-md sm:gap-4 sm:p-5"
-            >
-              <div
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)] sm:h-11 sm:w-11 ${m.iconBg}`}
+          {modules.map((m) => {
+            const locked = m.adminOnly && !isAdmin;
+
+            const cardInner = (
+              <>
+                <div
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)] sm:h-11 sm:w-11 ${m.iconBg}`}
+                >
+                  <m.icon size={20} className="sm:hidden" />
+                  <m.icon size={22} className="hidden sm:block" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-sm font-semibold text-foreground sm:text-base">{m.title}</h3>
+                    {locked && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-surface-secondary px-1.5 py-0.5 text-[10px] font-medium text-foreground-muted">
+                        <Lock size={10} />
+                        준비 중
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-xs text-foreground-secondary sm:mt-1 sm:text-sm">
+                    {m.desc}
+                  </p>
+                </div>
+                {locked ? (
+                  <Lock
+                    size={16}
+                    className="mt-1 shrink-0 text-foreground-muted"
+                  />
+                ) : (
+                  <ArrowRight
+                    size={16}
+                    className="mt-1 shrink-0 text-foreground-muted transition-transform group-hover:translate-x-1 group-hover:text-primary-500"
+                  />
+                )}
+              </>
+            );
+
+            if (locked) {
+              return (
+                <div
+                  key={m.title}
+                  aria-disabled="true"
+                  className="relative flex items-start gap-3 rounded-[var(--radius-xl)] border border-border bg-surface shadow-sm p-4 opacity-60 cursor-not-allowed sm:gap-4 sm:p-5"
+                >
+                  {cardInner}
+                </div>
+              );
+            }
+
+            return (
+              <Link
+                key={m.title}
+                href={m.href}
+                className="group relative flex items-start gap-3 rounded-[var(--radius-xl)] border border-border bg-surface shadow-sm p-4 transition-all hover:border-border hover:shadow-md sm:gap-4 sm:p-5"
               >
-                <m.icon size={20} className="sm:hidden" />
-                <m.icon size={22} className="hidden sm:block" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-semibold text-foreground sm:text-base">{m.title}</h3>
-                <p className="mt-0.5 text-xs text-foreground-secondary sm:mt-1 sm:text-sm">
-                  {m.desc}
-                </p>
-              </div>
-              <ArrowRight
-                size={16}
-                className="mt-1 shrink-0 text-foreground-muted transition-transform group-hover:translate-x-1 group-hover:text-primary-500"
-              />
-            </Link>
-          ))}
+                {cardInner}
+              </Link>
+            );
+          })}
         </div>
       </div>
 

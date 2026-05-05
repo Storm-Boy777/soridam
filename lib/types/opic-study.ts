@@ -295,7 +295,8 @@ export interface CategoryStat {
 export interface TopicForStudy {
   topic: string;
   category: StudyCategory;
-  combo_count: number;                     // 토픽 내 콤보 수 (출제된 시험후기 기준)
+  combo_count: number;                     // 고유 콤보 종류 수 (화면 표시용 — "콤보 X개")
+  submission_count: number;                // 실제 출제 횟수 (submission_combos row 수) — 정렬 주 지표
   studied_count: number;                   // 그룹에서 이 토픽 학습한 세션 수
   type_diversity?: number;                 // (선택) 질문 타입 다양도
 }
@@ -314,8 +315,9 @@ export interface ComboForStudy {
   questions: Array<{
     id: string;
     question_type: string;                 // 'description' | 'comparison' | ...
-    question_english: string;
-    question_korean: string | null;
+    question_english: string;              // 영어 원문 (메인 표시)
+    question_korean: string | null;        // 한글 풀번역 (긴 텍스트)
+    question_short: string | null;         // 한글 짧은 요약 (보조 표시)
     appearance_pct: number;                // 토픽 내 이 질문 등장률 %
     studied_by_user: boolean;              // 사용자가 이미 답변한 적 있는 질문
   }>;

@@ -764,6 +764,196 @@
 }
 
 /* =================================================
+ * BP Shell — 단일 컴포넌트 표준 (PC 우선 → 모바일 반응형)
+ *
+ * - .bp-shell        : 외곽 wrapper (모든 폼팩터)
+ * - .bp-shell-content: 본문 (max-w 1040 가운데, padding 반응형)
+ * - .bp-shell-actions: footer 풀폭 + .bp-shell-actions-inner 가운데
+ * - .bp-grid-cat / .bp-grid-topic : 카테고리/주제 그리드 (반응형)
+ *
+ * 기존 .bp-pc-* 와 별도 — 다른 화면 점진 마이그레이션 시 사용.
+ * ================================================= */
+
+/* 외곽 — 모든 폼팩터 동일 */
+.bp-shell {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 본문 — 모바일 default, PC에서 padding 확장 */
+.bp-shell-content {
+  flex: 1;
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 20px 16px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* footer — 풀폭 외곽 + max-w 1040 inner
+ * 모바일 default: 세로 stack (helper text 위, 버튼 풀폭)
+ * PC: 가로 (helper text 좌, 버튼 우측)
+ */
+.bp-shell-actions {
+  flex: 0 0 auto;
+  width: 100%;
+  background: var(--bp-bg);
+  border-top: 1px solid var(--bp-line);
+}
+.bp-shell-actions-inner {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 12px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+  align-items: stretch;
+  gap: 8px;
+  box-sizing: border-box;
+}
+/* 모바일에서 helper text는 작게 + 가운데 정렬 */
+.bp-shell-actions-inner > .bp-shell-helper {
+  font-size: 11px;
+  color: var(--bp-ink-3);
+  text-align: center;
+}
+
+/* 카테고리 그리드 — 항상 3열 (스크립트/create와 동일) */
+.bp-grid-cat {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+/* 주제 그리드 — 모바일 2, PC 4, XL 5 */
+.bp-grid-topic {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  align-content: start;
+}
+
+/* 모드 그리드 (Step1) — 모바일 1열, PC 2열 */
+.bp-grid-mode {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+/* 콤보 그리드 (Step4) — 모바일 1열, PC 2열 */
+.bp-grid-combo {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+/* 가이드 그리드 (Step5) — 모바일 세로 stack, PC 좌우 분할 */
+.bp-grid-guide {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+/* 멤버 그리드 (Step61, Step66 등) — 모바일 1열, PC 동적 (--member-cols) */
+.bp-grid-members {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+/* 피드백 그리드 (Step64) — 모바일 stack, PC 좌우 1:1 */
+.bp-grid-feedback {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+/* 답변 루프 그리드 (Step62) — 모바일 stack, PC 메인 1fr + 사이드 320px */
+.bp-grid-loop {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 12px;
+}
+
+/* 768px 이상 — PC padding 확대 + 그리드 다열 + typography 살짝 키움 */
+@media (min-width: 768px) {
+  .bp-shell-content {
+    padding: 32px 64px;
+  }
+  /* footer — PC에서 가로 정렬 (helper text 좌, 버튼 우) */
+  .bp-shell-actions-inner {
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 64px 16px;
+  }
+  .bp-shell-actions-inner > .bp-shell-helper {
+    font-size: 12px;
+    text-align: left;
+  }
+  /* 그리드 — PC 확장 */
+  .bp-grid-cat {
+    gap: 14px;
+  }
+  .bp-grid-topic {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .bp-grid-mode {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .bp-grid-combo {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .bp-grid-guide {
+    grid-template-columns: 1fr 1.1fr;
+    gap: 24px;
+  }
+  .bp-grid-members {
+    grid-template-columns: repeat(var(--member-cols, 4), minmax(0, 1fr));
+    gap: 14px;
+  }
+  .bp-grid-feedback {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .bp-grid-loop {
+    grid-template-columns: 1fr 320px !important;
+    gap: 16px;
+  }
+  /* Typography — PC 확장 */
+  .bp-shell .t-display { font-size: 32px; }
+  .bp-shell .t-h1 { font-size: 24px; }
+  .bp-shell .t-h2 { font-size: 20px; }
+}
+
+/* 768~1023 (태블릿) — 중간 padding */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .bp-shell-content {
+    padding: 24px 32px;
+  }
+  .bp-shell-actions-inner {
+    padding: 12px 32px 14px;
+  }
+}
+
+/* 1280 이상 — 토픽 5열 (긴 그리드 압축) */
+@media (min-width: 1280px) {
+  .bp-grid-topic {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+/* =================================================
  * 공통 애니메이션 — 스피너 (Loader2 등)
  * ================================================= */
 @keyframes bp-spin {

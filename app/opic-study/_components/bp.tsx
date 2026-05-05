@@ -796,7 +796,7 @@ export function PcStepShell({
   crumb,
   right,
   stepNow,
-  stepTotal = 7,
+  stepTotal = 6,
   hideHeadbar,
   children,
 }: PcStepShellProps) {
@@ -873,8 +873,7 @@ interface PcStepBarProps {
 
 const DEFAULT_STEP_LABELS = [
   "입장",
-  "카테고리",
-  "주제",
+  "카테고리·주제",
   "콤보",
   "가이드",
   "답변",
@@ -883,7 +882,7 @@ const DEFAULT_STEP_LABELS = [
 
 export function PcStepBar({
   now,
-  total = 7,
+  total = 6,
   labels = DEFAULT_STEP_LABELS,
 }: PcStepBarProps) {
   return (

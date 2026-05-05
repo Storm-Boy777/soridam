@@ -7,8 +7,7 @@
  *
  * 분기 로직:
  * - mode_select → Step1
- * - category_select → Step2
- * - topic_select → Step3
+ * - category_select / topic_select → CategoryTopicStep (통합 화면, scripts/create BM)
  * - combo_select → Step4
  * - guide → Step5 (가이드 도착 대기 후 표시)
  * - recording: 본인 답변 상태에 따라 분기
@@ -34,19 +33,16 @@ import { ImmersiveHeader } from "@/components/layout/immersive-header";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
-import { Step1, Step2, Step3, Step4, Step5 } from "../_screens/SetupSteps";
+import { Step1, Step4, Step5, CategoryTopicStep } from "../_screens/SetupSteps";
 import { goHome } from "@/lib/opic-study/nav";
 import {
   Step61,
-  Step61Pc,
-  Step62Other,
-  Step62Pc,
+  Step62,
   Step63,
-  Step63Pc,
 } from "../_screens/LoopSteps";
-import { Step64Pc } from "../_screens/Step64";
-import { Step66Pc } from "../_screens/Step66";
-import { Step7Pc } from "../_screens/Step7AndEdge";
+import { Step64 } from "../_screens/Step64";
+import { Step66 } from "../_screens/Step66";
+import { Step7 as Step7Screen } from "../_screens/Step7AndEdge";
 import {
   selectMode,
   selectCategory,
@@ -71,6 +67,7 @@ import type {
   ComboForStudy,
 } from "@/lib/types/opic-study";
 import type { ComboItem, CategoryItem } from "../_screens/_mock";
+import { QUESTION_TYPE_LABELS } from "@/lib/types/reviews";
 import { useRecorder } from "@/lib/hooks/use-recorder";
 import {
   BpConfirmDialog,
@@ -332,13 +329,14 @@ export function OpicStudySessionClient({
     }
   }, [session.step, categoryStats]);
 
+  // 토픽 fetch — selected_category 변경 시 매번 새로 가져옴 (last-write-wins UX)
   useEffect(() => {
     if (
       session.step === "topic_select" &&
-      session.selected_category &&
-      !topics
+      session.selected_category
     ) {
       setContentLoading(true);
+      setTopics(null); // 이전 카테고리 토픽 즉시 클리어
       getTopicsForStudy({
         category: session.selected_category,
         groupId,
@@ -348,16 +346,17 @@ export function OpicStudySessionClient({
         })
         .finally(() => setContentLoading(false));
     }
-  }, [session.step, session.selected_category, topics, groupId]);
+  }, [session.step, session.selected_category, groupId]);
 
+  // 콤보 fetch — selected_topic 변경 시 매번 새로 가져옴
   useEffect(() => {
     if (
       session.step === "combo_select" &&
       session.selected_category &&
-      session.selected_topic &&
-      !combos
+      session.selected_topic
     ) {
       setContentLoading(true);
+      setCombos(null); // 이전 토픽 콤보 즉시 클리어
       getCombosForStudy({
         category: session.selected_category,
         topic: session.selected_topic,
@@ -372,7 +371,6 @@ export function OpicStudySessionClient({
     session.step,
     session.selected_category,
     session.selected_topic,
-    combos,
     groupId,
   ]);
 
@@ -613,12 +611,12 @@ export function OpicStudySessionClient({
   // 디자인 컴포넌트용 데이터 매핑
   // ============================================================
 
-  // Step2: 고정 3개 카테고리 + categoryStats 카운트 결합
+  // Step2: 고정 3개 카테고리 + categoryStats 카운트 결합 (scripts/create BM)
   const step2Categories: CategoryItem[] = useMemo(() => {
     const BASE: CategoryItem[] = [
-      { key: "general", name: "일반 주제", desc: "음악·여행·영화 등 일상 카테고리", tag: "추천", icon: "🌿" },
-      { key: "rp", name: "롤플레이", desc: "주어진 상황에서 역할극 답변", tag: null, icon: "🎭" },
-      { key: "adv", name: "어드밴스", desc: "복합 질문 · IH~AL 도전", tag: "AL 도전", icon: "🎯" },
+      { key: "general", name: "일반", desc: "일상·습관·선호", questions: "2~10번 문제", tag: null },
+      { key: "rp", name: "롤플레이", desc: "상황극·문제해결", questions: "11~13번 문제", tag: null },
+      { key: "adv", name: "어드밴스", desc: "비교·변화·의견", questions: "14~15번 문제", tag: null },
     ];
     if (!categoryStats) return BASE;
     const SA_TO_KEY: Record<string, string> = {
@@ -630,9 +628,10 @@ export function OpicStudySessionClient({
       const stat = categoryStats.find((s) => SA_TO_KEY[s.category] === c.key);
       return {
         ...c,
-        desc: stat
+        // stat이 있으면 보조 정보로 표시 (desc는 카테고리 결을 그대로 유지)
+        stat: stat
           ? `${stat.topic_count}개 토픽 · ${stat.combo_count}개 콤보`
-          : c.desc,
+          : undefined,
       };
     });
   }, [categoryStats]);
@@ -650,6 +649,7 @@ export function OpicStudySessionClient({
   }, [topics]);
 
   // Step4: ComboForStudy[] → ComboItem 형식
+  // 영어 원문(메인) + 한글 짧은 요약(보조) + [질문 유형] 라벨
   const step4Combos: ComboItem[] | undefined = useMemo(() => {
     if (!combos) return undefined;
     return combos.map((c, i) => ({
@@ -660,23 +660,37 @@ export function OpicStudySessionClient({
           : i === 1
             ? "두 번째로 자주"
             : `${c.frequency}회 출제`,
-      questions: c.questions.map(
-        (q) =>
-          q.question_korean ??
-          q.question_english.slice(0, 30) +
-            (q.question_english.length > 30 ? "…" : "")
-      ),
+      questions: c.questions.map((q) => ({
+        english: q.question_english,
+        short: q.question_short ?? undefined,
+        typeLabel: QUESTION_TYPE_LABELS[q.question_type] ?? q.question_type,
+        appearancePct: q.appearance_pct,
+        studiedByUser: q.studied_by_user,
+      })),
       learned: c.studied_in_group,
       sig: c.sig,
       qids: c.representative_qids,
       frequency: c.frequency,
       appearancePct: c.appearance_pct,
-      questionMeta: c.questions.map((q) => ({
-        appearancePct: q.appearance_pct,
-        studiedByUser: q.studied_by_user,
-      })),
     }));
   }, [combos]);
+
+  // 현재 선택된 콤보 (답변 단계에서 질문 텍스트 매핑용)
+  const currentCombo = useMemo(() => {
+    if (!combos || !session.selected_combo_sig) return null;
+    return combos.find((c) => c.sig === session.selected_combo_sig) ?? null;
+  }, [combos, session.selected_combo_sig]);
+
+  // 현재 콤보의 질문 list (Step5 가이드 — 콤보 안 3개 질문 흐름)
+  const comboQuestionsList = useMemo(() => {
+    if (!currentCombo) return [];
+    return currentCombo.questions.map(
+      (q) => q.question_short ?? q.question_english.slice(0, 40)
+    );
+  }, [currentCombo]);
+
+  // 현재 답변 중인 질문 (Step61, Step62)
+  const currentQuestion = currentCombo?.questions[idx] ?? null;
 
   // ============================================================
   // Step 분기
@@ -695,9 +709,8 @@ export function OpicStudySessionClient({
       case "mode_select":
         return "입장 대기";
       case "category_select":
-        return "카테고리";
       case "topic_select":
-        return "주제";
+        return "카테고리·주제";
       case "combo_select":
         return "콤보";
       case "guide":
@@ -730,11 +743,10 @@ export function OpicStudySessionClient({
         subtitle={stepSubtitle}
         backHref="/opic-study"
         onBack={
-          session.step === "topic_select"
-            ? handleRollbackToCategory
-            : session.step === "combo_select"
-              ? handleRollbackToTopic
-              : undefined
+          // 통합 화면(category_select+topic_select)에서는 컴포넌트 내부에서 카테고리 단계 복귀를 다룸 — 외곽 ←는 홈
+          session.step === "combo_select"
+            ? handleRollbackToTopic
+            : undefined
         }
         rightContent={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -814,26 +826,26 @@ export function OpicStudySessionClient({
       );
 
     case "category_select":
-      return (
-        <Shell onEnd={handleEndSession}>
-          <Step2
-            categories={step2Categories}
-            onNext={handleSelectCategory}
-            liveMode
-            groupName={groupName}
-          />
-        </Shell>
-      );
-
     case "topic_select":
       return (
         <Shell onEnd={handleEndSession}>
-          <Step3
-            category={session.selected_category ?? "general"}
+          <CategoryTopicStep
+            step={session.step}
+            selectedCategoryKey={
+              session.selected_category === "general"
+                ? "general"
+                : session.selected_category === "roleplay"
+                  ? "rp"
+                  : session.selected_category === "advance"
+                    ? "adv"
+                    : null
+            }
+            categories={step2Categories}
             topics={step3Topics}
-            loading={contentLoading}
-            onNext={handleSelectTopic}
-            onBack={handleRollbackToCategory}
+            topicsLoading={contentLoading}
+            onSelectCategory={handleSelectCategory}
+            onSelectTopic={handleSelectTopic}
+            onBackToCategory={handleRollbackToCategory}
             liveMode
             groupName={groupName}
           />
@@ -845,7 +857,7 @@ export function OpicStudySessionClient({
         <Shell onEnd={handleEndSession}>
           <Step4
             topic={session.selected_topic ?? "콤보"}
-            combos={step4Combos}
+            combos={step4Combos ?? []}
             loading={contentLoading}
             onNext={handleSelectCombo}
             onBack={handleRollbackToTopic}
@@ -860,9 +872,10 @@ export function OpicStudySessionClient({
         <Shell onEnd={handleEndSession}>
           {session.ai_guide_text ? (
             <Step5
-              topic={session.selected_topic ?? "콤보"}
+              topic={session.selected_topic ?? undefined}
               level={myTargetGrade}
               guideText={session.ai_guide_text}
+              comboQuestions={comboQuestionsList}
               onStart={handleStartRecording}
               liveMode
               groupName={groupName}
@@ -920,8 +933,13 @@ export function OpicStudySessionClient({
               members={members}
               currentUserId={currentUserId}
               onClaim={handleClaimSpeaker}
-              groupName={groupName}
-              topicLabel={`${session.selected_topic ?? "콤보"} 콤보`}
+              questionEnglish={currentQuestion?.question_english ?? ""}
+              questionType={
+                currentQuestion?.question_type
+                  ? QUESTION_TYPE_LABELS[currentQuestion.question_type] ??
+                    currentQuestion.question_type
+                  : ""
+              }
             />
           </Shell>
         );
@@ -935,8 +953,6 @@ export function OpicStudySessionClient({
               totalQuestions={session.selected_question_ids.length}
               onSubmit={handleSubmitAnswer}
               onSkip={handleSkipAnswer}
-              groupName={groupName}
-              topicLabel={`${session.selected_topic ?? "콤보"} 콤보`}
               realMembers={members.map((m) => ({
                 key: m.key,
                 name: m.name,
@@ -944,6 +960,13 @@ export function OpicStudySessionClient({
               }))}
               currentUserId={currentUserId}
               meKey={me?.key ?? "a"}
+              questionEnglish={currentQuestion?.question_english ?? ""}
+              questionType={
+                currentQuestion?.question_type
+                  ? QUESTION_TYPE_LABELS[currentQuestion.question_type] ??
+                    currentQuestion.question_type
+                  : ""
+              }
             />
           </Shell>
         );
@@ -952,7 +975,8 @@ export function OpicStudySessionClient({
       const speakerInfo = memberByUserId[speaker];
       return (
         <Shell onEnd={handleEndSession}>
-          <Step62Other
+          <Step62
+            isSelf={false}
             speakerName={speakerInfo?.name ?? "멤버"}
             speakerKey={speakerInfo?.key ?? "a"}
             realMembers={members.map((m) => ({
@@ -961,8 +985,17 @@ export function OpicStudySessionClient({
               userId: m.userId,
             }))}
             currentUserId={currentUserId}
-            groupName={groupName}
-            topicLabel={`${session.selected_topic ?? "콤보"} 콤보`}
+            question={{
+              num: idx + 1,
+              total: session.selected_question_ids.length,
+              type: currentQuestion?.question_type
+                ? QUESTION_TYPE_LABELS[currentQuestion.question_type] ??
+                  currentQuestion.question_type
+                : "",
+              english: currentQuestion?.question_english ?? "",
+              englishLong: currentQuestion?.question_english ?? "",
+            }}
+            questionText={currentQuestion?.question_english ?? ""}
           />
         </Shell>
       );
@@ -1288,16 +1321,16 @@ function LiveStep61({
   members,
   currentUserId,
   onClaim,
-  groupName,
-  topicLabel,
+  questionEnglish = "",
+  questionType = "",
 }: {
   questionIdx: number;
   totalQuestions: number;
   members: MemberInfo[];
   currentUserId: string;
   onClaim: () => void;
-  groupName?: string;
-  topicLabel?: string;
+  questionEnglish?: string;
+  questionType?: string;
 }) {
   const realMembers = members.map((m) => ({
     key: m.key,
@@ -1306,148 +1339,18 @@ function LiveStep61({
     userId: m.userId,
   }));
   return (
-    <>
-      <div className="bp-only-pc" style={{ flex: 1, minHeight: 0 }}>
-        <Step61Pc
-          onStart={onClaim}
-          question={{
-            num: questionIdx + 1,
-            total: totalQuestions,
-            type: "질문",
-            english: "(질문 텍스트는 답변 시작 시 표시됩니다)",
-            englishLong: "",
-          }}
-          groupName={groupName}
-          topicLabel={topicLabel}
-          realMembers={realMembers}
-          questionText="(질문 텍스트는 답변 시작 시 표시됩니다)"
-        />
-      </div>
-      <div className="bp-only-mobile" style={{ flex: 1, minHeight: 0, display: "flex" }}>
-        <LiveStep61Mobile
-          questionIdx={questionIdx}
-          totalQuestions={totalQuestions}
-          members={members}
-          currentUserId={currentUserId}
-          onClaim={onClaim}
-        />
-      </div>
-    </>
-  );
-}
-
-function LiveStep61Mobile({
-  questionIdx,
-  totalQuestions,
-  members,
-  currentUserId,
-  onClaim,
-}: {
-  questionIdx: number;
-  totalQuestions: number;
-  members: MemberInfo[];
-  currentUserId: string;
-  onClaim: () => void;
-}) {
-  const ctx = useContext(SessionFrameContext);
-  return (
-    <HfPhone liveMode>
-      <HfHeader
-        title={`Q${questionIdx + 1} · 누가 먼저?`}
-        sub={`${questionIdx + 1}/${totalQuestions} 질문`}
-        onBack={goHome}
-      />
-
-      <HfBody padding="20px">
-        <HfCard
-          padding={16}
-          style={{ marginBottom: 16, background: "var(--bp-surface-2)", boxShadow: "none" }}
-        >
-          <SectionH>이번 질문</SectionH>
-          <p className="t-body" style={{ margin: 0, lineHeight: 1.6 }}>
-            (질문 텍스트는 답변 시작 시 표시됩니다)
-          </p>
-        </HfCard>
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 12,
-          }}
-        >
-          <span className="t-h3">먼저 답변할 사람</span>
-          <span className="t-xs ink-3">먼저 누른 사람이 답변해요</span>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {members.map((m) => {
-            const isMe = m.userId === currentUserId;
-            const isOnline = ctx?.onlineUserIds.has(m.userId) ?? isMe;
-            return (
-              <div
-                key={m.userId}
-                style={{
-                  padding: 14,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  borderRadius: "var(--bp-radius)",
-                  background: "var(--bp-surface)",
-                  boxShadow: "var(--bp-shadow-sm)",
-                  opacity: isOnline ? 1 : 0.65,
-                }}
-              >
-                <MbDot
-                  color={m.key}
-                  initial={m.initial}
-                  live={isOnline}
-                  dim={!isOnline}
-                  size={36}
-                  fontSize={13}
-                />
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}
-                >
-                  <span className="t-sm" style={{ fontWeight: 600 }}>
-                    {m.name}
-                  </span>
-                  <span className="t-xs ink-3">
-                    {isMe ? "나" : isOnline ? "입장 중" : "미입장"}
-                  </span>
-                </div>
-                {isMe && (
-                  <HfButton variant="tc" size="sm" onClick={onClaim}>
-                    내가 답변
-                  </HfButton>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <HfCard
-          padding={12}
-          style={{
-            marginTop: 16,
-            display: "flex",
-            gap: 10,
-            alignItems: "flex-start",
-            background: "var(--bp-surface-2)",
-            boxShadow: "none",
-          }}
-        >
-          <CoachAvatar size="sm" />
-          <p
-            className="t-xs"
-            style={{ margin: 0, lineHeight: 1.55, color: "var(--bp-ink-2)", flex: 1 }}
-          >
-            한 명이 답변하는 동안 나머지는 들으면서 표현을 메모해두세요.
-          </p>
-        </HfCard>
-      </HfBody>
-    </HfPhone>
+    <Step61
+      onStart={onClaim}
+      question={{
+        num: questionIdx + 1,
+        total: totalQuestions,
+        type: questionType,
+        english: questionEnglish,
+        englishLong: questionEnglish,
+      }}
+      realMembers={realMembers}
+      questionText={questionEnglish}
+    />
   );
 }
 
@@ -1459,21 +1362,21 @@ function LiveStep62Self({
   totalQuestions,
   onSubmit,
   onSkip,
-  groupName,
-  topicLabel,
   realMembers,
   currentUserId,
   meKey,
+  questionEnglish = "",
+  questionType = "",
 }: {
   questionIdx: number;
   totalQuestions: number;
   onSubmit: (blob: Blob) => Promise<void>;
   onSkip?: () => void;
-  groupName?: string;
-  topicLabel?: string;
   realMembers?: Array<{ key: "a" | "b" | "c" | "d"; name: string; userId: string }>;
   currentUserId?: string;
   meKey?: "a" | "b" | "c" | "d";
+  questionEnglish?: string;
+  questionType?: string;
 }) {
   const recorder = useRecorder({ maxDuration: 120, minDuration: 1 });
   const [submitting, setSubmitting] = useState(false);
@@ -1519,225 +1422,27 @@ function LiveStep62Self({
   };
 
   return (
-    <>
-      <div className="bp-only-pc" style={{ flex: 1, minHeight: 0 }}>
-        <Step62Pc
-          speakerKey={meKey ?? "a"}
-          speakerName="나"
-          duration={fmtDuration(recorder.duration)}
-          question={{
-            num: questionIdx + 1,
-            total: totalQuestions,
-            type: "질문",
-            english: "(질문 텍스트는 답변 시작 시 표시됩니다)",
-            englishLong: "",
-          }}
-          groupName={groupName}
-          topicLabel={topicLabel}
-          realMembers={realMembers}
-          currentUserId={currentUserId}
-          questionText="(질문 텍스트는 답변 시작 시 표시됩니다)"
-          onSkip={onSkip}
-          onComplete={handleComplete}
-          submitting={submitting}
-          isSelf
-          recorderError={recorder.error ?? null}
-          onRetry={handleRetry}
-        />
-      </div>
-      <div className="bp-only-mobile" style={{ flex: 1, minHeight: 0, display: "flex" }}>
-        <LiveStep62SelfMobile
-          questionIdx={questionIdx}
-          totalQuestions={totalQuestions}
-          recorder={recorder}
-          submitting={submitting}
-          handleComplete={handleComplete}
-          fmtDuration={fmtDuration}
-          onSkip={onSkip}
-          onRetry={handleRetry}
-        />
-      </div>
-    </>
-  );
-}
-
-function LiveStep62SelfMobile({
-  questionIdx,
-  totalQuestions,
-  recorder,
-  submitting,
-  handleComplete,
-  fmtDuration,
-  onSkip,
-  onRetry,
-}: {
-  questionIdx: number;
-  totalQuestions: number;
-  recorder: ReturnType<typeof useRecorder>;
-  submitting: boolean;
-  handleComplete: () => void;
-  fmtDuration: (sec: number) => string;
-  onSkip?: () => void;
-  onRetry?: () => void;
-}) {
-  const hasError = !!recorder.error;
-  return (
-    <HfPhone liveMode>
-      <HfHeader
-        title={`Q${questionIdx + 1} · 답변 중`}
-        sub="당신이 답변할 차례예요"
-        onBack={goHome}
-        right={
-          <span
-            className="bp-pill"
-            style={{
-              background: hasError
-                ? "rgba(31,27,22,0.06)"
-                : "rgba(201,100,66,0.12)",
-              color: hasError ? "var(--bp-ink-3)" : "var(--bp-tc)",
-            }}
-          >
-            {!hasError && (
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  background: "var(--bp-tc)",
-                  borderRadius: "50%",
-                  display: "inline-block",
-                  animation: "bp-pulse 1.2s infinite",
-                }}
-              />
-            )}
-            {hasError
-              ? "마이크 권한 필요"
-              : recorder.state === "recording"
-                ? "녹음 중"
-                : "준비 중"}
-          </span>
-        }
-      />
-
-      <HfBody padding="24px 20px">
-        <HfCard padding={18} style={{ marginBottom: 20 }}>
-          <SectionH>질문</SectionH>
-          <p className="t-body" style={{ margin: 0, lineHeight: 1.6 }}>
-            {questionIdx + 1}/{totalQuestions} — (질문 텍스트 표시 영역)
-          </p>
-        </HfCard>
-
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: 24,
-          }}
-        >
-          <div
-            className="t-num"
-            style={{
-              fontSize: 48,
-              fontWeight: 700,
-              color: hasError ? "var(--bp-ink-3)" : "var(--bp-ink)",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            {hasError ? "—" : fmtDuration(recorder.duration)}
-          </div>
-
-          {!hasError && (
-            <HfWave bars={32} height={56} amplitude={44} color="tc" gap={3} />
-          )}
-
-          {recorder.warningMessage && !hasError && (
-            <span className="t-xs" style={{ color: "var(--bp-tc)" }}>
-              {recorder.warningMessage}
-            </span>
-          )}
-          {!hasError && (
-            <span className="t-sm ink-3">권장 답변 길이 · 40~60초</span>
-          )}
-        </div>
-
-        {/* 권한 거부 — inline 안내 (모의고사 패턴) */}
-        {hasError && (
-          <div
-            role="alert"
-            style={{
-              marginTop: 12,
-              marginBottom: 4,
-              padding: "10px 12px",
-              borderRadius: "var(--bp-radius)",
-              background: "rgba(201, 100, 66, 0.10)",
-              color: "var(--bp-tc)",
-              fontSize: 13,
-              fontWeight: 500,
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              border: "1px solid rgba(201, 100, 66, 0.20)",
-            }}
-          >
-            <span style={{ flex: 1 }}>{recorder.error}</span>
-          </div>
-        )}
-
-        <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-          {hasError && onRetry ? (
-            <HfButton
-              variant="primary"
-              style={{ flex: 1 }}
-              onClick={onRetry}
-              disabled={submitting}
-            >
-              다시 시도
-            </HfButton>
-          ) : (
-            <>
-              <HfButton
-                variant="secondary"
-                style={{ flex: 1 }}
-                onClick={() => recorder.reset()}
-                disabled={submitting}
-              >
-                다시 시작
-              </HfButton>
-              <HfButton
-                variant="primary"
-                style={{ flex: 2 }}
-                onClick={handleComplete}
-                disabled={submitting || recorder.duration < 1}
-              >
-                {submitting ? "제출 중…" : "답변 완료 →"}
-              </HfButton>
-            </>
-          )}
-        </div>
-        {onSkip && (
-          <button
-            onClick={onSkip}
-            disabled={submitting}
-            style={{
-              marginTop: 10,
-              padding: "8px 12px",
-              fontSize: 12,
-              color: "var(--bp-ink-3)",
-              background: "transparent",
-              border: "none",
-              cursor: submitting ? "not-allowed" : "pointer",
-              textDecoration: "underline",
-              alignSelf: "center",
-            }}
-          >
-            이번 질문 건너뛰기
-          </button>
-        )}
-
-      </HfBody>
-    </HfPhone>
+    <Step62
+      speakerKey={meKey ?? "a"}
+      speakerName="나"
+      duration={fmtDuration(recorder.duration)}
+      question={{
+        num: questionIdx + 1,
+        total: totalQuestions,
+        type: questionType,
+        english: questionEnglish,
+        englishLong: questionEnglish,
+      }}
+      realMembers={realMembers}
+      currentUserId={currentUserId}
+      questionText={questionEnglish}
+      onSkip={onSkip}
+      onComplete={handleComplete}
+      submitting={submitting}
+      isSelf
+      recorderError={recorder.error ?? null}
+      onRetry={handleRetry}
+    />
   );
 }
 
@@ -1774,165 +1479,17 @@ function LiveCoachCard({
   if (!fb) return null;
 
   return (
-    <>
-      <div className="bp-only-pc" style={{ flex: 1, minHeight: 0 }}>
-        <Step64Pc
-          onNext={onNextSpeaker}
-          groupName={groupName}
-          topicLabel={topicLabel}
-          questionLabel={`Q${questionIdx + 1}`}
-          comboProgress={comboProgress}
-          realMembers={realMembers}
-          realTranscript={myAnswer.transcript ?? undefined}
-          feedbackText={fb.feedback_text}
-          strengths={fb.strengths}
-          improvements={fb.improvements}
-          tips={fb.tips}
-        />
-      </div>
-      <div className="bp-only-mobile" style={{ flex: 1, minHeight: 0, display: "flex" }}>
-        <LiveCoachCardMobile
-          myAnswer={myAnswer}
-          questionIdx={questionIdx}
-          totalQuestions={totalQuestions}
-          speakerName={speakerName}
-          onNextSpeaker={onNextSpeaker}
-          speakerActive={speakerActive}
-          tab={tab}
-          setTab={setTab}
-          fb={fb}
-        />
-      </div>
-    </>
-  );
-}
-
-function LiveCoachCardMobile({
-  myAnswer,
-  questionIdx,
-  totalQuestions,
-  speakerName,
-  onNextSpeaker,
-  speakerActive,
-  tab,
-  setTab,
-  fb,
-}: {
-  myAnswer: OpicStudyAnswer;
-  questionIdx: number;
-  totalQuestions: number;
-  speakerName: string;
-  onNextSpeaker: () => void;
-  speakerActive: boolean;
-  tab: "coach" | "transcript";
-  setTab: (t: "coach" | "transcript") => void;
-  fb: FeedbackResult;
-}) {
-  return (
-    <HfPhone liveMode>
-      <HfHeader
-        title={`Q${questionIdx + 1} · 코칭`}
-        sub={`${questionIdx + 1}/${totalQuestions} 질문 · ${speakerName}`}
-        onBack={goHome}
-        right={null}
-      />
-
-      <div className="bp-tabs">
-        <button
-          className={`bp-tab ${tab === "coach" ? "active" : ""}`}
-          onClick={() => setTab("coach")}
-        >
-          코치 노트
-        </button>
-        <button
-          className={`bp-tab ${tab === "transcript" ? "active" : ""}`}
-          onClick={() => setTab("transcript")}
-        >
-          내 답변
-        </button>
-      </div>
-
-      <HfBody padding="20px">
-        {tab === "coach" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-              <CoachAvatar size="lg" />
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}
-              >
-                <span className="t-h3">AI 스터디 코치</span>
-                <span className="t-xs ink-3">방금 도착</span>
-              </div>
-            </div>
-
-            <p className="t-body" style={{ margin: 0, color: "var(--bp-ink)" }}>
-              {fb.feedback_text}
-            </p>
-
-            {fb.strengths.length > 0 && (
-              <CoachBlock tone="good">
-                <ul style={{ margin: 0, paddingLeft: 18 }}>
-                  {fb.strengths.map((s, i) => (
-                    <li key={i} style={{ marginBottom: 4 }}>
-                      {s}
-                    </li>
-                  ))}
-                </ul>
-              </CoachBlock>
-            )}
-
-            {fb.improvements.length > 0 && (
-              <CoachBlock tone="polish">
-                <ul style={{ margin: 0, paddingLeft: 18 }}>
-                  {fb.improvements.map((s, i) => (
-                    <li key={i} style={{ marginBottom: 4 }}>
-                      {s}
-                    </li>
-                  ))}
-                </ul>
-              </CoachBlock>
-            )}
-
-            {fb.tips.length > 0 && (
-              <CoachBlock tone="tip">
-                <ul style={{ margin: 0, paddingLeft: 18 }}>
-                  {fb.tips.map((s, i) => (
-                    <li key={i} style={{ marginBottom: 4 }}>
-                      {s}
-                    </li>
-                  ))}
-                </ul>
-              </CoachBlock>
-            )}
-
-            <div style={{ display: "flex", gap: 8 }}>
-              <HfButton
-                variant="primary"
-                full
-                onClick={onNextSpeaker}
-                disabled={speakerActive}
-              >
-                {speakerActive ? "다른 멤버 답변 중…" : "다음 발화자 →"}
-              </HfButton>
-            </div>
-          </div>
-        )}
-
-        {tab === "transcript" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <HfCard padding={14}>
-              <SectionH>내 답변</SectionH>
-              <p
-                className="t-body"
-                style={{ margin: 0, lineHeight: 1.7, color: "var(--bp-ink)" }}
-              >
-                {myAnswer.transcript ?? "(답변 텍스트 없음)"}
-              </p>
-            </HfCard>
-          </div>
-        )}
-      </HfBody>
-    </HfPhone>
+    <Step64
+      onNext={onNextSpeaker}
+      questionLabel={`Q${questionIdx + 1}`}
+      comboProgress={comboProgress}
+      realMembers={realMembers}
+      realTranscript={myAnswer.transcript ?? undefined}
+      feedbackText={fb.feedback_text}
+      strengths={fb.strengths}
+      improvements={fb.improvements}
+      tips={fb.tips}
+    />
   );
 }
 
@@ -1956,12 +1513,6 @@ function LiveCompareView({
   groupName?: string;
   topicLabel?: string;
 }) {
-  const [focused, setFocused] = useState<string | null>(null);
-  const focusedMember = focused
-    ? (members.find((m) => m.userId === focused) ?? null)
-    : null;
-  const focusedAnswer = focused ? (answers[`${focused}_${questionIdx}`] ?? null) : null;
-
   // 토론 타이머 (5분, 진입 시 시작)
   const [secondsLeft, setSecondsLeft] = useState(5 * 60);
   useEffect(() => {
@@ -1995,254 +1546,13 @@ function LiveCompareView({
   });
 
   return (
-    <>
-      <div className="bp-only-pc" style={{ flex: 1, minHeight: 0 }}>
-        <Step66Pc
-          onNext={onNextQuestion}
-          members={pcMembers}
-          groupName={groupName}
-          topicLabel={topicLabel}
-          questionLabel={`Q${questionIdx + 1} · 함께 보기`}
-          comboProgress={`콤보 ${questionIdx + 1}/${totalQuestions}`}
-          timerLabel={timerLabel}
-          timerExpired={timerExpired}
-        />
-      </div>
-      <div className="bp-only-mobile" style={{ flex: 1, minHeight: 0, display: "flex" }}>
-        <LiveCompareViewMobile
-          members={members}
-          answers={answers}
-          questionIdx={questionIdx}
-          totalQuestions={totalQuestions}
-          onNextQuestion={onNextQuestion}
-          focused={focused}
-          setFocused={setFocused}
-          focusedMember={focusedMember}
-          focusedAnswer={focusedAnswer}
-          timerLabel={timerLabel}
-          timerExpired={timerExpired}
-        />
-      </div>
-    </>
-  );
-}
-
-function LiveCompareViewMobile({
-  members,
-  answers,
-  questionIdx,
-  totalQuestions,
-  onNextQuestion,
-  focused,
-  setFocused,
-  focusedMember,
-  focusedAnswer,
-  timerLabel,
-  timerExpired,
-}: {
-  members: MemberInfo[];
-  answers: Record<string, OpicStudyAnswer>;
-  questionIdx: number;
-  totalQuestions: number;
-  onNextQuestion: () => void;
-  focused: string | null;
-  setFocused: (s: string | null) => void;
-  focusedMember: MemberInfo | null;
-  focusedAnswer: OpicStudyAnswer | null;
-  timerLabel?: string;
-  timerExpired?: boolean;
-}) {
-  return (
-    <HfPhone liveMode>
-      <HfHeader
-        title="함께 보기"
-        sub={`Q${questionIdx + 1} · ${members.length}명의 답변`}
-        onBack={goHome}
-        right={
-          timerLabel ? (
-            <span
-              className="bp-pill"
-              style={{
-                background: timerExpired
-                  ? "rgba(201, 100, 66, 0.15)"
-                  : "rgba(74, 184, 90, 0.12)",
-                color: timerExpired ? "var(--bp-tc)" : "#2d7a3d",
-                fontWeight: 600,
-                fontSize: 11,
-              }}
-              title="토론 시간"
-            >
-              💬 {timerExpired ? "시간 종료" : timerLabel}
-            </span>
-          ) : null
-        }
-      />
-
-      <HfBody padding="20px">
-        <Insight style={{ marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-            <span style={{ fontSize: 14 }}>✨</span>
-            <span className="t-h3">함께 살펴봐요</span>
-          </div>
-          <p
-            className="t-sm"
-            style={{ margin: 0, lineHeight: 1.55, color: "var(--bp-ink)" }}
-          >
-            {members.length}명의 답변과 코칭을 비교하며 마음에 드는 표현 한 가지씩 골라봐요.
-          </p>
-        </Insight>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: members.length > 2 ? "1fr 1fr" : "1fr",
-            gap: 10,
-          }}
-        >
-          {members.map((m) => {
-            const a = answers[`${m.userId}_${questionIdx}`];
-            const fb = a?.feedback_result as FeedbackResult | null;
-            return (
-              <HfCard
-                key={m.userId}
-                padding={12}
-                style={{ cursor: a ? "pointer" : "default", opacity: a ? 1 : 0.5 }}
-                onClick={() => a && setFocused(m.userId)}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    marginBottom: 8,
-                  }}
-                >
-                  <MbDot color={m.key} initial={m.initial} size={24} fontSize={10} />
-                  <span className="t-sm" style={{ fontWeight: 600 }}>
-                    {m.name}
-                  </span>
-                </div>
-                <p
-                  className="t-xs"
-                  style={{
-                    margin: 0,
-                    lineHeight: 1.5,
-                    color: "var(--bp-ink-2)",
-                    display: "-webkit-box",
-                    WebkitLineClamp: 3,
-                    WebkitBoxOrient: "vertical" as const,
-                    overflow: "hidden",
-                  }}
-                >
-                  {a?.transcript ?? "(답변 미참여)"}
-                </p>
-                {fb?.strengths?.[0] && (
-                  <div
-                    style={{
-                      marginTop: 8,
-                      paddingTop: 8,
-                      borderTop: "1px solid var(--bp-line)",
-                    }}
-                  >
-                    <Tag tone="good" style={{ fontSize: 10 }}>
-                      ✓ {fb.strengths[0]}
-                    </Tag>
-                  </div>
-                )}
-              </HfCard>
-            );
-          })}
-        </div>
-      </HfBody>
-
-      <HfFooter>
-        <HfButton variant="primary" size="lg" full onClick={onNextQuestion}>
-          {questionIdx + 1 >= totalQuestions ? "세션 마무리 →" : "다음 질문 →"}
-        </HfButton>
-      </HfFooter>
-
-      {/* 포커스 오버레이 */}
-      {focusedMember && focusedAnswer && (
-        <div
-          onClick={() => setFocused(null)}
-          className="bp-fade-in"
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "rgba(31,27,22,0.4)",
-            display: "flex",
-            alignItems: "flex-end",
-            zIndex: 10,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: "var(--bp-bg)",
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
-              padding: 20,
-              width: "100%",
-              maxHeight: "80%",
-              overflow: "auto",
-            }}
-          >
-            <div
-              style={{
-                width: 40,
-                height: 4,
-                background: "var(--bp-line-strong)",
-                borderRadius: 2,
-                margin: "0 auto 16px",
-              }}
-            />
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                marginBottom: 12,
-              }}
-            >
-              <MbDot color={focusedMember.key} initial={focusedMember.initial} />
-              <span className="t-h2">{focusedMember.name}</span>
-            </div>
-            <Quote style={{ marginBottom: 14 }}>
-              {focusedAnswer.transcript ?? "(답변 없음)"}
-            </Quote>
-            {focusedAnswer.feedback_result &&
-              (focusedAnswer.feedback_result as FeedbackResult).strengths
-                .slice(0, 1)
-                .map((s, i) => (
-                  <CoachBlock
-                    key={i}
-                    tone="good"
-                    label="이 점이 베스트"
-                    style={{ marginBottom: 10 }}
-                  >
-                    {s}
-                  </CoachBlock>
-                ))}
-            {focusedAnswer.feedback_result &&
-              (focusedAnswer.feedback_result as FeedbackResult).improvements
-                .slice(0, 1)
-                .map((s, i) => (
-                  <CoachBlock key={i} tone="polish" label="같이 배워볼 점">
-                    {s}
-                  </CoachBlock>
-                ))}
-            <HfButton
-              variant="ghost"
-              full
-              style={{ marginTop: 12 }}
-              onClick={() => setFocused(null)}
-            >
-              닫기
-            </HfButton>
-          </div>
-        </div>
-      )}
-    </HfPhone>
+    <Step66
+      onNext={onNextQuestion}
+      members={pcMembers}
+      comboProgress={`콤보 ${questionIdx + 1}/${totalQuestions}`}
+      timerLabel={timerLabel}
+      timerExpired={timerExpired}
+    />
   );
 }
 
@@ -2306,161 +1616,29 @@ function LiveStep7({
   })();
 
   return (
-    <>
-      <div className="bp-only-pc" style={{ flex: 1, minHeight: 0 }}>
-        <Step7Pc
-          onHome={onHome}
-          groupName={groupName}
-          topicLabel={`${topic} 콤보`}
-          data={{
-            title: endingTitle,
-            subtitle: `${members.length}명이 함께 ${topic} 콤보를 끝냈어요 · ${level}`,
-            bestExpression: allBestExpression.text,
-            bestFrom: allBestExpression.from,
-            coachNote: {
-              keyword: allBestExpression.text.slice(0, 24),
-              detailKeyword: "구체적 디테일",
-            },
-            memberNotes: memberHighlights.map((h) => ({
-              key: h.member.key,
-              name: h.member.name,
-              note: h.best.slice(0, 16),
-            })),
-            nextRecommend: {
-              name: "다음 추천 콤보",
-              meta: "출제율 ↑↑↑",
-            },
-          }}
-        />
-      </div>
-      <div className="bp-only-mobile" style={{ flex: 1, minHeight: 0, display: "flex" }}>
-        <LiveStep7Mobile
-          members={members}
-          topic={topic}
-          level={level}
-          onHome={onHome}
-          memberHighlights={memberHighlights}
-        />
-      </div>
-    </>
+    <Step7Screen
+      onHome={onHome}
+      data={{
+        title: endingTitle,
+        subtitle: `${members.length}명이 함께 ${topic} 콤보를 끝냈어요 · ${level}`,
+        bestExpression: allBestExpression.text,
+        bestFrom: allBestExpression.from,
+        coachNote: {
+          keyword: allBestExpression.text.slice(0, 24),
+          detailKeyword: "구체적 디테일",
+        },
+        memberNotes: memberHighlights.map((h) => ({
+          key: h.member.key,
+          name: h.member.name,
+          note: h.best.slice(0, 16),
+        })),
+        // nextRecommend: 추천 알고리즘 미구현 — 실데이터 연결 전까지 미표시
+        nextRecommend: { name: "", meta: "" },
+      }}
+    />
   );
 }
 
-function LiveStep7Mobile({
-  members,
-  topic,
-  level,
-  onHome,
-  memberHighlights,
-}: {
-  members: MemberInfo[];
-  topic: string;
-  level: string;
-  onHome: () => void;
-  memberHighlights: Array<{ member: MemberInfo; best: string }>;
-}) {
-  return (
-    <HfPhone liveMode>
-      <HfHeader
-        title="오늘의 학습"
-        sub={`${topic} 콤보 · ${level}`}
-        onBack={goHome}
-        right={null}
-      />
-
-      <HfBody padding="20px">
-        <div style={{ textAlign: "center", padding: "20px 0 24px" }}>
-          <div style={{ fontSize: 48, marginBottom: 8 }}>🌱</div>
-          <div className="t-display" style={{ marginBottom: 6 }}>
-            오늘도 한 걸음
-          </div>
-          <p className="t-sm ink-3" style={{ margin: 0 }}>
-            {members.length}명이 함께 {topic} 콤보를 끝냈어요
-          </p>
-        </div>
-
-        <Insight style={{ marginBottom: 16 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              marginBottom: 8,
-            }}
-          >
-            <span style={{ fontSize: 16 }}>✨</span>
-            <span className="t-h3">오늘 함께한 멤버</span>
-          </div>
-          <p className="t-sm" style={{ margin: 0, color: "var(--bp-ink-2)" }}>
-            각자 다른 표현으로 답변을 풀어냈어요.
-          </p>
-        </Insight>
-
-        <HfCard padding={16} style={{ marginBottom: 16 }}>
-          <SectionH>멤버별 한 줄 요약</SectionH>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {memberHighlights.map((mh) => (
-              <div
-                key={mh.member.userId}
-                style={{ display: "flex", alignItems: "center", gap: 10 }}
-              >
-                <MbDot
-                  color={mh.member.key}
-                  initial={mh.member.initial}
-                  size={28}
-                  fontSize={11}
-                />
-                <span
-                  className="t-sm"
-                  style={{ fontWeight: 500, flex: 1 }}
-                >
-                  {mh.member.name}
-                </span>
-                <Tag tone="good" style={{ fontSize: 10 }}>
-                  ✓ {mh.best}
-                </Tag>
-              </div>
-            ))}
-          </div>
-        </HfCard>
-
-        <HfCard padding={16} style={{ marginBottom: 16 }}>
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              alignItems: "flex-start",
-              marginBottom: 12,
-            }}
-          >
-            <CoachAvatar />
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}
-            >
-              <span className="t-sm" style={{ fontWeight: 600 }}>
-                AI 스터디 코치
-              </span>
-              <span className="t-xs ink-3">오늘의 마무리</span>
-            </div>
-          </div>
-          <p
-            className="t-body"
-            style={{ margin: 0, lineHeight: 1.6, color: "var(--bp-ink)" }}
-          >
-            오늘 모두 수고했어요. 다른 멤버 답변 중 마음에 들었던 표현 하나만이라도{" "}
-            <Hl>다음 학습에서 시도</Hl>해보면 좋겠어요.
-          </p>
-        </HfCard>
-      </HfBody>
-
-      <HfFooter>
-        <HfButton variant="primary" size="lg" full onClick={onHome}>
-          홈으로
-        </HfButton>
-      </HfFooter>
-    </HfPhone>
-  );
-}
 
 // 미사용 import silence
 void MbStack;

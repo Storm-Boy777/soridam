@@ -211,6 +211,9 @@ function MemberHomePc(
     <div
       className="bp-scope"
       style={{
+        // `.bp-only-pc { display: flex }` 안에서 자식이 1024px content 폭만 잡아 좌측 쏠림 발생
+        // → width:100%로 flex 컨테이너 풀폭 차지
+        width: "100%",
         background: "var(--bp-bg)",
         color: "var(--bp-ink)",
         fontFamily: "var(--bp-font)",

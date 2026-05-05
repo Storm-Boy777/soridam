@@ -13,7 +13,7 @@ const supabase = createClient();
 
 /* ── 네비게이션 항목 ── */
 
-type NavItem = { label: string; href: string; soon?: boolean };
+type NavItem = { label: string; href: string; soon?: boolean; adminOnly?: boolean };
 
 const publicNav: NavItem[] = [
   { label: "학습 기능", href: "/#pipeline" },
@@ -25,14 +25,14 @@ const appNav: NavItem[] = [
   { label: "시험후기", href: "/reviews" },
   { label: "스크립트", href: "/scripts" },
   { label: "모의고사", href: "/mock-exam" },
-  { label: "튜터링", href: "/tutoring" },
+  { label: "튜터링", href: "/tutoring", adminOnly: true },
   { label: "오픽 스터디", href: "/opic-study" },
   { label: "만능패턴", href: "/patterns" },
   { label: "AI 스토어", href: "/store" },
   { label: "소통함", href: "/support" },
 ];
 
-// 관리자 전용 메뉴
+// 관리자 전용 메뉴 (appNav 뒤에 추가)
 const adminOnlyNav: NavItem[] = [
   { label: "스터디", href: "/study-group" },
 ];
@@ -92,7 +92,12 @@ export function Navbar({ serverAuth }: { serverAuth?: NavbarServerAuth } = {}) {
   }, [serverAuth]);
 
   // 초기 상태 확인 전: 최소한의 레이아웃 유지 (깜빡임 방지)
-  const navItems = isLoggedIn ? (isAdmin ? [...appNav, ...adminOnlyNav] : appNav) : publicNav;
+  // adminOnly 항목은 관리자에게만 노출
+  const navItems = isLoggedIn
+    ? (isAdmin
+        ? [...appNav, ...adminOnlyNav]
+        : appNav.filter((item) => !item.adminOnly))
+    : publicNav;
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#12121F]">

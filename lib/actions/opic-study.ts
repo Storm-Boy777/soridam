@@ -439,32 +439,40 @@ export async function getCategoryStats(): Promise<ActionResult<CategoryStat[]>> 
   try {
     const { supabase } = await requireUser();
 
-    // 시험후기 모듈에서 직접 집계
+    // 시험후기 모듈에서 직접 집계 — question_ids로 콤보 시그니처 생성하여 고유 카운트
     const { data, error } = await supabase
       .from(T.submission_combos)
-      .select("topic, combo_type, submissions!inner(status, exam_approved)")
+      .select(
+        "topic, combo_type, question_ids, submissions!inner(status, exam_approved)"
+      )
       .eq("submissions.status", "complete")
       .eq("submissions.exam_approved", "approved");
 
     if (error) return { error: "카테고리 통계 조회 실패" };
 
-    // 클라이언트(서버)에서 그루핑
-    const groups: Record<StudyCategory, { topics: Set<string>; combos: number }> = {
-      general: { topics: new Set(), combos: 0 },
-      roleplay: { topics: new Set(), combos: 0 },
-      advance: { topics: new Set(), combos: 0 },
+    // 카테고리별 그루핑 — comboSigs Set으로 고유 콤보 카운트
+    // (같은 콤보가 여러 시험에 출제되어도 1개로 카운트)
+    const groups: Record<
+      StudyCategory,
+      { topics: Set<string>; comboSigs: Set<string> }
+    > = {
+      general: { topics: new Set(), comboSigs: new Set() },
+      roleplay: { topics: new Set(), comboSigs: new Set() },
+      advance: { topics: new Set(), comboSigs: new Set() },
     };
 
     for (const row of data || []) {
       const cat = comboTypeToCategory(row.combo_type as string);
-      groups[cat].combos++;
+      const qids = (row.question_ids as string[] | null) ?? [];
+      if (qids.length === 0) continue;
+      groups[cat].comboSigs.add(buildComboSignature(qids));
       groups[cat].topics.add(row.topic as string);
     }
 
     const stats: CategoryStat[] = (["general", "roleplay", "advance"] as const).map((cat) => ({
       category: cat,
       topic_count: groups[cat].topics.size,
-      combo_count: groups[cat].combos,
+      combo_count: groups[cat].comboSigs.size,
     }));
 
     return { data: stats };
@@ -479,20 +487,32 @@ export async function getTopicsForStudy(input: { category: StudyCategory; groupI
     const { supabase, userId } = await requireUser();
     await requireGroupMember(supabase, input.groupId, userId);
 
-    // 1. 시험후기 raw 데이터
+    // 1. 시험후기 raw 데이터 — question_ids로 콤보 시그니처 만들어 고유 카운트
     const { data: combos, error } = await supabase
       .from(T.submission_combos)
-      .select("topic, combo_type, submissions!inner(status, exam_approved)")
+      .select(
+        "topic, combo_type, question_ids, submissions!inner(status, exam_approved)"
+      )
       .eq("submissions.status", "complete")
       .eq("submissions.exam_approved", "approved");
 
     if (error) return { error: "토픽 조회 실패" };
 
-    // 2. 카테고리 필터 + 토픽별 카운트
-    const filtered = (combos || []).filter((c) => comboTypeToCategory(c.combo_type as string) === input.category);
-    const counts: Record<string, number> = {};
+    // 2. 카테고리 필터 + 토픽별 (a) 고유 콤보 시그니처 Set, (b) 실제 출제 row 수
+    //    - combo_count = 고유 콤보 종류 수 (화면 표시 "콤보 X개")
+    //    - submission_count = 실제 출제 횟수 (정렬 주 지표 — 사용자 지시)
+    const filtered = (combos || []).filter(
+      (c) => comboTypeToCategory(c.combo_type as string) === input.category
+    );
+    const topicSigs: Record<string, Set<string>> = {};
+    const topicSubmissionCount: Record<string, number> = {};
     for (const c of filtered) {
-      counts[c.topic as string] = (counts[c.topic as string] || 0) + 1;
+      const topic = c.topic as string;
+      const qids = (c.question_ids as string[] | null) ?? [];
+      if (qids.length === 0) continue;
+      if (!topicSigs[topic]) topicSigs[topic] = new Set();
+      topicSigs[topic].add(buildComboSignature(qids));
+      topicSubmissionCount[topic] = (topicSubmissionCount[topic] || 0) + 1;
     }
 
     // 3. 그룹 학습 이력
@@ -510,15 +530,22 @@ export async function getTopicsForStudy(input: { category: StudyCategory; groupI
       if (t) studyCounts[t] = (studyCounts[t] || 0) + 1;
     }
 
-    // 4. 결과 조립
-    const topics: TopicForStudy[] = Object.entries(counts)
-      .map(([topic, combo_count]) => ({
+    // 4. 결과 조립 — submission_count desc 정렬 (실제 출제 빈도)
+    //    동률 시 combo_count desc (콤보 다양성)로 보조 정렬
+    const topics: TopicForStudy[] = Object.entries(topicSigs)
+      .map(([topic, sigs]) => ({
         topic,
         category: input.category,
-        combo_count,
+        combo_count: sigs.size,
+        submission_count: topicSubmissionCount[topic] || 0,
         studied_count: studyCounts[topic] || 0,
       }))
-      .sort((a, b) => b.combo_count - a.combo_count);
+      .sort((a, b) => {
+        if (b.submission_count !== a.submission_count) {
+          return b.submission_count - a.submission_count;
+        }
+        return b.combo_count - a.combo_count;
+      });
 
     return { data: topics };
   } catch (err) {
@@ -545,6 +572,7 @@ export async function getCombosForStudy(input: {
       questions: {
         question_english: string;
         question_korean: string | null;
+        question_short: string | null;
         question_type_eng: string;
       };
       submissions: {
@@ -559,7 +587,7 @@ export async function getCombosForStudy(input: {
       .from(T.submission_questions)
       .select(
         "submission_id, combo_type, question_number, question_id, " +
-          "questions!inner(question_english, question_korean, question_type_eng), " +
+          "questions!inner(question_english, question_korean, question_short, question_type_eng), " +
           "submissions!inner(status, exam_approved, exam_date, achieved_level)"
       )
       .eq("topic", input.topic)
@@ -584,6 +612,7 @@ export async function getCombosForStudy(input: {
         question_type: string;
         question_english: string;
         question_korean: string | null;
+        question_short: string | null;
       }>;
       exam_date: string;
       achieved_level: string | null;
@@ -598,6 +627,7 @@ export async function getCombosForStudy(input: {
         question_type: r.questions.question_type_eng,
         question_english: r.questions.question_english,
         question_korean: r.questions.question_korean,
+        question_short: r.questions.question_short,
       };
       if (existing) {
         existing.qids.push(r.question_id);
@@ -790,44 +820,57 @@ export async function rollbackStep(
   }
 }
 
-/** Step 2: 카테고리 선택 */
+/** Step 2: 카테고리 선택 — last-write-wins (progressive disclosure UX, scripts/create 패턴) */
 export async function selectCategory(sessionId: string, category: StudyCategory): Promise<ActionResult> {
   try {
     const { supabase, userId } = await requireUser();
     await requireSessionMember(supabase, sessionId, userId);
 
+    // 카테고리 변경 시 하위 선택 모두 리셋. step은 항상 topic_select.
     const { data, error } = await supabase
       .from(T.opic_study_sessions)
-      .update({ selected_category: category, step: "topic_select" })
+      .update({
+        selected_category: category,
+        step: "topic_select",
+        selected_topic: null,
+        selected_combo_sig: null,
+        selected_question_ids: [],
+      })
       .eq("id", sessionId)
-      .eq("step", "category_select")
-      .is("selected_category", null)
+      .in("step", ["category_select", "topic_select"])
       .select("id");
 
     if (error) return { error: "카테고리 선택 실패" };
-    if (!data || data.length === 0) return { error: "이미 선택됐거나 단계가 다릅니다" };
+    if (!data || data.length === 0)
+      return { error: "단계가 진행되어 변경할 수 없어요" };
     return { data: null };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "카테고리 선택 실패" };
   }
 }
 
-/** Step 3: 주제 선택 */
+/** Step 3: 주제 선택 — last-write-wins (같은 step 내 주제 변경 자유) */
 export async function selectTopic(sessionId: string, topic: string): Promise<ActionResult> {
   try {
     const { supabase, userId } = await requireUser();
     await requireSessionMember(supabase, sessionId, userId);
 
+    // 주제 변경 시 콤보 리셋 + step은 combo_select로
     const { data, error } = await supabase
       .from(T.opic_study_sessions)
-      .update({ selected_topic: topic, step: "combo_select" })
+      .update({
+        selected_topic: topic,
+        step: "combo_select",
+        selected_combo_sig: null,
+        selected_question_ids: [],
+      })
       .eq("id", sessionId)
-      .eq("step", "topic_select")
-      .is("selected_topic", null)
+      .in("step", ["topic_select", "combo_select"])
       .select("id");
 
     if (error) return { error: "주제 선택 실패" };
-    if (!data || data.length === 0) return { error: "이미 선택됐거나 단계가 다릅니다" };
+    if (!data || data.length === 0)
+      return { error: "단계가 진행되어 변경할 수 없어요" };
     return { data: null };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "주제 선택 실패" };

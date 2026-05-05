@@ -7,10 +7,10 @@
  * 실제 사용자에게 노출되는 페이지가 아닌 개발/디자인 검토 페이지.
  */
 
-import { Step64Mobile, Step64Pc } from "../../_screens/Step64";
-import { Step66Mobile, Step66Pc } from "../../_screens/Step66";
+import { Step64 } from "../../_screens/Step64";
+import { Step66 } from "../../_screens/Step66";
 import { Step1, Step2, Step3, Step4, Step5 } from "../../_screens/SetupSteps";
-import { Step61, Step62Self, Step62Other, Step63 } from "../../_screens/LoopSteps";
+import { Step61, Step62, Step63 } from "../../_screens/LoopSteps";
 import { Home, Lobby, MyPage } from "../../_screens/EntryScreens";
 import { Step7, EdgeMic, EdgeReconnect } from "../../_screens/Step7AndEdge";
 
@@ -242,10 +242,10 @@ export default function PreviewPage() {
             <Step61 />
           </Artboard>
           <Artboard label="6-2 · 본인 (답변)" width={360} height={760}>
-            <Step62Self />
+            <Step62 isSelf speakerKey="a" speakerName="나" />
           </Artboard>
           <Artboard label="6-2 · 타인 (청취 + 메모)" width={360} height={760}>
-            <Step62Other />
+            <Step62 speakerKey="b" speakerName="Bob" />
           </Artboard>
           <Artboard label="6-3 · 코칭 생성 중" width={360} height={760}>
             <Step63 />
@@ -267,10 +267,10 @@ export default function PreviewPage() {
           }}
         >
           <Artboard label="모바일" width={360} height={760}>
-            <Step64Mobile />
+            <Step64 />
           </Artboard>
           <Artboard label="PC · 전사 + 코치 듀얼" width={1280} height={800}>
-            <Step64Pc />
+            <Step64 />
           </Artboard>
         </div>
       </Section>
@@ -288,11 +288,11 @@ export default function PreviewPage() {
             overflowX: "auto",
           }}
         >
-          <Artboard label="모바일 · 2×2 + 포커스 오버레이" width={360} height={760}>
-            <Step66Mobile />
+          <Artboard label="모바일" width={360} height={760}>
+            <Step66 />
           </Artboard>
           <Artboard label="PC · 4컬럼" width={1280} height={800}>
-            <Step66Pc />
+            <Step66 />
           </Artboard>
         </div>
       </Section>
