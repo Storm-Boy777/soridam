@@ -260,6 +260,19 @@ export function OpicStudySessionClient({
   >("connected");
 
   useEffect(() => {
+    // 진짜 에러는 grace period 후 표시 (transient 에러는 자동 재연결로 회복)
+    let errorTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleError = () => {
+      if (errorTimer) return;
+      errorTimer = setTimeout(() => setConnectionState("error"), 3000);
+    };
+    const clearError = () => {
+      if (errorTimer) {
+        clearTimeout(errorTimer);
+        errorTimer = null;
+      }
+    };
+
     const ch = supabase.channel(`opic-study-presence:${sessionId}`, {
       config: { presence: { key: currentUserId } },
     });
@@ -284,6 +297,7 @@ export function OpicStudySessionClient({
       })
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
+          clearError();
           setConnectionState("connected");
           await ch.track({
             user_id: currentUserId,
@@ -291,13 +305,15 @@ export function OpicStudySessionClient({
             joined_at: new Date().toISOString(),
           });
         } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          setConnectionState("error");
-        } else if (status === "CLOSED") {
-          setConnectionState("reconnecting");
+          // 진짜 에러 — grace period 후 표시 (즉시 X, transient 에러 흡수)
+          scheduleError();
         }
+        // CLOSED는 무시 — Supabase 자동 재연결 흐름의 정상 단계
+        // (즉시 "reconnecting" 표시하면 카테고리 변경 등에서 깜빡임 발생)
       });
 
     return () => {
+      clearError();
       void ch.untrack().catch(() => undefined);
       supabase.removeChannel(ch);
     };
@@ -432,6 +448,12 @@ export function OpicStudySessionClient({
       };
       const cat = map[categoryKey];
       if (!cat) return;
+
+      // Optimistic — Realtime UPDATE 기다리지 않고 즉시 토픽 클리어 (로딩 표시)
+      // 사용자에게 "선택 즉시 다음 단계 준비 중" 피드백 제공
+      setTopics(null);
+      setContentLoading(true);
+
       startTransition(async () => {
         await selectCategory(sessionId, cat);
       });
