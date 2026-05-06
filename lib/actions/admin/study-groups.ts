@@ -399,8 +399,54 @@ export async function deleteStudyGroup(groupId: string): Promise<ActionResult<{ 
 }
 
 // ============================================================
-// 2. 멤버 CRUD (3개)
+// 2. 멤버 CRUD (4개)
 // ============================================================
+
+/** 그룹 멤버 list (EditGroupModal 등 가벼운 조회용) */
+export async function listGroupMembers(
+  groupId: string
+): Promise<ActionResult<GroupMemberWithProfile[]>> {
+  try {
+    const { supabase } = await requireAdmin();
+
+    const { data: members, error } = await supabase
+      .from(T.study_group_members)
+      .select("id, group_id, user_id, display_name, joined_at")
+      .eq("group_id", groupId)
+      .order("joined_at", { ascending: true });
+    if (error) return { error: "멤버 조회 실패" };
+
+    const userIds = (members ?? []).map((m) => m.user_id as string);
+    const { data: profiles } =
+      userIds.length > 0
+        ? await supabase
+            .from(T.profiles)
+            .select("id, email, display_name")
+            .in("id", userIds)
+        : { data: [] };
+
+    const profileMap = new Map(
+      (profiles ?? []).map((p) => [p.id as string, p])
+    );
+
+    const result: GroupMemberWithProfile[] = (members ?? []).map((m) => {
+      const p = profileMap.get(m.user_id as string);
+      return {
+        id: m.id as string,
+        group_id: m.group_id as string,
+        user_id: m.user_id as string,
+        display_name: m.display_name as string | null,
+        joined_at: m.joined_at as string,
+        email: (p?.email as string | null) ?? null,
+        user_display_name: (p?.display_name as string | null) ?? null,
+      };
+    });
+
+    return { data: result };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "멤버 조회 실패" };
+  }
+}
 
 /** 회원 풀 검색 (이메일 / 표시명) */
 export async function searchMemberCandidates(query: string): Promise<ActionResult<ProfileLite[]>> {
