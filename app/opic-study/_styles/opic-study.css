@@ -650,6 +650,50 @@
 }
 
 /* ============================================
+ * PcStepBar — 듀얼 폼 (PC 풀 / 모바일 컴팩트)
+ *
+ * - 모바일 기본: .bp-stepbar-compact 표시 (한 줄 라벨 + progress bar)
+ * - ≥768px PC: .bp-stepbar-full 표시 (6단계 가로 배치 + connector)
+ * ============================================ */
+.bp-pc-stepbar {
+  width: 100%;
+}
+.bp-stepbar-full {
+  display: none;
+}
+.bp-stepbar-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.bp-stepbar-compact-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.bp-stepbar-compact-progress {
+  height: 4px;
+  background: var(--bp-line-strong);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.bp-stepbar-compact-fill {
+  height: 100%;
+  background: var(--bp-tc);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+/* ============================================
  * Step PC — Claude Design 시안 기반 공용 헬퍼
  *
  * - 헤더: breadcrumb (← + crumbs ›) + right (실시간 + 멤버 dots)
@@ -657,12 +701,20 @@
  * - 액션: 본문 끝 inline (오른쪽 정렬, sticky footer X)
  * ============================================ */
 @media (min-width: 768px) {
-  /* 풀폭 step bar (헤더 직후) */
+  /* 풀폭 step bar (헤더 직후) — 6단계 풀 표시 */
   .bp-pc-stepbar {
     padding: 14px 24px 0;
+  }
+  .bp-stepbar-full {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .bp-stepbar-compact {
+    display: none;
   }
   .bp-pc-stepbar-cell {
     height: 4px;
@@ -824,10 +876,46 @@
   text-align: center;
 }
 
-/* 카테고리 그리드 — 항상 3열 (스크립트/create와 동일) */
+/* Presence pill — Step bar 우측 (헤더 아래)
+ * ImmersiveHeader 56px (h-14) + step bar padding-top 12~14px → top 62px가 stepbar vertical center 근처
+ * 상태(접속/오프라인)는 텍스트 색상으로만 표현 (초록/주황) — dot 불필요
+ *
+ * 우측 정렬:
+ *   - 모바일 (<768): right 16 (뷰포트 가장자리)
+ *   - 태블릿 (768~1023): right 32 (.bp-shell-content padding과 일치)
+ *   - 데스크탑 (≥1024): max-width 1040 컨텐츠 우측 가장자리에 맞춤 (calc + max) */
+.bp-presence-pill {
+  top: 62px;
+  right: 16px;
+  bottom: auto;
+  /* 컴팩트 사이즈 + 박스 내부 가운데 정렬 (line-height 1로 한글 baseline 보정) */
+  padding: 6px 12px;
+  font-size: 10px;
+  line-height: 1;
+  justify-content: center;
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .bp-presence-pill {
+    right: 32px;
+  }
+}
+@media (min-width: 1024px) {
+  .bp-presence-pill {
+    right: max(64px, calc((100vw - 1040px) / 2 + 64px));
+  }
+}
+
+/* 반응형 표시 유틸리티 — PC 전용/모바일 전용 토글
+ * - .bp-pc-only: 모바일에서 숨김, ≥768px에서만 표시 (액션바 helper 텍스트 등)
+ * - .bp-mobile-only: ≥768px에서 숨김 */
+.bp-pc-only {
+  display: none;
+}
+
+/* 카테고리 그리드 — 모바일 1열, PC 3열 */
 .bp-grid-cat {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr;
   gap: 8px;
 }
 
@@ -905,8 +993,13 @@
     font-size: 12px;
     text-align: left;
   }
+  /* PC 전용 표시 토글 — inline (span 기본값 호환) */
+  .bp-pc-only {
+    display: inline;
+  }
   /* 그리드 — PC 확장 */
   .bp-grid-cat {
+    grid-template-columns: repeat(3, 1fr);
     gap: 14px;
   }
   .bp-grid-topic {

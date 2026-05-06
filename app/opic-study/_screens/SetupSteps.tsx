@@ -1107,13 +1107,12 @@ export function CategoryTopicStep({
         )}
       </div>
 
-      {/* footer — 풀폭 외곽 + max-w 1040 inner (CSS 반응형) */}
+      {/* footer — 풀폭 외곽 + max-w 1040 inner (CSS 반응형)
+       * 모바일: 버튼 풀폭 stretch (CSS default), PC: helper + 버튼 가로 정렬 (CSS PC rule) */}
       <div className="bp-shell-actions">
-        <div
-          className="bp-shell-actions-inner"
-          style={{ alignItems: "center", gap: 14 }}
-        >
-          <span className="t-xs ink-3" aria-live="polite">
+        <div className="bp-shell-actions-inner">
+          {/* 모바일에선 helper 텍스트 숨김 (액션바 공간 절약) */}
+          <span className="t-xs ink-3 bp-pc-only" aria-live="polite">
             먼저 누른 사람이 주제를 정해요
           </span>
           <HfButton
@@ -1174,10 +1173,27 @@ export function Step4({
       <div className="bp-shell-content">
         <h1
           className="t-display"
-          style={{ margin: "0 0 18px", fontWeight: 700 }}
+          style={{ margin: "0 0 28px", fontWeight: 700 }}
         >
           오늘은 어떤 콤보를 학습 할까요?
         </h1>
+
+        {/* SectionH — Step 2 (카테고리·주제) 와 동일 패턴 */}
+        {combos.length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 12,
+            }}
+          >
+            <SectionH style={{ marginBottom: 0 }}>콤보 선택</SectionH>
+            <span className="t-xs ink-3">
+              {combos.length}개 콤보 · 자주 출제되는 순
+            </span>
+          </div>
+        )}
 
         {/* 로딩 */}
         {loading && combos.length === 0 && (
@@ -1288,12 +1304,34 @@ export function Step4({
                         {c.tag}
                       </Pill>
                     </div>
-                    {c.learned && (
-                      <Pill style={{ fontSize: 10 }}>이미 학습</Pill>
-                    )}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      {c.learned && (
+                        <Pill style={{ fontSize: 10 }}>이미 학습</Pill>
+                      )}
+                      {/* 선택 ✓ checkmark — Step 2 (CategoryTopicStep) 패턴 일치 */}
+                      {selected && (
+                        <span
+                          aria-hidden="true"
+                          style={{
+                            color: "var(--bp-tc)",
+                            fontWeight: 700,
+                            fontSize: 16,
+                            lineHeight: 1,
+                          }}
+                        >
+                          ✓
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  {/* 빈도 정보 (실데이터일 때만) */}
+                  {/* 빈도 정보 (실데이터일 때만) — 한글은 Pretendard 유지, 숫자만 tabular-nums */}
                   {c.frequency !== undefined &&
                     c.appearancePct !== undefined && (
                       <div
@@ -1305,26 +1343,32 @@ export function Step4({
                         }}
                       >
                         <span
-                          className="t-num t-xs"
+                          className="t-xs"
                           style={{
                             color: "var(--bp-tc)",
                             fontWeight: 600,
+                            fontVariantNumeric: "tabular-nums",
                           }}
                         >
                           {c.frequency}회 출제
                         </span>
-                        <span className="t-xs ink-3">
+                        <span
+                          className="t-xs ink-3"
+                          style={{ fontVariantNumeric: "tabular-nums" }}
+                        >
                           ({c.appearancePct.toFixed(0)}%)
                         </span>
                       </div>
                     )}
 
-                  {/* 질문 — 영어 메인 + [유형] 한글요약 보조 */}
+                  {/* 질문 — Step5/explore 와 동일 패턴
+                   *   상단: [Q번호] [유형] [한국어 요약] (+ 우측 빈도/학습 인디케이터)
+                   *   하단: 영어 원문 (Quote 박스 — italic) */}
                   <div
                     style={{
                       display: "flex",
                       flexDirection: "column",
-                      gap: 12,
+                      gap: 14,
                     }}
                   >
                     {c.questions.map((q, i) => {
@@ -1343,103 +1387,97 @@ export function Step4({
                           key={i}
                           style={{
                             display: "flex",
+                            flexDirection: "column",
                             gap: 8,
-                            alignItems: "flex-start",
                           }}
                         >
-                          <span
-                            className="t-num t-xs"
-                            style={{
-                              color: "var(--bp-ink-3)",
-                              minWidth: 18,
-                              paddingTop: 1,
-                            }}
-                          >
-                            Q{i + 1}
-                          </span>
+                          {/* Header row — Q + 유형 태그 + 한국어 요약 inline */}
                           <div
                             style={{
-                              flex: 1,
                               display: "flex",
-                              flexDirection: "column",
-                              gap: 4,
-                              minWidth: 0,
+                              alignItems: "flex-start",
+                              gap: 8,
+                              flexWrap: "wrap",
                             }}
                           >
                             <span
-                              className="t-sm"
+                              className="t-xs"
                               style={{
-                                color: "var(--bp-ink)",
-                                lineHeight: 1.5,
-                                fontWeight: 500,
+                                minWidth: 32,
+                                height: 22,
+                                borderRadius: 6,
+                                background: "var(--bp-surface-2)",
+                                color: "var(--bp-ink-2)",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontWeight: 800,
+                                fontVariantNumeric: "tabular-nums",
+                                flexShrink: 0,
+                                fontSize: 11,
                               }}
+                              aria-hidden="true"
                             >
-                              {english}
+                              Q{i + 1}
                             </span>
-                            {(typeLabel || short) && (
+                            {typeLabel && (
+                              <Tag tone="good" style={{ fontSize: 10 }}>
+                                {typeLabel}
+                              </Tag>
+                            )}
+                            {short && (
                               <span
-                                className="t-xs"
+                                className="t-sm"
                                 style={{
-                                  color: "var(--bp-ink-3)",
+                                  flex: 1,
+                                  minWidth: 0,
                                   lineHeight: 1.5,
+                                  color: "var(--bp-ink)",
+                                  fontWeight: 600,
                                 }}
                               >
-                                {typeLabel && (
-                                  <span
-                                    style={{
-                                      display: "inline-block",
-                                      padding: "1px 6px",
-                                      marginRight: 6,
-                                      borderRadius: 4,
-                                      background: "var(--bp-tc-tint)",
-                                      color: "var(--bp-tc)",
-                                      fontWeight: 700,
-                                      fontSize: 10,
-                                      letterSpacing: "0.02em",
-                                      verticalAlign: "middle",
-                                    }}
-                                  >
-                                    {typeLabel}
-                                  </span>
-                                )}
-                                {short ?? ""}
+                                {short}
                               </span>
                             )}
+                            {(appearancePct !== undefined || studiedByUser) && (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  alignItems: "flex-end",
+                                  gap: 2,
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {appearancePct !== undefined && (
+                                  <span
+                                    className="t-xs"
+                                    style={{
+                                      color: "var(--bp-ink-3)",
+                                      fontWeight: 600,
+                                      fontVariantNumeric: "tabular-nums",
+                                    }}
+                                  >
+                                    {appearancePct.toFixed(0)}%
+                                  </span>
+                                )}
+                                {studiedByUser && (
+                                  <span
+                                    className="t-xs"
+                                    style={{
+                                      color: "var(--bp-good)",
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    ✓ 학습
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
-                          {(appearancePct !== undefined || studiedByUser) && (
-                            <div
-                              style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "flex-end",
-                                gap: 2,
-                                flexShrink: 0,
-                              }}
-                            >
-                              {appearancePct !== undefined && (
-                                <span
-                                  className="t-num t-xs"
-                                  style={{
-                                    color: "var(--bp-ink-3)",
-                                    fontWeight: 600,
-                                  }}
-                                >
-                                  {appearancePct.toFixed(0)}%
-                                </span>
-                              )}
-                              {studiedByUser && (
-                                <span
-                                  className="t-xs"
-                                  style={{
-                                    color: "var(--bp-good)",
-                                    fontWeight: 600,
-                                  }}
-                                >
-                                  ✓ 학습
-                                </span>
-                              )}
-                            </div>
-                          )}
+
+                          {/* 영어 원문 (Quote 박스 — italic, Step5/explore와 동일) */}
+                          <Quote>{english}</Quote>
                         </div>
                       );
                     })}
@@ -1515,7 +1553,7 @@ export function Step5({
         className="bp-shell-content"
         style={{ display: "flex", flexDirection: "column", gap: 16 }}
       >
-        {/* AI 코치 한 줄 인사 (작게) */}
+        {/* 코치 인사 (한 줄, 라벨 없음) */}
         <div
           style={{
             display: "flex",
@@ -1525,35 +1563,17 @@ export function Step5({
           }}
         >
           <CoachAvatar size="sm" />
-          <div
+          <span
+            className="t-body"
             style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
+              lineHeight: 1.55,
+              color: "var(--bp-ink)",
+              textWrap: "pretty" as const,
               minWidth: 0,
             }}
           >
-            <span
-              className="t-xs"
-              style={{
-                color: "var(--bp-tc)",
-                fontWeight: 700,
-                letterSpacing: "0.08em",
-              }}
-            >
-              AI 스터디 코치
-            </span>
-            <span
-              className="t-body"
-              style={{
-                lineHeight: 1.55,
-                color: "var(--bp-ink)",
-                textWrap: "pretty" as const,
-              }}
-            >
-              {introText}
-            </span>
-          </div>
+            {introText}
+          </span>
         </div>
 
         {/* 3개 질문 카드 (메인) */}
@@ -1567,16 +1587,24 @@ export function Step5({
         >
           {comboQuestions.map((q, i) => {
             const approach = approachByIndex.get(q.question_index);
+            // DB의 question_type_kor를 SSOT로 우선 사용 (EF 생성 라벨은 fallback)
             const typeLabel =
-              approach?.type_label || q.question_type_kor || "질문";
+              q.question_type_kor || approach?.type_label || "질문";
             return (
               <HfCard
                 key={i}
                 padding={16}
                 style={{ display: "flex", flexDirection: "column", gap: 10 }}
               >
-                {/* 카드 헤더 — Q번호 + 유형 태그 */}
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {/* 카드 헤더 — Q번호 + 유형 태그 + 한국어 한 줄 요약 (인라인 통합) */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 8,
+                    flexWrap: "wrap",
+                  }}
+                >
                   <span
                     className="t-num t-xs"
                     style={{
@@ -1600,39 +1628,24 @@ export function Step5({
                   <Tag tone="good" style={{ fontSize: 10 }}>
                     {typeLabel}
                   </Tag>
+                  {q.question_short && (
+                    <span
+                      className="t-sm"
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        lineHeight: 1.5,
+                        color: "var(--bp-ink)",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {q.question_short}
+                    </span>
+                  )}
                 </div>
 
                 {/* 영어 원문 */}
                 <Quote>{q.question_english}</Quote>
-
-                {/* 질문 한 줄로 (한국어 요약) */}
-                {q.question_short && (
-                  <div
-                    style={{
-                      padding: "10px 12px",
-                      background: "var(--bp-surface-2)",
-                      borderRadius: 10,
-                    }}
-                  >
-                    <span
-                      className="t-xs ink-3"
-                      style={{
-                        display: "block",
-                        marginBottom: 4,
-                        fontWeight: 600,
-                        letterSpacing: "0.04em",
-                      }}
-                    >
-                      질문 한 줄로
-                    </span>
-                    <span
-                      className="t-sm"
-                      style={{ lineHeight: 1.5, color: "var(--bp-ink)" }}
-                    >
-                      {q.question_short}
-                    </span>
-                  </div>
-                )}
 
                 {/* 💡 이렇게 답해요 (풀 가이드 — 본문 + 흐름 + 포인트 + 권장 길이) */}
                 {approach && (
@@ -1791,8 +1804,8 @@ export function Step5({
             }}
           >
             {[
-              "한 명씩 답변 (나머지는 듣고 메모)",
-              "AI 코칭이 도착하면 함께 보기",
+              "한 명씩 답변하고 함께 듣기",
+              "코칭이 도착하면 함께 보기",
               cardCount > 1
                 ? `Q1 → Q${cardCount} 순서로 진행`
                 : "콤보 질문 순서로 진행",

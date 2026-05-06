@@ -386,6 +386,7 @@ export interface ComboForStudy {
     question_english: string;              // 영어 원문 (메인 표시)
     question_korean: string | null;        // 한글 풀번역 (긴 텍스트)
     question_short: string | null;         // 한글 짧은 요약 (보조 표시)
+    question_type_kor: string | null;      // 한글 유형 라벨 (DB SSOT — '묘사', '비교', '경험_최근' 등)
     audio_url: string | null;              // 영어 음성 URL (둘러보기 음성 듣기용)
     appearance_pct: number;                // 토픽 내 이 질문 등장률 %
     studied_by_user: boolean;              // 사용자가 이미 답변한 적 있는 질문

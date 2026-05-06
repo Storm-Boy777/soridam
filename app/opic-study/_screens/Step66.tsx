@@ -297,7 +297,7 @@ export function Step66({
             className="bp-shell-helper"
             style={{ fontVariantNumeric: "tabular-nums" }}
           >
-            {comboProgress ?? "콤보 1/3"} · 마음에 든 표현 한 가지씩 메모해두세요
+            {comboProgress ?? "콤보 1/3"} · 다른 멤버 답변에서 좋은 표현을 들어보세요
           </span>
           <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
             <HfButton variant="secondary" size="sm" onClick={onReplay}>

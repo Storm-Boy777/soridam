@@ -588,6 +588,7 @@ export async function getCombosForStudy(input: {
         question_korean: string | null;
         question_short: string | null;
         question_type_eng: string;
+        question_type_kor: string | null;
         audio_url: string | null;
       };
       submissions: {
@@ -602,7 +603,7 @@ export async function getCombosForStudy(input: {
       .from(T.submission_questions)
       .select(
         "submission_id, combo_type, question_number, question_id, " +
-          "questions!inner(question_english, question_korean, question_short, question_type_eng, audio_url), " +
+          "questions!inner(question_english, question_korean, question_short, question_type_eng, question_type_kor, audio_url), " +
           "submissions!inner(status, exam_approved, exam_date, achieved_level)"
       )
       .eq("topic", input.topic)
@@ -625,6 +626,7 @@ export async function getCombosForStudy(input: {
       questions: Array<{
         id: string;
         question_type: string;
+        question_type_kor: string | null;
         question_english: string;
         question_korean: string | null;
         question_short: string | null;
@@ -641,6 +643,7 @@ export async function getCombosForStudy(input: {
       const item = {
         id: r.question_id,
         question_type: r.questions.question_type_eng,
+        question_type_kor: r.questions.question_type_kor,
         question_english: r.questions.question_english,
         question_korean: r.questions.question_korean,
         question_short: r.questions.question_short,
@@ -1629,7 +1632,7 @@ export async function getComboBySig(input: {
     // 1. 질문 정보 조회
     const { data: questions, error: qErr } = await supabase
       .from("questions")
-      .select("id, question_type_eng, question_english, question_korean, question_short, audio_url, topic, category")
+      .select("id, question_type_eng, question_type_kor, question_english, question_korean, question_short, audio_url, topic, category")
       .in("id", questionIds);
 
     if (qErr || !questions || questions.length === 0) {
@@ -1716,6 +1719,7 @@ export async function getComboBySig(input: {
       questions: orderedQuestions.map((q) => ({
         id: q.id as string,
         question_type: q.question_type_eng as string,
+        question_type_kor: (q.question_type_kor as string | null) ?? null,
         question_english: q.question_english as string,
         question_korean: q.question_korean as string | null,
         question_short: q.question_short as string | null,

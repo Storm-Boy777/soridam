@@ -35,6 +35,7 @@ import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 import { Step1, Step4, Step5, CategoryTopicStep } from "../_screens/SetupSteps";
 import { goHome } from "@/lib/opic-study/nav";
+import { SessionRoom } from "../_screens/SessionRoom";
 import {
   Step61,
   Step62,
@@ -392,31 +393,11 @@ export function OpicStudySessionClient({
   ]);
 
   // ============================================================
-  // 모든 멤버 답변 완료 자동 감지 → feedback_share 전환
-  //   (서버에서 자동 안 한다는 가정 — 클라이언트 보정)
+  // 답변 흐름: SessionRoom 안에서 모든 phase 처리 (recording step 유지)
+  //   - 모든 멤버 답변 + F/B 완료 → SessionRoom 내부에서 "다음 질문" 버튼 → handleNextQuestion
+  //   - feedback_share/discussion step은 사용 X (Step66 4명 비교 폐기)
   // ============================================================
   const idx = session.current_question_idx;
-  const allMembersAnswered = useMemo(() => {
-    if (session.step !== "recording") return false;
-    return members.every((m) => {
-      const a = answers[`${m.userId}_${idx}`];
-      return a && a.feedback_result;
-    });
-  }, [session.step, members, answers, idx]);
-
-  useEffect(() => {
-    if (!allMembersAnswered) return;
-    if (session.step !== "recording") return;
-    // 다른 클라이언트가 먼저 변경하지 않은 경우만 전환 (race-safe하게 SA에 의존)
-    // 현재 SA에 advanceToFeedbackShare 없음 → 직접 UPDATE는 RLS 통과해야 함
-    void supabase
-      .from("opic_study_sessions")
-      .update({ step: "feedback_share" })
-      .eq("id", sessionId)
-      .eq("step", "recording")
-      .eq("current_question_idx", idx)
-      .then(() => undefined);
-  }, [allMembersAnswered, session.step, idx, sessionId, supabase]);
 
   // ============================================================
   // 종료 시 라우팅
@@ -705,28 +686,15 @@ export function OpicStudySessionClient({
   }, [combos, session.selected_combo_sig]);
 
   // 현재 콤보의 질문 list (Step5 가이드 — 카드 메인 데이터)
-  // question_type_kor fallback 매핑 (approach.type_label가 우선이지만 미도착 시 사용)
-  const TYPE_KOR_FALLBACK: Record<string, string> = {
-    description: "묘사",
-    routine: "루틴",
-    comparison: "비교",
-    past_recent: "최근 경험",
-    past_special: "특별 경험",
-    past_childhood: "어린시절 경험",
-    rp_11: "롤플레이·질문",
-    rp_12: "롤플레이·해결",
-    adv_14: "사회 변화",
-    adv_15: "사회 이슈",
-  };
+  // question_type_kor는 DB SSOT 값 그대로 (questions.question_type_kor)
   const comboQuestionsList = useMemo(() => {
     if (!currentCombo) return [];
     return currentCombo.questions.map((q, i) => ({
       question_index: i + 1, // 1-based — approaches.question_index와 매칭
       question_english: q.question_english,
       question_short: q.question_short,
-      question_type_kor: TYPE_KOR_FALLBACK[q.question_type] ?? null,
+      question_type_kor: q.question_type_kor ?? null,
     }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentCombo]);
 
   // 현재 답변 중인 질문 (Step61, Step62)
@@ -927,115 +895,50 @@ export function OpicStudySessionClient({
       );
 
     case "recording": {
-      // 본인 답변이 코칭까지 도착 → 코칭 카드
-      if (myAnswer?.feedback_result) {
-        return (
-          <Shell onEnd={handleEndSession}>
-            <LiveCoachCard
-              myAnswer={myAnswer}
-              questionIdx={idx}
-              totalQuestions={session.selected_question_ids.length}
-              questionEnglish=""
-              speakerName={me?.name ?? "나"}
-              onNextSpeaker={handleNextSpeaker}
-              speakerActive={!!speaker}
-              groupName={groupName}
-              topicLabel={`${session.selected_topic ?? "콤보"} 콤보`}
-              comboProgress={`콤보 ${idx + 1}/${session.selected_question_ids.length} 진행 중`}
-              realMembers={members.map((m) => ({ key: m.key, initial: m.initial }))}
-            />
-          </Shell>
-        );
-      }
-      // 본인 답변 제출했지만 코칭 미도착 → 코칭 생성 중 (또는 timeout 시 재시도)
-      if (myAnswer) {
-        return (
-          <Shell onEnd={handleEndSession}>
-            <FeedbackWaitOrFail
-              answer={myAnswer}
-              sessionId={sessionId}
-              questionIdx={idx}
-              memberCount={members.length}
-              groupName={groupName}
-              topicLabel={`${session.selected_topic ?? "콤보"} 콤보`}
-              questionLabel={`Q${idx + 1} · 코치가 듣는 중`}
-            />
-          </Shell>
-        );
-      }
-      // 발화자 미선정
-      if (!speaker) {
-        return (
-          <Shell onEnd={handleEndSession}>
-            <LiveStep61
-              questionIdx={idx}
-              totalQuestions={session.selected_question_ids.length}
-              members={members}
-              currentUserId={currentUserId}
-              onClaim={handleClaimSpeaker}
-              questionEnglish={currentQuestion?.question_english ?? ""}
-              questionType={
-                currentQuestion?.question_type
-                  ? QUESTION_TYPE_LABELS[currentQuestion.question_type] ??
-                    currentQuestion.question_type
-                  : ""
-              }
-            />
-          </Shell>
-        );
-      }
-      // 본인이 발화자 → 녹음
-      if (speaker === currentUserId) {
-        return (
-          <Shell onEnd={handleEndSession}>
-            <LiveStep62Self
-              questionIdx={idx}
-              totalQuestions={session.selected_question_ids.length}
-              onSubmit={handleSubmitAnswer}
-              onSkip={handleSkipAnswer}
-              realMembers={members.map((m) => ({
-                key: m.key,
-                name: m.name,
-                userId: m.userId,
-              }))}
-              currentUserId={currentUserId}
-              meKey={me?.key ?? "a"}
-              questionEnglish={currentQuestion?.question_english ?? ""}
-              questionType={
-                currentQuestion?.question_type
-                  ? QUESTION_TYPE_LABELS[currentQuestion.question_type] ??
-                    currentQuestion.question_type
-                  : ""
-              }
-            />
-          </Shell>
-        );
-      }
-      // 다른 멤버가 발화자 → 청취
-      const speakerInfo = memberByUserId[speaker];
+      // 통합 SessionRoom — 모의고사 UI/UX BM (5단계 가이드 + AVA + 자동 녹음 흐름)
+      const speakerAnswer = speaker ? answers[`${speaker}_${idx}`] ?? null : null;
+      const handleRetryFb = async () => {
+        await retryFeedback({ sessionId, questionIdx: idx });
+      };
       return (
         <Shell onEnd={handleEndSession}>
-          <Step62
-            isSelf={false}
-            speakerName={speakerInfo?.name ?? "멤버"}
-            speakerKey={speakerInfo?.key ?? "a"}
-            realMembers={members.map((m) => ({
+          <SessionRoom
+            sessionId={sessionId}
+            questionIdx={idx}
+            totalQuestions={session.selected_question_ids.length}
+            questionText={currentQuestion?.question_english ?? ""}
+            questionAudioUrl={currentQuestion?.audio_url ?? null}
+            questionTypeLabel={
+              currentQuestion?.question_type_kor ??
+              (currentQuestion?.question_type
+                ? QUESTION_TYPE_LABELS[currentQuestion.question_type] ??
+                  currentQuestion.question_type
+                : "")
+            }
+            questionShortKor={currentQuestion?.question_short ?? null}
+            members={members.map((m) => ({
               key: m.key,
               name: m.name,
               userId: m.userId,
+              initial: m.initial,
+              isMe: m.userId === currentUserId,
+              isOnline: m.userId === currentUserId
+                ? true
+                : onlineUserIds.has(m.userId),
             }))}
-            currentUserId={currentUserId}
-            question={{
-              num: idx + 1,
-              total: session.selected_question_ids.length,
-              type: currentQuestion?.question_type
-                ? QUESTION_TYPE_LABELS[currentQuestion.question_type] ??
-                  currentQuestion.question_type
-                : "",
-              english: currentQuestion?.question_english ?? "",
-              englishLong: currentQuestion?.question_english ?? "",
-            }}
-            questionText={currentQuestion?.question_english ?? ""}
+            currentSpeakerUserId={speaker}
+            myAnswer={myAnswer ?? null}
+            currentSpeakerAnswer={speakerAnswer}
+            allAnswers={answers}
+            groupName={groupName}
+            topicLabel={`${session.selected_topic ?? "콤보"} 콤보`}
+            comboProgress={`콤보 ${idx + 1}/${session.selected_question_ids.length}`}
+            onClaimSpeaker={handleClaimSpeaker}
+            onSubmitAnswer={handleSubmitAnswer}
+            onSkipAnswer={handleSkipAnswer}
+            onRetryFeedback={handleRetryFb}
+            onNextSpeaker={handleNextSpeaker}
+            onNextQuestion={handleNextQuestion}
           />
         </Shell>
       );
@@ -1158,9 +1061,11 @@ function Shell({
         </div>
       )}
 
-      {/* Presence indicator (fixed bottom-right) */}
+      {/* Presence indicator (fixed)
+       * 모바일: 가운데 하단 (액션바 위) · PC: 우하단 — CSS로 분기 */}
       {ctx && totalMembers > 0 && (
         <div
+          className="bp-presence-pill"
           aria-label={`접속 멤버 ${onlineCount}/${totalMembers}`}
           title={
             offlineMembers.length > 0
@@ -1169,12 +1074,9 @@ function Shell({
           }
           style={{
             position: "fixed",
-            bottom: 16,
-            right: 16,
-            padding: "8px 12px",
-            fontSize: 11,
             fontWeight: 600,
-            color: allOnline ? "#2d7a3d" : "var(--bp-tip)",
+            // bp-scope 외부라 CSS 변수 fallback 안됨 → 직접 hex 사용
+            color: allOnline ? "#2d7a3d" : "#a48121",
             background: "rgba(255,255,255,0.92)",
             backdropFilter: "blur(8px)",
             border: "1px solid rgba(31,27,22,0.10)",
@@ -1186,18 +1088,9 @@ function Shell({
             gap: 6,
           }}
         >
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: allOnline ? "#4ab85a" : "var(--bp-tip)",
-              display: "inline-block",
-            }}
-          />
           멤버 {onlineCount}/{totalMembers}
           {offlineMembers.length > 0 && offlineMembers.length <= 2 && (
-            <span style={{ color: "var(--bp-ink-3)", fontWeight: 500 }}>
+            <span style={{ color: "#7a6f63", fontWeight: 500 }}>
               · {offlineMembers.map((m) => m.name).join(", ")} 끊김
             </span>
           )}
@@ -1420,6 +1313,7 @@ function LiveStep62Self({
 }) {
   const recorder = useRecorder({ maxDuration: 120, minDuration: 1 });
   const [submitting, setSubmitting] = useState(false);
+  const [pendingSubmit, setPendingSubmit] = useState(false);
 
   // 마운트 시 자동 녹음 시작
   useEffect(() => {
@@ -1429,31 +1323,36 @@ function LiveStep62Self({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 마이크 권한 거부 등 에러 — toast 1회 표시 (인라인 안내는 Step62Pc/Mobile 안에서 처리)
-  // EdgeMic 풀 페이지 분기는 제거 — 모의고사와 동일 inline 패턴 적용
+  // 마이크 권한 거부 등 에러 — toast 1회 표시 + pending 해제
   useEffect(() => {
     if (recorder.error) {
       toast.error(recorder.error);
+      setPendingSubmit(false);
     }
   }, [recorder.error]);
+
+  // pendingSubmit + audioBlob 도착 → 자동 제출 (stale closure 방지)
+  useEffect(() => {
+    if (!pendingSubmit) return;
+    if (recorder.state === "recording") return; // 아직 녹음 중이면 대기
+    if (!recorder.audioBlob) return; // 아직 blob 준비 안 됐으면 대기
+    if (submitting) return; // 이미 제출 중이면 무시
+
+    setPendingSubmit(false);
+    setSubmitting(true);
+    onSubmit(recorder.audioBlob).finally(() => setSubmitting(false));
+  }, [pendingSubmit, recorder.state, recorder.audioBlob, submitting, onSubmit]);
 
   const handleRetry = useCallback(() => {
     recorder.startRecording().catch(() => undefined);
   }, [recorder]);
 
-  const handleComplete = async () => {
+  const handleComplete = useCallback(() => {
     if (recorder.state === "recording") {
       recorder.stopRecording();
     }
-    // recorder.audioBlob이 stopRecording 후 비동기적으로 set되므로 약간 대기
-    setTimeout(async () => {
-      if (recorder.audioBlob) {
-        setSubmitting(true);
-        await onSubmit(recorder.audioBlob);
-        setSubmitting(false);
-      }
-    }, 200);
-  };
+    setPendingSubmit(true); // useEffect가 audioBlob 도착 시 자동 제출
+  }, [recorder]);
 
   const fmtDuration = (sec: number) => {
     const m = Math.floor(sec / 60);

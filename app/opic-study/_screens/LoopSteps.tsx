@@ -81,18 +81,21 @@ export function Step61({
   const [speaker, setSpeaker] = useState<string | null>(null);
   const ctx = useSessionFrame();
 
-  // 실데이터 — realMembers 없으면 빈 배열
-  const members = (realMembers ?? []).map((m) => {
-    const isOnline =
-      (m.userId && ctx?.onlineUserIds.has(m.userId)) || m.isMe;
-    return {
-      key: m.key,
-      name: m.name,
-      sub: m.isMe ? "나" : isOnline ? "입장 중" : "미입장",
-      isOnline,
-      isMe: m.isMe,
-    };
-  });
+  // 실데이터 — 입장 멤버만 표시 (미입장 멤버는 답변 불가능 → 숨김)
+  const members = (realMembers ?? [])
+    .map((m) => {
+      const isOnline =
+        (m.userId && ctx?.onlineUserIds.has(m.userId)) || m.isMe;
+      return {
+        key: m.key,
+        userId: m.userId,
+        name: m.name,
+        sub: m.isMe ? "나" : "입장 중",
+        isOnline,
+        isMe: m.isMe,
+      };
+    })
+    .filter((m) => m.isOnline);
 
   const displayQuestion = questionText ?? "";
   const memberCols = Math.min(Math.max(members.length, 1), 4);
@@ -142,13 +145,13 @@ export function Step61({
           className="bp-grid-members"
           style={{ "--member-cols": memberCols } as React.CSSProperties}
         >
-          {members.map((m) => {
+          {members.map((m, idx) => {
             const isMe = m.isMe;
             const selected = speaker === m.key;
             const interactive = isMe && m.isOnline;
             return (
               <HfCard
-                key={m.key}
+                key={m.userId ?? `${m.key}-${idx}`}
                 onClick={interactive ? () => setSpeaker(m.key) : undefined}
                 onKeyDown={
                   interactive ? onCardKey(() => setSpeaker(m.key)) : undefined
@@ -243,7 +246,7 @@ export function Step61({
               lineHeight: 1.55,
             }}
           >
-            한 명이 답변하는 동안 나머지는 들으면서 표현을 메모해두세요.
+            한 명이 답변하는 동안 나머지는 함께 들어요.
           </p>
         </HfCard>
       </div>
@@ -348,9 +351,13 @@ export function Step62({
   const members = realMembers ?? [];
   const displayQuestion = questionText ?? question?.english ?? "";
 
-  // 발화자 / 청취자 분리
+  // 발화자 / 청취자 분리 — 청취자는 입장 멤버만 표시 (Step61과 일관)
   const speaker = members.find((m) => m.key === speakerKey);
   const listeners = members.filter((m) => m.key !== speakerKey);
+  const onlineListeners = listeners.filter((m) => {
+    if (!m.userId) return false; // 실데이터 없으면 제외
+    return m.userId === currentUserId || (ctx?.onlineUserIds.has(m.userId) ?? false);
+  });
   const displayName = selfMode ? "나" : speakerName ?? speaker?.name ?? "발화자";
   const speakerColor = speaker?.key ?? speakerKey ?? "a";
 
@@ -424,12 +431,17 @@ export function Step62({
           </p>
         </HfCard>
 
-        {/* 메인 영역 — 발화자 메인 + 청취자 행 (PC: 1fr) | 메모 (PC: 320px) */}
+        {/* 메인 영역 — 발화자 메인 + 청취자 행 (단일 컬럼, 메모 제거) */}
         <div
-          className="bp-grid-loop"
-          style={{ flex: 1, minHeight: 0, overflow: "hidden" }}
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}
         >
-          {/* LEFT — 발화자 카드 + 청취자 행 */}
           <div
             style={{
               display: "flex",
@@ -437,6 +449,7 @@ export function Step62({
               gap: 12,
               minHeight: 0,
               minWidth: 0,
+              flex: 1,
             }}
           >
             {/* 발화자 메인 카드 — 큰 시각 위계 */}
@@ -618,8 +631,8 @@ export function Step62({
               )}
             </HfCard>
 
-            {/* 청취자 압축 행 (1명일 땐 X) */}
-            {listeners.length > 0 && (
+            {/* 청취자 압축 행 — 입장한 멤버만 (없으면 카드 자체 숨김) */}
+            {onlineListeners.length > 0 && (
               <HfCard
                 padding={14}
                 style={{
@@ -646,7 +659,7 @@ export function Step62({
                     className="t-xs ink-3"
                     style={{ fontWeight: 600 }}
                   >
-                    청취자 {listeners.length}명
+                    청취자 {onlineListeners.length}명
                   </span>
                 </div>
                 <div
@@ -656,122 +669,31 @@ export function Step62({
                     flexWrap: "wrap",
                   }}
                 >
-                  {listeners.map((m) => {
-                    const isOnline = m.userId
-                      ? m.userId === currentUserId ||
-                        (ctx?.onlineUserIds.has(m.userId) ?? false)
-                      : true;
-                    return (
-                      <div
-                        key={m.key}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 8,
-                          opacity: isOnline ? 1 : 0.5,
-                        }}
-                      >
-                        <MbDot
-                          color={m.key}
-                          initial={m.name[0]}
-                          live={isOnline}
-                          dim={!isOnline}
-                          size={28}
-                          fontSize={11}
-                        />
-                        <span className="t-sm" style={{ fontWeight: 500 }}>
-                          {m.name}
-                        </span>
-                        {!isOnline && (
-                          <span
-                            className="t-xs ink-3"
-                            style={{ fontSize: 10 }}
-                          >
-                            (미입장)
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {onlineListeners.map((m, idx) => (
+                    <div
+                      key={m.userId ?? `${m.key}-${idx}`}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <MbDot
+                        color={m.key}
+                        initial={m.name[0]}
+                        live
+                        size={28}
+                        fontSize={11}
+                      />
+                      <span className="t-sm" style={{ fontWeight: 500 }}>
+                        {m.name}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </HfCard>
             )}
           </div>
-
-          {/* SIDE — 메모 */}
-          <HfCard
-            padding={18}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              minHeight: 0,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 10,
-                flexShrink: 0,
-              }}
-            >
-              <SectionH style={{ marginBottom: 0 }}>메모</SectionH>
-              <span className="t-xs ink-3">나만 보여요</span>
-            </div>
-            <textarea
-              placeholder={
-                selfMode
-                  ? "녹음 중 떠오르는 표현을 적어두세요…"
-                  : "마음에 드는 표현이 들리면 적어두세요…"
-              }
-              defaultValue={defaultNote}
-              style={{
-                flex: 1,
-                border: "none",
-                outline: "none",
-                fontFamily: "var(--bp-font)",
-                fontSize: 13,
-                lineHeight: 1.6,
-                background: "transparent",
-                color: "var(--bp-ink)",
-                resize: "none",
-                padding: 0,
-                minHeight: 160,
-              }}
-            />
-            <HfCard
-              padding={10}
-              style={{
-                marginTop: 10,
-                display: "flex",
-                gap: 8,
-                alignItems: "flex-start",
-                background: "var(--bp-surface-2)",
-                boxShadow: "none",
-                flexShrink: 0,
-              }}
-            >
-              <Sparkles
-                size={14}
-                strokeWidth={1.6}
-                color="var(--bp-tc)"
-                aria-hidden="true"
-                style={{ flexShrink: 0, marginTop: 2 }}
-              />
-              <p
-                className="t-xs"
-                style={{
-                  margin: 0,
-                  lineHeight: 1.55,
-                  color: "var(--bp-ink-2)",
-                  flex: 1,
-                }}
-              >
-                마음에 든 표현 메모해두면 다음에 활용할 수 있어요.
-              </p>
-            </HfCard>
-          </HfCard>
         </div>
       </div>
 

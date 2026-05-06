@@ -885,96 +885,126 @@ export function PcStepBar({
   total = 6,
   labels = DEFAULT_STEP_LABELS,
 }: PcStepBarProps) {
-  return (
-    <div
-      className="bp-pc-stepbar"
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        padding: "16px 24px 0",
-        flexWrap: "wrap",
-      }}
-    >
-      {Array.from({ length: total }).map((_, i) => {
-        const num = i + 1;
-        const isPast = num < now;
-        const isCurrent = num === now;
-        const label = labels[i] ?? `Step ${num}`;
+  const currentLabel = labels[now - 1] ?? `Step ${now}`;
+  const pct = Math.min(100, Math.max(0, (now / total) * 100));
 
-        return (
-          <Fragment key={i}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 7,
-              }}
-            >
+  return (
+    <div className="bp-pc-stepbar">
+      {/* PC: 풀 6단계 가로 배치 */}
+      <div className="bp-stepbar-full">
+        {Array.from({ length: total }).map((_, i) => {
+          const num = i + 1;
+          const isPast = num < now;
+          const isCurrent = num === now;
+          const label = labels[i] ?? `Step ${num}`;
+
+          return (
+            <Fragment key={i}>
               <div
-                aria-hidden="true"
                 style={{
-                  width: 26,
-                  height: 26,
-                  borderRadius: "50%",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  fontVariantNumeric: "tabular-nums",
-                  background: isPast
-                    ? "var(--bp-good, #4ab85a)"
-                    : isCurrent
-                      ? "var(--bp-tc)"
-                      : "var(--bp-surface-2)",
-                  color:
-                    isPast || isCurrent ? "#fff" : "var(--bp-ink-3)",
-                  border:
-                    !isPast && !isCurrent
-                      ? "1px solid var(--bp-line-strong)"
-                      : "none",
-                  flexShrink: 0,
-                  transition:
-                    "background 0.2s ease, color 0.2s ease",
+                  gap: 7,
                 }}
               >
-                {isPast ? (
-                  <Check size={13} strokeWidth={2.4} />
-                ) : (
-                  num
-                )}
-              </div>
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: isCurrent ? 600 : 500,
-                  color: isCurrent
-                    ? "var(--bp-ink)"
-                    : isPast
+                <div
+                  aria-hidden="true"
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    fontVariantNumeric: "tabular-nums",
+                    background: isPast
                       ? "var(--bp-good, #4ab85a)"
-                      : "var(--bp-ink-3)",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {label}
-              </span>
-            </div>
-            {i < total - 1 && (
-              <div
-                aria-hidden="true"
-                style={{
-                  width: 14,
-                  height: 1,
-                  background: "var(--bp-line-strong)",
-                  flexShrink: 0,
-                }}
-              />
-            )}
-          </Fragment>
-        );
-      })}
+                      : isCurrent
+                        ? "var(--bp-tc)"
+                        : "var(--bp-surface-2)",
+                    color:
+                      isPast || isCurrent ? "#fff" : "var(--bp-ink-3)",
+                    border:
+                      !isPast && !isCurrent
+                        ? "1px solid var(--bp-line-strong)"
+                        : "none",
+                    flexShrink: 0,
+                    transition:
+                      "background 0.2s ease, color 0.2s ease",
+                  }}
+                >
+                  {isPast ? (
+                    <Check size={13} strokeWidth={2.4} />
+                  ) : (
+                    num
+                  )}
+                </div>
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: isCurrent ? 600 : 500,
+                    color: isCurrent
+                      ? "var(--bp-ink)"
+                      : isPast
+                        ? "var(--bp-good, #4ab85a)"
+                        : "var(--bp-ink-3)",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {label}
+                </span>
+              </div>
+              {i < total - 1 && (
+                <div
+                  aria-hidden="true"
+                  style={{
+                    width: 14,
+                    height: 1,
+                    background: "var(--bp-line-strong)",
+                    flexShrink: 0,
+                  }}
+                />
+              )}
+            </Fragment>
+          );
+        })}
+      </div>
+
+      {/* 모바일: 한 줄 컴팩트 (현재 단계 + progress bar) */}
+      <div className="bp-stepbar-compact" aria-hidden="true">
+        <div className="bp-stepbar-compact-label">
+          <span
+            style={{
+              fontWeight: 700,
+              color: "var(--bp-tc)",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {now}
+          </span>
+          <span style={{ color: "var(--bp-ink-3)" }}>/</span>
+          <span
+            style={{
+              color: "var(--bp-ink-3)",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {total}
+          </span>
+          <span style={{ color: "var(--bp-ink-4)", margin: "0 4px" }}>·</span>
+          <span style={{ fontWeight: 600, color: "var(--bp-ink)" }}>
+            {currentLabel}
+          </span>
+        </div>
+        <div className="bp-stepbar-compact-progress">
+          <div
+            className="bp-stepbar-compact-fill"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      </div>
     </div>
   );
 }
