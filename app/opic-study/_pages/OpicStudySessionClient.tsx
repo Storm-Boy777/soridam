@@ -380,7 +380,7 @@ export function OpicStudySessionClient({
         groupId,
       })
         .then((res) => {
-          if (res.data) setCombos(res.data);
+          if (res.data) setCombos(res.data.combos);
         })
         .finally(() => setContentLoading(false));
     }

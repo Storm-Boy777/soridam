@@ -16,11 +16,16 @@ import type {
   CategoryStat,
   TopicForStudy,
   ComboForStudy,
+  CombosForStudyResponse,
   GroupSchedule,
   StudyCategory,
   SessionStep,
   QuestionTypeGuide,
   ComboGuideCache,
+  ExamLibraryItem,
+  ExamLibraryPage,
+  ExamLibraryCombo,
+  ExamLibraryQuestion,
 } from "@/lib/types/opic-study";
 import { isSessionExpired, getModeForDate } from "@/lib/opic-study/schedule";
 
@@ -72,6 +77,13 @@ function comboTypeToCategory(combo_type: string): StudyCategory {
   if (combo_type === "roleplay") return "roleplay";
   return "advance";
 }
+
+/** category → combo_types 매핑 (시험후기 빈도 분석과 동일 — FREQUENCY_COMBO_MAP) */
+const CATEGORY_TO_COMBO_TYPES: Record<StudyCategory, string[]> = {
+  general: ["general_1", "general_2", "general_3"],
+  roleplay: ["roleplay"],
+  advance: ["advance"],
+};
 
 // ============================================================
 // 1. 그룹/세션 조회 (5개)
@@ -555,12 +567,12 @@ export async function getTopicsForStudy(input: { category: StudyCategory; groupI
   }
 }
 
-/** Step 4: 콤보 목록 (출제 빈도순) + 학습 이력 */
+/** Step 4: 콤보 목록 (출제 빈도순) + 학습 이력 + 헤더 메타 */
 export async function getCombosForStudy(input: {
   category: StudyCategory;
   topic: string;
   groupId: string;
-}): Promise<ActionResult<ComboForStudy[]>> {
+}): Promise<ActionResult<CombosForStudyResponse>> {
   try {
     const { supabase, userId } = await requireUser();
     await requireGroupMember(supabase, input.groupId, userId);
@@ -576,6 +588,7 @@ export async function getCombosForStudy(input: {
         question_korean: string | null;
         question_short: string | null;
         question_type_eng: string;
+        audio_url: string | null;
       };
       submissions: {
         status: string;
@@ -589,7 +602,7 @@ export async function getCombosForStudy(input: {
       .from(T.submission_questions)
       .select(
         "submission_id, combo_type, question_number, question_id, " +
-          "questions!inner(question_english, question_korean, question_short, question_type_eng), " +
+          "questions!inner(question_english, question_korean, question_short, question_type_eng, audio_url), " +
           "submissions!inner(status, exam_approved, exam_date, achieved_level)"
       )
       .eq("topic", input.topic)
@@ -615,6 +628,7 @@ export async function getCombosForStudy(input: {
         question_english: string;
         question_korean: string | null;
         question_short: string | null;
+        audio_url: string | null;
       }>;
       exam_date: string;
       achieved_level: string | null;
@@ -630,6 +644,7 @@ export async function getCombosForStudy(input: {
         question_english: r.questions.question_english,
         question_korean: r.questions.question_korean,
         question_short: r.questions.question_short,
+        audio_url: r.questions.audio_url,
       };
       if (existing) {
         existing.qids.push(r.question_id);
@@ -647,7 +662,11 @@ export async function getCombosForStudy(input: {
 
     const rawCombos = Array.from(bySubmission.values());
     const totalCombos = rawCombos.length;
-    if (totalCombos === 0) return { data: [] };
+    if (totalCombos === 0) {
+      return {
+        data: { combos: [], topic_category_count: 0, total_submissions: 0 },
+      };
+    }
 
     // 4. 시그니처(정렬)로 그루핑 → 빈도 계산
     const bySig = new Map<string, RawCombo[]>();
@@ -666,8 +685,8 @@ export async function getCombosForStudy(input: {
       }
     }
 
-    // 6. 학습 이력 (그룹 + 사용자) 병렬 조회
-    const [{ data: groupSigs }, { data: userQs }] = await Promise.all([
+    // 6. 학습 이력 + 전체 승인 시험 수 (시험후기 빈도 분석과 동일 모수) 병렬 조회
+    const [{ data: groupSigs }, { data: userQs }, { count: totalSubsCount }] = await Promise.all([
       supabase
         .from(T.opic_study_sessions)
         .select("selected_combo_sig")
@@ -679,26 +698,39 @@ export async function getCombosForStudy(input: {
         .select("question_id")
         .eq("user_id", userId)
         .not("feedback_result", "is", null),
+      supabase
+        .from(T.submissions)
+        .select("id", { count: "exact", head: true })
+        .eq("status", "complete")
+        .eq("exam_approved", "approved"),
     ]);
 
     const studiedSigs = new Set((groupSigs || []).map((s) => s.selected_combo_sig as string));
     const studiedQids = new Set((userQs || []).map((a) => a.question_id as string));
+    const totalSubmissions = totalSubsCount ?? 0;
 
-    // 7. 결과 조립
+    // 7. 결과 조립 — 카드 분모: 카테고리 한정 (totalCombos), 헤더 메타: 전체 승인 시험
     const combos: ComboForStudy[] = Array.from(bySig.entries())
       .map(([sig, group]) => {
         const representative = group[0];
         const frequency = group.length;
-        const appearancePct = Math.round((frequency / totalCombos) * 100);
+        const appearancePct =
+          totalCombos > 0 ? Math.round((frequency / totalCombos) * 100) : 0;
 
         return {
           sig,
           representative_qids: representative.qids,
           frequency,
+          total_in_category: totalCombos,
           appearance_pct: appearancePct,
           questions: representative.questions.map((q) => ({
             ...q,
-            appearance_pct: Math.round((qidAppearance[q.id] / totalCombos) * 100),
+            appearance_pct:
+              totalCombos > 0
+                ? Math.round(
+                    ((qidAppearance[q.id] || 0) / totalCombos) * 100
+                  )
+                : 0,
             studied_by_user: studiedQids.has(q.id),
           })),
           studied_in_group: studiedSigs.has(sig),
@@ -711,7 +743,13 @@ export async function getCombosForStudy(input: {
       })
       .sort((a, b) => b.frequency - a.frequency);
 
-    return { data: combos };
+    return {
+      data: {
+        combos,
+        topic_category_count: totalCombos,
+        total_submissions: totalSubmissions,
+      },
+    };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "콤보 조회 실패" };
   }
@@ -1271,6 +1309,220 @@ export async function getQuestionTypeGuides(): Promise<ActionResult<QuestionType
 }
 
 /**
+ * 승인된 기출 1건 페이지 조회 — 기출 둘러보기 (한 페이지에 1건씩, 등록 최신순)
+ *
+ * 본인 후기 포함, 자기소개 포함.
+ * 정렬: created_at DESC (최신 등록 먼저).
+ */
+export async function getApprovedExamPool(input: {
+  page: number; // 1-based
+}): Promise<ActionResult<ExamLibraryPage>> {
+  try {
+    const { supabase, userId } = await requireUser();
+
+    const page = Math.max(1, Math.floor(input.page));
+
+    // 1. 전체 count
+    const { count: totalCount, error: countErr } = await supabase
+      .from(T.submissions)
+      .select("id", { count: "exact", head: true })
+      .eq("status", "complete")
+      .eq("exam_approved", "approved");
+
+    if (countErr) {
+      return { error: "기출 개수 조회 실패" };
+    }
+
+    const total = totalCount ?? 0;
+    if (total === 0) {
+      return { data: { exam: null, page, total: 0 } };
+    }
+
+    if (page > total) {
+      return { data: { exam: null, page, total } };
+    }
+
+    // 2. 해당 페이지의 기출 1건 조회 (최신순 페이지네이션)
+    const offset = page - 1;
+    const { data: subs, error: sErr } = await supabase
+      .from(T.submissions)
+      .select("id, user_id, exam_date, achieved_level, created_at")
+      .eq("status", "complete")
+      .eq("exam_approved", "approved")
+      .order("created_at", { ascending: false })
+      .range(offset, offset);
+
+    if (sErr || !subs || subs.length === 0) {
+      return { data: { exam: null, page, total } };
+    }
+    const sub = subs[0];
+
+    // 3. 응시자 표시명
+    const isMy = sub.user_id === userId;
+    let userDisplayName: string | null = null;
+    if (!isMy) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name, email")
+        .eq("id", sub.user_id)
+        .maybeSingle();
+      userDisplayName =
+        (profile?.display_name as string | null) ??
+        (profile?.email as string | undefined)?.split("@")[0] ??
+        "익명";
+    }
+
+    // 4. 콤보 + 질문 조회
+    const [{ data: combos }, { data: subQuestionRows }] = await Promise.all([
+      supabase
+        .from(T.submission_combos)
+        .select("combo_type, topic, question_ids")
+        .eq("submission_id", sub.id),
+      supabase
+        .from(T.submission_questions)
+        .select(
+          "question_number, combo_type, topic, question_id, custom_question_text"
+        )
+        .eq("submission_id", sub.id)
+        .order("question_number", { ascending: true }),
+    ]);
+
+    // 5. questions 마스터 조회 (질문 메타)
+    const questionIds = (subQuestionRows ?? [])
+      .map((q) => q.question_id as string | null)
+      .filter((id): id is string => !!id);
+
+    const { data: questionsMeta } = questionIds.length > 0
+      ? await supabase
+          .from(T.questions)
+          .select(
+            "id, question_english, question_korean, question_short, question_type_eng, audio_url"
+          )
+          .in("id", questionIds)
+      : { data: [] };
+
+    const qMetaMap = new Map(
+      (questionsMeta ?? []).map((q) => [q.id as string, q])
+    );
+
+    // 6. combo_type → category 매핑
+    const comboTypeToCategoryV2 = (
+      ct: string
+    ): "self_intro" | "general" | "roleplay" | "advance" => {
+      if (ct === "self_intro" || ct === "자기소개") return "self_intro";
+      if (ct.startsWith("general")) return "general";
+      if (ct === "roleplay") return "roleplay";
+      return "advance";
+    };
+
+    const comboLabel = (
+      ct: string,
+      cat: "self_intro" | "general" | "roleplay" | "advance"
+    ): string => {
+      if (cat === "self_intro") return "자기소개";
+      if (cat === "general") {
+        // "general 1" / "general1" / "general" → 라벨 추출
+        const num = ct.match(/(\d)/)?.[1];
+        return num ? `일반콤보 ${num}` : "일반콤보";
+      }
+      if (cat === "roleplay") return "롤플레이";
+      return "어드밴스";
+    };
+
+    // 7. 콤보 그룹화 — submission_combos 기준
+    const comboMap = new Map<string, ExamLibraryCombo>();
+
+    // 콤보 row 우선 등록 (자기소개 제외 — submission_combos에 없을 수 있음)
+    for (const c of combos ?? []) {
+      const ct = c.combo_type as string;
+      const cat = comboTypeToCategoryV2(ct);
+      const qids = (c.question_ids as string[]) ?? [];
+      const sig = qids.length > 0 ? [...qids].sort().join("|") : null;
+      comboMap.set(ct, {
+        combo_type: ct,
+        category: cat,
+        category_label: comboLabel(ct, cat),
+        topic: c.topic as string,
+        sig,
+        questions: [],
+      });
+    }
+
+    // 자기소개는 submission_combos에 없을 가능성 — submission_questions에서 self_intro 식별
+    // 동시에 자기소개를 별도 콤보로 추가
+    for (const q of subQuestionRows ?? []) {
+      const ct = q.combo_type as string;
+      const cat = comboTypeToCategoryV2(ct);
+      if (cat === "self_intro" && !comboMap.has(ct)) {
+        comboMap.set(ct, {
+          combo_type: ct,
+          category: "self_intro",
+          category_label: "자기소개",
+          topic: (q.topic as string) ?? "",
+          sig: null,
+          questions: [],
+        });
+      }
+    }
+
+    // 질문 매칭
+    for (const q of subQuestionRows ?? []) {
+      const ct = q.combo_type as string;
+      const block = comboMap.get(ct);
+      if (!block) continue;
+      const meta = q.question_id ? qMetaMap.get(q.question_id as string) : null;
+      const englishText =
+        (meta?.question_english as string | undefined) ??
+        (q.custom_question_text as string | null) ??
+        "(질문 없음)";
+
+      block.questions.push({
+        question_number: q.question_number as number,
+        question_id: (q.question_id as string | null) ?? null,
+        question_english: englishText,
+        question_korean: (meta?.question_korean as string | null) ?? null,
+        question_short: (meta?.question_short as string | null) ?? null,
+        question_type_eng: (meta?.question_type_eng as string | null) ?? null,
+        audio_url: (meta?.audio_url as string | null) ?? null,
+      });
+    }
+
+    // 콤보 정렬 — 자기소개 → 일반1~3 → 롤플레이 → 어드밴스
+    const orderRank = (cat: ExamLibraryCombo["category"]): number =>
+      cat === "self_intro" ? 0 : cat === "general" ? 1 : cat === "roleplay" ? 2 : 3;
+    const orderedCombos = Array.from(comboMap.values()).sort((a, b) => {
+      const ra = orderRank(a.category);
+      const rb = orderRank(b.category);
+      if (ra !== rb) return ra - rb;
+      // 일반콤보 1/2/3 순서
+      const na = parseInt(a.combo_type.match(/(\d)/)?.[1] ?? "0", 10);
+      const nb = parseInt(b.combo_type.match(/(\d)/)?.[1] ?? "0", 10);
+      return na - nb;
+    });
+
+    // 각 콤보 내 질문 정렬
+    for (const c of orderedCombos) {
+      c.questions.sort((a, b) => a.question_number - b.question_number);
+    }
+
+    const exam: ExamLibraryItem = {
+      submission_id: sub.id as number,
+      exam_date: sub.exam_date as string,
+      achieved_level: (sub.achieved_level as string | null) ?? null,
+      is_my_submission: isMy,
+      user_display_name: userDisplayName,
+      combos: orderedCombos,
+    };
+
+    return { data: { exam, page, total } };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "기출 조회 실패",
+    };
+  }
+}
+
+/**
  * 콤보 캐시 조회 + 미스 시 EF 트리거 — 둘러보기 + 스터디 룸 공유 캐시
  *
  * 흐름:
@@ -1283,7 +1535,11 @@ export async function getQuestionTypeGuides(): Promise<ActionResult<QuestionType
  *   - MISS: ~1~3s (GPT 호출 + 캐시 저장)
  */
 export async function getOrGenerateComboCache(
-  sig: string
+  sig: string,
+  hint?: {
+    topic?: string;
+    category?: StudyCategory;
+  }
 ): Promise<ActionResult<ComboGuideCache>> {
   try {
     const { supabase, userId } = await requireUser();
@@ -1292,19 +1548,21 @@ export async function getOrGenerateComboCache(
       return { error: "잘못된 콤보 시그니처" };
     }
 
-    // 1. 캐시 조회 (prompt_version 1만)
+    const PROMPT_VERSION = 2; // EF의 PROMPT_VERSION과 일치
+
+    // 1. 캐시 조회 (현행 prompt_version만)
     const { data: cached } = await supabase
       .from("combo_guide_cache")
       .select("sig, topic, category, intro_text, approaches, generated_at, prompt_version")
       .eq("sig", sig)
-      .eq("prompt_version", 1)
+      .eq("prompt_version", PROMPT_VERSION)
       .maybeSingle();
 
     if (cached) {
       return { data: cached as ComboGuideCache };
     }
 
-    // 2. 미스 → EF 호출
+    // 2. 미스 → EF 호출 (클라이언트 컨텍스트 hint 전달)
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
@@ -1314,7 +1572,12 @@ export async function getOrGenerateComboCache(
         Authorization: `Bearer ${anonKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ sig, triggered_by: userId }),
+      body: JSON.stringify({
+        sig,
+        triggered_by: userId,
+        topic: hint?.topic,
+        category: hint?.category,
+      }),
     });
 
     if (!efResponse.ok) {
@@ -1326,7 +1589,7 @@ export async function getOrGenerateComboCache(
       .from("combo_guide_cache")
       .select("sig, topic, category, intro_text, approaches, generated_at, prompt_version")
       .eq("sig", sig)
-      .eq("prompt_version", 1)
+      .eq("prompt_version", PROMPT_VERSION)
       .maybeSingle();
 
     if (!regenerated) {
@@ -1349,6 +1612,7 @@ export async function getOrGenerateComboCache(
 export async function getComboBySig(input: {
   sig: string;
   groupId?: string;
+  category?: StudyCategory;       // 카테고리 필터 (분모 한정 — 시험후기 빈도 분석 BM)
 }): Promise<ActionResult<ComboForStudy>> {
   try {
     const { supabase, userId } = await requireUser();
@@ -1365,33 +1629,50 @@ export async function getComboBySig(input: {
     // 1. 질문 정보 조회
     const { data: questions, error: qErr } = await supabase
       .from("questions")
-      .select("id, question_type_eng, question_english, question_korean, question_short, topic, category")
+      .select("id, question_type_eng, question_english, question_korean, question_short, audio_url, topic, category")
       .in("id", questionIds);
 
     if (qErr || !questions || questions.length === 0) {
       return { error: "콤보를 찾을 수 없습니다" };
     }
 
-    // 토픽/카테고리 일관성 검증
+    // 토픽/카테고리 결정 — input.category 우선, 없으면 questions에서 추론
     const topic = questions[0].topic as string;
-    const category = comboTypeToCategory(
-      (questions[0].category as string) ?? ""
-    );
+    // questions.category는 한글("일반"/"롤플레이"/"어드밴스")일 수 있음 → 입력 우선
+    const inferredCategory: StudyCategory = (() => {
+      const raw = ((questions[0].category as string) ?? "").trim();
+      if (raw === "일반" || raw.startsWith("general")) return "general";
+      if (raw === "롤플레이" || raw === "roleplay") return "roleplay";
+      if (raw === "어드밴스" || raw === "advance") return "advance";
+      return "general";
+    })();
+    const category: StudyCategory = input.category ?? inferredCategory;
 
-    // 2. 출제 빈도 계산 (이 콤보 시그니처가 submission_combos에서 몇 번 등장했는지)
-    const { data: combosRaw } = await supabase
-      .from(T.submission_combos)
-      .select("question_ids, submissions!inner(status, exam_approved)")
-      .eq("topic", topic)
-      .eq("submissions.status", "complete")
-      .eq("submissions.exam_approved", "approved");
+    // 2. 분자 — 같은 토픽 + 같은 카테고리에서 이 sig 출제 시험 수
+    const allowedComboTypes = CATEGORY_TO_COMBO_TYPES[category];
+    const [{ data: combosRaw }, { count: totalSubsCount }] = await Promise.all([
+      supabase
+        .from(T.submission_combos)
+        .select("question_ids, combo_type, submissions!inner(status, exam_approved)")
+        .eq("topic", topic)
+        .in("combo_type", allowedComboTypes)
+        .eq("submissions.status", "complete")
+        .eq("submissions.exam_approved", "approved"),
+      // 분모 — 전체 승인 시험 수 (시험후기 빈도 분석과 동일 모수)
+      supabase
+        .from(T.submissions)
+        .select("id", { count: "exact", head: true })
+        .eq("status", "complete")
+        .eq("exam_approved", "approved"),
+    ]);
 
     type ComboRow = { question_ids: string[] };
     const allCombos = (combosRaw ?? []) as unknown as ComboRow[];
 
     const targetSig = buildComboSignature(questionIds);
     let frequency = 0;
-    const totalCombos = allCombos.length;
+    const totalSubmissions = totalSubsCount ?? 0;
+    const totalCombosInCategory = allCombos.length; // 카드 비율 분모
     const qidAppearance: Record<string, number> = {};
 
     for (const c of allCombos) {
@@ -1402,8 +1683,11 @@ export async function getComboBySig(input: {
       }
     }
 
+    // 카드 점유율 — 카테고리 분모
     const appearance_pct =
-      totalCombos > 0 ? Math.round((frequency / totalCombos) * 100) : 0;
+      totalCombosInCategory > 0
+        ? Math.round((frequency / totalCombosInCategory) * 100)
+        : 0;
 
     // 3. 그룹 학습 이력 (groupId 있을 때만)
     let studied_in_group = false;
@@ -1426,6 +1710,8 @@ export async function getComboBySig(input: {
       sig: targetSig,
       representative_qids: questionIds,
       frequency,
+      total_in_category: totalCombosInCategory,
+      total_submissions: totalSubmissions,
       appearance_pct,
       questions: orderedQuestions.map((q) => ({
         id: q.id as string,
@@ -1433,9 +1719,14 @@ export async function getComboBySig(input: {
         question_english: q.question_english as string,
         question_korean: q.question_korean as string | null,
         question_short: q.question_short as string | null,
+        audio_url: (q.audio_url as string | null) ?? null,
+        // 질문별 등장률 — 카테고리 분모 (헤더와 동일 의미: 카테고리 안 점유율)
         appearance_pct:
-          totalCombos > 0
-            ? Math.round(((qidAppearance[q.id as string] || 0) / totalCombos) * 100)
+          totalCombosInCategory > 0
+            ? Math.round(
+                ((qidAppearance[q.id as string] || 0) / totalCombosInCategory) *
+                  100
+              )
             : 0,
         studied_by_user: false, // explore 페이지에서는 미사용
       })),

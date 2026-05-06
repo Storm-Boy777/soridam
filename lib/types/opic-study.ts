@@ -193,6 +193,44 @@ export interface ApproachItem {
   recommended_word_max: number;            // 권장 최대 단어
 }
 
+// ============================================================
+// 기출 둘러보기 (Exam Library) — 승인된 기출 시험을 페이지로 둘러보기
+// ============================================================
+
+export interface ExamLibraryQuestion {
+  question_number: number;             // 1~14 (자기소개 1, 일반 콤보 2~10, 롤플레이 11~13, 어드밴스 12-14)
+  question_id: string | null;          // null이면 custom 질문 (drilldown 불가)
+  question_english: string;            // 영어 원문 (custom_question_text 또는 questions.question_english)
+  question_korean: string | null;
+  question_short: string | null;
+  question_type_eng: string | null;    // 'description' / 'routine' / ...
+  audio_url: string | null;            // 음성 재생용
+}
+
+export interface ExamLibraryCombo {
+  combo_type: string;                  // 'self_intro' / 'general 1' / 'roleplay' / 'advance' 등 (DB 원본)
+  category: 'self_intro' | 'general' | 'roleplay' | 'advance';
+  category_label: string;              // '자기소개' / '일반콤보 1' / '롤플레이' / '어드밴스'
+  topic: string;                       // 토픽명 (자기소개는 빈 문자열 가능)
+  sig: string | null;                  // 콤보 시그니처 (자기소개는 null — 콤보 둘러보기 X)
+  questions: ExamLibraryQuestion[];
+}
+
+export interface ExamLibraryItem {
+  submission_id: number;
+  exam_date: string;                   // 응시일자
+  achieved_level: string | null;       // 응시자가 받은 등급
+  is_my_submission: boolean;           // 본인 후기 여부 (👤 표시용)
+  user_display_name: string | null;    // 응시자 표시명 (익명/표시명)
+  combos: ExamLibraryCombo[];          // 자기소개 + 일반3 + 롤플레이 + 어드밴스
+}
+
+export interface ExamLibraryPage {
+  exam: ExamLibraryItem | null;
+  page: number;                        // 1-based
+  total: number;                       // 승인된 기출 전체 개수
+}
+
 // 콤보 단위 가이드 캐시 (combo_guide_cache 테이블)
 export interface ComboGuideCache {
   sig: string;                             // 콤보 시그니처 (PK)
@@ -322,15 +360,24 @@ export interface TopicForStudy {
   type_diversity?: number;                 // (선택) 질문 타입 다양도
 }
 
+// 콤보 리스트 응답 — 헤더 메타 + 카드 array
+export interface CombosForStudyResponse {
+  combos: ComboForStudy[];
+  topic_category_count: number;            // 헤더 분자: 이 토픽·카테고리에서 출제된 시험 수 (= total_in_category)
+  total_submissions: number;                // 헤더 분모: 전체 승인 시험 수
+}
+
 // Step 4: 콤보 + 빈도 + 학습 이력
 export interface ComboForStudy {
   // 콤보 식별
   sig: string;                             // 정렬된 시그니처 (그루핑용)
   representative_qids: string[];           // 출제 순서 보존 (대표)
 
-  // 빈도
-  frequency: number;                       // 이 콤보 출제 횟수
-  appearance_pct: number;                  // 토픽 내 비율 (frequency / total)
+  // 빈도 — 카드 단위 점유율 (카테고리 분모) + 헤더 메타 (전체 시험 수)
+  frequency: number;                       // 이 콤보가 출제된 시험 수 (카테고리 한정)
+  total_in_category?: number;              // 카드 분모: 같은 토픽·카테고리 시험 수
+  total_submissions?: number;              // 헤더 분모: 전체 승인 시험 수
+  appearance_pct: number;                  // 카드 점유율 (frequency / total_in_category)
 
   // 콤보 안 질문들
   questions: Array<{
@@ -339,6 +386,7 @@ export interface ComboForStudy {
     question_english: string;              // 영어 원문 (메인 표시)
     question_korean: string | null;        // 한글 풀번역 (긴 텍스트)
     question_short: string | null;         // 한글 짧은 요약 (보조 표시)
+    audio_url: string | null;              // 영어 음성 URL (둘러보기 음성 듣기용)
     appearance_pct: number;                // 토픽 내 이 질문 등장률 %
     studied_by_user: boolean;              // 사용자가 이미 답변한 적 있는 질문
   }>;

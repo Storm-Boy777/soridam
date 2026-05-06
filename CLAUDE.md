@@ -624,6 +624,7 @@ origin: https://Storm-Boy777@github.com/Storm-Boy777/soridam.git
 | 05-03 | **1:1 문의 prefill 시스템 ✅** | lib/constants/inquiry-prefills.ts 카탈로그 + inquiry-form/tab에 initialCategory/Title/Content + URL ?prefill=key 자동 펼침. 비멤버 페이지 mailto → /support?tab=inquiry&prefill=opic-study |
 | 05-06 | **오픽 스터디 가이드 v3 — 콤보 캐시 + 풀 가이드 ✅** | 마이그레이션 056 (question_type_guides 10 row) + 057 (프롬프트 v2 한글 전용) + 058 (combo_guide_cache). EF v3 통합 (mode session/explore + 콤보 단위 1회 생성 + 영구 캐시). 가이드 출력 풀 구조 (본문 + 흐름 + 포인트 + 권장 길이). 매칭 정확성: 토픽 맥락 입혀 동적 슬롯 변형 (음악 → "장르의 감정·분위기"). 비용: 198 콤보 1회 ≈ $0.5, 이후 영구 무료 |
 | 05-06 | **콤보 둘러보기 페이지 ✅** | /opic-study/explore — 카테고리 → 토픽 → 콤보 → 상세 풀 가이드 4단계 드릴다운. URL 쿼리스트링 동기화. SA 3개 신규 (getQuestionTypeGuides, getComboBySig, getOrGenerateComboCache). 빠른 이동에 카드 추가. Step5 + 둘러보기 캐시 공유 |
+| 05-06 | **둘러보기 풀 개선 ✅** | (1) 기출별 탭 추가 (시험 1회씩 페이지네이션, 자기소개 + 4콤보 풀뷰), (2) 시험후기 빈도 분석 BM 적용 — 카테고리 분리 + 두 단계 분모(헤더: 전체 시험 / 카드: 카테고리 점유율), (3) EF v3.1 — 한글 카테고리 매핑 + 다수결 토픽 + 클라이언트 명시값 우선 (PROMPT_VERSION 1→2), (4) QuestionAudioRow 컴포넌트 — 영어 원문 박스 우상단 통합 ▶ 버튼 (옵션 A), (5) 반응형 페이지네이션 (PC 10그룹 / 모바일 5그룹), (6) fromExam referrer 추적 — 기출에서 콤보 가이드 점프 후 한 번에 복귀, (7) 마이그레이션 059 콤보 토픽 정정 (자유시간+지형 혼재 → 지형 통일) |
 
 <!-- 이후 새 이력은 이 테이블에 행 추가 + memory/개발이력.md에 상세 기록 -->
 
@@ -903,4 +904,4 @@ PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/1
 
 ---
 *최종 업데이트: 2026-05-06*
-*상태: Phase 1~5 ✅ + **Phase 6 오픽 스터디 풀 통합 + 가이드 v3 (콤보 캐시 + 풀 가이드) + 콤보 둘러보기 완료** ✅ → 미니 시뮬레이션 테스트*
+*상태: Phase 1~5 ✅ + **Phase 6 오픽 스터디 풀 통합 + 둘러보기 풀 개선 (콤보별/기출별 + 빈도 BM + 음성 듣기 + 반응형 페이지네이션 + referrer 추적) 완료** ✅ → 미니 시뮬레이션 테스트*

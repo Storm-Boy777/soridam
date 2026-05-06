@@ -31,7 +31,7 @@ const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
 
 const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "https://soridamhub.com,http://localhost:3001,http://localhost:3000,http://localhost:3100").split(",");
 
-const PROMPT_VERSION = 1; // 프롬프트 큰 변경 시 ↑
+const PROMPT_VERSION = 2; // v2: 카테고리 한글 매핑 + 토픽 다수결 + 클라이언트 명시값 우선
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") || "";
@@ -65,6 +65,37 @@ interface QuestionInfo {
   question_english: string;
   question_korean: string | null;
   question_short: string | null;
+  topic?: string;
+  category?: string;
+}
+
+// 한글/영어 카테고리 → 정규화
+function normalizeCategory(raw: string): "general" | "roleplay" | "advance" {
+  const r = (raw || "").trim().toLowerCase();
+  if (r === "일반" || r.startsWith("general")) return "general";
+  if (r === "롤플레이" || r === "roleplay") return "roleplay";
+  if (r === "어드밴스" || r === "advance") return "advance";
+  return "general";
+}
+
+// 콤보 질문들의 다수결 토픽 (동률 시 첫 질문)
+function majorityTopic(questions: QuestionInfo[]): string {
+  const counts = new Map<string, number>();
+  for (const q of questions) {
+    const t = (q.topic as string) || "";
+    if (!t) continue;
+    counts.set(t, (counts.get(t) ?? 0) + 1);
+  }
+  if (counts.size === 0) return "";
+  let best = "";
+  let bestCount = -1;
+  for (const [t, c] of counts) {
+    if (c > bestCount) {
+      best = t;
+      bestCount = c;
+    }
+  }
+  return best;
 }
 
 interface TypeGuideRef {
@@ -219,7 +250,8 @@ async function logSystemUsage(
 async function getOrGenerateGuide(
   supabase: SupabaseClient,
   sig: string,
-  questionIds: string[]
+  questionIds: string[],
+  hint?: { topic?: string; category?: "general" | "roleplay" | "advance" }
 ): Promise<{
   data: GuideOutput;
   cacheHit: boolean;
@@ -271,14 +303,13 @@ async function getOrGenerateGuide(
     throw new Error("questions count mismatch");
   }
 
-  // 토픽/카테고리 추출 (첫 질문 기준)
-  const topic = orderedQuestions[0].topic as string;
-  const rawCategory = (orderedQuestions[0].category as string) ?? "general";
-  const category = rawCategory.startsWith("general")
-    ? "general"
-    : rawCategory === "roleplay"
-      ? "roleplay"
-      : "advance";
+  // 토픽/카테고리 결정 — 클라이언트 명시값 우선, 없으면 다수결/매핑 추론
+  const topic = (hint?.topic && hint.topic.trim().length > 0)
+    ? hint.topic
+    : majorityTopic(orderedQuestions as unknown as QuestionInfo[]) ||
+      ((orderedQuestions[0].topic as string) ?? "");
+  const category = hint?.category
+    ?? normalizeCategory((orderedQuestions[0].category as string) ?? "");
 
   // 3. question_type_guides 조회 (참조용)
   const usedTypeIds = [...new Set(orderedQuestions.map((q) => q.question_type_eng as string))];
@@ -453,6 +484,20 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // 클라이언트 hint (explore 모드에서 컨텍스트 정확성 보장)
+    const hintTopic: string | undefined =
+      typeof body.topic === "string" && body.topic.trim().length > 0
+        ? body.topic.trim()
+        : undefined;
+    const hintCategoryRaw =
+      typeof body.category === "string" ? body.category : undefined;
+    const hintCategory: "general" | "roleplay" | "advance" | undefined =
+      hintCategoryRaw === "general" ||
+      hintCategoryRaw === "roleplay" ||
+      hintCategoryRaw === "advance"
+        ? hintCategoryRaw
+        : undefined;
+
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // ── 모드별 sig 결정 + 세션 정보 ──
@@ -503,7 +548,10 @@ Deno.serve(async (req: Request) => {
 
     // ── 캐시 조회 + 미스 시 생성 ──
     const { data, cacheHit, costUsd, tokensIn, tokensOut } =
-      await getOrGenerateGuide(supabase, sig, questionIds);
+      await getOrGenerateGuide(supabase, sig, questionIds, {
+        topic: hintTopic,
+        category: hintCategory,
+      });
 
     // ── session 모드: 세션 row에도 복사 (Realtime 동기화 트리거) ──
     if (mode === "session" && sessionId) {

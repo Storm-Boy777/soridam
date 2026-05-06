@@ -29,6 +29,8 @@ import type { StudyCategory } from "@/lib/types/opic-study";
 
 interface PageProps {
   searchParams: Promise<{
+    tab?: string;
+    page?: string;
     cat?: string;
     topic?: string;
     combo?: string;
@@ -61,6 +63,13 @@ export default async function OpicStudyExplorePage({ searchParams }: PageProps) 
     ? (params.cat as StudyCategory)
     : undefined;
 
+  // 탭 / 페이지 검증
+  const initialTab: "combos" | "exams" =
+    params.tab === "exams" ? "exams" : "combos";
+  const parsedPage = params.page ? parseInt(params.page, 10) : 1;
+  const initialExamPage =
+    Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+
   return (
     <OpicStudyExploreClient
       groupId={primaryGroup.id}
@@ -70,6 +79,8 @@ export default async function OpicStudyExplorePage({ searchParams }: PageProps) 
       initialCategory={initialCategory}
       initialTopic={params.topic ?? undefined}
       initialComboSig={params.combo ?? undefined}
+      initialTab={initialTab}
+      initialExamPage={initialExamPage}
     />
   );
 }
