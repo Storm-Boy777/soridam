@@ -95,6 +95,7 @@ import type {
   SessionStep,
   FeedbackResult,
   OpicStudyAnswer,
+  ApproachItem,
 } from "@/lib/types/opic-study";
 
 interface SessionState {
@@ -108,8 +109,8 @@ interface SessionState {
   selected_question_ids: string[];
   current_question_idx: number;
   current_speaker_user_id: string | null;
-  ai_guide_text: string | null;
-  ai_guide_key_points: string[] | null;
+  ai_guide_intro: string | null;
+  ai_guide_approaches: ApproachItem[] | null;
 }
 
 interface MemberInfo {
@@ -323,10 +324,10 @@ export function OpicStudySessionClient({
   // 자동 가이드 생성 트리거
   // ============================================================
   useEffect(() => {
-    if (session.step === "guide" && !session.ai_guide_text) {
+    if (session.step === "guide" && !session.ai_guide_intro) {
       generateGuide(sessionId).catch(() => undefined);
     }
-  }, [session.step, session.ai_guide_text, sessionId]);
+  }, [session.step, session.ai_guide_intro, sessionId]);
 
   // ============================================================
   // 단계별 콘텐츠 fetch
@@ -703,12 +704,29 @@ export function OpicStudySessionClient({
     return combos.find((c) => c.sig === session.selected_combo_sig) ?? null;
   }, [combos, session.selected_combo_sig]);
 
-  // 현재 콤보의 질문 list (Step5 가이드 — 콤보 안 3개 질문 흐름)
+  // 현재 콤보의 질문 list (Step5 가이드 — 카드 메인 데이터)
+  // question_type_kor fallback 매핑 (approach.type_label가 우선이지만 미도착 시 사용)
+  const TYPE_KOR_FALLBACK: Record<string, string> = {
+    description: "묘사",
+    routine: "루틴",
+    comparison: "비교",
+    past_recent: "최근 경험",
+    past_special: "특별 경험",
+    past_childhood: "어린시절 경험",
+    rp_11: "롤플레이·질문",
+    rp_12: "롤플레이·해결",
+    adv_14: "사회 변화",
+    adv_15: "사회 이슈",
+  };
   const comboQuestionsList = useMemo(() => {
     if (!currentCombo) return [];
-    return currentCombo.questions.map(
-      (q) => q.question_short ?? q.question_english.slice(0, 40)
-    );
+    return currentCombo.questions.map((q, i) => ({
+      question_index: i + 1, // 1-based — approaches.question_index와 매칭
+      question_english: q.question_english,
+      question_short: q.question_short,
+      question_type_kor: TYPE_KOR_FALLBACK[q.question_type] ?? null,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentCombo]);
 
   // 현재 답변 중인 질문 (Step61, Step62)
@@ -892,11 +910,11 @@ export function OpicStudySessionClient({
     case "guide":
       return (
         <Shell onEnd={handleEndSession}>
-          {session.ai_guide_text ? (
+          {session.ai_guide_intro && session.ai_guide_approaches ? (
             <Step5
               topic={session.selected_topic ?? undefined}
-              level={myTargetGrade}
-              guideText={session.ai_guide_text}
+              introText={session.ai_guide_intro}
+              approaches={session.ai_guide_approaches}
               comboQuestions={comboQuestionsList}
               onStart={handleStartRecording}
               liveMode

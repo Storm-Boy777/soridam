@@ -622,6 +622,8 @@ origin: https://Storm-Boy777@github.com/Storm-Boy777/soridam.git
 | 05-03 | **lobby 의미 살림 + lazy 정리 ✅** | createSession step DEFAULT(mode_select) 사용. handleEnter step 분기 (mode_select → lobby, 그 외 → /session 직진). advanceLobby SA 신규. isSessionExpired 헬퍼 + getActiveSession/createSession 좀비 자동 정리 |
 | 05-03 | **JWT refreshSession 버그 fix ✅** | updateGoals에 supabase.auth.refreshSession() 추가. 등급 저장 후 화면에서 안 보이던 버그 (JWT 클레임 그대로) 해결 |
 | 05-03 | **1:1 문의 prefill 시스템 ✅** | lib/constants/inquiry-prefills.ts 카탈로그 + inquiry-form/tab에 initialCategory/Title/Content + URL ?prefill=key 자동 펼침. 비멤버 페이지 mailto → /support?tab=inquiry&prefill=opic-study |
+| 05-06 | **오픽 스터디 가이드 v3 — 콤보 캐시 + 풀 가이드 ✅** | 마이그레이션 056 (question_type_guides 10 row) + 057 (프롬프트 v2 한글 전용) + 058 (combo_guide_cache). EF v3 통합 (mode session/explore + 콤보 단위 1회 생성 + 영구 캐시). 가이드 출력 풀 구조 (본문 + 흐름 + 포인트 + 권장 길이). 매칭 정확성: 토픽 맥락 입혀 동적 슬롯 변형 (음악 → "장르의 감정·분위기"). 비용: 198 콤보 1회 ≈ $0.5, 이후 영구 무료 |
+| 05-06 | **콤보 둘러보기 페이지 ✅** | /opic-study/explore — 카테고리 → 토픽 → 콤보 → 상세 풀 가이드 4단계 드릴다운. URL 쿼리스트링 동기화. SA 3개 신규 (getQuestionTypeGuides, getComboBySig, getOrGenerateComboCache). 빠른 이동에 카드 추가. Step5 + 둘러보기 캐시 공유 |
 
 <!-- 이후 새 이력은 이 테이블에 행 추가 + memory/개발이력.md에 상세 기록 -->
 
@@ -629,7 +631,7 @@ origin: https://Storm-Boy777@github.com/Storm-Boy777/soridam.git
 
 > **⚠️ 새 세션 시작 시 필수**: `docs/오픽스터디_세션인계.md` 먼저 읽기. 직전 세션 컨텍스트 풀로 정리됨 (현재 상태/해결한 이슈/미해결/테스트 시나리오/트러블슈팅).
 
-**현재**: Phase 1~5 ✅ + **Phase 6 오픽 스터디 풀 + PC 레이아웃 + V2 + 라우트 분리 + 그룹 등급 폐기 + Dialog/Toast 통일 완료** ✅ (코드 100% 완료, 사용자 검증 진행 중)
+**현재**: Phase 1~5 ✅ + **Phase 6 오픽 스터디 가이드 v3 (콤보 캐시 + 풀 가이드) + 콤보 둘러보기 페이지 완료** ✅ (코드 100% 완료, 사용자 검증 진행 중)
 **다음 작업**: 사용자 검증 계속 + 발견 이슈 수정 + 미니 시뮬레이션 테스트 (마이크 + 멤버 2명 풀 플로우)
 
 **⚠️ Claude는 프리뷰 검증 X** (사용자가 직접 브라우저로 진행). 코드 작성/수정만.
@@ -656,12 +658,15 @@ origin: https://Storm-Boy777@github.com/Storm-Boy777/soridam.git
 | 구현 14: 라우트 그룹 분리 (entry+Navbar / immersive) | ✅ |
 | 구현 15: Dialog/Toast 통일 (BpConfirmDialog + sonner) | ✅ |
 | 구현 16: 그룹 등급 폐기 (마이그레이션 052, profiles.target_grade 사용) | ✅ |
-| **구현 17: 사용자 검증 + 미니 시뮬레이션** | 🔄 **진행 중** |
+| 구현 17: 가이드 v3 — 콤보 단위 영구 캐시 (마이그레이션 056~058 + EF v3) | ✅ |
+| 구현 18: 콤보 둘러보기 페이지 (/opic-study/explore) | ✅ |
+| **구현 19: 사용자 검증 + 미니 시뮬레이션** | 🔄 **진행 중** |
 
 ### 오픽 스터디 라우트 카탈로그 (2026-05-02 라우트 그룹 분리)
 
 **Entry — Navbar + Footer 표시** (`(entry)/`)
 - `/opic-study` — 홈 (활성 그룹 + 입장)
+- `/opic-study/explore` — 콤보 둘러보기 (카테고리 → 토픽 → 콤보 → 상세 풀 가이드)
 - `/opic-study/my` — 마이페이지 (학습 이력)
 - `/opic-study/history` — 그룹 세션 이력
 
@@ -755,8 +760,12 @@ Stage C: mock-test-report (평가엔진 7-Step + overview/growth GPT)
 - **튜터링** (/tutoring): 진단 | 훈련 | 나의 튜터링
 - **오픽 스터디** (/opic-study): 별도 디자인 시스템(.bp-scope) — 홈 / lobby / session(Step 1~7) / my / history
 
-### DB 현황 (39개 테이블 — 오픽 스터디 4개 추가 ✅)
+### DB 현황 (41개 테이블 — 오픽 스터디 6개 추가 ✅)
 
+> **오픽 스터디 가이드 v3 추가 2테이블** (마이그레이션 056/058):
+> - `question_type_guides` — 10 row 한글 유형 가이드 마스터 (description/routine/comparison/past_*/rp_*/adv_*)
+> - `combo_guide_cache` — 콤보 단위 영구 캐시 (sig PK, 둘러보기 + Step5 공유)
+>
 > **오픽 스터디 신규 4테이블** (마이그레이션 047 적용, 052에서 target_level 삭제):
 > - `study_groups` — 모임 자체 (월별, ~~등급별~~ — 등급은 멤버 개인 `profiles.target_grade`로)
 > - `study_group_members` — 멤버십 (관리자 등록)
@@ -893,5 +902,5 @@ PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/1
 > 의사결정 기록은 `docs/의사결정.md` 참조
 
 ---
-*최종 업데이트: 2026-05-02*
-*상태: Phase 1~5 ✅ + **Phase 6 오픽 스터디 풀 통합 완료** ✅ (백엔드+디자인+라우트+EF 배포) → 미니 시뮬레이션 테스트*
+*최종 업데이트: 2026-05-06*
+*상태: Phase 1~5 ✅ + **Phase 6 오픽 스터디 풀 통합 + 가이드 v3 (콤보 캐시 + 풀 가이드) + 콤보 둘러보기 완료** ✅ → 미니 시뮬레이션 테스트*

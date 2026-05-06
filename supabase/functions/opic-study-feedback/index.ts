@@ -48,10 +48,16 @@ interface FeedbackOutput {
   tips: string[];
 }
 
+interface ApproachItem {
+  question_index: number;
+  type_label: string;
+  approach: string;
+}
+
 interface SessionMeta {
   selected_category: string;
   selected_topic: string;
-  ai_guide_key_points: string[] | null;
+  ai_guide_approaches: ApproachItem[] | null;
 }
 
 // ── 헬퍼 ──
@@ -236,7 +242,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: sessionData, error: sErr } = await supabase
       .from("opic_study_sessions")
-      .select("group_id, selected_category, selected_topic, ai_guide_key_points")
+      .select("group_id, selected_category, selected_topic, ai_guide_approaches")
       .eq("id", sessionId)
       .single();
 
@@ -361,13 +367,23 @@ Deno.serve(async (req: Request) => {
           .join(", ") || "약점 단어 없음")
       : "발음 데이터 없음";
 
+    // 답변한 질문(question_idx)에 해당하는 approach만 추출 (questionIdx는 0-based, question_index는 1-based)
+    const targetApproach = (session.ai_guide_approaches || []).find(
+      (a) => a.question_index === questionIdx + 1
+    );
+    const guideForThisQuestion = targetApproach
+      ? `[${targetApproach.type_label}] ${targetApproach.approach}`
+      : "(가이드 없음)";
+
     const userPrompt = buildPrompt(userPromptTpl, {
       // 답변자 본인의 목표 등급 (프롬프트가 group_target_level 변수명을 그대로 쓰면 호환성 위해 둘 다 주입)
       group_target_level: answererTargetGrade,
       answerer_target_grade: answererTargetGrade,
       category: session.selected_category,
       topic: session.selected_topic,
-      ai_guide_key_points: (session.ai_guide_key_points || []).map((p, i) => `${i + 1}. ${p}`).join("\n") || "(없음)",
+      // 변수명 호환성 유지 (evaluation_prompts의 prompt_text 무수정)
+      // 의미 변경: 기존 "오늘 콤보 핵심 3가지" → "이 질문에 대한 한글 가이드 1개"
+      ai_guide_key_points: guideForThisQuestion,
       question_type: question.question_type_eng,
       question_english: question.question_english,
       question_idx: String(questionIdx),

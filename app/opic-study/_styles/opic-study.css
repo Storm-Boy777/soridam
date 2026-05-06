@@ -881,6 +881,13 @@
   gap: 12px;
 }
 
+/* 질문 카드 그리드 (Step5 v2 — 콤보 질문 미리보기) — 모바일 1열, PC 동적 (--question-cols) */
+.bp-grid-questions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
 /* 768px 이상 — PC padding 확대 + 그리드 다열 + typography 살짝 키움 */
 @media (min-width: 768px) {
   .bp-shell-content {
@@ -929,6 +936,10 @@
   .bp-grid-loop {
     grid-template-columns: 1fr 320px !important;
     gap: 16px;
+  }
+  .bp-grid-questions {
+    grid-template-columns: repeat(var(--question-cols, 3), minmax(0, 1fr));
+    gap: 14px;
   }
   /* Typography — PC 확장 */
   .bp-shell .t-display { font-size: 32px; }

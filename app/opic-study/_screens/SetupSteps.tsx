@@ -32,14 +32,17 @@ import {
   MbDot,
   MbStack,
   CoachAvatar,
+  CoachBlock,
   Pill,
   Tag,
+  Quote,
   Insight,
   SectionH,
   PcStepShell,
   PcStepBar,
   Hl,
 } from "../_components/bp";
+import type { ApproachItem } from "@/lib/types/opic-study";
 import { goHome } from "@/lib/opic-study/nav";
 import { onCardKey } from "@/lib/opic-study/keyboard";
 import { useSessionFrame } from "../_components/session-frame-context";
@@ -1470,154 +1473,147 @@ export function Step4({
 
 
 // ============================================================
-// Step 5 · AI 스터디 코치 가이드
+// Step 5 · AI 스터디 코치 가이드 (v2 — 등급 비특정, 한글 전용)
 // ============================================================
 
 interface Step5Props {
   topic?: string;
-  level?: string;
-  appearancePct?: number;
-  points?: typeof MOCK_GUIDE_POINTS;
-  /** 외부에서 전달된 가이드 텍스트 (선택) */
-  guideText?: string | null;
-  /** 콤보 질문 list (실데이터) — 없으면 흐름 카드 자체 숨김 */
-  comboQuestions?: string[];
+  /** AI 코치 한 줄 인사 (등급 비특정 공통) */
+  introText: string;
+  /** 질문별 한글 가이드 (콤보 질문 수와 정확히 매칭) */
+  approaches: ApproachItem[];
+  /** 콤보 질문 정보 (영어 원문 + 한 줄 요약 + 유형 라벨) */
+  comboQuestions: Array<{
+    question_index: number;        // 1-based
+    question_english: string;
+    question_short: string | null;
+    question_type_kor: string | null;
+  }>;
   onStart?: () => void;
-  /** ← 뒤로 버튼 override. 미전달 시 goHome (홈으로) */
-  onBack?: () => void;
   liveMode?: boolean;
   groupName?: string;
 }
 
-/** Step 5 — AI 스터디 코치 가이드 (단일 컴포넌트, PC 좌우 분할 + 모바일 세로 stack) */
+/** Step 5 v2 — AI 스터디 코치 가이드 (3카드 + 진행방식 4단계) */
 export function Step5({
-  topic,
-  level,
-  appearancePct,
-  points = [],
-  guideText,
-  comboQuestions = [],
+  introText,
+  approaches,
+  comboQuestions,
   onStart,
 }: Step5Props) {
+  const cardCount = Math.max(comboQuestions.length, 1);
 
-  // 포인트 카드 시각 차별화 — 도입/구조/디테일 (3개 — 4번째부터는 순환)
-  const POINT_TONES: Array<"good" | "polish" | "tip"> = ["good", "polish", "tip"];
-  const POINT_NUM_STYLE = [
-    {
-      bg: "var(--bp-tc-tint)",
-      color: "var(--bp-tc)",
-      icon: <Mic size={13} strokeWidth={1.8} aria-hidden="true" />,
-    },
-    {
-      bg: "rgba(74, 184, 90, 0.12)",
-      color: "#2d7a3d",
-      icon: <Layers size={13} strokeWidth={1.8} aria-hidden="true" />,
-    },
-    {
-      bg: "rgba(98, 138, 204, 0.14)",
-      color: "#3b5fa0",
-      icon: <Pen size={13} strokeWidth={1.8} aria-hidden="true" />,
-    },
-  ];
-
-  const guideParagraphs = guideText
-    ? guideText.split(/\n\n+/).map((p) => p.trim()).filter(Boolean)
-    : null;
+  // approach 매칭: question_index 기준
+  const approachByIndex = new Map<number, ApproachItem>();
+  for (const a of approaches) approachByIndex.set(a.question_index, a);
 
   return (
     <div className="bp-scope bp-shell">
       <PcStepBar now={4} total={6} />
 
-      <div className="bp-shell-content">
-        {/* 좌우 분할 — 모바일 세로 stack, PC 좌우 1fr/1.1fr (CSS 반응형) */}
-        <div className="bp-grid-guide">
-          {/* LEFT — AI 코치 Hero + 3개 질문 흐름 */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {/* Hero 카드 — 그라데이션 + 코치 아바타 + 가이드 텍스트 */}
-            <div
+      <div
+        className="bp-shell-content"
+        style={{ display: "flex", flexDirection: "column", gap: 16 }}
+      >
+        {/* AI 코치 한 줄 인사 (작게) */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            padding: "4px 4px 0",
+          }}
+        >
+          <CoachAvatar size="sm" />
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+              minWidth: 0,
+            }}
+          >
+            <span
+              className="t-xs"
               style={{
-                position: "relative",
-                padding: "24px 22px",
-                borderRadius: "var(--bp-radius-lg)",
-                background:
-                  "linear-gradient(140deg, var(--bp-tc-tint) 0%, var(--bp-surface) 100%)",
-                boxShadow: "var(--bp-shadow-sm)",
-                overflow: "hidden",
+                color: "var(--bp-tc)",
+                fontWeight: 700,
+                letterSpacing: "0.08em",
               }}
             >
-              {/* 배경 장식 */}
-              <div
-                aria-hidden="true"
-                style={{
-                  position: "absolute",
-                  right: -42,
-                  top: -42,
-                  width: 180,
-                  height: 180,
-                  borderRadius: "50%",
-                  background: "var(--bp-tc)",
-                  opacity: 0.06,
-                  pointerEvents: "none",
-                }}
-              />
-              <div
-                style={{
-                  position: "relative",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 18,
-                }}
+              AI 스터디 코치
+            </span>
+            <span
+              className="t-body"
+              style={{
+                lineHeight: 1.55,
+                color: "var(--bp-ink)",
+                textWrap: "pretty" as const,
+              }}
+            >
+              {introText}
+            </span>
+          </div>
+        </div>
+
+        {/* 3개 질문 카드 (메인) */}
+        <div
+          className="bp-grid-questions"
+          style={
+            {
+              ["--question-cols" as string]: cardCount,
+            } as React.CSSProperties
+          }
+        >
+          {comboQuestions.map((q, i) => {
+            const approach = approachByIndex.get(q.question_index);
+            const typeLabel =
+              approach?.type_label || q.question_type_kor || "질문";
+            return (
+              <HfCard
+                key={i}
+                padding={16}
+                style={{ display: "flex", flexDirection: "column", gap: 10 }}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 14,
-                  }}
-                >
-                  <div
-                    style={{ position: "relative", flexShrink: 0 }}
+                {/* 카드 헤더 — Q번호 + 유형 태그 */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span
+                    className="t-num t-xs"
+                    style={{
+                      minWidth: 32,
+                      height: 24,
+                      borderRadius: 8,
+                      background: "var(--bp-surface-2)",
+                      color: "var(--bp-ink-2)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 700,
+                      fontVariantNumeric: "tabular-nums",
+                      flexShrink: 0,
+                      border: "1px solid var(--bp-line)",
+                    }}
                     aria-hidden="true"
                   >
-                    <CoachAvatar size="lg" />
-                    <div
-                      className="bp-pulse-ring"
-                      style={{
-                        position: "absolute",
-                        inset: -6,
-                        borderRadius: "50%",
-                        border: "1.5px solid var(--bp-tc)",
-                        opacity: 0.25,
-                        pointerEvents: "none",
-                      }}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 4,
-                      minWidth: 0,
-                    }}
-                  >
-                    <span
-                      className="t-xs"
-                      style={{
-                        color: "var(--bp-tc)",
-                        fontWeight: 700,
-                        letterSpacing: "0.1em",
-                      }}
-                    >
-                      오늘의 코치 인사
-                    </span>
-                    <span className="t-h2" style={{ letterSpacing: "-0.01em" }}>
-                      AI 스터디 코치
-                    </span>
-                  </div>
+                    Q{q.question_index}
+                  </span>
+                  <Tag tone="good" style={{ fontSize: 10 }}>
+                    {typeLabel}
+                  </Tag>
                 </div>
 
-                {(topic || level) && (
-                  <div>
+                {/* 영어 원문 */}
+                <Quote>{q.question_english}</Quote>
+
+                {/* 질문 한 줄로 (한국어 요약) */}
+                {q.question_short && (
+                  <div
+                    style={{
+                      padding: "10px 12px",
+                      background: "var(--bp-surface-2)",
+                      borderRadius: 10,
+                    }}
+                  >
                     <span
                       className="t-xs ink-3"
                       style={{
@@ -1627,253 +1623,215 @@ export function Step5({
                         letterSpacing: "0.04em",
                       }}
                     >
-                      오늘의 콤보
+                      질문 한 줄로
                     </span>
-                    <div
-                      className="t-h1"
-                      style={{
-                        fontVariantNumeric: "tabular-nums",
-                        textWrap: "balance" as const,
-                      }}
+                    <span
+                      className="t-sm"
+                      style={{ lineHeight: 1.5, color: "var(--bp-ink)" }}
                     >
-                      {topic}
-                      {topic && level && (
-                        <span className="ink-3"> · </span>
-                      )}
-                      {level}
-                    </div>
+                      {q.question_short}
+                    </span>
                   </div>
                 )}
 
-                {/* GUIDE TEXT */}
-                {guideParagraphs && guideParagraphs.length > 0 ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 14,
-                    }}
+                {/* 💡 이렇게 답해요 (풀 가이드 — 본문 + 흐름 + 포인트 + 권장 길이) */}
+                {approach && (
+                  <CoachBlock
+                    tone="good"
+                    label="💡 이렇게 답해요"
+                    style={{ padding: "10px 12px", marginTop: "auto" }}
                   >
-                    {guideParagraphs.map((para, i) => {
-                      const isLast =
-                        guideParagraphs.length > 1 &&
-                        i === guideParagraphs.length - 1;
-                      return (
-                        <p
-                          key={i}
-                          className="t-body"
-                          style={{
-                            margin: 0,
-                            lineHeight: 1.7,
-                            color: isLast ? "var(--bp-tc)" : "var(--bp-ink)",
-                            fontWeight: isLast ? 600 : 400,
-                            fontStyle: isLast ? "italic" : undefined,
-                          }}
-                        >
-                          {para}
-                        </p>
-                      );
-                    })}
-                  </div>
-                ) : appearancePct !== undefined ? (
-                  <p
-                    className="t-body"
-                    style={{
-                      margin: 0,
-                      lineHeight: 1.7,
-                      color: "var(--bp-ink)",
-                    }}
-                  >
-                    이 콤보는{" "}
-                    <Hl>{appearancePct}% 확률</Hl>로 등장하는 정형화된 패턴이에요.
-                  </p>
-                ) : null}
-              </div>
-            </div>
-
-            {/* 3개 질문 흐름 — 실데이터(comboQuestions)가 있을 때만 표시 */}
-            {comboQuestions.length > 0 && (
-              <HfCard
-                padding={16}
-                style={{
-                  background: "var(--bp-surface-2)",
-                  boxShadow: "none",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 12,
-                  }}
-                >
-                  <SectionH style={{ marginBottom: 0 }}>오늘의 흐름</SectionH>
-                  <span className="t-xs ink-3">
-                    {comboQuestions.length}개 질문
-                  </span>
-                </div>
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 0 }}
-                >
-                  {comboQuestions.map((q, i) => (
-                    <div key={i}>
-                      <div
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {/* 본문 */}
+                      <span
+                        className="t-sm"
                         style={{
-                          display: "flex",
-                          gap: 12,
-                          alignItems: "center",
-                          padding: "8px 0",
+                          lineHeight: 1.55,
+                          color: "var(--bp-ink)",
+                          textWrap: "pretty" as const,
                         }}
                       >
-                        <span
-                          className="t-num t-xs"
-                          style={{
-                            minWidth: 28,
-                            height: 24,
-                            borderRadius: 8,
-                            background: "var(--bp-surface)",
-                            color: "var(--bp-ink-2)",
-                            fontWeight: 700,
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontVariantNumeric: "tabular-nums",
-                            flexShrink: 0,
-                            border: "1px solid var(--bp-line)",
-                          }}
-                          aria-hidden="true"
-                        >
-                          Q{i + 1}
-                        </span>
-                        <span
-                          className="t-sm"
-                          style={{ lineHeight: 1.5, fontWeight: 500 }}
-                        >
-                          {q}
-                        </span>
-                      </div>
-                      {i < comboQuestions.length - 1 && (
-                        <div
-                          aria-hidden="true"
-                          style={{
-                            marginLeft: 13,
-                            width: 2,
-                            height: 14,
-                            borderLeft: "2px dotted var(--bp-line-strong)",
-                          }}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </HfCard>
-            )}
-          </div>
+                        {approach.approach}
+                      </span>
 
-          {/* RIGHT — 포인트 카드 */}
+                      {/* 흐름 */}
+                      {approach.answer_flow && approach.answer_flow.length > 0 && (
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                            flexWrap: "wrap",
+                            fontSize: 11,
+                          }}
+                        >
+                          <span
+                            className="ink-3"
+                            style={{ fontWeight: 700, marginRight: 2 }}
+                          >
+                            흐름
+                          </span>
+                          {approach.answer_flow.map((step, idx) => (
+                            <span
+                              key={idx}
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 2,
+                              }}
+                            >
+                              <span
+                                style={{
+                                  padding: "2px 6px",
+                                  background: "var(--bp-surface)",
+                                  border: "1px solid var(--bp-line)",
+                                  borderRadius: 4,
+                                  fontWeight: 600,
+                                  color: "var(--bp-ink)",
+                                }}
+                              >
+                                {step}
+                              </span>
+                              {idx < approach.answer_flow.length - 1 && (
+                                <span
+                                  className="ink-3"
+                                  style={{ fontSize: 9 }}
+                                  aria-hidden="true"
+                                >
+                                  ›
+                                </span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* 포인트 */}
+                      {approach.key_points && approach.key_points.length > 0 && (
+                        <ul
+                          style={{
+                            margin: 0,
+                            paddingLeft: 14,
+                            fontSize: 11,
+                            color: "var(--bp-ink-2)",
+                            lineHeight: 1.5,
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 2,
+                          }}
+                        >
+                          {approach.key_points.map((p, idx) => (
+                            <li key={idx}>{p}</li>
+                          ))}
+                        </ul>
+                      )}
+
+                      {/* 권장 길이 */}
+                      {approach.recommended_word_min !== undefined &&
+                        approach.recommended_word_max !== undefined && (
+                          <div
+                            className="t-xs ink-3"
+                            style={{
+                              fontVariantNumeric: "tabular-nums",
+                              marginTop: 2,
+                            }}
+                          >
+                            권장{" "}
+                            <span
+                              style={{
+                                fontWeight: 700,
+                                color: "var(--bp-ink-2)",
+                              }}
+                            >
+                              {approach.recommended_word_min}~
+                              {approach.recommended_word_max}
+                            </span>{" "}
+                            단어
+                          </div>
+                        )}
+                    </div>
+                  </CoachBlock>
+                )}
+              </HfCard>
+            );
+          })}
+        </div>
+
+        {/* 진행 방식 카드 */}
+        <HfCard
+          padding={16}
+          style={{
+            background: "var(--bp-surface-2)",
+            boxShadow: "none",
+          }}
+        >
           <div
             style={{
               display: "flex",
-              flexDirection: "column",
-              gap: 12,
+              alignItems: "center",
+              gap: 8,
+              marginBottom: 12,
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                marginBottom: 2,
-              }}
-            >
-              <Sparkles
-                size={16}
-                strokeWidth={1.6}
-                color="var(--bp-tc)"
-                aria-hidden="true"
-              />
-              <SectionH style={{ marginBottom: 0 }}>
-                오늘 함께 배울 포인트
-              </SectionH>
-            </div>
-            {points.map((p, i) => {
-              const visualIdx = i % 3;
-              const numStyle = POINT_NUM_STYLE[visualIdx];
-              const tone = POINT_TONES[visualIdx];
-              return (
-                <HfCard
-                  key={i}
-                  padding={16}
-                  style={{
-                    display: "flex",
-                    gap: 12,
-                    alignItems: "flex-start",
-                  }}
-                >
-                  <div
-                    aria-hidden="true"
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: 4,
-                      flexShrink: 0,
-                    }}
-                  >
-                    <span
-                      className="t-num"
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 10,
-                        background: numStyle.bg,
-                        color: numStyle.color,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 14,
-                        fontWeight: 700,
-                        fontVariantNumeric: "tabular-nums",
-                      }}
-                    >
-                      {i + 1}
-                    </span>
-                    <span style={{ color: numStyle.color }}>
-                      {numStyle.icon}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 6,
-                      flex: 1,
-                      minWidth: 0,
-                    }}
-                  >
-                    <Tag
-                      tone={tone}
-                      style={{ fontSize: 10, alignSelf: "flex-start" }}
-                    >
-                      {p.tag}
-                    </Tag>
-                    <span
-                      className="t-body"
-                      style={{
-                        lineHeight: 1.55,
-                        color: "var(--bp-ink)",
-                        fontWeight: 500,
-                      }}
-                    >
-                      {p.text}
-                    </span>
-                  </div>
-                </HfCard>
-              );
-            })}
+            <span style={{ fontSize: 16 }} aria-hidden="true">
+              📋
+            </span>
+            <SectionH style={{ marginBottom: 0 }}>
+              오늘 스터디는 이렇게 진행돼요
+            </SectionH>
           </div>
-        </div>
+          <ol
+            style={{
+              margin: 0,
+              padding: 0,
+              listStyle: "none",
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+            }}
+          >
+            {[
+              "한 명씩 답변 (나머지는 듣고 메모)",
+              "AI 코칭이 도착하면 함께 보기",
+              cardCount > 1
+                ? `Q1 → Q${cardCount} 순서로 진행`
+                : "콤보 질문 순서로 진행",
+              "마지막에 멤버 답변 함께 비교",
+            ].map((step, i) => (
+              <li
+                key={i}
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  alignItems: "flex-start",
+                }}
+              >
+                <span
+                  className="t-num t-xs"
+                  style={{
+                    minWidth: 22,
+                    height: 22,
+                    borderRadius: "50%",
+                    background: "var(--bp-tc-tint)",
+                    color: "var(--bp-tc)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: 700,
+                    flexShrink: 0,
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                  aria-hidden="true"
+                >
+                  {i + 1}
+                </span>
+                <span className="t-sm" style={{ lineHeight: 1.55 }}>
+                  {step}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </HfCard>
       </div>
 
       <div className="bp-shell-actions">
@@ -1894,5 +1852,12 @@ export function Step5({
     </div>
   );
 }
-// 미사용 import 무시
+
+// 미사용 import 정리 (다른 Step에서 쓰일 수 있어 import는 유지)
 void MbDot;
+void MOCK_GUIDE_POINTS;
+void Mic;
+void Layers;
+void Pen;
+void Sparkles;
+void Hl;

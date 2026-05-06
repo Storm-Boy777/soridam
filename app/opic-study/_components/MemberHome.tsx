@@ -23,6 +23,7 @@ import {
   Headphones,
   Lightbulb,
   Calendar,
+  BookOpenText,
 } from "lucide-react";
 import {
   HfPhone,
@@ -1532,6 +1533,12 @@ function QuickLinks() {
           gap: 10,
         }}
       >
+        <QuickLinkCard
+          href="/opic-study/explore"
+          icon={<BookOpenText size={18} strokeWidth={1.6} />}
+          title="콤보 둘러보기"
+          desc="스터디 가기 전 콤보 미리 보기"
+        />
         <QuickLinkCard
           href="/opic-study/history"
           icon={<History size={18} strokeWidth={1.6} />}

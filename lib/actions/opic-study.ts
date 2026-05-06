@@ -19,6 +19,8 @@ import type {
   GroupSchedule,
   StudyCategory,
   SessionStep,
+  QuestionTypeGuide,
+  ComboGuideCache,
 } from "@/lib/types/opic-study";
 import { isSessionExpired, getModeForDate } from "@/lib/opic-study/schedule";
 
@@ -1026,10 +1028,10 @@ export async function generateGuide(sessionId: string): Promise<ActionResult> {
     // 이미 가이드가 있으면 skip
     const { data: session } = await supabase
       .from(T.opic_study_sessions)
-      .select("ai_guide_text")
+      .select("ai_guide_intro")
       .eq("id", sessionId)
       .single();
-    if (session?.ai_guide_text) return { data: null };
+    if (session?.ai_guide_intro) return { data: null };
 
     // EF fire-and-forget (호출자 user_id 함께 전달 → api_usage_logs 기록용)
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -1237,6 +1239,213 @@ export async function getMyLearnStats(): Promise<
   } catch (err) {
     return {
       error: err instanceof Error ? err.message : "학습 통계 조회 실패",
+    };
+  }
+}
+
+// ============================================================
+// 8. 콤보 둘러보기 (Explore) — 학습 가이드 라이브러리
+// ============================================================
+
+/** 질문 유형별 한글 가이드 전체 조회 (활성 가이드만, display_order 순) */
+export async function getQuestionTypeGuides(): Promise<ActionResult<QuestionTypeGuide[]>> {
+  try {
+    const { supabase } = await requireUser();
+    const { data, error } = await supabase
+      .from("question_type_guides")
+      .select(
+        "type_id, type_label_kor, type_short_kor, essence_kor, answer_flow, key_points, recommended_word_min, recommended_word_max, prompt_reference, is_active, display_order"
+      )
+      .eq("is_active", true)
+      .order("display_order", { ascending: true });
+
+    if (error) {
+      return { error: "유형 가이드 조회 실패" };
+    }
+    return { data: (data ?? []) as QuestionTypeGuide[] };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "유형 가이드 조회 실패",
+    };
+  }
+}
+
+/**
+ * 콤보 캐시 조회 + 미스 시 EF 트리거 — 둘러보기 + 스터디 룸 공유 캐시
+ *
+ * 흐름:
+ *   1. combo_guide_cache 조회
+ *   2. HIT → 즉시 반환 (cache_hit: true)
+ *   3. MISS → opic-study-guide EF 호출 (mode='explore') → 응답 대기 → 반환
+ *
+ * 응답 시간:
+ *   - HIT: ~50ms (DB SELECT)
+ *   - MISS: ~1~3s (GPT 호출 + 캐시 저장)
+ */
+export async function getOrGenerateComboCache(
+  sig: string
+): Promise<ActionResult<ComboGuideCache>> {
+  try {
+    const { supabase, userId } = await requireUser();
+
+    if (!sig || !sig.includes("|")) {
+      return { error: "잘못된 콤보 시그니처" };
+    }
+
+    // 1. 캐시 조회 (prompt_version 1만)
+    const { data: cached } = await supabase
+      .from("combo_guide_cache")
+      .select("sig, topic, category, intro_text, approaches, generated_at, prompt_version")
+      .eq("sig", sig)
+      .eq("prompt_version", 1)
+      .maybeSingle();
+
+    if (cached) {
+      return { data: cached as ComboGuideCache };
+    }
+
+    // 2. 미스 → EF 호출
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+    const efResponse = await fetch(`${url}/functions/v1/opic-study-guide`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${anonKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ sig, triggered_by: userId }),
+    });
+
+    if (!efResponse.ok) {
+      return { error: "가이드 생성 실패. 잠시 후 다시 시도해주세요." };
+    }
+
+    // 3. 캐시 재조회 (EF가 INSERT 했음)
+    const { data: regenerated } = await supabase
+      .from("combo_guide_cache")
+      .select("sig, topic, category, intro_text, approaches, generated_at, prompt_version")
+      .eq("sig", sig)
+      .eq("prompt_version", 1)
+      .maybeSingle();
+
+    if (!regenerated) {
+      return { error: "가이드 저장 실패" };
+    }
+    return { data: regenerated as ComboGuideCache };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "콤보 가이드 조회 실패",
+    };
+  }
+}
+
+/**
+ * 단일 콤보 상세 조회 — 콤보 둘러보기 상세 페이지용
+ * sig (정렬된 question_ids '|' join)으로 조회.
+ *
+ * 출제 빈도/학습 이력은 그룹 컨텍스트(groupId)가 있을 때만 채움.
+ */
+export async function getComboBySig(input: {
+  sig: string;
+  groupId?: string;
+}): Promise<ActionResult<ComboForStudy>> {
+  try {
+    const { supabase, userId } = await requireUser();
+
+    if (input.groupId) {
+      await requireGroupMember(supabase, input.groupId, userId);
+    }
+
+    const questionIds = input.sig.split("|").filter(Boolean);
+    if (questionIds.length === 0) {
+      return { error: "잘못된 콤보 시그니처" };
+    }
+
+    // 1. 질문 정보 조회
+    const { data: questions, error: qErr } = await supabase
+      .from("questions")
+      .select("id, question_type_eng, question_english, question_korean, question_short, topic, category")
+      .in("id", questionIds);
+
+    if (qErr || !questions || questions.length === 0) {
+      return { error: "콤보를 찾을 수 없습니다" };
+    }
+
+    // 토픽/카테고리 일관성 검증
+    const topic = questions[0].topic as string;
+    const category = comboTypeToCategory(
+      (questions[0].category as string) ?? ""
+    );
+
+    // 2. 출제 빈도 계산 (이 콤보 시그니처가 submission_combos에서 몇 번 등장했는지)
+    const { data: combosRaw } = await supabase
+      .from(T.submission_combos)
+      .select("question_ids, submissions!inner(status, exam_approved)")
+      .eq("topic", topic)
+      .eq("submissions.status", "complete")
+      .eq("submissions.exam_approved", "approved");
+
+    type ComboRow = { question_ids: string[] };
+    const allCombos = (combosRaw ?? []) as unknown as ComboRow[];
+
+    const targetSig = buildComboSignature(questionIds);
+    let frequency = 0;
+    const totalCombos = allCombos.length;
+    const qidAppearance: Record<string, number> = {};
+
+    for (const c of allCombos) {
+      const sig = buildComboSignature(c.question_ids ?? []);
+      if (sig === targetSig) frequency++;
+      for (const qid of c.question_ids ?? []) {
+        qidAppearance[qid] = (qidAppearance[qid] || 0) + 1;
+      }
+    }
+
+    const appearance_pct =
+      totalCombos > 0 ? Math.round((frequency / totalCombos) * 100) : 0;
+
+    // 3. 그룹 학습 이력 (groupId 있을 때만)
+    let studied_in_group = false;
+    if (input.groupId) {
+      const { data: studied } = await supabase
+        .from(T.opic_study_sessions)
+        .select("id")
+        .eq("group_id", input.groupId)
+        .eq("selected_combo_sig", targetSig)
+        .limit(1);
+      studied_in_group = (studied?.length ?? 0) > 0;
+    }
+
+    // 4. 출제 순서 보존 — questions를 questionIds 순서로 정렬
+    const orderedQuestions = questionIds
+      .map((qid) => questions.find((q) => q.id === qid))
+      .filter((q): q is NonNullable<typeof q> => !!q);
+
+    const result: ComboForStudy = {
+      sig: targetSig,
+      representative_qids: questionIds,
+      frequency,
+      appearance_pct,
+      questions: orderedQuestions.map((q) => ({
+        id: q.id as string,
+        question_type: q.question_type_eng as string,
+        question_english: q.question_english as string,
+        question_korean: q.question_korean as string | null,
+        question_short: q.question_short as string | null,
+        appearance_pct:
+          totalCombos > 0
+            ? Math.round(((qidAppearance[q.id as string] || 0) / totalCombos) * 100)
+            : 0,
+        studied_by_user: false, // explore 페이지에서는 미사용
+      })),
+      studied_in_group,
+    };
+
+    return { data: result };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "콤보 조회 실패",
     };
   }
 }

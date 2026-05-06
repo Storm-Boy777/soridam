@@ -113,8 +113,8 @@ export default async function OpicStudySessionPage({ params }: PageProps) {
         selected_question_ids: session.selected_question_ids ?? [],
         current_question_idx: session.current_question_idx,
         current_speaker_user_id: session.current_speaker_user_id,
-        ai_guide_text: session.ai_guide_text,
-        ai_guide_key_points: session.ai_guide_key_points,
+        ai_guide_intro: session.ai_guide_intro,
+        ai_guide_approaches: session.ai_guide_approaches,
       }}
     />
   );

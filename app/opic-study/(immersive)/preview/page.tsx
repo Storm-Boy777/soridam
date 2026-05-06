@@ -227,7 +227,59 @@ export default function PreviewPage() {
             <Step4 />
           </Artboard>
           <Artboard label="5 · 코치 가이드" width={360} height={760}>
-            <Step5 />
+            <Step5
+              topic="음악"
+              introText="오늘은 음악 콤보로 함께 연습해볼게요"
+              approaches={[
+                {
+                  question_index: 1,
+                  type_label: "묘사",
+                  approach: "이 질문은 좋아하는 음악과 가수를 묘사하는 유형이에요. 자주 듣는 장르와 그 이유, 좋아하는 가수를 자연스럽게 풀어내세요.",
+                  answer_flow: ["좋아하는 장르 명시", "장르의 감정·분위기", "좋아하는 가수 + 매력", "왜 좋아하는지"],
+                  key_points: ["자주 듣는 장르 1~2개 명확히", "장르의 감정·분위기 풀어내기", "가수 이름 + 매력 한 줄"],
+                  recommended_word_min: 80,
+                  recommended_word_max: 150,
+                },
+                {
+                  question_index: 2,
+                  type_label: "비교",
+                  approach: "이 질문은 음악 관심이 어떻게 변해왔는지 비교하는 유형이에요. 어렸을 때부터 지금까지 시간 흐름으로 이어가세요.",
+                  answer_flow: ["어릴 때 좋아한 음악", "변화의 계기", "지금 즐겨 듣는 음악", "변화의 의미"],
+                  key_points: ["시간 흐름 명확히", "변화의 계기 언급", "현재 음악으로 마무리"],
+                  recommended_word_min: 100,
+                  recommended_word_max: 180,
+                },
+                {
+                  question_index: 3,
+                  type_label: "특별 경험",
+                  approach: "이 질문은 기억에 남는 라이브 음악 경험을 묘사하는 유형이에요. 언제·어디서·누구와 함께였는지부터 시작하세요.",
+                  answer_flow: ["언제·어디·누구", "공연 진행", "특별했던 순간", "왜 기억에 남는지"],
+                  key_points: ["배경 3가지 명확히 (언제·어디·누구)", "특별했던 한 장면 구체적으로", "감정의 이유까지 마무리"],
+                  recommended_word_min: 130,
+                  recommended_word_max: 220,
+                },
+              ]}
+              comboQuestions={[
+                {
+                  question_index: 1,
+                  question_english: "What kinds of music do you listen to? Who are some of your favorite musicians?",
+                  question_short: "좋아하는 음악과 가수",
+                  question_type_kor: "묘사",
+                },
+                {
+                  question_index: 2,
+                  question_english: "When did you first become interested in music? How has your interest developed?",
+                  question_short: "음악 관심 변화",
+                  question_type_kor: "비교",
+                },
+                {
+                  question_index: 3,
+                  question_english: "Could you think back to a memorable time when you heard live music?",
+                  question_short: "기억에 남는 라이브 경험",
+                  question_type_kor: "특별 경험",
+                },
+              ]}
+            />
           </Artboard>
         </div>
       </Section>

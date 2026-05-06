@@ -101,9 +101,9 @@ export interface OpicStudySession {
   current_question_idx: number;
   current_speaker_user_id: string | null;
 
-  // AI 가이드
-  ai_guide_text: string | null;
-  ai_guide_key_points: string[] | null;    // 정확히 3개 (가이드 생성 시)
+  // AI 가이드 (v2 — 한글 전용, 등급 비특정)
+  ai_guide_intro: string | null;           // 한 줄 인사 (예: "오늘은 음악 콤보로 함께 연습해볼게요")
+  ai_guide_approaches: ApproachItem[] | null; // 질문별 한글 가이드 (콤보 질문 수만큼)
   ai_guide_generated_at: string | null;
 
   // 메타
@@ -174,55 +174,76 @@ export interface FeedbackResult {
   generated_at: string;
 }
 
-// AI 가이드 결과 (Step 5)
+// AI 가이드 — 질문별 풀 한글 가이드 (둘러보기 + Step5 공유)
+//
+// v2 → v3: 단순 approach 텍스트만 → 풀 가이드 (흐름 + 포인트 + 권장 길이)
+//   - approach: 본문 (한 단락)
+//   - answer_flow: 단계별 흐름 (array)
+//   - key_points: 놓치면 안 되는 포인트 (array)
+//   - recommended_word_min/max: 권장 길이
+//
+// 토픽 맥락 입혀 콤보별로 1회만 생성 + 영구 캐시 (combo_guide_cache).
+export interface ApproachItem {
+  question_index: number;                  // 1, 2, 3 (콤보 질문 수만큼, 1-based)
+  type_label: string;                      // 한글 유형 라벨 ('묘사', '비교', '특별 경험' 등)
+  approach: string;                        // 본문 — "이 질문은 ~ 유형이에요. ..." (1 단락)
+  answer_flow: string[];                   // 흐름 (3~5개)
+  key_points: string[];                    // 놓치면 안 되는 포인트 (2~4개)
+  recommended_word_min: number;            // 권장 최소 단어
+  recommended_word_max: number;            // 권장 최대 단어
+}
+
+// 콤보 단위 가이드 캐시 (combo_guide_cache 테이블)
+export interface ComboGuideCache {
+  sig: string;                             // 콤보 시그니처 (PK)
+  topic: string;
+  category: string;
+  intro_text: string;                      // AI 코치 한 줄 인사
+  approaches: ApproachItem[];              // 풀 가이드 array
+  generated_at: string;
+  prompt_version: number;
+}
+
+// AI 가이드 결과 (Step 5) — 등급 비특정 공통, 한글 전용
 export interface GuideResult {
-  guide_text: string;                      // 메인 멘트 (3~4문단)
-  key_points: string[];                    // 정확히 3개
+  intro_text: string;                      // AI 코치 한 줄 인사 (40~60자)
+  approaches: ApproachItem[];              // 질문별 가이드 (콤보 질문 수에 정확히 맞춤)
+}
+
+// 질문 유형별 가이드 마스터 (question_type_guides 테이블)
+export interface QuestionTypeGuide {
+  type_id: string;                         // 'description', 'routine', 'comparison' 등
+  type_label_kor: string;                  // 정식 한글 라벨
+  type_short_kor: string;                  // 카드 헤더용 짧은 라벨
+  essence_kor: string;                     // 본질 1-2문장
+  answer_flow: string[];                   // 단계별 답변 흐름
+  key_points: string[];                    // 핵심 포인트
+  recommended_word_min: number;
+  recommended_word_max: number;
+  prompt_reference: string;                // AI 프롬프트 주입용 종합 가이드
+  is_active: boolean;
+  display_order: number;
 }
 
 // ============================================================
 // AI 호출 입력 타입
 // ============================================================
 
-// 가이드 생성 EF 입력 (`tutor-guide` 또는 `opic-study-guide`)
-// 그룹 멤버들의 목표 등급이 다양할 수 있으므로 가이드는 등급 비특정 — 콤보 자체 특성 위주.
+// 가이드 생성 EF 입력 (`opic-study-guide`)
+// EF는 session_id로부터 모든 정보를 직접 조회하므로 페이로드는 단순.
 export interface GuideInput {
-  category: StudyCategory;
-  topic: string;
-  combo: {
-    questions: Array<{
-      id: string;
-      question_type: string;
-      question_english: string;
-    }>;
-    appearance_count: number;              // 출제 횟수
-    appearance_pct: number;                // 토픽 내 비율
-    question_appearance: Record<string, number>; // 질문ID별 등장률 %
-  };
+  session_id: string;
+  triggered_by: string;                    // user_id (사용량 로깅용)
 }
 
 // F/B 생성 EF 입력 (`opic-study-feedback`)
+// EF는 session_id + question_idx로부터 가이드(approaches)를 직접 조회.
 export interface FeedbackInput {
-  // 답변자 본인의 목표 등급 (profiles.target_grade) — 코칭 기준
-  answerer_target_grade: string;
-
-  // 세션 컨텍스트
-  category: StudyCategory;
-  topic: string;
-  ai_guide_key_points: string[];           // 가이드 일관성
-
-  // 질문 컨텍스트
-  question: {
-    id: string;
-    question_type: string;
-    question_english: string;
-  };
+  session_id: string;
+  user_id: string;
+  question_id: string;
   question_idx: number;
-
-  // 답변 데이터
-  answerer_name: string;
-  transcript: string;
-  pronunciation: PronunciationScore;
+  audio_url: string;
 }
 
 // EF 호출 페이로드 (SA → EF)
