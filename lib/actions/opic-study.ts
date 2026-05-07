@@ -1012,6 +1012,48 @@ export async function nextSpeaker(sessionId: string): Promise<ActionResult> {
   }
 }
 
+/** 이번 질문 패스 — 본인이 답변/패스 기록 없는 상태에서 호출
+ * INSERT opic_study_answers with audio_url=null (skip 마커)
+ * + 발화권 해제 (본인이 발화자였다면)
+ * → 본인은 이 질문에서 더 이상 자임 못 함 (myAnswered 통과)
+ */
+export async function skipQuestion(input: {
+  sessionId: string;
+  questionId: string;
+  questionIdx: number;
+}): Promise<ActionResult> {
+  try {
+    const { supabase, userId } = await requireUser();
+    await requireSessionMember(supabase, input.sessionId, userId);
+
+    // 1. INSERT skip record (audio_url=null이 패스 마커)
+    const { error: insertErr } = await supabase
+      .from(T.opic_study_answers)
+      .insert({
+        session_id: input.sessionId,
+        user_id: userId,
+        question_id: input.questionId,
+        question_idx: input.questionIdx,
+        audio_url: null,
+      });
+    if (insertErr) {
+      // UNIQUE 위반 등 — 이미 답변/패스 처리됨. idempotent로 OK 처리
+      // (UI에서 "이미 처리됨" 같은 메시지 안 띄움)
+    }
+
+    // 2. 발화권 해제 (본인이 발화자였다면)
+    await supabase
+      .from(T.opic_study_sessions)
+      .update({ current_speaker_user_id: null })
+      .eq("id", input.sessionId)
+      .eq("current_speaker_user_id", userId);
+
+    return { data: null };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "패스 실패" };
+  }
+}
+
 /** 본인 발화권 해제 — 업로드/제출 실패 등 복구용 (본인이 발화자일 때만 동작) */
 export async function releaseSpeaker(sessionId: string): Promise<ActionResult> {
   try {

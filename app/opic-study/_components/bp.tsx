@@ -453,12 +453,22 @@ interface MbStackProps {
     live?: boolean;
     dim?: boolean;
   }>;
+  /** 최대 표시 dot 수. 초과 시 마지막에 "+N" 회색 dot 추가 (기본: 무제한) */
+  maxVisible?: number;
 }
 
-export function MbStack({ members }: MbStackProps) {
+export function MbStack({ members, maxVisible }: MbStackProps) {
+  const visible =
+    typeof maxVisible === "number" && members.length > maxVisible
+      ? members.slice(0, maxVisible)
+      : members;
+  const overflow =
+    typeof maxVisible === "number" && members.length > maxVisible
+      ? members.length - maxVisible
+      : 0;
   return (
     <div className="bp-mb-stack">
-      {members.map((m, i) => (
+      {visible.map((m, i) => (
         <MbDot
           key={i}
           color={m.color}
@@ -467,6 +477,20 @@ export function MbStack({ members }: MbStackProps) {
           dim={m.dim}
         />
       ))}
+      {overflow > 0 && (
+        <span
+          className="bp-mb-dot"
+          style={{
+            background: "var(--bp-ink-4)",
+            color: "#fff",
+            fontSize: 10,
+            fontWeight: 700,
+          }}
+          title={`+ 멤버 ${overflow}명`}
+        >
+          +{overflow}
+        </span>
+      )}
     </div>
   );
 }

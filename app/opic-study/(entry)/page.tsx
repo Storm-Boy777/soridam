@@ -138,7 +138,8 @@ export default async function OpicStudyHomePage() {
 
     const colors: Array<"a" | "b" | "c" | "d"> = ["a", "b", "c", "d"];
     nextSessionMemberCount = rawMembers?.length ?? 0;
-    nextSessionMembers = (rawMembers ?? []).slice(0, 4).map((m, idx) => {
+    // 모든 멤버 전달 (UI에서 4 dot + "+N" 처리 — 5명 이상 그룹 지원)
+    nextSessionMembers = (rawMembers ?? []).map((m, idx) => {
       const userId = m.user_id as string;
       const p = profileMap.get(userId);
       const name =

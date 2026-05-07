@@ -56,6 +56,7 @@ import {
   nextSpeaker,
   nextQuestion,
   submitAnswer,
+  skipQuestion,
   releaseSpeaker,
   forceReleaseSpeaker,
   retryFeedback,
@@ -509,16 +510,18 @@ export function OpicStudySessionClient({
 
   const handleNextSpeaker = useCallback(() => {
     startTransition(async () => {
-      await nextSpeaker(sessionId);
+      const res = await nextSpeaker(sessionId);
+      if (res.error) toast.error(`다음 발화자 전환 실패: ${res.error}`);
     });
   }, [sessionId]);
 
   const handleNextQuestion = useCallback(() => {
     startTransition(async () => {
       const res = await nextQuestion(sessionId);
-      if (res.data?.completed) {
-        // session.status='completed'로 전환됨, 자동 분기
+      if (res.error) {
+        toast.error(`다음 질문 전환 실패: ${res.error}`);
       }
+      // res.data?.completed: session.status='completed'로 전환됨, 자동 분기
     });
   }, [sessionId]);
 
@@ -537,18 +540,30 @@ export function OpicStudySessionClient({
     setConfirmDialog({
       type: "skip",
       title: "이번 질문을 건너뛸까요?",
-      description: "다른 멤버에게 발화권이 넘어가요.",
+      description:
+        "이 질문에서는 답변하지 않아요. 다른 멤버 답변을 함께 들으며 학습할 수 있어요.",
       confirmLabel: "건너뛰기",
       variant: "warning",
       icon: "⏭",
       onConfirm: () => {
         setConfirmDialog(null);
+        const questionId = session.selected_question_ids[idx];
+        if (!questionId) return;
         startTransition(async () => {
-          await nextSpeaker(sessionId);
+          // skipQuestion — INSERT audio_url=null + 발화권 해제 (본인이 발화자였다면)
+          // → 본인은 이 질문에서 더 이상 자임 못 함 (myAnswered 통과)
+          const res = await skipQuestion({
+            sessionId,
+            questionId,
+            questionIdx: idx,
+          });
+          if (res.error) {
+            toast.error(`패스 실패: ${res.error}`);
+          }
         });
       },
     });
-  }, [sessionId]);
+  }, [sessionId, idx, session.selected_question_ids]);
 
   const handleEndSession = useCallback(() => {
     setConfirmDialog({

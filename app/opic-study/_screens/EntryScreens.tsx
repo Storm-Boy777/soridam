@@ -145,7 +145,7 @@ function HomeMobile({
               <MbStack
                 members={
                   nextSessionMembers && nextSessionMembers.length > 0
-                    ? nextSessionMembers.slice(0, 4).map((m) => ({
+                    ? nextSessionMembers.map((m) => ({
                         color: m.key,
                         initial: m.initial,
                       }))
@@ -156,6 +156,7 @@ function HomeMobile({
                         { color: "d", initial: "D" },
                       ]
                 }
+                maxVisible={4}
               />
               <HfButton
                 variant="tc"
@@ -284,7 +285,7 @@ function HomePc({
                 <MbStack
                   members={
                     nextSessionMembers && nextSessionMembers.length > 0
-                      ? nextSessionMembers.slice(0, 4).map((m) => ({
+                      ? nextSessionMembers.map((m) => ({
                           color: m.key,
                           initial: m.initial,
                         }))
@@ -295,6 +296,7 @@ function HomePc({
                           { color: "d", initial: "D" },
                         ]
                   }
+                  maxVisible={4}
                 />
                 <HfButton
                   variant="tc"

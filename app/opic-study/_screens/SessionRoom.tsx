@@ -107,6 +107,14 @@ export interface SessionRoomProps {
 // Phase 결정
 // ============================================================
 
+// 답변 상태 헬퍼
+//   - skip: audio_url === null (패스 마커)
+//   - answered + F/B 도착: feedback_result 있음
+//   - answered + F/B 대기: audio_url 있음 + feedback_result 없음
+const isSkippedAnswer = (a: OpicStudyAnswer) => !a.audio_url;
+const isDoneAnswer = (a: OpicStudyAnswer) =>
+  isSkippedAnswer(a) || !!a.feedback_result;
+
 function derivePhase(
   currentSpeakerUserId: string | null,
   myUserId: string,
@@ -117,18 +125,22 @@ function derivePhase(
   if (currentSpeakerUserId) {
     const speakerAnswer = allAnswers[`${currentSpeakerUserId}_${questionIdx}`];
     if (speakerAnswer?.feedback_result) return "coaching_review";
-    if (speakerAnswer) return "coaching_wait";
+    if (speakerAnswer && !isSkippedAnswer(speakerAnswer)) return "coaching_wait";
     if (currentSpeakerUserId === myUserId) return "speaker_active";
     return "listener";
   }
 
-  // 발화자 미선정 — 가장 최근 답변자 검사
+  // 발화자 미선정
   const allForQ = Object.values(allAnswers).filter(
     (a) => a.question_idx === questionIdx
   );
   if (allForQ.length === 0) return "speaker_select";
 
-  const allHaveFeedback = allForQ.every((a) => a.feedback_result);
+  // 답변자(skip 아님)가 있으면 coaching phase, 모두 skip이면 speaker_select
+  const realAnswers = allForQ.filter((a) => !isSkippedAnswer(a));
+  if (realAnswers.length === 0) return "speaker_select";
+
+  const allHaveFeedback = realAnswers.every((a) => a.feedback_result);
   if (allHaveFeedback) return "coaching_review";
   return "coaching_wait";
 }
@@ -231,13 +243,16 @@ export function SessionRoom(props: SessionRoomProps) {
       ? answeredMembersOrdered.find((x) => x.member.userId === selectedTabUserId)
       : null;
 
-  // 입장한 모든 멤버 답변 + F/B 완료? (오프라인 멤버는 답변 못 함 — 제외)
+  // 입장한 모든 멤버 답변/패스 완료? (오프라인 멤버는 답변 못 함 — 제외)
+  // 패스(skip)도 "done"으로 인정 → 모두 답변 또는 패스면 다음 질문 진행 가능
   const allDone = useMemo(() => {
     const online = members.filter((m) => m.isOnline);
     if (online.length === 0) return false;
-    return online.every(
-      (m) => allAnswers[`${m.userId}_${questionIdx}`]?.feedback_result
-    );
+    return online.every((m) => {
+      const a = allAnswers[`${m.userId}_${questionIdx}`];
+      if (!a) return false;
+      return isDoneAnswer(a);
+    });
   }, [members, allAnswers, questionIdx]);
 
   // ── 녹음 + 질문 플레이어 ──
@@ -2290,13 +2305,16 @@ function MembersStrip({
       {visibleMembers.map((m) => {
         const answer = allAnswers[`${m.userId}_${questionIdx}`];
         const isSpeaking = currentSpeakerUserId === m.userId;
-        const status: "speaking" | "done" | "waiting" = isSpeaking
+        const skipped = !!answer && !answer.audio_url;
+        const status: "speaking" | "done" | "skipped" | "waiting" = isSpeaking
           ? "speaking"
-          : answer?.feedback_result
-            ? "done"
-            : answer
-              ? "speaking"
-              : "waiting";
+          : skipped
+            ? "skipped"
+            : answer?.feedback_result
+              ? "done"
+              : answer
+                ? "speaking"
+                : "waiting";
 
         const styleByStatus = {
           speaking: {
@@ -2308,6 +2326,11 @@ function MembersStrip({
             background: "var(--bp-good-tint, #e6efe1)",
             color: "var(--bp-good, #5a8f5a)",
             ring: "1px solid rgba(90, 143, 90, 0.3)",
+          },
+          skipped: {
+            background: "var(--bp-surface-2)",
+            color: "var(--bp-ink-3)",
+            ring: "1px dashed var(--bp-line-strong)",
           },
           waiting: {
             background: "var(--bp-surface)",
@@ -2338,7 +2361,9 @@ function MembersStrip({
                 ? "답변 중"
                 : status === "done"
                   ? "✓ 완료"
-                  : "대기"}
+                  : status === "skipped"
+                    ? "⏭ 패스"
+                    : "대기"}
             </span>
           </div>
         );

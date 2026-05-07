@@ -424,6 +424,20 @@ function SessionCard({
             </span>
           );
         })}
+        {nextSessionMembers.length > 4 && (
+          <span
+            className="bp-mb-dot"
+            style={{
+              background: "var(--bp-ink-4)",
+              color: "#fff",
+              fontSize: 10,
+              fontWeight: 700,
+            }}
+            title={`+ 멤버 ${nextSessionMembers.length - 4}명`}
+          >
+            +{nextSessionMembers.length - 4}
+          </span>
+        )}
       </div>
     ) : null;
 
@@ -1498,10 +1512,11 @@ function GroupCardSection({
               </div>
               {idx === 0 && members && members.length > 0 && (
                 <MbStack
-                  members={members.slice(0, 4).map((m) => ({
+                  members={members.map((m) => ({
                     color: m.key,
                     initial: m.initial,
                   }))}
+                  maxVisible={4}
                 />
               )}
             </div>
