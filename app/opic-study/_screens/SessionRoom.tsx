@@ -221,9 +221,13 @@ export function SessionRoom(props: SessionRoomProps) {
       ? answeredMembersOrdered.find((x) => x.member.userId === selectedTabUserId)
       : null;
 
-  // 모든 멤버 답변 + F/B 완료?
+  // 입장한 모든 멤버 답변 + F/B 완료? (오프라인 멤버는 답변 못 함 — 제외)
   const allDone = useMemo(() => {
-    return members.every((m) => allAnswers[`${m.userId}_${questionIdx}`]?.feedback_result);
+    const online = members.filter((m) => m.isOnline);
+    if (online.length === 0) return false;
+    return online.every(
+      (m) => allAnswers[`${m.userId}_${questionIdx}`]?.feedback_result
+    );
   }, [members, allAnswers, questionIdx]);
 
   // ── 녹음 + 질문 플레이어 ──
@@ -242,6 +246,63 @@ export function SessionRoom(props: SessionRoomProps) {
     replayWindowSeconds: 5,
     onPlaybackEnded: autoStartRecording,
   });
+
+  // ── 청취자용 음성 재생 (broadcast로 발화자가 보낸 질문 음성 sync) ──
+  const listenerAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [listenerPlaying, setListenerPlaying] = useState(false);
+  // broadcast 채널 — 발화자가 질문 재생 시 다른 멤버에게 동기화
+  const broadcastChannelRef = useRef<ReturnType<
+    ReturnType<typeof createBrowserClient>["channel"]
+  > | null>(null);
+
+  useEffect(() => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const channel = supabase.channel(`opic-study-audio:${props.sessionId}`);
+    broadcastChannelRef.current = channel;
+
+    channel
+      .on("broadcast", { event: "play_question" }, ({ payload }) => {
+        const audioUrl = payload?.audio_url as string | undefined;
+        if (!audioUrl) return;
+        // 본인은 발화자이거나 이미 재생 중이면 무시
+        // (Supabase broadcast 기본: sender는 자기 메시지 안 받음 — 추가 보호)
+        if (listenerAudioRef.current) {
+          listenerAudioRef.current.pause();
+          listenerAudioRef.current = null;
+        }
+        const audio = new Audio(audioUrl);
+        listenerAudioRef.current = audio;
+        audio.onplay = () => setListenerPlaying(true);
+        audio.onended = () => {
+          setListenerPlaying(false);
+          listenerAudioRef.current = null;
+        };
+        audio.onerror = () => setListenerPlaying(false);
+        audio.play().catch(() => setListenerPlaying(false));
+      })
+      .subscribe();
+
+    return () => {
+      if (listenerAudioRef.current) {
+        listenerAudioRef.current.pause();
+        listenerAudioRef.current = null;
+      }
+      supabase.removeChannel(channel);
+      broadcastChannelRef.current = null;
+    };
+  }, [props.sessionId]);
+
+  // 질문 변경 시 청취자 음성도 정리
+  useEffect(() => {
+    if (listenerAudioRef.current) {
+      listenerAudioRef.current.pause();
+      listenerAudioRef.current = null;
+    }
+    setListenerPlaying(false);
+  }, [questionIdx]);
 
   // AVA 컨테이너 높이
   const avaContainerRef = useRef<HTMLDivElement>(null);
@@ -277,8 +338,10 @@ export function SessionRoom(props: SessionRoomProps) {
   const speakerStep: SpeakerStep = useMemo(() => {
     if (uploadState === "uploading") return "uploading";
     if (uploadState === "submitted") return "submitted";
-    if (recorder.state === "recording") return "record";
+    // 5초 다시 듣기 윈도우 우선 — 녹음 중이라도 replay 옵션 표시 (모의고사 패턴)
+    // handleReplay에서 녹음 중이면 reset 후 다시 재생 → 자동 녹음 재시작
     if (questionPlayer.canReplay && !questionPlayer.hasReplayed) return "replay";
+    if (recorder.state === "recording") return "record";
     return "listen";
   }, [
     questionPlayer.canReplay,
@@ -297,6 +360,16 @@ export function SessionRoom(props: SessionRoomProps) {
       .catch(() => setUploadState("failed"));
   }, [recorder.state, recorder.audioBlob, uploadState, onSubmitAnswer]);
 
+  // 발화자 → 청취자에게 음성 재생 broadcast
+  const broadcastPlayQuestion = useCallback(() => {
+    if (!questionAudioUrl) return;
+    broadcastChannelRef.current?.send({
+      type: "broadcast",
+      event: "play_question",
+      payload: { audio_url: questionAudioUrl, started_at: Date.now() },
+    });
+  }, [questionAudioUrl]);
+
   const handlePlayQuestion = useCallback(() => {
     if (!questionAudioUrl) {
       autoStartRecording();
@@ -304,13 +377,15 @@ export function SessionRoom(props: SessionRoomProps) {
     }
     if (questionPlayer.isPlaying) return;
     questionPlayer.play(questionAudioUrl);
-  }, [questionAudioUrl, questionPlayer, autoStartRecording]);
+    broadcastPlayQuestion();
+  }, [questionAudioUrl, questionPlayer, autoStartRecording, broadcastPlayQuestion]);
 
   const handleReplay = useCallback(() => {
     if (!questionPlayer.canReplay || questionPlayer.hasReplayed) return;
     if (recorder.state === "recording") recorder.reset();
     questionPlayer.replay();
-  }, [questionPlayer, recorder]);
+    broadcastPlayQuestion();
+  }, [questionPlayer, recorder, broadcastPlayQuestion]);
 
   const handleFinishRecording = useCallback(() => {
     if (recorder.state === "recording") recorder.stopRecording();
@@ -324,7 +399,9 @@ export function SessionRoom(props: SessionRoomProps) {
   );
 
   const onlineMembers = members.filter((m) => m.isOnline);
-  const answeredCount = members.filter(
+  // 참여 가능 = 입장 멤버 (오프라인 멤버는 답변 못 함)
+  // "답변 N/M" 분모는 입장 멤버 수 (오프라인 제외)
+  const answeredOnlineCount = onlineMembers.filter(
     (m) => allAnswers[`${m.userId}_${questionIdx}`]
   ).length;
 
@@ -339,7 +416,7 @@ export function SessionRoom(props: SessionRoomProps) {
         totalQuestions={totalQuestions}
         onlineCount={onlineMembers.length}
         totalMembers={members.length}
-        answeredCount={answeredCount}
+        answeredCount={answeredOnlineCount}
         offlineNames={members
           .filter((m) => !m.isOnline)
           .map((m) => m.name)}
@@ -378,7 +455,7 @@ export function SessionRoom(props: SessionRoomProps) {
                 }}
               >
                 <AvaAvatar
-                  isSpeaking={questionPlayer.isPlaying}
+                  isSpeaking={questionPlayer.isPlaying || listenerPlaying}
                   isListening={recorder.state === "recording"}
                 />
                 {speakerMember && (
@@ -485,7 +562,10 @@ export function SessionRoom(props: SessionRoomProps) {
                 isLastQuestion={questionIdx === totalQuestions - 1}
                 myAnsweredAlready={!!myAnswer}
                 membersLeft={
-                  members.filter((m) => !allAnswers[`${m.userId}_${questionIdx}`]).length
+                  // 입장 멤버 중 답변 안 한 사람 (오프라인 제외 — 답변 못 함)
+                  members.filter(
+                    (m) => m.isOnline && !allAnswers[`${m.userId}_${questionIdx}`]
+                  ).length
                 }
               />
             </div>
@@ -543,7 +623,7 @@ function TopBar({
           </span>
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="text-xs" style={{ color: "var(--bp-ink-3)" }}>
-              답변 {answeredCount}/{totalMembers}
+              답변 {answeredCount}/{onlineCount}
             </span>
             {/* 멤버 presence pill — TopBar 우측 끝 (레이아웃 max-w 1040 안) */}
             {totalMembers > 0 && (
@@ -1793,20 +1873,20 @@ function MembersStrip({
   allAnswers: Record<string, OpicStudyAnswer>;
   currentSpeakerUserId: string | null;
 }) {
+  // 입장한 멤버만 표시 (오프라인 멤버 숨김 — Step61/62와 일관 정책)
+  const visibleMembers = members.filter((m) => m.isOnline);
   return (
     <div className="mt-3 flex flex-wrap gap-2 px-1 pb-2">
-      {members.map((m) => {
+      {visibleMembers.map((m) => {
         const answer = allAnswers[`${m.userId}_${questionIdx}`];
         const isSpeaking = currentSpeakerUserId === m.userId;
-        const status: "speaking" | "done" | "waiting" | "offline" = !m.isOnline
-          ? "offline"
-          : isSpeaking
-            ? "speaking"
-            : answer?.feedback_result
-              ? "done"
-              : answer
-                ? "speaking"
-                : "waiting";
+        const status: "speaking" | "done" | "waiting" = isSpeaking
+          ? "speaking"
+          : answer?.feedback_result
+            ? "done"
+            : answer
+              ? "speaking"
+              : "waiting";
 
         const styleByStatus = {
           speaking: {
@@ -1818,11 +1898,6 @@ function MembersStrip({
             background: "var(--bp-good-tint, #e6efe1)",
             color: "var(--bp-good, #5a8f5a)",
             ring: "1px solid rgba(90, 143, 90, 0.3)",
-          },
-          offline: {
-            background: "var(--bp-surface-2)",
-            color: "var(--bp-ink-4)",
-            ring: "1px solid var(--bp-line)",
           },
           waiting: {
             background: "var(--bp-surface)",
@@ -1853,9 +1928,7 @@ function MembersStrip({
                 ? "답변 중"
                 : status === "done"
                   ? "✓ 완료"
-                  : status === "offline"
-                    ? "오프라인"
-                    : "대기"}
+                  : "대기"}
             </span>
           </div>
         );

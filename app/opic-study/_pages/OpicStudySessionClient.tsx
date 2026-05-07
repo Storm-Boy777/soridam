@@ -392,6 +392,31 @@ export function OpicStudySessionClient({
     groupId,
   ]);
 
+  // 진행 단계 (guide/recording 등) 에서 combos가 비어있으면 복구 fetch
+  // — 페이지 새로고침 또는 세션 재진입 시 currentQuestion이 null로 빈 라벨 표시 방지
+  useEffect(() => {
+    if (combos !== null) return;
+    if (!session.selected_category || !session.selected_topic) return;
+    if (!session.selected_combo_sig) return;
+    // combo_select은 위 effect가 처리 — 중복 방지
+    if (session.step === "combo_select") return;
+
+    getCombosForStudy({
+      category: session.selected_category,
+      topic: session.selected_topic,
+      groupId,
+    }).then((res) => {
+      if (res.data) setCombos(res.data.combos);
+    });
+  }, [
+    combos,
+    session.step,
+    session.selected_category,
+    session.selected_topic,
+    session.selected_combo_sig,
+    groupId,
+  ]);
+
   // ============================================================
   // 답변 흐름: SessionRoom 안에서 모든 phase 처리 (recording step 유지)
   //   - 모든 멤버 답변 + F/B 완료 → SessionRoom 내부에서 "다음 질문" 버튼 → handleNextQuestion
