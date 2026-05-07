@@ -371,7 +371,7 @@ export function SessionRoom(props: SessionRoomProps) {
             <div className="flex min-h-0 flex-1 flex-col gap-2 md:flex-none md:w-[42%] md:gap-3">
               <div
                 ref={avaContainerRef}
-                className="relative w-full min-h-0 flex-1 overflow-hidden rounded-xl border md:flex-none md:aspect-square"
+                className="relative w-full aspect-square overflow-hidden rounded-xl border"
                 style={{
                   backgroundColor: "var(--bp-surface-2)",
                   borderColor: "var(--bp-line)",
