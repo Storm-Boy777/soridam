@@ -56,6 +56,8 @@ import {
   nextSpeaker,
   nextQuestion,
   submitAnswer,
+  releaseSpeaker,
+  forceReleaseSpeaker,
   retryFeedback,
   getCategoryStats,
   getTopicsForStudy,
@@ -609,28 +611,65 @@ export function OpicStudySessionClient({
       if (!questionId) return;
 
       const fileName = `${sessionId}/${currentUserId}/${idx}.webm`;
+      const MAX_RETRIES = 3;
+      const sleep = (ms: number) =>
+        new Promise<void>((r) => setTimeout(r, ms));
 
-      // Storage 업로드
-      const { error: uploadErr } = await supabase.storage
-        .from("opic-study-recordings")
-        .upload(fileName, audioBlob, {
-          contentType: "audio/webm",
-          upsert: true,
-        });
+      // ─── Storage 업로드 (3회 자동 재시도, 지수 백오프 1s→2s→4s) ───
+      let uploadErr: { message: string } | null = null;
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        const { error } = await supabase.storage
+          .from("opic-study-recordings")
+          .upload(fileName, audioBlob, {
+            contentType: "audio/webm",
+            upsert: true,
+          });
+        if (!error) {
+          uploadErr = null;
+          break;
+        }
+        uploadErr = { message: error.message };
+        if (attempt < MAX_RETRIES) {
+          // 재시도 알림 (사용자 인지)
+          toast.message(
+            `업로드 재시도 중… (${attempt + 1}/${MAX_RETRIES})`,
+            { duration: 2000 }
+          );
+          await sleep(1000 * Math.pow(2, attempt));
+        }
+      }
       if (uploadErr) {
-        toast.error(`업로드 실패: ${uploadErr.message}`);
-        return;
+        toast.error(`업로드 실패 (${MAX_RETRIES}회 시도): ${uploadErr.message}`);
+        await releaseSpeaker(sessionId).catch(() => undefined);
+        throw new Error(`업로드 실패: ${uploadErr.message}`);
       }
 
-      // submitAnswer SA (EF fire-and-forget)
-      const res = await submitAnswer({
-        sessionId,
-        questionId,
-        questionIdx: idx,
-        audioUrl: fileName,
-      });
-      if (res.error) {
-        toast.error(`답변 제출 실패: ${res.error}`);
+      // ─── submitAnswer SA (3회 자동 재시도) ───
+      let saErr: string | null = null;
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        const res = await submitAnswer({
+          sessionId,
+          questionId,
+          questionIdx: idx,
+          audioUrl: fileName,
+        });
+        if (!res.error) {
+          saErr = null;
+          break;
+        }
+        saErr = res.error;
+        if (attempt < MAX_RETRIES) {
+          toast.message(
+            `답변 제출 재시도 중… (${attempt + 1}/${MAX_RETRIES})`,
+            { duration: 2000 }
+          );
+          await sleep(1000 * Math.pow(2, attempt));
+        }
+      }
+      if (saErr) {
+        toast.error(`답변 제출 실패 (${MAX_RETRIES}회 시도): ${saErr}`);
+        await releaseSpeaker(sessionId).catch(() => undefined);
+        throw new Error(`답변 제출 실패: ${saErr}`);
       }
     },
     [sessionId, currentUserId, idx, session.selected_question_ids, supabase]
@@ -973,6 +1012,10 @@ export function OpicStudySessionClient({
             onRetryFeedback={handleRetryFb}
             onNextSpeaker={handleNextSpeaker}
             onNextQuestion={handleNextQuestion}
+            onForceReleaseSpeaker={async () => {
+              const res = await forceReleaseSpeaker(sessionId);
+              if (res.error) toast.error(res.error);
+            }}
           />
         </Shell>
       );
@@ -1024,6 +1067,10 @@ export function OpicStudySessionClient({
             onRetryFeedback={handleRetryFb}
             onNextSpeaker={handleNextSpeaker}
             onNextQuestion={handleNextQuestion}
+            onForceReleaseSpeaker={async () => {
+              const res = await forceReleaseSpeaker(sessionId);
+              if (res.error) toast.error(res.error);
+            }}
           />
         </Shell>
       );

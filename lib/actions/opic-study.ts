@@ -1012,6 +1012,71 @@ export async function nextSpeaker(sessionId: string): Promise<ActionResult> {
   }
 }
 
+/** 본인 발화권 해제 — 업로드/제출 실패 등 복구용 (본인이 발화자일 때만 동작) */
+export async function releaseSpeaker(sessionId: string): Promise<ActionResult> {
+  try {
+    const { supabase, userId } = await requireUser();
+    await requireSessionMember(supabase, sessionId, userId);
+
+    const { error } = await supabase
+      .from(T.opic_study_sessions)
+      .update({ current_speaker_user_id: null })
+      .eq("id", sessionId)
+      .eq("current_speaker_user_id", userId); // 본인이 발화자일 때만
+
+    if (error) return { error: "발화권 해제 실패" };
+    return { data: null };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "발화권 해제 실패" };
+  }
+}
+
+/** 발화자 강제 해제 — 발화자가 stuck (3분+ 진행 X) 시 다른 멤버가 풀어줌 */
+export async function forceReleaseSpeaker(
+  sessionId: string
+): Promise<ActionResult> {
+  try {
+    const { supabase, userId } = await requireUser();
+    await requireSessionMember(supabase, sessionId, userId);
+
+    // 누구든 멤버면 해제 가능 (단, 답변이 INSERT된 발화자는 해제 X — F/B 대기는 정상)
+    const { data: session } = await supabase
+      .from(T.opic_study_sessions)
+      .select("current_speaker_user_id, current_question_idx")
+      .eq("id", sessionId)
+      .maybeSingle();
+
+    if (!session?.current_speaker_user_id) {
+      return { data: null }; // 이미 해제됨 — idempotent
+    }
+
+    // 발화자의 답변이 이미 INSERT됐는지 확인 (F/B 대기 중이면 강제 해제 X)
+    const { data: existingAnswer } = await supabase
+      .from(T.opic_study_answers)
+      .select("id")
+      .eq("session_id", sessionId)
+      .eq("user_id", session.current_speaker_user_id)
+      .eq("question_idx", session.current_question_idx)
+      .maybeSingle();
+
+    if (existingAnswer) {
+      return {
+        error: "이미 답변 제출됨 — 코칭 대기 중이에요. 잠시만 기다려주세요.",
+      };
+    }
+
+    const { error } = await supabase
+      .from(T.opic_study_sessions)
+      .update({ current_speaker_user_id: null })
+      .eq("id", sessionId);
+
+    if (error) return { error: "발화자 해제 실패" };
+    return { data: null };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "발화자 해제 실패" };
+  }
+}
+
 /** Step 6-7b: 다음 질문 (마지막 질문이면 종료) */
 export async function nextQuestion(sessionId: string): Promise<ActionResult<{ completed: boolean }>> {
   try {

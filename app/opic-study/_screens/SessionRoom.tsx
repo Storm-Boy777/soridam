@@ -38,6 +38,7 @@ import {
   Play,
   Pause,
   MessageSquare,
+  AlertCircle,
 } from "lucide-react";
 import { createBrowserClient } from "@supabase/ssr";
 import { AvaAvatar } from "@/components/mock-exam/session/ava-avatar";
@@ -56,7 +57,13 @@ type SessionPhase =
   | "coaching_wait"
   | "coaching_review";
 
-type SpeakerStep = "listen" | "replay" | "record" | "uploading" | "submitted";
+type SpeakerStep =
+  | "listen"
+  | "replay"
+  | "record"
+  | "uploading"
+  | "submitted"
+  | "failed";
 
 type GuideKey = "speaker" | "listen" | "replay" | "record" | "coach";
 
@@ -92,6 +99,8 @@ export interface SessionRoomProps {
   onNextSpeaker: () => void;
   /** 다음 질문으로 진행 (모든 멤버 답변 완료 시) */
   onNextQuestion: () => void;
+  /** 발화자 강제 해제 (다른 멤버가 stuck 시 도와줌) */
+  onForceReleaseSpeaker: () => Promise<void>;
 }
 
 // ============================================================
@@ -172,6 +181,7 @@ export function SessionRoom(props: SessionRoomProps) {
     onRetryFeedback,
     onNextSpeaker,
     onNextQuestion,
+    onForceReleaseSpeaker,
   } = props;
 
   const me = members.find((m) => m.isMe);
@@ -317,6 +327,42 @@ export function SessionRoom(props: SessionRoomProps) {
     return () => observer.disconnect();
   }, []);
 
+  // ── Stuck speaker 감지 (다른 멤버가 3분 이상 stuck 시 강제 해제 옵션 제공) ──
+  const [speakerSetAt, setSpeakerSetAt] = useState<number | null>(null);
+  useEffect(() => {
+    if (currentSpeakerUserId) setSpeakerSetAt(Date.now());
+    else setSpeakerSetAt(null);
+  }, [currentSpeakerUserId]);
+
+  const [isStuckSpeaker, setIsStuckSpeaker] = useState(false);
+  useEffect(() => {
+    if (!speakerSetAt) {
+      setIsStuckSpeaker(false);
+      return;
+    }
+    if (currentSpeakerUserId === myUserId) {
+      // 본인 발화 중에는 본인에게 stuck UI 안 띄움
+      setIsStuckSpeaker(false);
+      return;
+    }
+    // 발화자가 답변 INSERT한 상태면 F/B 대기 중 — stuck 아님
+    const speakerAns = currentSpeakerUserId
+      ? allAnswers[`${currentSpeakerUserId}_${questionIdx}`]
+      : null;
+    if (speakerAns) {
+      setIsStuckSpeaker(false);
+      return;
+    }
+    // 5초마다 체크
+    const check = () => {
+      const elapsed = Date.now() - speakerSetAt;
+      setIsStuckSpeaker(elapsed > 3 * 60 * 1000); // 3분
+    };
+    check();
+    const t = setInterval(check, 5000);
+    return () => clearInterval(t);
+  }, [speakerSetAt, currentSpeakerUserId, myUserId, allAnswers, questionIdx]);
+
   // Phase 전환 시 녹음 정리
   useEffect(() => {
     if (phase !== "speaker_active") {
@@ -336,6 +382,7 @@ export function SessionRoom(props: SessionRoomProps) {
   }, [questionIdx]);
 
   const speakerStep: SpeakerStep = useMemo(() => {
+    if (uploadState === "failed") return "failed";
     if (uploadState === "uploading") return "uploading";
     if (uploadState === "submitted") return "submitted";
     // 5초 다시 듣기 윈도우 우선 — 녹음 중이라도 replay 옵션 표시 (모의고사 패턴)
@@ -443,134 +490,145 @@ export function SessionRoom(props: SessionRoomProps) {
               borderColor: "var(--bp-line)",
             }}
           >
-            <div className="flex flex-col gap-2 md:flex-row md:gap-5">
-            {/* 좌측: AVA + 컨트롤 */}
-            <div className="flex min-h-0 flex-1 flex-col gap-2 md:flex-none md:w-[42%] md:gap-3">
-              <div
-                ref={avaContainerRef}
-                className="relative w-full aspect-square overflow-hidden rounded-xl border"
-                style={{
-                  backgroundColor: "var(--bp-surface-2)",
-                  borderColor: "var(--bp-line)",
-                }}
-              >
-                <AvaAvatar
-                  isSpeaking={questionPlayer.isPlaying || listenerPlaying}
-                  isListening={recorder.state === "recording"}
-                />
-                {speakerMember && (
-                  <div
-                    className="absolute left-2 top-2 z-10 flex items-center gap-1.5 rounded-full px-2 py-1 backdrop-blur-sm"
-                    style={{ background: "rgba(31, 27, 22, 0.55)" }}
-                  >
-                    <SpeakerDot member={speakerMember} />
-                    <span className="text-[10px] font-medium text-white">
-                      {speakerMember.isMe ? "내 차례" : `${speakerMember.name}님 답변 중`}
-                    </span>
-                  </div>
-                )}
-                {/* coaching_review 시 — 누구 코치노트 보고 있는지 표시 */}
-                {phase === "coaching_review" && selectedReviewItem && (
-                  <div
-                    className="absolute left-2 top-2 z-10 flex items-center gap-1.5 rounded-full px-2 py-1 backdrop-blur-sm"
-                    style={{ background: "rgba(31, 27, 22, 0.55)" }}
-                  >
-                    <SpeakerDot member={selectedReviewItem.member} />
-                    <span className="text-[10px] font-medium text-white">
-                      {selectedReviewItem.member.name}님 코칭
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <LeftControls
-                phase={phase}
-                speakerStep={speakerStep}
-                questionPlayer={questionPlayer}
-                questionAudioUrl={questionAudioUrl}
-                onPlay={handlePlayQuestion}
-                onReplay={handleReplay}
-                onClaim={onClaimSpeaker}
-                onSkip={onSkipAnswer}
-                myAnsweredAlready={!!myAnswer}
-              />
-            </div>
-
-            <VolumeMeter
-              recordingVolume={recorder.volume ?? 0}
-              isRecording={recorder.state === "recording"}
-              avaHeight={avaHeight}
-            />
-
-            <div className="flex flex-col gap-1 md:flex-1 md:gap-2">
-              {/* 녹음 시간 박스 — speaker_active 또는 본인 답변 후엔만 의미 */}
-              {(phase === "speaker_active" ||
-                (phase === "coaching_wait" && myUserId === currentSpeakerUserId)) && (
-                <div
-                  className="hidden items-center justify-between rounded-xl border p-3 md:flex"
-                  style={{
-                    background: "var(--bp-surface-2)",
-                    borderColor: "var(--bp-line)",
-                  }}
-                >
-                  <span
-                    className="text-sm font-medium"
-                    style={{ color: "var(--bp-ink-2)" }}
-                  >
-                    녹음 시간
-                  </span>
-                  <span
-                    className="font-mono text-2xl font-bold md:text-3xl"
-                    style={{
-                      color:
-                        recorder.state === "recording"
-                          ? "var(--bp-tc)"
-                          : "var(--bp-ink-4)",
-                      fontVariantNumeric: "tabular-nums",
-                    }}
-                  >
-                    {formatTime(recorder.duration ?? 0)}
-                  </span>
-                </div>
-              )}
-
-              {/* 우측 메인 영역 — Phase별 분기 */}
-              <RightMain
-                phase={phase}
-                speakerStep={speakerStep}
-                questionPlayer={questionPlayer}
-                speakerMember={speakerMember}
-                speakerAnswer={props.currentSpeakerAnswer}
-                myAnswer={myAnswer}
-                onRetry={onRetryFeedback}
-                /* coaching_review 데이터 */
+            {/* coaching_review phase는 전체 너비 1-column 레이아웃 (AVA 숨김) */}
+            {phase === "coaching_review" && selectedReviewItem ? (
+              <CoachingReviewLayout
+                selectedReviewItem={selectedReviewItem}
                 answeredMembersOrdered={answeredMembersOrdered}
                 selectedTabUserId={selectedTabUserId}
                 onSelectTab={setSelectedTabUserId}
-                selectedReviewItem={selectedReviewItem}
-              />
-
-              {/* 하단 액션 */}
-              <BottomAction
-                phase={phase}
-                speakerStep={speakerStep}
-                onFinish={handleFinishRecording}
-                onNextSpeaker={onNextSpeaker}
-                onNextQuestion={onNextQuestion}
-                hasNextSpeakerSelected={!!currentSpeakerUserId}
+                myAnsweredAlready={!!myAnswer}
+                onClaim={onClaimSpeaker}
                 allDone={allDone}
                 isLastQuestion={questionIdx === totalQuestions - 1}
-                myAnsweredAlready={!!myAnswer}
+                hasNextSpeakerSelected={!!currentSpeakerUserId}
                 membersLeft={
-                  // 입장 멤버 중 답변 안 한 사람 (오프라인 제외 — 답변 못 함)
                   members.filter(
                     (m) => m.isOnline && !allAnswers[`${m.userId}_${questionIdx}`]
                   ).length
                 }
+                onNextSpeaker={onNextSpeaker}
+                onNextQuestion={onNextQuestion}
               />
-            </div>
+            ) : (
+              <div className="flex flex-col gap-2 md:flex-row md:gap-5">
+                {/* 좌측: AVA + 컨트롤 */}
+                <div className="flex min-h-0 flex-1 flex-col gap-2 md:flex-none md:w-[42%] md:gap-3">
+                  <div
+                    ref={avaContainerRef}
+                    className="relative w-full aspect-square overflow-hidden rounded-xl border"
+                    style={{
+                      backgroundColor: "var(--bp-surface-2)",
+                      borderColor: "var(--bp-line)",
+                    }}
+                  >
+                    <AvaAvatar
+                      isSpeaking={questionPlayer.isPlaying || listenerPlaying}
+                      isListening={recorder.state === "recording"}
+                    />
+                    {speakerMember && (
+                      <div
+                        className="absolute left-2 top-2 z-10 flex items-center gap-1.5 rounded-full px-2 py-1 backdrop-blur-sm"
+                        style={{ background: "rgba(31, 27, 22, 0.55)" }}
+                      >
+                        <SpeakerDot member={speakerMember} />
+                        <span className="text-[10px] font-medium text-white">
+                          {speakerMember.isMe ? "내 차례" : `${speakerMember.name}님 답변 중`}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <LeftControls
+                    phase={phase}
+                    speakerStep={speakerStep}
+                    questionPlayer={questionPlayer}
+                    questionAudioUrl={questionAudioUrl}
+                    onPlay={handlePlayQuestion}
+                    onReplay={handleReplay}
+                    onClaim={onClaimSpeaker}
+                    onSkip={onSkipAnswer}
+                    myAnsweredAlready={!!myAnswer}
+                  />
+                </div>
+
+                <VolumeMeter
+                  recordingVolume={recorder.volume ?? 0}
+                  isRecording={recorder.state === "recording"}
+                  avaHeight={avaHeight}
+                />
+
+                <div className="flex flex-col gap-1 md:flex-1 md:gap-2">
+                  {/* 녹음 시간 박스 — speaker_active 또는 본인 답변 후엔만 의미 */}
+                  {(phase === "speaker_active" ||
+                    (phase === "coaching_wait" && myUserId === currentSpeakerUserId)) && (
+                    <div
+                      className="hidden items-center justify-between rounded-xl border p-3 md:flex"
+                      style={{
+                        background: "var(--bp-surface-2)",
+                        borderColor: "var(--bp-line)",
+                      }}
+                    >
+                      <span
+                        className="text-sm font-medium"
+                        style={{ color: "var(--bp-ink-2)" }}
+                      >
+                        녹음 시간
+                      </span>
+                      <span
+                        className="font-mono text-2xl font-bold md:text-3xl"
+                        style={{
+                          color:
+                            recorder.state === "recording"
+                              ? "var(--bp-tc)"
+                              : "var(--bp-ink-4)",
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        {formatTime(recorder.duration ?? 0)}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* 우측 메인 영역 — Phase별 분기 */}
+                  <RightMain
+                    phase={phase}
+                    speakerStep={speakerStep}
+                    questionPlayer={questionPlayer}
+                    speakerMember={speakerMember}
+                    speakerAnswer={props.currentSpeakerAnswer}
+                    myAnswer={myAnswer}
+                    onRetry={onRetryFeedback}
+                    /* coaching_review 데이터 (이 분기에선 사용 X) */
+                    answeredMembersOrdered={answeredMembersOrdered}
+                    selectedTabUserId={selectedTabUserId}
+                    onSelectTab={setSelectedTabUserId}
+                    selectedReviewItem={selectedReviewItem}
+                    isStuckSpeaker={isStuckSpeaker}
+                    onForceReleaseSpeaker={onForceReleaseSpeaker}
+                  />
+
+                  {/* 하단 액션 */}
+                  <BottomAction
+                    phase={phase}
+                    speakerStep={speakerStep}
+                    onFinish={handleFinishRecording}
+                    onNextSpeaker={onNextSpeaker}
+                    onNextQuestion={onNextQuestion}
+                    hasNextSpeakerSelected={!!currentSpeakerUserId}
+                    allDone={allDone}
+                    isLastQuestion={questionIdx === totalQuestions - 1}
+                    myAnsweredAlready={!!myAnswer}
+                    membersLeft={
+                      members.filter(
+                        (m) => m.isOnline && !allAnswers[`${m.userId}_${questionIdx}`]
+                      ).length
+                    }
+                  />
+                </div>
+              </div>
+            )}
           </div>
-        </div>
 
           <MembersStrip
             members={members}
@@ -1025,6 +1083,19 @@ function LeftControls({
               )}
             </div>
           )}
+          {speakerStep === "failed" && (
+            <div
+              className="flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold md:py-3 md:text-base"
+              style={{
+                background: "rgba(201, 100, 66, 0.10)",
+                color: "var(--bp-tc)",
+                border: "1px solid rgba(201, 100, 66, 0.3)",
+              }}
+            >
+              <AlertCircle size={18} />
+              업로드 실패 — 다시 시도해 주세요
+            </div>
+          )}
           {onSkip && (speakerStep === "listen" || speakerStep === "replay") && (
             <button
               onClick={onSkip}
@@ -1144,6 +1215,8 @@ function RightMain({
   selectedTabUserId,
   onSelectTab,
   selectedReviewItem,
+  isStuckSpeaker,
+  onForceReleaseSpeaker,
 }: {
   phase: SessionPhase;
   speakerStep: SpeakerStep;
@@ -1156,61 +1229,15 @@ function RightMain({
   selectedTabUserId: string | null;
   onSelectTab: (userId: string) => void;
   selectedReviewItem: { member: MemberLite; answer: OpicStudyAnswer } | undefined | null;
+  isStuckSpeaker: boolean;
+  onForceReleaseSpeaker: () => Promise<void>;
 }) {
-  // coaching_review — 메인 컨텐츠 (모바일/PC 모두 표시 — 핵심 토론 콘텐츠)
-  if (phase === "coaching_review" && selectedReviewItem) {
-    return (
-      <div
-        className="flex flex-1 flex-col rounded-xl border"
-        style={{
-          background: "var(--bp-surface-2)",
-          borderColor: "var(--bp-line)",
-        }}
-      >
-        {/* 멤버 탭 */}
-        {answeredMembersOrdered.length > 1 && (
-          <div
-            className="flex flex-wrap gap-1 border-b p-2"
-            style={{ borderColor: "var(--bp-line)" }}
-          >
-            {answeredMembersOrdered.map(({ member }) => {
-              const isActive = selectedTabUserId === member.userId;
-              return (
-                <button
-                  key={member.userId}
-                  onClick={() => onSelectTab(member.userId)}
-                  className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all"
-                  style={{
-                    background: isActive
-                      ? "var(--bp-tc)"
-                      : "var(--bp-surface)",
-                    color: isActive ? "#fff" : "var(--bp-ink-2)",
-                    border: isActive
-                      ? "none"
-                      : "1px solid var(--bp-line)",
-                  }}
-                >
-                  <SpeakerDot member={member} />
-                  <span>{member.name}</span>
-                  {member.isMe && (
-                    <span className="text-[9px] opacity-70">(나)</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* 코치 노트 본문 */}
-        <div className="flex-1 overflow-y-auto p-4">
-          <CoachingReviewContent
-            member={selectedReviewItem.member}
-            answer={selectedReviewItem.answer}
-          />
-        </div>
-      </div>
-    );
-  }
+  // coaching_review는 CoachingReviewLayout이 따로 처리 — 여기선 미도달
+  // (legacy 안전장치만 유지 — selectedReviewItem 있으면 CoachingReviewLayout으로 대체됐음)
+  void answeredMembersOrdered;
+  void selectedTabUserId;
+  void onSelectTab;
+  void selectedReviewItem;
 
   // 기타 phase — 작은 상태 박스 (모바일/PC 모두 표시)
   // listener / coaching_wait는 메시지 중요. speaker_active는 보조 안내.
@@ -1334,6 +1361,8 @@ function RightMain({
         <ListenerStatus
           speakerMember={speakerMember}
           speakerAnswer={speakerAnswer}
+          isStuckSpeaker={isStuckSpeaker}
+          onForceReleaseSpeaker={onForceReleaseSpeaker}
         />
       )}
 
@@ -1347,14 +1376,20 @@ function RightMain({
 function ListenerStatus({
   speakerMember,
   speakerAnswer,
+  isStuckSpeaker,
+  onForceReleaseSpeaker,
 }: {
   speakerMember: MemberLite | null;
   speakerAnswer: OpicStudyAnswer | null;
+  isStuckSpeaker: boolean;
+  onForceReleaseSpeaker: () => Promise<void>;
 }) {
   const isStillSpeaking = !speakerAnswer;
   const speakerName = speakerMember?.name ?? "발화자";
+  const [releasing, setReleasing] = useState(false);
+
   return (
-    <div className="text-center">
+    <div className="text-center w-full">
       <Headphones
         size={32}
         className="mx-auto mb-2 animate-pulse"
@@ -1370,6 +1405,42 @@ function ListenerStatus({
           ? "함께 들으면서 어떤 표현을 쓰는지 살펴보세요"
           : "곧 코치노트가 나올 거예요"}
       </p>
+
+      {/* Stuck speaker 강제 해제 옵션 (3분 이상 진행 X 시) */}
+      {isStuckSpeaker && (
+        <div
+          className="mt-3 rounded-lg p-2.5 text-left"
+          style={{
+            background: "rgba(164, 129, 33, 0.08)",
+            border: "1px solid rgba(164, 129, 33, 0.25)",
+          }}
+        >
+          <p
+            className="mb-2 text-xs"
+            style={{ color: "var(--bp-ink-2)", lineHeight: 1.5 }}
+          >
+            ⏰ {speakerName}님 진행이 오래 걸리고 있어요. 다른 멤버가
+            답변할 수 있도록 풀어드릴까요?
+          </p>
+          <button
+            onClick={async () => {
+              if (releasing) return;
+              setReleasing(true);
+              await onForceReleaseSpeaker();
+              setReleasing(false);
+            }}
+            disabled={releasing}
+            className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
+            style={{
+              background: "var(--bp-tip, #a48121)",
+              color: "#fff",
+            }}
+          >
+            <RefreshCw size={11} className={releasing ? "animate-spin" : ""} />
+            {releasing ? "해제 중…" : "발화자 풀어주기"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1396,6 +1467,18 @@ function CoachingWaitStatus({
 
   const isLong = elapsed > 60;
 
+  // 90초 후 자동 1회 재시도 (네트워크 일시 장애 대응)
+  const [autoRetried, setAutoRetried] = useState(false);
+  useEffect(() => {
+    if (autoRetried) return;
+    if (elapsed < 90) return;
+    setAutoRetried(true);
+    setRetrying(true);
+    onRetry()
+      .catch(() => undefined)
+      .finally(() => setRetrying(false));
+  }, [elapsed, autoRetried, onRetry]);
+
   return (
     <div className="text-center w-full">
       <Sparkles
@@ -1407,9 +1490,11 @@ function CoachingWaitStatus({
         코치가 답변을 듣고 있어요
       </p>
       <p className="mt-1 text-xs" style={{ color: "var(--bp-ink-3)" }}>
-        {isLong
-          ? "조금 오래 걸리고 있어요"
-          : `약 10~30초 정도 걸려요 (${elapsed}초 경과)`}
+        {autoRetried
+          ? "자동으로 다시 시도 중이에요"
+          : isLong
+            ? "조금 오래 걸리고 있어요 (90초 후 자동 재시도)"
+            : `약 10~30초 정도 걸려요 (${elapsed}초 경과)`}
       </p>
       {isLong && (
         <button
@@ -1439,7 +1524,178 @@ function CoachingWaitStatus({
 // 코치 노트 본문 — 메인 멘트 + 강점/다듬을점/팁 + 전사 + 음성 + 토론 가이드
 // ============================================================
 
-// 토론 자료 형식 (v3)
+// ============================================================
+// CoachingReviewLayout — coaching_review 전용 1-Column 전체 너비
+// (AVA/VolumeMeter/LeftControls 숨김, 코치노트가 전체 너비)
+// ============================================================
+function CoachingReviewLayout({
+  selectedReviewItem,
+  answeredMembersOrdered,
+  selectedTabUserId,
+  onSelectTab,
+  myAnsweredAlready,
+  onClaim,
+  allDone,
+  isLastQuestion,
+  hasNextSpeakerSelected,
+  membersLeft,
+  onNextSpeaker,
+  onNextQuestion,
+}: {
+  selectedReviewItem: { member: MemberLite; answer: OpicStudyAnswer };
+  answeredMembersOrdered: { member: MemberLite; answer: OpicStudyAnswer }[];
+  selectedTabUserId: string | null;
+  onSelectTab: (userId: string) => void;
+  myAnsweredAlready: boolean;
+  onClaim: () => void;
+  allDone: boolean;
+  isLastQuestion: boolean;
+  hasNextSpeakerSelected: boolean;
+  membersLeft: number;
+  onNextSpeaker: () => void;
+  onNextQuestion: () => void;
+}) {
+  const { member, answer } = selectedReviewItem;
+  return (
+    <div className="space-y-4">
+      {/* 통합 헤더 — 발화자 정보 + 멤버 탭 + 내가 답변 버튼 */}
+      <div
+        className="flex flex-col gap-3 border-b pb-3 md:flex-row md:items-center md:justify-between md:gap-4"
+        style={{ borderColor: "var(--bp-line)" }}
+      >
+        {/* 좌: 발화자 표시 + 멤버 탭 */}
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3 flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Bot size={18} color="var(--bp-tc)" />
+            <span
+              className="text-sm font-bold"
+              style={{ color: "var(--bp-ink)" }}
+            >
+              {member.name}님 답변 분석
+            </span>
+          </div>
+          {/* 멤버 탭 (2명 이상 답변 시) */}
+          {answeredMembersOrdered.length > 1 && (
+            <div className="flex flex-wrap gap-1">
+              {answeredMembersOrdered.map(({ member: m }) => {
+                const isActive = selectedTabUserId === m.userId;
+                return (
+                  <button
+                    key={m.userId}
+                    onClick={() => onSelectTab(m.userId)}
+                    className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all"
+                    style={{
+                      background: isActive
+                        ? "var(--bp-tc)"
+                        : "var(--bp-surface)",
+                      color: isActive ? "#fff" : "var(--bp-ink-2)",
+                      border: isActive ? "none" : "1px solid var(--bp-line)",
+                    }}
+                  >
+                    <SpeakerDot member={m} />
+                    <span>{m.name}</span>
+                    {m.isMe && (
+                      <span className="text-[9px] opacity-70">(나)</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        {/* 우: 내가 답변 버튼 (본인 답변 X 시만) */}
+        {!myAnsweredAlready && (
+          <button
+            onClick={onClaim}
+            className="flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-all hover:opacity-90 active:scale-95 flex-shrink-0"
+            style={{
+              background: "var(--bp-tc)",
+              color: "#fff",
+              boxShadow: "0 4px 12px rgba(201, 100, 66, 0.25)",
+            }}
+          >
+            <Mic size={16} strokeWidth={2.4} />
+            내가 답변
+          </button>
+        )}
+      </div>
+
+      {/* 본문 — 코치노트 전체 너비 */}
+      <CoachingReviewContent member={member} answer={answer} />
+
+      {/* 하단 액션 — 다음 발화자 / 다음 질문 */}
+      <div
+        className="border-t pt-3"
+        style={{ borderColor: "var(--bp-line)" }}
+      >
+        {allDone ? (
+          <button
+            onClick={onNextQuestion}
+            className="flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-base font-bold transition-all hover:opacity-90 active:scale-95"
+            style={{
+              background: "var(--bp-tc)",
+              color: "#fff",
+              boxShadow: "0 4px 12px rgba(201, 100, 66, 0.25)",
+            }}
+          >
+            {isLastQuestion ? "스터디 마무리" : `다음 질문 (Q${membersLeft}…)`}
+            <ArrowRight size={18} />
+          </button>
+        ) : myAnsweredAlready ? (
+          <div
+            className="rounded-lg px-4 py-3 text-center text-xs"
+            style={{
+              background: "var(--bp-surface)",
+              color: "var(--bp-ink-3)",
+              border: "1px solid var(--bp-line)",
+            }}
+          >
+            {hasNextSpeakerSelected
+              ? "다음 멤버가 답변 중이에요…"
+              : `다음 답변할 분이 ‘내가 답변’을 눌러주세요 (${membersLeft}명 남음)`}
+          </div>
+        ) : (
+          // 본인 답변 X — 헤더 우측 "내가 답변" 버튼 가이드
+          <div
+            className="rounded-lg px-4 py-3 text-center text-xs"
+            style={{
+              background: "var(--bp-tc-tint)",
+              color: "var(--bp-tc)",
+              border: "1px solid rgba(201, 100, 66, 0.3)",
+              fontWeight: 600,
+            }}
+          >
+            ↑ 위 ‘내가 답변’ 버튼을 누르고 시작해 보세요
+          </div>
+        )}
+        <div style={{ marginTop: 8 }}>
+          <p
+            className="text-[10px] text-center"
+            style={{ color: "var(--bp-ink-3)" }}
+          >
+            💬 코치노트를 함께 보면서 의견을 나눠보세요. 자연스럽게 다음 발화자로 이어집니다.
+          </p>
+        </div>
+      </div>
+
+      {!hasNextSpeakerSelected && !allDone && myAnsweredAlready && (
+        <button
+          onClick={onNextSpeaker}
+          className="hidden md:flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm transition-all"
+          style={{
+            background: "var(--bp-surface)",
+            color: "var(--bp-ink-3)",
+            border: "1px dashed var(--bp-line-strong)",
+          }}
+        >
+          현재 발화자 자리 비우기
+        </button>
+      )}
+    </div>
+  );
+}
+
+// 토론 자료 형식 (v3) — 본문 콘텐츠만 (헤더는 wrapper에서)
 function CoachingReviewContent({
   member,
   answer,
@@ -1448,15 +1704,10 @@ function CoachingReviewContent({
   answer: OpicStudyAnswer;
 }) {
   const feedback = answer.feedback_result as FeedbackResult;
+  // member 변수는 wrapper 헤더에서 사용 — 콘텐츠는 답변자 무관
+  void member;
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <Bot size={20} color="var(--bp-tc)" />
-        <p className="text-sm font-bold" style={{ color: "var(--bp-ink)" }}>
-          {member.name}님 답변 분석
-        </p>
-      </div>
-
       {/* 1. 한 줄 요약 */}
       {feedback?.summary && (
         <div
