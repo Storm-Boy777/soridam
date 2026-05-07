@@ -16,7 +16,7 @@ import type {
   HTMLAttributes,
 } from "react";
 import { Fragment, useEffect, useRef } from "react";
-import { Check } from "lucide-react";
+import { Check, Users } from "lucide-react";
 import { useSessionFrame } from "./session-frame-context";
 
 // ============================================================
@@ -890,8 +890,21 @@ export function PcStepBar({
 
   return (
     <div className="bp-pc-stepbar">
-      {/* PC: 풀 6단계 가로 배치 */}
-      <div className="bp-stepbar-full">
+      {/* PC: 풀 6단계 가로 배치 + 우측 끝 멤버 pill */}
+      <div
+        className="bp-stepbar-full"
+        style={{ position: "relative" }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            right: 0,
+            top: "50%",
+            transform: "translateY(-50%)",
+          }}
+        >
+          <SessionMemberPill />
+        </div>
         {Array.from({ length: total }).map((_, i) => {
           const num = i + 1;
           const isPast = num < now;
@@ -972,31 +985,37 @@ export function PcStepBar({
         })}
       </div>
 
-      {/* 모바일: 한 줄 컴팩트 (현재 단계 + progress bar) */}
+      {/* 모바일: 한 줄 컴팩트 (현재 단계 + 멤버 pill + progress bar) */}
       <div className="bp-stepbar-compact" aria-hidden="true">
-        <div className="bp-stepbar-compact-label">
-          <span
-            style={{
-              fontWeight: 700,
-              color: "var(--bp-tc)",
-              fontVariantNumeric: "tabular-nums",
-            }}
-          >
-            {now}
-          </span>
-          <span style={{ color: "var(--bp-ink-3)" }}>/</span>
-          <span
-            style={{
-              color: "var(--bp-ink-3)",
-              fontVariantNumeric: "tabular-nums",
-            }}
-          >
-            {total}
-          </span>
-          <span style={{ color: "var(--bp-ink-4)", margin: "0 4px" }}>·</span>
-          <span style={{ fontWeight: 600, color: "var(--bp-ink)" }}>
-            {currentLabel}
-          </span>
+        <div
+          className="bp-stepbar-compact-label"
+          style={{ justifyContent: "space-between" }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
+            <span
+              style={{
+                fontWeight: 700,
+                color: "var(--bp-tc)",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {now}
+            </span>
+            <span style={{ color: "var(--bp-ink-3)" }}>/</span>
+            <span
+              style={{
+                color: "var(--bp-ink-3)",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {total}
+            </span>
+            <span style={{ color: "var(--bp-ink-4)", margin: "0 4px" }}>·</span>
+            <span style={{ fontWeight: 600, color: "var(--bp-ink)" }}>
+              {currentLabel}
+            </span>
+          </div>
+          <SessionMemberPill />
         </div>
         <div className="bp-stepbar-compact-progress">
           <div
@@ -1006,6 +1025,57 @@ export function PcStepBar({
         </div>
       </div>
     </div>
+  );
+}
+
+// ============================================================
+// SessionMemberPill — SessionFrameContext에서 자동 읽음
+// (PcStepBar 안에서 사용 — 모든 setup 단계에 자동 표시)
+// ============================================================
+function SessionMemberPill() {
+  const ctx = useSessionFrame();
+  if (!ctx || ctx.members.length === 0) return null;
+  const totalMembers = ctx.members.length;
+  const onlineCount = ctx.members.filter((m) =>
+    ctx.onlineUserIds.has(m.userId)
+  ).length;
+  const offlineNames = ctx.members
+    .filter((m) => !ctx.onlineUserIds.has(m.userId))
+    .map((m) => m.name);
+  const allOnline = onlineCount === totalMembers;
+
+  return (
+    <span
+      aria-label={`접속 멤버 ${onlineCount}/${totalMembers}`}
+      title={
+        offlineNames.length > 0
+          ? `오프라인: ${offlineNames.join(", ")}`
+          : "모두 접속 중"
+      }
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        padding: "3px 8px",
+        fontSize: 11,
+        fontWeight: 600,
+        color: allOnline ? "#2d7a3d" : "#a48121",
+        background: allOnline
+          ? "rgba(45, 122, 61, 0.10)"
+          : "rgba(164, 129, 33, 0.10)",
+        border: `1px solid ${
+          allOnline
+            ? "rgba(45, 122, 61, 0.25)"
+            : "rgba(164, 129, 33, 0.25)"
+        }`,
+        borderRadius: 999,
+        fontVariantNumeric: "tabular-nums",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <Users size={11} strokeWidth={2.4} aria-hidden="true" />
+      {onlineCount}/{totalMembers}
+    </span>
   );
 }
 
