@@ -1439,6 +1439,7 @@ function CoachingWaitStatus({
 // 코치 노트 본문 — 메인 멘트 + 강점/다듬을점/팁 + 전사 + 음성 + 토론 가이드
 // ============================================================
 
+// 토론 자료 형식 (v3)
 function CoachingReviewContent({
   member,
   answer,
@@ -1452,20 +1453,103 @@ function CoachingReviewContent({
       <div className="flex items-center gap-2">
         <Bot size={20} color="var(--bp-tc)" />
         <p className="text-sm font-bold" style={{ color: "var(--bp-ink)" }}>
-          {member.name}님 코치 노트
+          {member.name}님 답변 분석
         </p>
       </div>
 
-      {feedback?.feedback_text && (
-        <p
-          className="text-sm leading-relaxed"
-          style={{ color: "var(--bp-ink)" }}
+      {/* 1. 한 줄 요약 */}
+      {feedback?.summary && (
+        <div
+          className="rounded-lg p-2.5"
+          style={{
+            background: "var(--bp-tc-tint)",
+            border: "1px solid rgba(201, 100, 66, 0.2)",
+          }}
         >
-          {feedback.feedback_text}
-        </p>
+          <p
+            className="mb-1 text-[10px] font-bold uppercase tracking-wider"
+            style={{ color: "var(--bp-tc)" }}
+          >
+            📋 한 줄 요약
+          </p>
+          <p
+            className="text-sm leading-relaxed"
+            style={{ color: "var(--bp-ink)" }}
+          >
+            {feedback.summary}
+          </p>
+        </div>
       )}
 
-      {feedback?.strengths?.length > 0 && (
+      {/* 2. 답변 흐름 */}
+      {feedback?.flow && (
+        <div
+          className="rounded-lg p-2.5"
+          style={{
+            background: "var(--bp-surface)",
+            border: "1px solid var(--bp-line)",
+          }}
+        >
+          <p
+            className="mb-2 text-[10px] font-bold uppercase tracking-wider"
+            style={{ color: "var(--bp-ink-3)" }}
+          >
+            🗺️ 답변 흐름
+          </p>
+          <div className="space-y-1.5 text-xs" style={{ color: "var(--bp-ink)" }}>
+            {feedback.flow.intro && (
+              <div className="flex items-start gap-2">
+                <span
+                  className="rounded px-1.5 py-0.5 text-[9px] font-bold flex-shrink-0"
+                  style={{
+                    background: "var(--bp-tc-tint)",
+                    color: "var(--bp-tc)",
+                  }}
+                >
+                  도입
+                </span>
+                <span className="flex-1 leading-relaxed">{feedback.flow.intro}</span>
+              </div>
+            )}
+            {feedback.flow.body && (
+              <div className="flex items-start gap-2">
+                <span
+                  className="rounded px-1.5 py-0.5 text-[9px] font-bold flex-shrink-0"
+                  style={{
+                    background: "var(--bp-tc-tint)",
+                    color: "var(--bp-tc)",
+                  }}
+                >
+                  본론
+                </span>
+                <span className="flex-1 leading-relaxed">{feedback.flow.body}</span>
+              </div>
+            )}
+            {feedback.flow.conclusion && (
+              <div className="flex items-start gap-2">
+                <span
+                  className="rounded px-1.5 py-0.5 text-[9px] font-bold flex-shrink-0"
+                  style={{
+                    background: "var(--bp-tc-tint)",
+                    color: "var(--bp-tc)",
+                  }}
+                >
+                  결론
+                </span>
+                <span className="flex-1 leading-relaxed">{feedback.flow.conclusion}</span>
+              </div>
+            )}
+            {!feedback.flow.intro && !feedback.flow.body && !feedback.flow.conclusion && (
+              <p className="text-xs" style={{ color: "var(--bp-ink-3)" }}>
+                답변이 너무 짧아 흐름 분석이 어려웠어요.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 3. 인상 깊은 표현 */}
+      {feedback?.good_expressions && feedback.good_expressions.length > 0 && (
         <div
           className="rounded-lg p-2.5"
           style={{
@@ -1474,20 +1558,29 @@ function CoachingReviewContent({
           }}
         >
           <p
-            className="mb-1 text-xs font-bold"
+            className="mb-2 text-[10px] font-bold uppercase tracking-wider"
             style={{ color: "var(--bp-good, #5a8f5a)" }}
           >
-            ✓ 잘한 점
+            ✨ 인상 깊은 표현
           </p>
-          <ul className="space-y-1 text-xs" style={{ color: "var(--bp-ink)" }}>
-            {feedback.strengths.map((s, i) => (
-              <li key={i}>· {s}</li>
+          <div className="space-y-2">
+            {feedback.good_expressions.map((g, i) => (
+              <div key={i} className="text-xs" style={{ color: "var(--bp-ink)" }}>
+                <span
+                  className="font-mono italic"
+                  style={{ color: "var(--bp-good, #5a8f5a)" }}
+                >
+                  &ldquo;{g.quote}&rdquo;
+                </span>
+                <span style={{ color: "var(--bp-ink-2)" }}> — {g.note}</span>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
 
-      {feedback?.improvements?.length > 0 && (
+      {/* 4. 함께 다듬어볼 표현 (문법/어휘) */}
+      {feedback?.refine_expressions && feedback.refine_expressions.length > 0 && (
         <div
           className="rounded-lg p-2.5"
           style={{
@@ -1496,53 +1589,77 @@ function CoachingReviewContent({
           }}
         >
           <p
-            className="mb-1 text-xs font-bold"
+            className="mb-2 text-[10px] font-bold uppercase tracking-wider"
             style={{ color: "var(--bp-tip, #a48121)" }}
           >
-            ◈ 다듬을 부분
+            ✏️ 함께 다듬어볼 표현
           </p>
-          <ul className="space-y-1 text-xs" style={{ color: "var(--bp-ink)" }}>
-            {feedback.improvements.map((s, i) => (
-              <li key={i}>· {s}</li>
+          <div className="space-y-2.5">
+            {feedback.refine_expressions.map((r, i) => (
+              <div key={i} className="text-xs">
+                <p
+                  className="font-mono italic mb-0.5"
+                  style={{ color: "var(--bp-ink)" }}
+                >
+                  &ldquo;{r.quote}&rdquo;
+                </p>
+                <p
+                  className="leading-relaxed"
+                  style={{ color: "var(--bp-ink-2)" }}
+                >
+                  📌 {r.issue}
+                </p>
+                <p
+                  className="leading-relaxed mt-0.5 font-medium"
+                  style={{ color: "var(--bp-tip, #a48121)" }}
+                >
+                  ✨ {r.suggestion}
+                </p>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
 
-      {feedback?.tips?.length > 0 && (
-        <div
-          className="rounded-lg p-2.5"
-          style={{
-            background: "var(--bp-tc-tint)",
-            border: "1px solid rgba(201, 100, 66, 0.3)",
-          }}
-        >
-          <p
-            className="mb-1 text-xs font-bold"
-            style={{ color: "var(--bp-tc)" }}
+      {/* 5. 발음 패턴 (옵션) */}
+      {feedback?.pronunciation_patterns &&
+        feedback.pronunciation_patterns.length > 0 && (
+          <div
+            className="rounded-lg p-2.5"
+            style={{
+              background: "var(--bp-surface-2)",
+              border: "1px solid var(--bp-line)",
+            }}
           >
-            💡 다음에 적용
-          </p>
-          <ul className="space-y-1 text-xs" style={{ color: "var(--bp-ink)" }}>
-            {feedback.tips.map((s, i) => (
-              <li key={i}>· {s}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+            <p
+              className="mb-1 text-[10px] font-bold uppercase tracking-wider"
+              style={{ color: "var(--bp-ink-3)" }}
+            >
+              🎤 발음 패턴
+            </p>
+            <ul
+              className="space-y-1 text-xs leading-relaxed"
+              style={{ color: "var(--bp-ink-2)" }}
+            >
+              {feedback.pronunciation_patterns.map((p, i) => (
+                <li key={i}>· {p}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
-      {/* 전사 + 음성 재생 — 모의고사 패턴 */}
+      {/* 전사 + 음성 재생 */}
       {(answer.transcript || answer.audio_url) && (
         <div
-          className="rounded-lg p-3"
+          className="rounded-lg p-2.5"
           style={{
             background: "var(--bp-surface)",
             border: "1px solid var(--bp-line)",
           }}
         >
           <p
-            className="mb-2 text-xs font-bold"
-            style={{ color: "var(--bp-ink-2)" }}
+            className="mb-2 text-[10px] font-bold uppercase tracking-wider"
+            style={{ color: "var(--bp-ink-3)" }}
           >
             🎙️ 답변 다시 듣기 + 전사
           </p>
@@ -1551,7 +1668,7 @@ function CoachingReviewContent({
           )}
           {answer.transcript && (
             <p
-              className="mt-2 text-xs leading-relaxed"
+              className="mt-2 text-xs leading-relaxed font-mono italic"
               style={{ color: "var(--bp-ink-2)" }}
             >
               {answer.transcript}
@@ -1560,29 +1677,70 @@ function CoachingReviewContent({
         </div>
       )}
 
-      {/* 토론 가이드 */}
-      <div
-        className="rounded-lg p-2.5"
-        style={{
-          background: "var(--bp-surface)",
-          border: "1px dashed var(--bp-line-strong)",
-        }}
-      >
-        <div className="mb-1.5 flex items-center gap-1.5">
-          <MessageSquare size={14} color="var(--bp-tc)" />
-          <p
-            className="text-xs font-bold"
-            style={{ color: "var(--bp-ink)" }}
+      {/* 6. 함께 생각해볼 포인트 */}
+      {feedback?.discussion_hooks && feedback.discussion_hooks.length > 0 && (
+        <div
+          className="rounded-lg p-2.5"
+          style={{
+            background: "var(--bp-surface)",
+            border: "1px dashed var(--bp-line-strong)",
+          }}
+        >
+          <div className="mb-1.5 flex items-center gap-1.5">
+            <MessageSquare size={14} color="var(--bp-tc)" />
+            <p className="text-xs font-bold" style={{ color: "var(--bp-ink)" }}>
+              함께 생각해볼 포인트
+            </p>
+          </div>
+          <ul
+            className="space-y-1.5 text-xs leading-relaxed"
+            style={{ color: "var(--bp-ink-2)" }}
           >
-            함께 의견 나눠보세요
-          </p>
+            {feedback.discussion_hooks.map((h, i) => (
+              <li key={i}>· {h}</li>
+            ))}
+          </ul>
         </div>
-        <ul className="space-y-1 text-xs" style={{ color: "var(--bp-ink-2)" }}>
-          <li>· 이 답변에서 가장 인상적이었던 표현은?</li>
-          <li>· 여러분이라면 어떻게 답하시겠어요?</li>
-          <li>· 코치노트의 ‘다음에 적용’ 팁 함께 연습해 볼까요?</li>
-        </ul>
-      </div>
+      )}
+
+      {/* 7. 다음 발화자에게 */}
+      {feedback?.next_speaker_tip &&
+        (feedback.next_speaker_tip.take || feedback.next_speaker_tip.enhance) && (
+          <div
+            className="rounded-lg p-2.5"
+            style={{
+              background: "var(--bp-tc-tint)",
+              border: "1px solid rgba(201, 100, 66, 0.3)",
+            }}
+          >
+            <p
+              className="mb-1.5 text-[10px] font-bold uppercase tracking-wider"
+              style={{ color: "var(--bp-tc)" }}
+            >
+              🌱 다음 발화자에게
+            </p>
+            <div className="space-y-1.5 text-xs" style={{ color: "var(--bp-ink)" }}>
+              {feedback.next_speaker_tip.take && (
+                <div className="flex items-start gap-1.5">
+                  <span style={{ color: "var(--bp-good, #5a8f5a)" }}>📌</span>
+                  <span className="flex-1">
+                    <span className="font-bold">가져갈 것:</span>{" "}
+                    {feedback.next_speaker_tip.take}
+                  </span>
+                </div>
+              )}
+              {feedback.next_speaker_tip.enhance && (
+                <div className="flex items-start gap-1.5">
+                  <span style={{ color: "var(--bp-tc)" }}>📌</span>
+                  <span className="flex-1">
+                    <span className="font-bold">보강할 것:</span>{" "}
+                    {feedback.next_speaker_tip.enhance}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
     </div>
   );
 }

@@ -155,21 +155,43 @@ export interface PronunciationScore {
   }>;
 }
 
-// AI 코칭 결과 (UI에 노출되는 자연어 멘트)
+// AI 코칭 결과 — 그룹 토론 자료 형식
+//
+// 핵심 설계: 멤버들이 답변을 한 번 듣고 피드백 주기 어려우니, AI가 transcript
+// 기반으로 토론 거리를 미리 분석. 개인 코칭이 아닌 모두가 함께 보는 분석 자료.
+//
+// 구조:
+//   - summary       : 한 줄 요약 (빠른 파악)
+//   - flow          : 답변 흐름 (도입/본론/결론 구조)
+//   - good_expressions  : 인상 깊은 표현 (배울 점)
+//   - refine_expressions: 함께 다듬어볼 표현 (문법/어휘 + 제안)
+//   - pronunciation_patterns: 발음 큰 패턴 (옵션 — 자주 하는 오류)
+//   - discussion_hooks  : 함께 생각해볼 포인트 (콘텐츠 토론 hooks)
+//   - next_speaker_tip  : 다음 발화자 take-away (가져갈 것 + 보강할 것)
 export interface FeedbackResult {
-  // 메인 코칭 멘트 (1~2문단, 일타강사 톤)
-  feedback_text: string;
+  summary: string;
+  flow: {
+    intro: string | null;
+    body: string | null;
+    conclusion: string | null;
+  };
+  good_expressions: Array<{
+    quote: string;        // 원문 인용
+    note: string;         // 왜 좋은지
+  }>;
+  refine_expressions: Array<{
+    quote: string;        // 원문 인용
+    issue: string;        // 관찰 (시제/한국식/문법 등)
+    suggestion: string;   // 자연스러운 표현 제안
+  }>;
+  pronunciation_patterns?: string[];
+  discussion_hooks: string[];
+  next_speaker_tip: {
+    take: string;         // 가져갈 좋은 점
+    enhance: string;      // 본인 답변에 보강할 것
+  };
 
-  // 강점 (1~3개)
-  strengths: string[];
-
-  // 다듬을 부분 (1~2개)
-  improvements: string[];
-
-  // 다음 답변 팁 (1~2개)
-  tips: string[];
-
-  // 메타 — 답변자 본인의 목표 등급 (profiles.target_grade)
+  // 메타
   target_grade: string;
   generated_at: string;
 }

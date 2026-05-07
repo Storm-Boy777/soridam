@@ -916,7 +916,14 @@ export function OpicStudySessionClient({
               groupName={groupName}
             />
           ) : (
-            <GuideLoading />
+            <div className="flex flex-1 items-center justify-center">
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 size={28} className="animate-spin" style={{ color: "var(--bp-tc, #c96442)" }} />
+                <p className="text-sm" style={{ color: "var(--bp-ink-3, #7a6f63)" }}>
+                  AI 코치가 가이드를 준비하고 있어요
+                </p>
+              </div>
+            </div>
           )}
         </Shell>
       );
@@ -971,21 +978,56 @@ export function OpicStudySessionClient({
       );
     }
 
+    // feedback_share/discussion: Step66 4명 비교 폐기 — SessionRoom의 coaching_review가 처리
+    // (레거시 세션이 이 step에 머물러 있을 경우만 도달)
     case "feedback_share":
-    case "discussion":
+    case "discussion": {
+      const speakerAnswer = speaker ? answers[`${speaker}_${idx}`] ?? null : null;
+      const handleRetryFb = async () => {
+        await retryFeedback({ sessionId, questionIdx: idx });
+      };
       return (
         <Shell onEnd={handleEndSession}>
-          <LiveCompareView
-            members={members}
-            answers={answers}
+          <SessionRoom
+            sessionId={sessionId}
             questionIdx={idx}
             totalQuestions={session.selected_question_ids.length}
-            onNextQuestion={handleNextQuestion}
+            questionText={currentQuestion?.question_english ?? ""}
+            questionAudioUrl={currentQuestion?.audio_url ?? null}
+            questionTypeLabel={
+              currentQuestion?.question_type_kor ??
+              (currentQuestion?.question_type
+                ? QUESTION_TYPE_LABELS[currentQuestion.question_type] ??
+                  currentQuestion.question_type
+                : "")
+            }
+            questionShortKor={currentQuestion?.question_short ?? null}
+            members={members.map((m) => ({
+              key: m.key,
+              name: m.name,
+              userId: m.userId,
+              initial: m.initial,
+              isMe: m.userId === currentUserId,
+              isOnline:
+                m.userId === currentUserId ? true : onlineUserIds.has(m.userId),
+            }))}
+            currentSpeakerUserId={speaker}
+            myAnswer={myAnswer ?? null}
+            currentSpeakerAnswer={speakerAnswer}
+            allAnswers={answers}
             groupName={groupName}
             topicLabel={`${session.selected_topic ?? "콤보"} 콤보`}
+            comboProgress={`콤보 ${idx + 1}/${session.selected_question_ids.length}`}
+            onClaimSpeaker={handleClaimSpeaker}
+            onSubmitAnswer={handleSubmitAnswer}
+            onSkipAnswer={handleSkipAnswer}
+            onRetryFeedback={handleRetryFb}
+            onNextSpeaker={handleNextSpeaker}
+            onNextQuestion={handleNextQuestion}
           />
         </Shell>
       );
+    }
 
     case "completed":
       return (
@@ -1087,402 +1129,6 @@ function Shell({
   );
 }
 
-// ============================================================
-// FeedbackWaitOrFail — F/B 생성 중 대기 + 60초 timeout 시 재시도 UI
-// ============================================================
-function FeedbackWaitOrFail({
-  answer,
-  sessionId,
-  questionIdx,
-  memberCount,
-  groupName,
-  topicLabel,
-  questionLabel,
-}: {
-  answer: OpicStudyAnswer;
-  sessionId: string;
-  questionIdx: number;
-  memberCount?: number;
-  groupName?: string;
-  topicLabel?: string;
-  questionLabel?: string;
-}) {
-  const [elapsed, setElapsed] = useState(0);
-  const [retrying, setRetrying] = useState(false);
-  const [retryError, setRetryError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const start = answer.created_at
-      ? new Date(answer.created_at).getTime()
-      : Date.now();
-    const tick = () => setElapsed(Math.floor((Date.now() - start) / 1000));
-    tick();
-    const t = setInterval(tick, 1000);
-    return () => clearInterval(t);
-  }, [answer.created_at]);
-
-  const handleRetry = async () => {
-    setRetrying(true);
-    setRetryError(null);
-    const res = await retryFeedback({ sessionId, questionIdx });
-    setRetrying(false);
-    if (res.error) {
-      setRetryError(res.error);
-    } else {
-      // 재시도 카운터 리셋
-      setElapsed(0);
-    }
-  };
-
-  // 60초 미만 — 그냥 대기 화면
-  if (elapsed < 60) {
-    return (
-      <Step63
-        estimatedSec={20}
-        memberCount={memberCount}
-        groupName={groupName}
-        topicLabel={topicLabel}
-        questionLabel={questionLabel}
-      />
-    );
-  }
-
-  // 60초 이상 — 실패/지연 안내 + 재시도
-  return (
-    <HfPhone liveMode>
-      <HfBody padding="24px 20px">
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 20,
-            textAlign: "center",
-          }}
-        >
-          <div style={{ fontSize: 56, marginBottom: 4 }}>🥲</div>
-          <div className="t-h1">코칭 생성이 늦어지고 있어요</div>
-          <p
-            className="t-sm ink-3"
-            style={{ margin: 0, lineHeight: 1.6, maxWidth: 320 }}
-          >
-            평소 15~25초 정도 걸리는데 1분이 넘었어요.
-            <br />
-            네트워크 문제일 수 있으니 다시 시도해주세요.
-          </p>
-
-          {retryError && (
-            <p
-              className="t-xs"
-              style={{ color: "var(--bp-tc)", margin: 0 }}
-            >
-              {retryError}
-            </p>
-          )}
-
-          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-            <HfButton
-              variant="primary"
-              size="lg"
-              onClick={handleRetry}
-              disabled={retrying}
-            >
-              {retrying ? "재시도 중…" : "다시 시도"}
-            </HfButton>
-          </div>
-
-          <span className="t-xs ink-3">
-            대기 {Math.floor(elapsed / 60)}분 {elapsed % 60}초
-          </span>
-        </div>
-      </HfBody>
-    </HfPhone>
-  );
-}
-
-// ============================================================
-// 가이드 로딩
-// ============================================================
-function GuideLoading() {
-  return (
-    <HfPhone liveMode>
-      <HfBody padding="24px 20px">
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 16,
-          }}
-        >
-          <div className="bp-coach-avatar lg">◐</div>
-          <div className="t-h2">코치가 가이드를 준비 중이에요</div>
-          <p className="t-sm ink-3" style={{ margin: 0, textAlign: "center" }}>
-            잠시만 기다려주세요. (약 5초 소요)
-          </p>
-        </div>
-      </HfBody>
-    </HfPhone>
-  );
-}
-
-// ============================================================
-// LiveStep61 — 발화자 선정 (실제 멤버 데이터)
-// ============================================================
-function LiveStep61({
-  questionIdx,
-  totalQuestions,
-  members,
-  currentUserId,
-  onClaim,
-  questionEnglish = "",
-  questionType = "",
-}: {
-  questionIdx: number;
-  totalQuestions: number;
-  members: MemberInfo[];
-  currentUserId: string;
-  onClaim: () => void;
-  questionEnglish?: string;
-  questionType?: string;
-}) {
-  const realMembers = members.map((m) => ({
-    key: m.key,
-    name: m.name,
-    isMe: m.userId === currentUserId,
-    userId: m.userId,
-  }));
-  return (
-    <Step61
-      onStart={onClaim}
-      question={{
-        num: questionIdx + 1,
-        total: totalQuestions,
-        type: questionType,
-        english: questionEnglish,
-        englishLong: questionEnglish,
-      }}
-      realMembers={realMembers}
-      questionText={questionEnglish}
-    />
-  );
-}
-
-// ============================================================
-// LiveStep62Self — 본인 녹음 (마이크 + 업로드)
-// ============================================================
-function LiveStep62Self({
-  questionIdx,
-  totalQuestions,
-  onSubmit,
-  onSkip,
-  realMembers,
-  currentUserId,
-  meKey,
-  questionEnglish = "",
-  questionType = "",
-}: {
-  questionIdx: number;
-  totalQuestions: number;
-  onSubmit: (blob: Blob) => Promise<void>;
-  onSkip?: () => void;
-  realMembers?: Array<{ key: "a" | "b" | "c" | "d"; name: string; userId: string }>;
-  currentUserId?: string;
-  meKey?: "a" | "b" | "c" | "d";
-  questionEnglish?: string;
-  questionType?: string;
-}) {
-  const recorder = useRecorder({ maxDuration: 120, minDuration: 1 });
-  const [submitting, setSubmitting] = useState(false);
-  const [pendingSubmit, setPendingSubmit] = useState(false);
-
-  // 마운트 시 자동 녹음 시작
-  useEffect(() => {
-    if (recorder.state === "idle") {
-      recorder.startRecording().catch(() => undefined);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // 마이크 권한 거부 등 에러 — toast 1회 표시 + pending 해제
-  useEffect(() => {
-    if (recorder.error) {
-      toast.error(recorder.error);
-      setPendingSubmit(false);
-    }
-  }, [recorder.error]);
-
-  // pendingSubmit + audioBlob 도착 → 자동 제출 (stale closure 방지)
-  useEffect(() => {
-    if (!pendingSubmit) return;
-    if (recorder.state === "recording") return; // 아직 녹음 중이면 대기
-    if (!recorder.audioBlob) return; // 아직 blob 준비 안 됐으면 대기
-    if (submitting) return; // 이미 제출 중이면 무시
-
-    setPendingSubmit(false);
-    setSubmitting(true);
-    onSubmit(recorder.audioBlob).finally(() => setSubmitting(false));
-  }, [pendingSubmit, recorder.state, recorder.audioBlob, submitting, onSubmit]);
-
-  const handleRetry = useCallback(() => {
-    recorder.startRecording().catch(() => undefined);
-  }, [recorder]);
-
-  const handleComplete = useCallback(() => {
-    if (recorder.state === "recording") {
-      recorder.stopRecording();
-    }
-    setPendingSubmit(true); // useEffect가 audioBlob 도착 시 자동 제출
-  }, [recorder]);
-
-  const fmtDuration = (sec: number) => {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m}:${String(s).padStart(2, "0")}`;
-  };
-
-  return (
-    <Step62
-      speakerKey={meKey ?? "a"}
-      speakerName="나"
-      duration={fmtDuration(recorder.duration)}
-      question={{
-        num: questionIdx + 1,
-        total: totalQuestions,
-        type: questionType,
-        english: questionEnglish,
-        englishLong: questionEnglish,
-      }}
-      realMembers={realMembers}
-      currentUserId={currentUserId}
-      questionText={questionEnglish}
-      onSkip={onSkip}
-      onComplete={handleComplete}
-      submitting={submitting}
-      isSelf
-      recorderError={recorder.error ?? null}
-      onRetry={handleRetry}
-    />
-  );
-}
-
-// ============================================================
-// LiveCoachCard — Step 6-4 (실제 feedback_result 매핑)
-// ============================================================
-function LiveCoachCard({
-  myAnswer,
-  questionIdx,
-  totalQuestions,
-  speakerName,
-  onNextSpeaker,
-  speakerActive,
-  groupName,
-  topicLabel,
-  comboProgress,
-  realMembers,
-}: {
-  myAnswer: OpicStudyAnswer;
-  questionIdx: number;
-  totalQuestions: number;
-  questionEnglish: string;
-  speakerName: string;
-  onNextSpeaker: () => void;
-  speakerActive: boolean;
-  groupName?: string;
-  topicLabel?: string;
-  comboProgress?: string;
-  realMembers?: Array<{ key: "a" | "b" | "c" | "d"; initial: string }>;
-}) {
-  const [tab, setTab] = useState<"coach" | "transcript">("coach");
-  const fb = myAnswer.feedback_result as FeedbackResult | null;
-
-  if (!fb) return null;
-
-  return (
-    <Step64
-      onNext={onNextSpeaker}
-      questionLabel={`Q${questionIdx + 1}`}
-      comboProgress={comboProgress}
-      realMembers={realMembers}
-      realTranscript={myAnswer.transcript ?? undefined}
-      feedbackText={fb.feedback_text}
-      strengths={fb.strengths}
-      improvements={fb.improvements}
-      tips={fb.tips}
-    />
-  );
-}
-
-// ============================================================
-// LiveCompareView — Step 6-6 (4명 비교, 실제 데이터)
-// ============================================================
-function LiveCompareView({
-  members,
-  answers,
-  questionIdx,
-  totalQuestions,
-  onNextQuestion,
-  groupName,
-  topicLabel,
-}: {
-  members: MemberInfo[];
-  answers: Record<string, OpicStudyAnswer>;
-  questionIdx: number;
-  totalQuestions: number;
-  onNextQuestion: () => void;
-  groupName?: string;
-  topicLabel?: string;
-}) {
-  // 토론 타이머 (5분, 진입 시 시작)
-  const [secondsLeft, setSecondsLeft] = useState(5 * 60);
-  useEffect(() => {
-    setSecondsLeft(5 * 60);
-    const t = setInterval(() => {
-      setSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(t);
-  }, [questionIdx]);
-  const mm = Math.floor(secondsLeft / 60);
-  const ss = secondsLeft % 60;
-  const timerLabel = `${mm}:${String(ss).padStart(2, "0")}`;
-  const timerExpired = secondsLeft === 0;
-
-  // PC용 MemberAnswer 구성 (실제 멤버 + 답변 데이터)
-  const pcMembers = members.map((m) => {
-    const ans = answers[`${m.userId}_${questionIdx}`];
-    const fb = ans?.feedback_result as FeedbackResult | null;
-    return {
-      key: m.key,
-      initial: m.initial,
-      name: m.name,
-      duration: "0:--",
-      answer: ans?.transcript ?? "(답변 없음)",
-      bp: {
-        tag: fb?.strengths?.[0]?.split("·")[0]?.trim() ?? "참여",
-        note: fb?.strengths?.[0] ?? "답변 완료",
-      },
-      polish: fb?.improvements?.[0] ?? "다음 답변에서도 화이팅",
-    };
-  });
-
-  return (
-    <Step66
-      onNext={onNextQuestion}
-      members={pcMembers}
-      comboProgress={`콤보 ${questionIdx + 1}/${totalQuestions}`}
-      timerLabel={timerLabel}
-      timerExpired={timerExpired}
-    />
-  );
-}
-
-// ============================================================
-// LiveStep7 — 종료 (실제 멤버 + 답변 데이터)
-// ============================================================
 function LiveStep7({
   members,
   answers,
@@ -1498,27 +1144,30 @@ function LiveStep7({
   onHome: () => void;
   groupName?: string;
 }) {
-  // 모든 멤버의 strengths 모음
+  // 모든 멤버의 인상 깊은 표현(good_expressions) 모음
   const memberHighlights = members.map((m) => {
-    const allStrengths: string[] = [];
+    const allQuotes: string[] = [];
     Object.entries(answers).forEach(([key, a]) => {
       if (key.startsWith(`${m.userId}_`)) {
         const fb = a.feedback_result as FeedbackResult | null;
-        if (fb?.strengths) allStrengths.push(...fb.strengths);
+        if (fb?.good_expressions) {
+          allQuotes.push(...fb.good_expressions.map((g) => g.quote));
+        }
       }
     });
     return {
       member: m,
-      best: allStrengths[0] ?? "참여 완료",
+      best: allQuotes[0] ?? "참여 완료",
     };
   });
 
-  // PC용 데이터 구성 (실제 답변 기반)
+  // PC용 데이터 구성 (실제 답변 기반) — 첫 질문에서 가장 인상 깊은 표현
   const allBestExpression = (() => {
     for (const m of members) {
       const ans = answers[`${m.userId}_0`];
       const fb = ans?.feedback_result as FeedbackResult | null;
-      if (fb?.strengths?.[0]) return { text: fb.strengths[0], from: `${m.name}의 표현` };
+      const firstGood = fb?.good_expressions?.[0]?.quote;
+      if (firstGood) return { text: firstGood, from: `${m.name}의 표현` };
     }
     return { text: "오늘 함께 배운 표현이 모였어요", from: "스터디" };
   })();

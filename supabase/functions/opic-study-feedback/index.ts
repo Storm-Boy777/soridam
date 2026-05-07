@@ -42,10 +42,17 @@ function getCorsHeaders(req: Request) {
 // ── 타입 ──
 
 interface FeedbackOutput {
-  feedback_text: string;
-  strengths: string[];
-  improvements: string[];
-  tips: string[];
+  summary: string;
+  flow: {
+    intro: string | null;
+    body: string | null;
+    conclusion: string | null;
+  };
+  good_expressions: Array<{ quote: string; note: string }>;
+  refine_expressions: Array<{ quote: string; issue: string; suggestion: string }>;
+  pronunciation_patterns?: string[];
+  discussion_hooks: string[];
+  next_speaker_tip: { take: string; enhance: string };
 }
 
 interface ApproachItem {
@@ -441,8 +448,8 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // 기본 검증
-    if (!parsed.feedback_text || !Array.isArray(parsed.strengths)) {
+    // 기본 검증 (신규 토론 자료 구조)
+    if (!parsed.summary || !parsed.flow || !Array.isArray(parsed.good_expressions)) {
       console.error("[opic-study-feedback] AI 응답 검증 실패:", parsed);
       return new Response(JSON.stringify({ error: "AI 응답 형식 오류" }), {
         status: 502,
@@ -451,8 +458,10 @@ Deno.serve(async (req: Request) => {
     }
 
     // 누락 필드 기본값
-    parsed.improvements = parsed.improvements || [];
-    parsed.tips = parsed.tips || [];
+    parsed.refine_expressions = parsed.refine_expressions || [];
+    parsed.pronunciation_patterns = parsed.pronunciation_patterns || [];
+    parsed.discussion_hooks = parsed.discussion_hooks || [];
+    parsed.next_speaker_tip = parsed.next_speaker_tip || { take: "", enhance: "" };
 
     const gptMs = Date.now() - gptStart;
     const usage = openaiData.usage || {};
@@ -474,10 +483,15 @@ Deno.serve(async (req: Request) => {
     // ─── 7. opic_study_answers UPDATE ───
 
     const feedbackResult = {
-      feedback_text: parsed.feedback_text,
-      strengths: parsed.strengths,
-      improvements: parsed.improvements,
-      tips: parsed.tips,
+      // 신규 토론 자료 구조
+      summary: parsed.summary,
+      flow: parsed.flow,
+      good_expressions: parsed.good_expressions,
+      refine_expressions: parsed.refine_expressions,
+      pronunciation_patterns: parsed.pronunciation_patterns,
+      discussion_hooks: parsed.discussion_hooks,
+      next_speaker_tip: parsed.next_speaker_tip,
+      // 메타
       target_grade: answererTargetGrade,
       generated_at: new Date().toISOString(),
     };
