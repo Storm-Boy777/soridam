@@ -330,9 +330,10 @@ export function SessionRoom(props: SessionRoomProps) {
 
   return (
     <div
-      className="bp-scope flex flex-1 flex-col overflow-hidden md:h-auto md:overflow-visible"
+      className="bp-scope flex flex-1 flex-col overflow-hidden"
       style={{ background: "var(--bp-bg)" }}
     >
+      {/* TopBar — flex-none, 항상 위 (App Shell 패턴) */}
       <TopBar
         questionIdx={questionIdx}
         totalQuestions={totalQuestions}
@@ -341,26 +342,28 @@ export function SessionRoom(props: SessionRoomProps) {
         answeredCount={answeredCount}
       />
 
-      <div className="mx-auto flex w-full max-w-5xl min-h-0 flex-1 flex-col overflow-hidden px-3 py-2 sm:px-6 sm:py-4 md:flex-none md:min-h-0 md:overflow-visible">
-        <GuideStepper active={activeGuide} />
+      {/* 스크롤 영역 — TopBar 아래 콘텐츠 자체 스크롤 */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-5xl px-3 py-2 sm:px-6 sm:py-4">
+          <GuideStepper active={activeGuide} />
 
-        <QuestionLabelBar
-          questionIdx={questionIdx}
-          questionTypeLabel={questionTypeLabel}
-          questionShortKor={questionShortKor}
-          questionText={questionText}
-          showQuestion={showQuestion}
-          onToggleQuestion={() => setShowQuestion((p) => !p)}
-        />
+          <QuestionLabelBar
+            questionIdx={questionIdx}
+            questionTypeLabel={questionTypeLabel}
+            questionShortKor={questionShortKor}
+            questionText={questionText}
+            showQuestion={showQuestion}
+            onToggleQuestion={() => setShowQuestion((p) => !p)}
+          />
 
-        <div
-          className="mt-2 flex min-h-0 flex-1 flex-col rounded-2xl border p-3 md:mt-4 md:flex-none md:p-5"
-          style={{
-            background: "var(--bp-surface)",
-            borderColor: "var(--bp-line)",
-          }}
-        >
-          <div className="flex min-h-0 flex-1 flex-col gap-2 md:flex-row md:min-h-0 md:flex-none md:gap-5">
+          <div
+            className="mt-2 rounded-2xl border p-3 md:mt-4 md:p-5"
+            style={{
+              background: "var(--bp-surface)",
+              borderColor: "var(--bp-line)",
+            }}
+          >
+            <div className="flex flex-col gap-2 md:flex-row md:gap-5">
             {/* 좌측: AVA + 컨트롤 */}
             <div className="flex min-h-0 flex-1 flex-col gap-2 md:flex-none md:w-[42%] md:gap-3">
               <div
@@ -486,12 +489,13 @@ export function SessionRoom(props: SessionRoomProps) {
           </div>
         </div>
 
-        <MembersStrip
-          members={members}
-          questionIdx={questionIdx}
-          allAnswers={allAnswers}
-          currentSpeakerUserId={currentSpeakerUserId}
-        />
+          <MembersStrip
+            members={members}
+            questionIdx={questionIdx}
+            allAnswers={allAnswers}
+            currentSpeakerUserId={currentSpeakerUserId}
+          />
+        </div>
       </div>
     </div>
   );
