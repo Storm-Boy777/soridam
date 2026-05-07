@@ -34,7 +34,6 @@ import {
   SkipForward,
   Eye,
   EyeOff,
-  Users,
   Play,
   Pause,
   MessageSquare,
@@ -535,23 +534,11 @@ function TopBar({
             </span>{" "}
             / {totalQuestions}
           </span>
-          <div className="flex items-center gap-3">
-            <div
-              className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium"
-              style={{
-                background: "var(--bp-tc-tint)",
-                color: "var(--bp-tc)",
-              }}
-            >
-              <Users size={11} strokeWidth={2.4} />
-              <span style={{ fontVariantNumeric: "tabular-nums" }}>
-                {onlineCount}/{totalMembers}
-              </span>
-            </div>
-            <span className="text-xs" style={{ color: "var(--bp-ink-3)" }}>
-              답변 {answeredCount}/{totalMembers}
-            </span>
-          </div>
+          {/* 멤버 presence pill은 글로벌 (Shell의 bp-presence-pill) — 중복 제거.
+           * TopBar는 답변 진행 정보만. */}
+          <span className="text-xs" style={{ color: "var(--bp-ink-3)" }}>
+            답변 {answeredCount}/{totalMembers}
+          </span>
         </div>
         <div
           className="mt-2 h-1.5 rounded-full"
