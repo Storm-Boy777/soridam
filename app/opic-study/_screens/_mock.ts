@@ -320,10 +320,10 @@ export const MOCK_STEP7 = {
     detailKeyword: "구체적 디테일",
   },
   memberNotes: [
-    { key: "a" as const, name: "Alice", note: "도입 connector" },
-    { key: "b" as const, name: "Bob", note: "구체적 디테일" },
-    { key: "c" as const, name: "Carol", note: "hedge 표현" },
-    { key: "d" as const, name: "Dan", note: "구어체 리듬" },
+    { key: "a" as const, name: "Alice", note: "도입 connector", isBest: true },
+    { key: "b" as const, name: "Bob", note: "구체적 디테일", isBest: false },
+    { key: "c" as const, name: "Carol", note: "hedge 표현", isBest: false },
+    { key: "d" as const, name: "Dan", note: "구어체 리듬", isBest: false },
   ],
   nextRecommend: { name: "여행 (Travel) · AL", meta: "출제율 ↑" },
 };

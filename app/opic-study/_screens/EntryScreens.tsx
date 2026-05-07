@@ -525,9 +525,9 @@ function LobbyMobile({
             멤버 ({members.filter((m) => m.state !== "wait").length}/{members.length})
           </SectionH>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {members.map((m) => (
+            {members.map((m, idx) => (
               <div
-                key={m.key}
+                key={`${m.key}-${idx}`}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -698,9 +698,9 @@ function LobbyPc({
                   gap: 14,
                 }}
               >
-                {members.map((m) => (
+                {members.map((m, idx) => (
                   <div
-                    key={m.key}
+                    key={`${m.key}-${idx}`}
                     style={{
                       display: "flex",
                       alignItems: "center",

@@ -887,9 +887,9 @@ export function Step63({
               width: "100%",
             }}
           >
-            {answeredMembers.map((m) => (
+            {answeredMembers.map((m, idx) => (
               <div
-                key={m.key}
+                key={`${m.key}-${idx}`}
                 style={{
                   display: "inline-flex",
                   flexDirection: "column",

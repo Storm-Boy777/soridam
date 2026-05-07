@@ -211,8 +211,8 @@ export function Step66({
           overflow: "auto",
         } as React.CSSProperties}
       >
-        {members.map((m) => (
-          <div key={m.key} className="bp-mb-col">
+        {members.map((m, idx) => (
+          <div key={`${m.key}-${idx}`} className="bp-mb-col">
             <div className="bp-mb-col-h">
               <MbDot color={m.key} initial={m.initial} live />
               <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>

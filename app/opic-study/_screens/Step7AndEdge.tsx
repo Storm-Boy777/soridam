@@ -157,7 +157,7 @@ export function Step7({
                 }}
               >
                 <span className="t-sm" style={{ fontWeight: 600 }}>
-                  AI 스터디 코치
+                  스터디 코치
                 </span>
                 <span className="t-xs ink-3">오늘의 마무리</span>
               </div>
@@ -174,40 +174,66 @@ export function Step7({
           </HfCard>
         </div>
 
-        {/* Members — 모바일 1열, PC 멤버 수만큼 */}
-        <HfCard padding={20} style={{ marginBottom: 16 }}>
-          <SectionH style={{ marginBottom: 14 }}>오늘 함께한 멤버</SectionH>
-          <div
-            className="bp-grid-members"
-            style={{ ["--member-cols" as string]: memberCols } as React.CSSProperties}
-          >
-            {data.memberNotes.map((m) => (
-              <HfCard
-                key={m.key}
-                variant="flat"
-                padding={14}
-                style={{ textAlign: "center" }}
-              >
-                <MbDot
-                  color={m.key}
-                  initial={m.name[0]}
-                  size={36}
-                  fontSize={13}
-                  style={{ margin: "0 auto 8px", display: "flex" }}
-                />
-                <div
-                  className="t-sm"
-                  style={{ fontWeight: 600, marginBottom: 6 }}
+        {/* Members — 답변한 멤버만 표시 (오프라인 + 미답변 제외) */}
+        {data.memberNotes.length > 0 && (
+          <HfCard padding={20} style={{ marginBottom: 16 }}>
+            <SectionH style={{ marginBottom: 14 }}>오늘 함께한 멤버</SectionH>
+            <div
+              className="bp-grid-members"
+              style={{ ["--member-cols" as string]: memberCols } as React.CSSProperties}
+            >
+              {data.memberNotes.map((m, idx) => (
+                <HfCard
+                  key={`${m.key}-${idx}`}
+                  variant="flat"
+                  padding={14}
+                  style={{ textAlign: "center" }}
                 >
-                  {m.name}
-                </div>
-                <Tag tone="good" style={{ fontSize: 10 }}>
-                  오늘 베스트 · {m.note}
-                </Tag>
-              </HfCard>
-            ))}
-          </div>
-        </HfCard>
+                  <MbDot
+                    color={m.key}
+                    initial={m.name[0]}
+                    size={36}
+                    fontSize={13}
+                    style={{ margin: "0 auto 8px", display: "flex" }}
+                  />
+                  <div
+                    className="t-sm"
+                    style={{ fontWeight: 600, marginBottom: 6 }}
+                  >
+                    {m.name}
+                    {m.isBest && (
+                      <span
+                        style={{
+                          marginLeft: 4,
+                          fontSize: 12,
+                        }}
+                        title="오늘 베스트"
+                      >
+                        🏆
+                      </span>
+                    )}
+                  </div>
+                  {m.note && (
+                    <p
+                      className="t-xs"
+                      style={{
+                        margin: "0 0 6px",
+                        color: "var(--bp-ink-2)",
+                        fontStyle: "italic",
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      &ldquo;{m.note}&rdquo;
+                    </p>
+                  )}
+                  <Tag tone={m.isBest ? "tip" : "good"} style={{ fontSize: 10 }}>
+                    {m.isBest ? "오늘 베스트" : "참여 완료"}
+                  </Tag>
+                </HfCard>
+              ))}
+            </div>
+          </HfCard>
+        )}
 
         {/* Next combo — 실데이터 추천 있을 때만 */}
         {data.nextRecommend?.name && (
@@ -534,9 +560,9 @@ export function EdgeReconnect({
         <HfCard padding={14}>
           <SectionH>지금 멤버</SectionH>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {members.map((m) => (
+            {members.map((m, idx) => (
               <div
-                key={m.key}
+                key={`${m.key}-${idx}`}
                 style={{
                   display: "flex",
                   alignItems: "center",

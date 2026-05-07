@@ -1144,8 +1144,15 @@ function LiveStep7({
   onHome: () => void;
   groupName?: string;
 }) {
-  // 모든 멤버의 인상 깊은 표현(good_expressions) 모음
-  const memberHighlights = members.map((m) => {
+  // 답변한 멤버만 (오프라인이라도 답변 기록이 있으면 포함 — 답변 후 끊김 케이스)
+  const answeredMembers = members.filter((m) =>
+    Object.entries(answers).some(
+      ([key, a]) => key.startsWith(`${m.userId}_`) && a.feedback_result
+    )
+  );
+
+  // 답변자별 인상 깊은 표현 (good_expressions) 모음
+  const memberHighlights = answeredMembers.map((m) => {
     const allQuotes: string[] = [];
     Object.entries(answers).forEach(([key, a]) => {
       if (key.startsWith(`${m.userId}_`)) {
@@ -1157,19 +1164,20 @@ function LiveStep7({
     });
     return {
       member: m,
-      best: allQuotes[0] ?? "참여 완료",
+      best: allQuotes[0] ?? "",
     };
   });
 
-  // PC용 데이터 구성 (실제 답변 기반) — 첫 질문에서 가장 인상 깊은 표현
-  const allBestExpression = (() => {
-    for (const m of members) {
+  // 전체 베스트 표현 — 첫 질문에서 첫 인상 깊은 표현이 있는 멤버
+  const bestSource = (() => {
+    for (const m of answeredMembers) {
       const ans = answers[`${m.userId}_0`];
       const fb = ans?.feedback_result as FeedbackResult | null;
       const firstGood = fb?.good_expressions?.[0]?.quote;
-      if (firstGood) return { text: firstGood, from: `${m.name}의 표현` };
+      if (firstGood)
+        return { text: firstGood, from: `${m.name}의 표현`, userId: m.userId };
     }
-    return { text: "오늘 함께 배운 표현이 모였어요", from: "스터디" };
+    return { text: "오늘 함께 배운 표현이 모였어요", from: "스터디", userId: null };
   })();
 
   // 종료 헤드라인 — 날짜 기반 variation (매일 다른 따뜻한 카피)
@@ -1188,22 +1196,30 @@ function LiveStep7({
     return titles[sum % titles.length];
   })();
 
+  // subtitle: 답변자 수 기준 (답변 안 한 오프라인 멤버 제외)
+  const subtitleCount = answeredMembers.length;
+  const subtitleText =
+    subtitleCount > 0
+      ? `${subtitleCount}명이 함께 ${topic} 콤보를 끝냈어요 · ${level}`
+      : `${topic} 콤보를 마쳤어요 · ${level}`;
+
   return (
     <Step7Screen
       onHome={onHome}
       data={{
         title: endingTitle,
-        subtitle: `${members.length}명이 함께 ${topic} 콤보를 끝냈어요 · ${level}`,
-        bestExpression: allBestExpression.text,
-        bestFrom: allBestExpression.from,
+        subtitle: subtitleText,
+        bestExpression: bestSource.text,
+        bestFrom: bestSource.from,
         coachNote: {
-          keyword: allBestExpression.text.slice(0, 24),
+          keyword: bestSource.text.slice(0, 24),
           detailKeyword: "구체적 디테일",
         },
         memberNotes: memberHighlights.map((h) => ({
           key: h.member.key,
           name: h.member.name,
-          note: h.best.slice(0, 16),
+          note: h.best.slice(0, 24),
+          isBest: h.member.userId === bestSource.userId,
         })),
         // nextRecommend: 추천 알고리즘 미구현 — 실데이터 연결 전까지 미표시
         nextRecommend: { name: "", meta: "" },
