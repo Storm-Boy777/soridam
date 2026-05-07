@@ -1157,11 +1157,11 @@ function RightMain({
   onSelectTab: (userId: string) => void;
   selectedReviewItem: { member: MemberLite; answer: OpicStudyAnswer } | undefined | null;
 }) {
-  // coaching_review — 메인 컨텐츠
+  // coaching_review — 메인 컨텐츠 (모바일/PC 모두 표시 — 핵심 토론 콘텐츠)
   if (phase === "coaching_review" && selectedReviewItem) {
     return (
       <div
-        className="hidden flex-1 flex-col rounded-xl border md:flex"
+        className="flex flex-1 flex-col rounded-xl border"
         style={{
           background: "var(--bp-surface-2)",
           borderColor: "var(--bp-line)",
@@ -1212,14 +1212,15 @@ function RightMain({
     );
   }
 
-  // 기타 phase — 작은 상태 박스
+  // 기타 phase — 작은 상태 박스 (모바일/PC 모두 표시)
+  // listener / coaching_wait는 메시지 중요. speaker_active는 보조 안내.
   return (
     <div
-      className="hidden flex-1 flex-col items-center justify-center rounded-xl border p-4 md:flex"
+      className="flex flex-1 flex-col items-center justify-center rounded-xl border p-4"
       style={{
         background: "var(--bp-surface-2)",
         borderColor: "var(--bp-line)",
-        minHeight: 280,
+        minHeight: 180,
       }}
     >
       {phase === "speaker_select" && (
