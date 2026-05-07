@@ -34,6 +34,7 @@ import {
   SkipForward,
   Eye,
   EyeOff,
+  Users,
   Play,
   Pause,
   MessageSquare,
@@ -339,6 +340,9 @@ export function SessionRoom(props: SessionRoomProps) {
         onlineCount={onlineMembers.length}
         totalMembers={members.length}
         answeredCount={answeredCount}
+        offlineNames={members
+          .filter((m) => !m.isOnline)
+          .map((m) => m.name)}
       />
 
       {/* 스크롤 영역 — TopBar 아래 콘텐츠 자체 스크롤 */}
@@ -510,13 +514,16 @@ function TopBar({
   onlineCount,
   totalMembers,
   answeredCount,
+  offlineNames,
 }: {
   questionIdx: number;
   totalQuestions: number;
   onlineCount: number;
   totalMembers: number;
   answeredCount: number;
+  offlineNames: string[];
 }) {
+  const allOnline = onlineCount === totalMembers && totalMembers > 0;
   return (
     <div
       className="border-b px-3 py-2 sm:px-6 sm:py-3"
@@ -526,7 +533,7 @@ function TopBar({
       }}
     >
       <div className="mx-auto max-w-5xl">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <span className="text-sm" style={{ color: "var(--bp-ink-2)" }}>
             문항{" "}
             <span className="font-bold" style={{ color: "var(--bp-ink)" }}>
@@ -534,11 +541,39 @@ function TopBar({
             </span>{" "}
             / {totalQuestions}
           </span>
-          {/* 멤버 presence pill은 글로벌 (Shell의 bp-presence-pill) — 중복 제거.
-           * TopBar는 답변 진행 정보만. */}
-          <span className="text-xs" style={{ color: "var(--bp-ink-3)" }}>
-            답변 {answeredCount}/{totalMembers}
-          </span>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="text-xs" style={{ color: "var(--bp-ink-3)" }}>
+              답변 {answeredCount}/{totalMembers}
+            </span>
+            {/* 멤버 presence pill — TopBar 우측 끝 (레이아웃 max-w 1040 안) */}
+            {totalMembers > 0 && (
+              <span
+                aria-label={`접속 멤버 ${onlineCount}/${totalMembers}`}
+                title={
+                  offlineNames.length > 0
+                    ? `오프라인: ${offlineNames.join(", ")}`
+                    : "모두 접속 중"
+                }
+                className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold"
+                style={{
+                  color: allOnline ? "#2d7a3d" : "#a48121",
+                  background: allOnline
+                    ? "rgba(45, 122, 61, 0.10)"
+                    : "rgba(164, 129, 33, 0.10)",
+                  border: `1px solid ${
+                    allOnline
+                      ? "rgba(45, 122, 61, 0.25)"
+                      : "rgba(164, 129, 33, 0.25)"
+                  }`,
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                <Users size={11} strokeWidth={2.4} aria-hidden="true" />
+                <span className="hidden sm:inline">멤버 </span>
+                {onlineCount}/{totalMembers}
+              </span>
+            )}
+          </div>
         </div>
         <div
           className="mt-2 h-1.5 rounded-full"
