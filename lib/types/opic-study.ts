@@ -349,11 +349,20 @@ export interface SessionHistoryItem {
   selected_category: StudyCategory | null;
   selected_topic: string | null;
   selected_combo_sig: string | null;
+  selected_question_ids?: string[];
   ended_at: string | null;
   started_at: string;
   status: StudySessionStatus;
+  /** 그룹 전체 멤버 수 */
   member_count: number;
+  /** 실제 음성 답변 수(audio_url 있음) */
   total_answers: number;
+  /** 패스 수(audio_url null) */
+  total_skips: number;
+  /** 선택된 콤보 문항 수 */
+  total_questions: number;
+  /** 답변 또는 패스 기록이 있는 실제 참여 멤버 수 */
+  participant_count: number;
   /** 세션 참여 멤버별 첫 번째 강점/개선 한 줄 (피드백 있을 때만) */
   member_highlights?: Array<{
     user_id: string;
@@ -362,6 +371,46 @@ export interface SessionHistoryItem {
     color: "a" | "b" | "c" | "d";
     strength: string | null;
     improvement: string | null;
+  }>;
+}
+
+export interface SessionHistoryDetail {
+  id: string;
+  group_id: string;
+  group_name: string;
+  selected_category: StudyCategory | null;
+  selected_topic: string | null;
+  started_at: string;
+  ended_at: string | null;
+  status: StudySessionStatus;
+  online_mode: boolean;
+  stats: {
+    group_member_count: number;
+    participant_count: number;
+    total_questions: number;
+    answer_count: number;
+    skip_count: number;
+    coach_note_count: number;
+  };
+  questions: Array<{
+    number: number;
+    question_id: string | null;
+    label: string;
+    question_english: string | null;
+    question_type_kor: string | null;
+    answer_count: number;
+    skip_count: number;
+    coach_note_count: number;
+    status: "completed" | "skipped" | "mixed" | "waiting";
+  }>;
+  members: Array<{
+    user_id: string;
+    name: string;
+    initial: string;
+    color: "a" | "b" | "c" | "d";
+    answered_count: number;
+    skipped_count: number;
+    coach_note_count: number;
   }>;
 }
 

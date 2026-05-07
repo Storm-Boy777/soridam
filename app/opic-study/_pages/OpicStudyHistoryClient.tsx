@@ -12,6 +12,9 @@ interface SessionDisplay {
   topic: string;
   category: string | null;
   totalAnswers: number;
+  totalSkips: number;
+  totalQuestions: number;
+  participantCount: number;
   memberCount: number;
   status: string;
   memberHighlights?: Array<{
@@ -22,6 +25,8 @@ interface SessionDisplay {
     strength: string | null;
     improvement: string | null;
   }>;
+  endedAtIso?: string;
+  startedAtIso?: string;
 }
 
 interface Props {

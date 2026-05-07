@@ -311,19 +311,40 @@ export const MOCK_MY_HISTORY = [
 // ============================================================
 
 export const MOCK_STEP7 = {
-  title: "오늘도 한 걸음",
-  subtitle: "4명이 함께 음악 콤보 3문항을 끝냈어요",
-  bestExpression: "I'm really into hip-hop these days",
-  bestFrom: "Alice의 도입 표현",
-  coachNote: {
-    keyword: "몰입 표현",
-    detailKeyword: "구체적 디테일",
+  title: "잘 다녀왔어요",
+  subtitle: "4명이 함께 음악 콤보 3문항을 마쳤어요",
+  sessionStats: {
+    memberCount: 4,
+    totalQuestions: 3,
+    answerCount: 9,
+    skipCount: 1,
+    coachNoteCount: 9,
   },
+  questionSummaries: [
+    {
+      number: 1,
+      label: "좋아하는 음악과 가수 말하기",
+      status: "completed" as const,
+      meta: "답변 4 · 패스 0 · 코치노트 4",
+    },
+    {
+      number: 2,
+      label: "음악 취향이 바뀐 경험 말하기",
+      status: "mixed" as const,
+      meta: "답변 3 · 패스 1 · 코치노트 3",
+    },
+    {
+      number: 3,
+      label: "콘서트나 공연 경험 말하기",
+      status: "completed" as const,
+      meta: "답변 2 · 패스 0 · 코치노트 2",
+    },
+  ],
   memberNotes: [
-    { key: "a" as const, name: "Alice", note: "도입 connector", isBest: true },
-    { key: "b" as const, name: "Bob", note: "구체적 디테일", isBest: false },
-    { key: "c" as const, name: "Carol", note: "hedge 표현", isBest: false },
-    { key: "d" as const, name: "Dan", note: "구어체 리듬", isBest: false },
+    { key: "a" as const, name: "Alice", answeredCount: 3, skippedCount: 0, coachNoteCount: 3 },
+    { key: "b" as const, name: "Bob", answeredCount: 2, skippedCount: 1, coachNoteCount: 2 },
+    { key: "c" as const, name: "Carol", answeredCount: 2, skippedCount: 0, coachNoteCount: 2 },
+    { key: "d" as const, name: "Dan", answeredCount: 2, skippedCount: 0, coachNoteCount: 2 },
   ],
   nextRecommend: { name: "여행 (Travel) · AL", meta: "출제율 ↑" },
 };

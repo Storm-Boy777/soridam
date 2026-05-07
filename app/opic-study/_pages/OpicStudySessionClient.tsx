@@ -44,6 +44,7 @@ import {
 import { Step64 } from "../_screens/Step64";
 import { Step66 } from "../_screens/Step66";
 import { Step7 as Step7Screen } from "../_screens/Step7AndEdge";
+import type { Step7Data } from "../_screens/Step7AndEdge";
 import {
   selectMode,
   selectCategory,
@@ -97,7 +98,6 @@ import {
 import type {
   StudyCategory,
   SessionStep,
-  FeedbackResult,
   OpicStudyAnswer,
   ApproachItem,
 } from "@/lib/types/opic-study";
@@ -122,6 +122,13 @@ interface MemberInfo {
   userId: string;
   name: string;
   initial: string;
+}
+
+interface StudyQuestionSummary {
+  question_index: number;
+  question_english: string;
+  question_short: string | null;
+  question_type_kor: string | null;
 }
 
 // ============================================================
@@ -790,6 +797,8 @@ export function OpicStudySessionClient({
   // (handleToggleMode 제거됨)
 
   const stepUi = renderStep();
+  const isSessionCompleted =
+    session.step === "completed" || session.status === "completed";
   // Step별 ImmersiveHeader subtitle 매핑
   const stepSubtitle = (() => {
     switch (session.step) {
@@ -862,8 +871,12 @@ export function OpicStudySessionClient({
               </span>
             </span>
             <button
-              onClick={handleEndSession}
-              aria-label="세션 종료"
+              onClick={
+                isSessionCompleted
+                  ? () => router.push("/opic-study")
+                  : handleEndSession
+              }
+              aria-label={isSessionCompleted ? "스터디 나가기" : "세션 종료"}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -879,7 +892,7 @@ export function OpicStudySessionClient({
               }}
             >
               <X size={12} strokeWidth={2} aria-hidden="true" />
-              종료
+              {isSessionCompleted ? "나가기" : "종료"}
             </button>
           </div>
         }
@@ -1097,6 +1110,8 @@ export function OpicStudySessionClient({
           <LiveStep7
             members={members}
             answers={answers}
+            questions={comboQuestionsList}
+            selectedQuestionCount={session.selected_question_ids.length}
             topic={session.selected_topic ?? "콤보"}
             level={myTargetGrade}
             onHome={() => router.push("/opic-study")}
@@ -1194,6 +1209,8 @@ function Shell({
 function LiveStep7({
   members,
   answers,
+  questions,
+  selectedQuestionCount,
   topic,
   level,
   onHome,
@@ -1201,88 +1218,91 @@ function LiveStep7({
 }: {
   members: MemberInfo[];
   answers: Record<string, OpicStudyAnswer>;
+  questions: StudyQuestionSummary[];
+  selectedQuestionCount: number;
   topic: string;
   level: string;
   onHome: () => void;
   groupName?: string;
 }) {
-  // 답변한 멤버만 (오프라인이라도 답변 기록이 있으면 포함 — 답변 후 끊김 케이스)
-  const answeredMembers = members.filter((m) =>
-    Object.entries(answers).some(
-      ([key, a]) => key.startsWith(`${m.userId}_`) && a.feedback_result
-    )
+  const answerRecords = Object.values(answers);
+  const questionCount = Math.max(
+    selectedQuestionCount,
+    questions.length,
+    ...answerRecords.map((a) => a.question_idx + 1),
+    0
   );
 
-  // 답변자별 인상 깊은 표현 (good_expressions) 모음
-  const memberHighlights = answeredMembers.map((m) => {
-    const allQuotes: string[] = [];
-    Object.entries(answers).forEach(([key, a]) => {
-      if (key.startsWith(`${m.userId}_`)) {
-        const fb = a.feedback_result as FeedbackResult | null;
-        if (fb?.good_expressions) {
-          allQuotes.push(...fb.good_expressions.map((g) => g.quote));
-        }
-      }
-    });
+  const hasRecordForMember = (member: MemberInfo) =>
+    answerRecords.some((a) => a.user_id === member.userId);
+
+  const activeMembers = members.filter(hasRecordForMember);
+  const displayMembers = activeMembers.length > 0 ? activeMembers : members;
+
+  const questionSummaries: Step7Data["questionSummaries"] = Array.from(
+    { length: questionCount },
+    (_, i) => {
+      const questionAnswers = answerRecords.filter((a) => a.question_idx === i);
+      const answerCount = questionAnswers.filter((a) => !!a.audio_url).length;
+      const skipCount = questionAnswers.filter((a) => !a.audio_url).length;
+      const coachNoteCount = questionAnswers.filter((a) => !!a.feedback_result).length;
+      const question = questions[i];
+      const status =
+        answerCount > 0 && skipCount > 0
+          ? "mixed"
+          : answerCount > 0
+            ? "completed"
+            : skipCount > 0
+              ? "skipped"
+              : "waiting";
+
+      return {
+        number: i + 1,
+        label:
+          question?.question_short ||
+          question?.question_english ||
+          `${topic} ${i + 1}번 질문`,
+        status,
+        meta: `답변 ${answerCount} · 패스 ${skipCount} · 코치노트 ${coachNoteCount}`,
+      };
+    }
+  );
+
+  const memberNotes: Step7Data["memberNotes"] = displayMembers.map((member) => {
+    const memberAnswers = answerRecords.filter((a) => a.user_id === member.userId);
     return {
-      member: m,
-      best: allQuotes[0] ?? "",
+      key: member.key,
+      name: member.name,
+      answeredCount: memberAnswers.filter((a) => !!a.audio_url).length,
+      skippedCount: memberAnswers.filter((a) => !a.audio_url).length,
+      coachNoteCount: memberAnswers.filter((a) => !!a.feedback_result).length,
     };
   });
 
-  // 전체 베스트 표현 — 첫 질문에서 첫 인상 깊은 표현이 있는 멤버
-  const bestSource = (() => {
-    for (const m of answeredMembers) {
-      const ans = answers[`${m.userId}_0`];
-      const fb = ans?.feedback_result as FeedbackResult | null;
-      const firstGood = fb?.good_expressions?.[0]?.quote;
-      if (firstGood)
-        return { text: firstGood, from: `${m.name}의 표현`, userId: m.userId };
-    }
-    return { text: "오늘 함께 배운 표현이 모였어요", from: "스터디", userId: null };
-  })();
-
-  // 종료 헤드라인 — 날짜 기반 variation (매일 다른 따뜻한 카피)
-  const endingTitle = (() => {
-    const titles = [
-      "오늘도 한 걸음",
-      "함께 만든 한 페이지",
-      "한 콤보 더 가까워졌어요",
-      "오늘의 영어가 또렷해졌어요",
-      "잘 다녀왔어요",
-      "한 걸음씩 자연스러워져요",
-    ];
-    const dayKey = new Date().toISOString().slice(0, 10);
-    let sum = 0;
-    for (const c of dayKey) sum += c.charCodeAt(0);
-    return titles[sum % titles.length];
-  })();
-
-  // subtitle: 답변자 수 기준 (답변 안 한 오프라인 멤버 제외)
-  const subtitleCount = answeredMembers.length;
+  const answerCount = answerRecords.filter((a) => !!a.audio_url).length;
+  const skipCount = answerRecords.filter((a) => !a.audio_url).length;
+  const coachNoteCount = answerRecords.filter((a) => !!a.feedback_result).length;
+  const participantCount = displayMembers.length;
   const subtitleText =
-    subtitleCount > 0
-      ? `${subtitleCount}명이 함께 ${topic} 콤보를 끝냈어요 · ${level}`
-      : `${topic} 콤보를 마쳤어요 · ${level}`;
+    participantCount > 0
+      ? `${participantCount}명이 함께 ${topic} 콤보 ${questionCount}문항을 마쳤어요 · ${level}`
+      : `${topic} 콤보 ${questionCount}문항을 마쳤어요 · ${level}`;
 
   return (
     <Step7Screen
       onHome={onHome}
       data={{
-        title: endingTitle,
+        title: "잘 다녀왔어요",
         subtitle: subtitleText,
-        bestExpression: bestSource.text,
-        bestFrom: bestSource.from,
-        coachNote: {
-          keyword: bestSource.text.slice(0, 24),
-          detailKeyword: "구체적 디테일",
+        sessionStats: {
+          memberCount: participantCount,
+          totalQuestions: questionCount,
+          answerCount,
+          skipCount,
+          coachNoteCount,
         },
-        memberNotes: memberHighlights.map((h) => ({
-          key: h.member.key,
-          name: h.member.name,
-          note: h.best.slice(0, 24),
-          isBest: h.member.userId === bestSource.userId,
-        })),
+        questionSummaries,
+        memberNotes,
         // nextRecommend: 추천 알고리즘 미구현 — 실데이터 연결 전까지 미표시
         nextRecommend: { name: "", meta: "" },
       }}

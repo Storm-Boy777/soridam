@@ -58,9 +58,14 @@ export default async function OpicStudyHistoryPage({
           topic: s.selected_topic ?? "(미선택)",
           category: s.selected_category ?? null,
           totalAnswers: s.total_answers,
+          totalSkips: s.total_skips,
+          totalQuestions: s.total_questions,
+          participantCount: s.participant_count,
           memberCount: s.member_count,
           status: s.status,
           memberHighlights: s.member_highlights,
+          endedAtIso: s.ended_at ?? undefined,
+          startedAtIso: s.started_at,
         };
       })}
       selectedGroupId={selectedGroup.id}

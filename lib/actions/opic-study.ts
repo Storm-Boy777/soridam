@@ -13,6 +13,7 @@ import type {
   OpicStudySession,
   OpicStudyAnswer,
   SessionHistoryItem,
+  SessionHistoryDetail,
   CategoryStat,
   TopicForStudy,
   ComboForStudy,
@@ -84,6 +85,53 @@ const CATEGORY_TO_COMBO_TYPES: Record<StudyCategory, string[]> = {
   roleplay: ["roleplay"],
   advance: ["advance"],
 };
+
+type StudyMemberMeta = {
+  name: string;
+  initial: string;
+  color: "a" | "b" | "c" | "d";
+};
+
+async function getStudyMemberMeta(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  groupId: string
+) {
+  const { data: rawMembers } = await supabase
+    .from(T.study_group_members)
+    .select("user_id, display_name")
+    .eq("group_id", groupId);
+  const memberUserIds = (rawMembers ?? []).map((m) => m.user_id as string);
+  const { data: profiles } = memberUserIds.length > 0
+    ? await supabase
+        .from(T.profiles)
+        .select("id, email, display_name")
+        .in("id", memberUserIds)
+    : { data: [] };
+  const profileMap = new Map((profiles ?? []).map((p) => [p.id as string, p]));
+  const colors: Array<"a" | "b" | "c" | "d"> = ["a", "b", "c", "d"];
+  const memberMeta = new Map<string, StudyMemberMeta>();
+
+  (rawMembers ?? []).forEach((m, idx) => {
+    const uid = m.user_id as string;
+    const p = profileMap.get(uid);
+    const name =
+      (m.display_name as string | null) ??
+      (p?.display_name as string | null) ??
+      (p?.email as string | undefined)?.split("@")[0] ??
+      "멤버";
+    memberMeta.set(uid, {
+      name,
+      initial: name.charAt(0).toUpperCase(),
+      color: colors[idx % 4],
+    });
+  });
+
+  return {
+    rawMembers: rawMembers ?? [],
+    memberMeta,
+    memberCount: rawMembers?.length ?? 0,
+  };
+}
 
 // ============================================================
 // 1. 그룹/세션 조회 (5개)
@@ -171,96 +219,220 @@ export async function getGroupHistory(groupId: string): Promise<ActionResult<Ses
 
     const { data: sessions, error } = await supabase
       .from(T.opic_study_sessions)
-      .select("id, selected_category, selected_topic, selected_combo_sig, started_at, ended_at, status")
+      .select("id, selected_category, selected_topic, selected_combo_sig, selected_question_ids, started_at, ended_at, status")
       .eq("group_id", groupId)
       .order("started_at", { ascending: false })
       .limit(50);
 
     if (error) return { error: "이력 조회 실패" };
+    if (!sessions || sessions.length === 0) return { data: [] };
 
-    // 그룹 멤버 + 프로필 조회 (한 번만)
-    const { data: rawMembers } = await supabase
-      .from(T.study_group_members)
-      .select("user_id, display_name")
-      .eq("group_id", groupId);
-    const memberUserIds = (rawMembers ?? []).map((m) => m.user_id as string);
-    const { data: profiles } = memberUserIds.length > 0
-      ? await supabase
-          .from(T.profiles)
-          .select("id, email, display_name")
-          .in("id", memberUserIds)
-      : { data: [] };
-    const profileMap = new Map((profiles ?? []).map((p) => [p.id as string, p]));
-    const colors: Array<"a" | "b" | "c" | "d"> = ["a", "b", "c", "d"];
-    const memberMeta = new Map<string, { name: string; initial: string; color: "a" | "b" | "c" | "d" }>();
-    (rawMembers ?? []).forEach((m, idx) => {
-      const uid = m.user_id as string;
-      const p = profileMap.get(uid);
-      const name =
-        (m.display_name as string | null) ??
-        (p?.display_name as string | null) ??
-        (p?.email as string | undefined)?.split("@")[0] ??
-        "멤버";
-      memberMeta.set(uid, {
-        name,
-        initial: name.charAt(0).toUpperCase(),
-        color: colors[idx % 4],
-      });
-    });
-    const memberCount = rawMembers?.length ?? 0;
+    const { memberMeta, memberCount } = await getStudyMemberMeta(supabase, groupId);
+    const sessionIds = sessions.map((s) => s.id as string);
+    const { data: allAnswers } = await supabase
+      .from(T.opic_study_answers)
+      .select("session_id, user_id, question_idx, audio_url, feedback_result")
+      .in("session_id", sessionIds);
 
-    // 세션별 데이터 집계
-    const enriched = await Promise.all(
-      (sessions || []).map(async (s) => {
-        // 답변 + feedback_result 조회 (한 쿼리)
-        const { data: answers } = await supabase
-          .from(T.opic_study_answers)
-          .select("user_id, feedback_result")
-          .eq("session_id", s.id);
+    const answersBySession = new Map<string, NonNullable<typeof allAnswers>>();
+    for (const answer of allAnswers ?? []) {
+      const sid = answer.session_id as string;
+      const list = answersBySession.get(sid) ?? [];
+      list.push(answer);
+      answersBySession.set(sid, list);
+    }
 
-        // 멤버별 첫 strength/improvement 한 줄씩
-        type FbAcc = { strength: string | null; improvement: string | null };
-        const memberFb = new Map<string, FbAcc>();
-        for (const a of answers ?? []) {
-          const uid = a.user_id as string;
-          const fb = a.feedback_result as { strengths?: string[]; improvements?: string[] } | null;
-          if (!fb) continue;
-          if (!memberFb.has(uid)) {
-            memberFb.set(uid, {
-              strength: fb.strengths?.[0] ?? null,
-              improvement: fb.improvements?.[0] ?? null,
-            });
-          }
-        }
+    const enriched = sessions.map((s) => {
+      const answers = answersBySession.get(s.id as string) ?? [];
+      const answerCount = answers.filter((a) => !!a.audio_url).length;
+      const skipCount = answers.filter((a) => !a.audio_url).length;
+      const coachNoteCount = answers.filter((a) => !!a.feedback_result).length;
+      const participantCount = new Set(answers.map((a) => a.user_id as string)).size;
+      const selectedQuestionIds = (s.selected_question_ids as string[] | null) ?? [];
+      const maxAnsweredQuestionIdx = Math.max(
+        -1,
+        ...answers.map((a) => Number(a.question_idx ?? -1))
+      );
+      const totalQuestions = Math.max(selectedQuestionIds.length, maxAnsweredQuestionIdx + 1);
 
-        const memberHighlights = Array.from(memberFb.entries()).map(([uid, fb]) => {
-          const meta = memberMeta.get(uid) ?? {
-            name: "멤버",
-            initial: "M",
-            color: "a" as const,
-          };
-          return {
-            user_id: uid,
-            name: meta.name,
-            initial: meta.initial,
-            color: meta.color,
-            strength: fb.strength,
-            improvement: fb.improvement,
-          };
+      type FbAcc = { strength: string | null; improvement: string | null };
+      const memberFb = new Map<string, FbAcc>();
+      for (const a of answers) {
+        const uid = a.user_id as string;
+        const fb = a.feedback_result as { strengths?: string[]; improvements?: string[] } | null;
+        if (!fb || memberFb.has(uid)) continue;
+        memberFb.set(uid, {
+          strength: fb.strengths?.[0] ?? null,
+          improvement: fb.improvements?.[0] ?? null,
         });
+      }
 
+      const memberHighlights = Array.from(memberFb.entries()).map(([uid, fb]) => {
+        const meta = memberMeta.get(uid) ?? {
+          name: "멤버",
+          initial: "M",
+          color: "a" as const,
+        };
         return {
-          ...s,
-          total_answers: answers?.length ?? 0,
-          member_count: memberCount,
-          member_highlights: memberHighlights.length > 0 ? memberHighlights : undefined,
-        } as SessionHistoryItem;
-      })
-    );
+          user_id: uid,
+          name: meta.name,
+          initial: meta.initial,
+          color: meta.color,
+          strength: fb.strength,
+          improvement: fb.improvement,
+        };
+      });
+
+      return {
+        ...s,
+        selected_question_ids: selectedQuestionIds,
+        total_answers: answerCount,
+        total_skips: skipCount,
+        total_questions: totalQuestions,
+        participant_count: participantCount,
+        member_count: memberCount,
+        member_highlights:
+          coachNoteCount > 0 && memberHighlights.length > 0
+            ? memberHighlights
+            : undefined,
+      } as SessionHistoryItem;
+    });
 
     return { data: enriched };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "이력 조회 실패" };
+  }
+}
+
+/** 완료 세션 이력 상세 (읽기 전용) */
+export async function getSessionHistoryDetail(
+  sessionId: string
+): Promise<ActionResult<SessionHistoryDetail>> {
+  try {
+    const { supabase, userId } = await requireUser();
+    const groupId = await requireSessionMember(supabase, sessionId, userId);
+
+    const { data: session, error } = await supabase
+      .from(T.opic_study_sessions)
+      .select(
+        "id, group_id, online_mode, selected_category, selected_topic, selected_question_ids, started_at, ended_at, status, study_groups!inner(name)"
+      )
+      .eq("id", sessionId)
+      .maybeSingle();
+
+    if (error || !session) return { error: "세션을 찾을 수 없습니다" };
+
+    const { memberMeta, memberCount } = await getStudyMemberMeta(supabase, groupId);
+    const { data: answers } = await supabase
+      .from(T.opic_study_answers)
+      .select("user_id, question_id, question_idx, audio_url, feedback_result")
+      .eq("session_id", sessionId);
+
+    const answerRows = answers ?? [];
+    const selectedQuestionIds = (session.selected_question_ids as string[] | null) ?? [];
+    const answerQuestionIds = Array.from(
+      new Set(answerRows.map((a) => a.question_id as string).filter(Boolean))
+    );
+    const questionIds = selectedQuestionIds.length > 0 ? selectedQuestionIds : answerQuestionIds;
+
+    const { data: questions } = questionIds.length > 0
+      ? await supabase
+          .from(T.questions)
+          .select("id, question_english, question_short, question_type_kor")
+          .in("id", questionIds)
+      : { data: [] };
+
+    const questionMap = new Map((questions ?? []).map((q) => [q.id as string, q]));
+    const maxQuestionIdx = Math.max(
+      -1,
+      ...answerRows.map((a) => Number(a.question_idx ?? -1))
+    );
+    const totalQuestions = Math.max(questionIds.length, maxQuestionIdx + 1);
+
+    const questionSummaries: SessionHistoryDetail["questions"] = Array.from(
+      { length: totalQuestions },
+      (_, i) => {
+        const questionId = questionIds[i] ?? null;
+        const question = questionId ? questionMap.get(questionId) : null;
+        const questionAnswers = answerRows.filter((a) => Number(a.question_idx) === i);
+        const answerCount = questionAnswers.filter((a) => !!a.audio_url).length;
+        const skipCount = questionAnswers.filter((a) => !a.audio_url).length;
+        const coachNoteCount = questionAnswers.filter((a) => !!a.feedback_result).length;
+        const status =
+          answerCount > 0 && skipCount > 0
+            ? "mixed"
+            : answerCount > 0
+              ? "completed"
+              : skipCount > 0
+                ? "skipped"
+                : "waiting";
+
+        return {
+          number: i + 1,
+          question_id: questionId,
+          label:
+            (question?.question_short as string | null) ||
+            (question?.question_english as string | null) ||
+            `${session.selected_topic ?? "콤보"} ${i + 1}번 질문`,
+          question_english: (question?.question_english as string | null) ?? null,
+          question_type_kor: (question?.question_type_kor as string | null) ?? null,
+          answer_count: answerCount,
+          skip_count: skipCount,
+          coach_note_count: coachNoteCount,
+          status,
+        };
+      }
+    );
+
+    const participantIds = Array.from(new Set(answerRows.map((a) => a.user_id as string)));
+    const memberSummaries = participantIds.map((uid) => {
+      const meta = memberMeta.get(uid) ?? {
+        name: "멤버",
+        initial: "M",
+        color: "a" as const,
+      };
+      const memberAnswers = answerRows.filter((a) => a.user_id === uid);
+      return {
+        user_id: uid,
+        name: meta.name,
+        initial: meta.initial,
+        color: meta.color,
+        answered_count: memberAnswers.filter((a) => !!a.audio_url).length,
+        skipped_count: memberAnswers.filter((a) => !a.audio_url).length,
+        coach_note_count: memberAnswers.filter((a) => !!a.feedback_result).length,
+      };
+    });
+
+    const groupMeta = session.study_groups as unknown as { name: string };
+    const answerCount = answerRows.filter((a) => !!a.audio_url).length;
+    const skipCount = answerRows.filter((a) => !a.audio_url).length;
+    const coachNoteCount = answerRows.filter((a) => !!a.feedback_result).length;
+
+    return {
+      data: {
+        id: session.id as string,
+        group_id: groupId,
+        group_name: groupMeta.name,
+        selected_category: session.selected_category as StudyCategory | null,
+        selected_topic: session.selected_topic as string | null,
+        started_at: session.started_at as string,
+        ended_at: session.ended_at as string | null,
+        status: session.status as SessionHistoryDetail["status"],
+        online_mode: Boolean(session.online_mode),
+        stats: {
+          group_member_count: memberCount,
+          participant_count: participantIds.length,
+          total_questions: totalQuestions,
+          answer_count: answerCount,
+          skip_count: skipCount,
+          coach_note_count: coachNoteCount,
+        },
+        questions: questionSummaries,
+        members: memberSummaries,
+      },
+    };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "세션 이력 조회 실패" };
   }
 }
 

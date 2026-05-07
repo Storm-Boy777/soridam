@@ -255,6 +255,30 @@ export function SessionRoom(props: SessionRoomProps) {
     });
   }, [members, allAnswers, questionIdx]);
 
+  // 입장 멤버 전원이 패스한 문항은 토론/발화자 선정으로 돌아갈 이유가 없다.
+  // 해당 문항은 즉시 완료 처리하고 다음 문항(또는 마지막이면 종료)으로 진행한다.
+  const allSkipped = useMemo(() => {
+    const online = members.filter((m) => m.isOnline);
+    if (online.length === 0) return false;
+    return online.every((m) => {
+      const a = allAnswers[`${m.userId}_${questionIdx}`];
+      return !!a && isSkippedAnswer(a);
+    });
+  }, [members, allAnswers, questionIdx]);
+
+  const autoAdvancedSkipRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!allSkipped) return;
+    const key = `${props.sessionId}:${questionIdx}`;
+    if (autoAdvancedSkipRef.current === key) return;
+    autoAdvancedSkipRef.current = key;
+
+    const timer = setTimeout(() => {
+      onNextQuestion();
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [allSkipped, props.sessionId, questionIdx, onNextQuestion]);
+
   // ── 녹음 + 질문 플레이어 ──
   const recorder = useRecorder({ maxDuration: 240, minDuration: 1 });
   const [uploadState, setUploadState] = useState<
@@ -516,6 +540,7 @@ export function SessionRoom(props: SessionRoomProps) {
                 onClaim={onClaimSpeaker}
                 allDone={allDone}
                 isLastQuestion={questionIdx === totalQuestions - 1}
+                nextQuestionNumber={questionIdx + 2}
                 hasNextSpeakerSelected={!!currentSpeakerUserId}
                 membersLeft={
                   members.filter(
@@ -633,6 +658,7 @@ export function SessionRoom(props: SessionRoomProps) {
                     hasNextSpeakerSelected={!!currentSpeakerUserId}
                     allDone={allDone}
                     isLastQuestion={questionIdx === totalQuestions - 1}
+                    nextQuestionNumber={questionIdx + 2}
                     myAnsweredAlready={!!myAnswer}
                     membersLeft={
                       members.filter(
@@ -1552,6 +1578,7 @@ function CoachingReviewLayout({
   onClaim,
   allDone,
   isLastQuestion,
+  nextQuestionNumber,
   hasNextSpeakerSelected,
   membersLeft,
   onNextSpeaker,
@@ -1565,6 +1592,7 @@ function CoachingReviewLayout({
   onClaim: () => void;
   allDone: boolean;
   isLastQuestion: boolean;
+  nextQuestionNumber: number;
   hasNextSpeakerSelected: boolean;
   membersLeft: number;
   onNextSpeaker: () => void;
@@ -1653,7 +1681,7 @@ function CoachingReviewLayout({
               boxShadow: "0 4px 12px rgba(201, 100, 66, 0.25)",
             }}
           >
-            {isLastQuestion ? "스터디 마무리" : `다음 질문 (Q${membersLeft}…)`}
+            {isLastQuestion ? "스터디 마무리" : `다음 질문 (Q${nextQuestionNumber})`}
             <ArrowRight size={18} />
           </button>
         ) : myAnsweredAlready ? (
@@ -2173,6 +2201,7 @@ function BottomAction({
   hasNextSpeakerSelected,
   allDone,
   isLastQuestion,
+  nextQuestionNumber,
   myAnsweredAlready,
   membersLeft,
 }: {
@@ -2184,6 +2213,7 @@ function BottomAction({
   hasNextSpeakerSelected: boolean;
   allDone: boolean;
   isLastQuestion: boolean;
+  nextQuestionNumber: number;
   myAnsweredAlready: boolean;
   membersLeft: number;
 }) {
@@ -2217,7 +2247,7 @@ function BottomAction({
             boxShadow: "0 4px 12px rgba(201, 100, 66, 0.25)",
           }}
         >
-          {isLastQuestion ? "스터디 마무리" : `다음 질문 (Q${membersLeft}…)`}
+          {isLastQuestion ? "스터디 마무리" : `다음 질문 (Q${nextQuestionNumber})`}
           <ArrowRight size={18} />
         </button>
       );

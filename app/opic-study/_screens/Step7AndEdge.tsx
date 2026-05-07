@@ -6,11 +6,10 @@
  * 디자인: docs/디자인/opic/project/hf-loop.jsx (Step 7) + hf-extra.jsx (Edge)
  */
 
-import { Sprout, Sparkles, Mic, ArrowLeft } from "lucide-react";
+import { ListChecks, Mic, Sprout, UsersRound } from "lucide-react";
 import {
   HfPhone,
   HfStatusBar,
-  HfHeader,
   HfBody,
   HfFooter,
   HfButton,
@@ -20,16 +19,11 @@ import {
   MbDot,
   Pill,
   Tag,
-  Hl,
-  Insight,
-  Quote,
   SectionH,
   PcStepShell,
   PcStepBar,
 } from "../_components/bp";
-import { goHome } from "@/lib/opic-study/nav";
 import {
-  MOCK_STEP7,
   MOCK_MIC_STEPS,
   MOCK_RECONNECT_MEMBERS,
 } from "./_mock";
@@ -39,9 +33,38 @@ import {
 // ============================================================
 
 interface Step7Props {
-  data?: typeof MOCK_STEP7;
+  data?: Step7Data;
   onHome?: () => void;
   onNextCombo?: () => void;
+}
+
+export interface Step7Data {
+  title: string;
+  subtitle: string;
+  sessionStats: {
+    memberCount: number;
+    totalQuestions: number;
+    answerCount: number;
+    skipCount: number;
+    coachNoteCount: number;
+  };
+  questionSummaries: Array<{
+    number: number;
+    label: string;
+    status: "completed" | "skipped" | "mixed" | "waiting";
+    meta: string;
+  }>;
+  memberNotes: Array<{
+    key: "a" | "b" | "c" | "d";
+    name: string;
+    answeredCount: number;
+    skippedCount: number;
+    coachNoteCount: number;
+  }>;
+  nextRecommend?: {
+    name: string;
+    meta?: string;
+  };
 }
 
 interface Step7PcExtraProps {
@@ -58,7 +81,7 @@ export function Step7({
   onNextCombo,
 }: Step7Props & Step7PcExtraProps) {
   if (!data) return null;
-  const memberCols = Math.max(data.memberNotes.length, 1);
+  const memberCols = Math.min(Math.max(data.memberNotes.length, 1), 3);
 
   return (
     <div className="bp-scope bp-shell">
@@ -102,82 +125,123 @@ export function Step7({
           </p>
         </div>
 
-        {/* Today's BP + Coach note — 모바일 stack, PC 1.2fr/1fr */}
-        <div className="bp-grid-feedback" style={{ marginBottom: 16 }}>
-          <Insight>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                marginBottom: 10,
-              }}
-            >
-              <Sparkles
-                size={18}
-                strokeWidth={1.8}
-                color="var(--bp-tc)"
-                aria-hidden="true"
-              />
-              <span className="t-h2">오늘의 베스트 표현</span>
-            </div>
-            <Quote
-              style={{
-                background: "rgba(255,255,255,0.6)",
-                fontSize: 15,
-                padding: "14px 16px",
-              }}
-            >
-              {data.bestExpression}
-            </Quote>
-            <span
-              className="t-xs ink-3"
-              style={{ marginLeft: 14, display: "block", marginTop: 6 }}
-            >
-              — {data.bestFrom}
-            </span>
-          </Insight>
-
-          <HfCard variant="lift" padding={20}>
+        {/* 오늘 진행한 콤보 */}
+        <HfCard padding={20} style={{ marginBottom: 16 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              gap: 16,
+              marginBottom: 16,
+              flexWrap: "wrap",
+            }}
+          >
             <div
               style={{
                 display: "flex",
                 gap: 12,
                 alignItems: "flex-start",
-                marginBottom: 12,
               }}
             >
-              <CoachAvatar />
+              <div
+                aria-hidden="true"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  background: "var(--bp-tc-tint)",
+                  color: "var(--bp-tc)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <ListChecks size={19} strokeWidth={1.8} />
+              </div>
               <div
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  gap: 2,
-                  flex: 1,
+                  gap: 4,
                 }}
               >
-                <span className="t-sm" style={{ fontWeight: 600 }}>
-                  스터디 코치
+                <span className="t-h2" style={{ fontWeight: 700 }}>
+                  오늘 진행한 콤보
                 </span>
-                <span className="t-xs ink-3">오늘의 마무리</span>
+                <span className="t-xs ink-3">
+                  답변 {data.sessionStats.answerCount}개 · 패스 {data.sessionStats.skipCount}개 · 코치노트 {data.sessionStats.coachNoteCount}개
+                </span>
               </div>
             </div>
-            <p
-              className="t-body"
-              style={{ margin: 0, lineHeight: 1.6 }}
-            >
-              오늘은 <Hl>&ldquo;{data.coachNote.keyword}&rdquo;</Hl>으로 도입을
-              시작하는 패턴을 함께 배웠어요. 다음 세션에서는{" "}
-              <b>{data.coachNote.detailKeyword}</b>을 하나씩 더 넣는 연습을
-              해볼까요?
-            </p>
-          </HfCard>
-        </div>
+            <Tag tone="good" style={{ fontSize: 11 }}>
+              {data.sessionStats.totalQuestions}문항 완료
+            </Tag>
+          </div>
 
-        {/* Members — 답변한 멤버만 표시 (오프라인 + 미답변 제외) */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {data.questionSummaries.map((q) => (
+              <div
+                key={q.number}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "auto 1fr auto",
+                  gap: 12,
+                  alignItems: "center",
+                  padding: "12px 14px",
+                  borderRadius: 12,
+                  background: "var(--bp-surface-2)",
+                  border: "1px solid var(--bp-line)",
+                }}
+              >
+                <span
+                  className="t-xs"
+                  style={{
+                    fontWeight: 800,
+                    color: "var(--bp-tc)",
+                    minWidth: 28,
+                  }}
+                >
+                  Q{q.number}
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <p
+                    className="t-sm"
+                    style={{
+                      margin: 0,
+                      fontWeight: 600,
+                      color: "var(--bp-ink)",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {q.label}
+                  </p>
+                  <p className="t-xs ink-3" style={{ margin: "3px 0 0" }}>
+                    {q.meta}
+                  </p>
+                </div>
+                <StatusTag status={q.status} />
+              </div>
+            ))}
+          </div>
+        </HfCard>
+
+        {/* Members */}
         {data.memberNotes.length > 0 && (
           <HfCard padding={20} style={{ marginBottom: 16 }}>
-            <SectionH style={{ marginBottom: 14 }}>오늘 함께한 멤버</SectionH>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 14,
+              }}
+            >
+              <UsersRound size={18} strokeWidth={1.8} color="var(--bp-tc)" />
+              <SectionH style={{ margin: 0 }}>오늘 함께한 멤버</SectionH>
+            </div>
             <div
               className="bp-grid-members"
               style={{ ["--member-cols" as string]: memberCols } as React.CSSProperties}
@@ -201,33 +265,12 @@ export function Step7({
                     style={{ fontWeight: 600, marginBottom: 6 }}
                   >
                     {m.name}
-                    {m.isBest && (
-                      <span
-                        style={{
-                          marginLeft: 4,
-                          fontSize: 12,
-                        }}
-                        title="오늘 베스트"
-                      >
-                        🏆
-                      </span>
-                    )}
                   </div>
-                  {m.note && (
-                    <p
-                      className="t-xs"
-                      style={{
-                        margin: "0 0 6px",
-                        color: "var(--bp-ink-2)",
-                        fontStyle: "italic",
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      &ldquo;{m.note}&rdquo;
-                    </p>
-                  )}
-                  <Tag tone={m.isBest ? "tip" : "good"} style={{ fontSize: 10 }}>
-                    {m.isBest ? "오늘 베스트" : "참여 완료"}
+                  <p className="t-xs ink-3" style={{ margin: "0 0 8px" }}>
+                    답변 {m.answeredCount} · 패스 {m.skippedCount} · 코치노트 {m.coachNoteCount}
+                  </p>
+                  <Tag tone="good" style={{ fontSize: 10 }}>
+                    참여 완료
                   </Tag>
                 </HfCard>
               ))}
@@ -288,7 +331,7 @@ export function Step7({
           <HfButton
             variant="primary"
             size="lg"
-            onClick={onNextCombo}
+            onClick={onNextCombo ?? onHome}
             style={{ minWidth: 200 }}
           >
             이어서 다음 콤보 →
@@ -296,6 +339,21 @@ export function Step7({
         </div>
       </div>
     </div>
+  );
+}
+
+function StatusTag({ status }: { status: Step7Data["questionSummaries"][number]["status"] }) {
+  const map = {
+    completed: { label: "완료", tone: "good" as const },
+    skipped: { label: "전원 패스", tone: "neutral" as const },
+    mixed: { label: "일부 패스", tone: "tip" as const },
+    waiting: { label: "미완료", tone: "neutral" as const },
+  }[status];
+
+  return (
+    <Tag tone={map.tone} style={{ fontSize: 10, whiteSpace: "nowrap" }}>
+      {map.label}
+    </Tag>
   );
 }
 
