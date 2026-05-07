@@ -27,6 +27,7 @@ import {
   AlertCircle,
   Loader2,
   X,
+  Users,
 } from "lucide-react";
 import { SessionFrameContext } from "../_components/session-frame-context";
 import { ImmersiveHeader } from "@/components/layout/immersive-header";
@@ -758,6 +759,50 @@ export function OpicStudySessionClient({
         }
         rightContent={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* 멤버 presence pill — 모든 단계 일관 표시 */}
+            {(() => {
+              const totalMembers = members.length;
+              const onlineCount = members.filter(
+                (m) => m.userId === currentUserId || onlineUserIds.has(m.userId)
+              ).length;
+              const offlineMembers = members.filter(
+                (m) => m.userId !== currentUserId && !onlineUserIds.has(m.userId)
+              );
+              const allOnline = onlineCount === totalMembers && totalMembers > 0;
+              if (totalMembers === 0) return null;
+              return (
+                <span
+                  aria-label={`접속 멤버 ${onlineCount}/${totalMembers}`}
+                  title={
+                    offlineMembers.length > 0
+                      ? `오프라인: ${offlineMembers.map((m) => m.name).join(", ")}`
+                      : "모두 접속 중"
+                  }
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    padding: "5px 9px",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: allOnline ? "#2d7a3d" : "#a48121",
+                    background: allOnline
+                      ? "rgba(45, 122, 61, 0.08)"
+                      : "rgba(164, 129, 33, 0.08)",
+                    border: `1px solid ${
+                      allOnline
+                        ? "rgba(45, 122, 61, 0.2)"
+                        : "rgba(164, 129, 33, 0.2)"
+                    }`,
+                    borderRadius: 8,
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  <Users size={12} strokeWidth={2.2} aria-hidden="true" />
+                  멤버 {onlineCount}/{totalMembers}
+                </span>
+              );
+            })()}
             <span
               aria-label={`오늘 모임 방식: ${session.online_mode ? "온라인" : "오프라인"}`}
               style={{
@@ -985,18 +1030,12 @@ export function OpicStudySessionClient({
 // ============================================================
 function Shell({
   children,
-  onEnd,
 }: {
   children: React.ReactNode;
+  /** 종료 핸들러 — ImmersiveHeader로 이동, prop 호환성 유지 */
   onEnd?: () => void;
 }) {
   const ctx = useContext(SessionFrameContext);
-  const onlineCount = ctx?.onlineUserIds.size ?? 0;
-  const totalMembers = ctx?.members.length ?? 0;
-  const offlineMembers = (ctx?.members ?? []).filter(
-    (m) => !ctx?.onlineUserIds.has(m.userId)
-  );
-  const allOnline = onlineCount === totalMembers && totalMembers > 0;
   const connectionState = ctx?.connectionState ?? "connected";
 
   return (
@@ -1061,43 +1100,7 @@ function Shell({
         </div>
       )}
 
-      {/* Presence indicator (fixed)
-       * 모바일: 가운데 하단 (액션바 위) · PC: 우하단 — CSS로 분기 */}
-      {ctx && totalMembers > 0 && (
-        <div
-          className="bp-presence-pill"
-          aria-label={`접속 멤버 ${onlineCount}/${totalMembers}`}
-          title={
-            offlineMembers.length > 0
-              ? `오프라인: ${offlineMembers.map((m) => m.name).join(", ")}`
-              : "모두 접속 중"
-          }
-          style={{
-            position: "fixed",
-            fontWeight: 600,
-            // bp-scope 외부라 CSS 변수 fallback 안됨 → 직접 hex 사용
-            color: allOnline ? "#2d7a3d" : "#a48121",
-            background: "rgba(255,255,255,0.92)",
-            backdropFilter: "blur(8px)",
-            border: "1px solid rgba(31,27,22,0.10)",
-            boxShadow: "0 2px 8px rgba(31,27,22,0.08)",
-            borderRadius: 999,
-            zIndex: 100,
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-          }}
-        >
-          멤버 {onlineCount}/{totalMembers}
-          {offlineMembers.length > 0 && offlineMembers.length <= 2 && (
-            <span style={{ color: "#7a6f63", fontWeight: 500 }}>
-              · {offlineMembers.map((m) => m.name).join(", ")} 끊김
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* 모드 뱃지/종료 버튼은 ImmersiveHeader rightContent로 이동됨 (OpicStudySessionClient 최상위) */}
+      {/* 멤버 presence pill은 ImmersiveHeader rightContent로 이동됨 (모든 단계 일관 표시) */}
     </div>
   );
 }
