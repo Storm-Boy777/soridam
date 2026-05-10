@@ -13,8 +13,9 @@ import { getUser } from "@/lib/auth";
 import {
   getMyActiveGroups,
   getMyClosedGroups,
-  getGroupHistory,
+  getMyStudySummary,
 } from "@/lib/actions/opic-study";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { OpicStudyMyClient } from "../../_pages/OpicStudyMyClient";
 
 export default async function OpicStudyMyPage() {
@@ -29,8 +30,9 @@ export default async function OpicStudyMyPage() {
     "회원";
   const userInitial = userName.charAt(0).toUpperCase();
 
-  // 그룹 + 학습 이력
-  const [activeRes, closedRes] = await Promise.all([
+  const supabase = await createServerSupabaseClient();
+  const [{ data: profile }, activeRes, closedRes] = await Promise.all([
+    supabase.from("profiles").select("target_grade").eq("id", user.id).maybeSingle(),
     getMyActiveGroups(),
     getMyClosedGroups(),
   ]);
@@ -40,39 +42,47 @@ export default async function OpicStudyMyPage() {
   // 활성 그룹 우선, 없으면 종료 그룹 사용
   const primaryGroup = activeGroups[0] ?? closedGroups[0];
 
-  // 학습 이력 (활성 그룹 기준)
-  let historyItems: Array<{ name: string; date: string; done: boolean }> = [];
-  let totalSessions = 0;
+  const emptySummary = {
+    stats: {
+      participated_sessions: 0,
+      answer_count: 0,
+      skip_count: 0,
+      coach_note_count: 0,
+      last_date_label: "─",
+      active_session_id: null,
+    },
+    topic_stats: [],
+    recent_sessions: [],
+    coach_notes: {
+      strengths: [],
+      improvements: [],
+      next_focus: null,
+      recent: [],
+    },
+  };
 
-  if (primaryGroup) {
-    const historyRes = await getGroupHistory(primaryGroup.id);
-    const sessions = historyRes.data ?? [];
-    totalSessions = sessions.filter((s) => s.status === "completed").length;
-
-    historyItems = sessions
-      .filter((s) => s.status === "completed")
-      .slice(0, 10)
-      .map((s) => {
-        const dateStr = s.ended_at ?? s.started_at;
-        const d = new Date(dateStr);
-        return {
-          name: s.selected_topic ?? "(미선택)",
-          date: `${d.getMonth() + 1}/${d.getDate()}`,
-          done: true,
-        };
-      });
-  }
-
-  const groupLabel = primaryGroup
-    ? `${primaryGroup.name} · ${totalSessions}회 함께함`
-    : "참여한 스터디 없음";
+  const summary = primaryGroup
+    ? (await getMyStudySummary(primaryGroup.id)).data ?? emptySummary
+    : emptySummary;
+  const targetGrade = (profile?.target_grade as string | null) ?? "AL";
 
   return (
     <OpicStudyMyClient
       userName={userName}
       userInitial={userInitial}
-      groupLabel={groupLabel}
-      historyItems={historyItems}
+      targetGrade={targetGrade}
+      group={
+        primaryGroup
+          ? {
+              id: primaryGroup.id,
+              name: primaryGroup.name,
+              status: primaryGroup.status,
+              startDate: primaryGroup.start_date,
+              endDate: primaryGroup.end_date,
+            }
+          : null
+      }
+      summary={summary}
     />
   );
 }

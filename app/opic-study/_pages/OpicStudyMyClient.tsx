@@ -5,12 +5,20 @@
  */
 
 import { MemberMy } from "../_components/MemberMy";
+import type { MyStudySummary, StudyGroupStatus } from "@/lib/types/opic-study";
 
 interface Props {
   userName: string;
   userInitial: string;
-  groupLabel: string;
-  historyItems: Array<{ name: string; date: string; done: boolean }>;
+  targetGrade: string;
+  group: {
+    id: string;
+    name: string;
+    status: StudyGroupStatus;
+    startDate: string;
+    endDate: string;
+  } | null;
+  summary: MyStudySummary;
 }
 
 export function OpicStudyMyClient(props: Props) {

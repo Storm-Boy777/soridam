@@ -14,6 +14,7 @@ import type {
   OpicStudyAnswer,
   SessionHistoryItem,
   SessionHistoryDetail,
+  MyStudySummary,
   CategoryStat,
   TopicForStudy,
   ComboForStudy,
@@ -434,6 +435,226 @@ export async function getSessionHistoryDetail(
   } catch (err) {
     return { error: err instanceof Error ? err.message : "세션 이력 조회 실패" };
   }
+}
+
+/** 오픽 스터디 마이페이지용 개인 요약 */
+export async function getMyStudySummary(
+  groupId: string
+): Promise<ActionResult<MyStudySummary>> {
+  try {
+    const { supabase, userId } = await requireUser();
+    await requireGroupMember(supabase, groupId, userId);
+
+    const { data: sessions, error } = await supabase
+      .from(T.opic_study_sessions)
+      .select("id, selected_category, selected_topic, selected_question_ids, started_at, ended_at, status")
+      .eq("group_id", groupId)
+      .order("started_at", { ascending: false })
+      .limit(80);
+
+    if (error) return { error: "내 학습 요약 조회 실패" };
+    if (!sessions || sessions.length === 0) {
+      return {
+        data: {
+          stats: {
+            participated_sessions: 0,
+            answer_count: 0,
+            skip_count: 0,
+            coach_note_count: 0,
+            last_date_label: "─",
+            active_session_id: null,
+          },
+          topic_stats: [],
+          recent_sessions: [],
+          coach_notes: {
+            strengths: [],
+            improvements: [],
+            next_focus: null,
+            recent: [],
+          },
+        },
+      };
+    }
+
+    const sessionIds = sessions.map((s) => s.id as string);
+    const { data: answers } = await supabase
+      .from(T.opic_study_answers)
+      .select("session_id, question_idx, audio_url, feedback_result, created_at")
+      .eq("user_id", userId)
+      .in("session_id", sessionIds);
+
+    const answerRows = answers ?? [];
+    const answersBySession = new Map<string, typeof answerRows>();
+    for (const answer of answerRows) {
+      const sid = answer.session_id as string;
+      const list = answersBySession.get(sid) ?? [];
+      list.push(answer);
+      answersBySession.set(sid, list);
+    }
+
+    const activeSession =
+      sessions.find((s) => s.status === "active") ?? null;
+    const participatedSessions = sessions.filter(
+      (s) =>
+        s.status === "completed" &&
+        (answersBySession.get(s.id as string)?.length ?? 0) > 0
+    );
+
+    const answerCount = answerRows.filter((a) => !!a.audio_url).length;
+    const skipCount = answerRows.filter((a) => !a.audio_url).length;
+    const coachNoteCount = answerRows.filter((a) => !!a.feedback_result).length;
+    const lastSession = participatedSessions[0] ?? activeSession;
+
+    const topicMap = new Map<
+      string,
+      {
+        topic: string;
+        session_count: number;
+        answer_count: number;
+        skip_count: number;
+        last_date_label: string;
+      }
+    >();
+
+    const recentSessions = participatedSessions.slice(0, 8).map((session) => {
+      const rows = answersBySession.get(session.id as string) ?? [];
+      const topic = (session.selected_topic as string | null) ?? "미선택";
+      const answerCountForSession = rows.filter((a) => !!a.audio_url).length;
+      const skipCountForSession = rows.filter((a) => !a.audio_url).length;
+      const coachNoteCountForSession = rows.filter((a) => !!a.feedback_result).length;
+      const selectedQuestionIds = (session.selected_question_ids as string[] | null) ?? [];
+      const totalQuestions = Math.max(
+        selectedQuestionIds.length,
+        ...rows.map((a) => Number(a.question_idx ?? -1) + 1),
+        0
+      );
+      const dateLabel = formatShortDate(
+        (session.ended_at as string | null) ?? (session.started_at as string)
+      );
+
+      const current = topicMap.get(topic) ?? {
+        topic,
+        session_count: 0,
+        answer_count: 0,
+        skip_count: 0,
+        last_date_label: dateLabel,
+      };
+      current.session_count += 1;
+      current.answer_count += answerCountForSession;
+      current.skip_count += skipCountForSession;
+      topicMap.set(topic, current);
+
+      return {
+        id: session.id as string,
+        date_label: dateLabel,
+        topic,
+        category: session.selected_category as StudyCategory | null,
+        total_questions: totalQuestions,
+        answer_count: answerCountForSession,
+        skip_count: skipCountForSession,
+        coach_note_count: coachNoteCountForSession,
+      };
+    });
+
+    type LegacyFeedback = {
+      summary?: string;
+      strengths?: string[];
+      improvements?: string[];
+      good_expressions?: Array<{ note?: string; quote?: string }>;
+      refine_expressions?: Array<{ suggestion?: string; issue?: string; quote?: string }>;
+      pronunciation_patterns?: string[];
+      next_speaker_tip?: { take?: string; enhance?: string };
+    };
+
+    const recentCoachNotes: MyStudySummary["coach_notes"]["recent"] = [];
+    const strengths: string[] = [];
+    const improvements: string[] = [];
+
+    for (const session of sessions) {
+      const rows = answersBySession.get(session.id as string) ?? [];
+      const topic = (session.selected_topic as string | null) ?? "미선택";
+      const dateLabel = formatShortDate(
+        (session.ended_at as string | null) ?? (session.started_at as string)
+      );
+
+      for (const row of rows) {
+        const fb = row.feedback_result as LegacyFeedback | null;
+        if (!fb) continue;
+        const take =
+          fb.next_speaker_tip?.take ??
+          fb.strengths?.[0] ??
+          fb.good_expressions?.[0]?.note ??
+          null;
+        const enhance =
+          fb.next_speaker_tip?.enhance ??
+          fb.improvements?.[0] ??
+          fb.refine_expressions?.[0]?.suggestion ??
+          fb.pronunciation_patterns?.[0] ??
+          null;
+        if (take) strengths.push(take);
+        if (enhance) improvements.push(enhance);
+        if (recentCoachNotes.length < 5) {
+          recentCoachNotes.push({
+            session_id: session.id as string,
+            date_label: dateLabel,
+            topic,
+            summary: fb.summary ?? take ?? enhance ?? "코치노트가 생성됐어요.",
+            take,
+            enhance,
+          });
+        }
+      }
+    }
+
+    return {
+      data: {
+        stats: {
+          participated_sessions: participatedSessions.length,
+          answer_count: answerCount,
+          skip_count: skipCount,
+          coach_note_count: coachNoteCount,
+          last_date_label: lastSession
+            ? formatShortDate(
+                (lastSession.ended_at as string | null) ??
+                  (lastSession.started_at as string)
+              )
+            : "─",
+          active_session_id: activeSession ? (activeSession.id as string) : null,
+        },
+        topic_stats: Array.from(topicMap.values()).sort(
+          (a, b) => b.session_count - a.session_count || b.answer_count - a.answer_count
+        ),
+        recent_sessions: recentSessions,
+        coach_notes: {
+          strengths: uniqueFirst(strengths, 3),
+          improvements: uniqueFirst(improvements, 3),
+          next_focus: improvements[0] ?? null,
+          recent: recentCoachNotes,
+        },
+      },
+    };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "내 학습 요약 조회 실패" };
+  }
+}
+
+function formatShortDate(value: string) {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "─";
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+function uniqueFirst(items: string[], limit: number) {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const item of items) {
+    const normalized = item.trim();
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    result.push(normalized);
+    if (result.length >= limit) break;
+  }
+  return result;
 }
 
 /** 그룹의 진행 중 세션 (있으면 1개) */

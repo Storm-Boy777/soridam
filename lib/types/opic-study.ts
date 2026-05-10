@@ -414,6 +414,47 @@ export interface SessionHistoryDetail {
   }>;
 }
 
+export interface MyStudySummary {
+  stats: {
+    participated_sessions: number;
+    answer_count: number;
+    skip_count: number;
+    coach_note_count: number;
+    last_date_label: string;
+    active_session_id: string | null;
+  };
+  topic_stats: Array<{
+    topic: string;
+    session_count: number;
+    answer_count: number;
+    skip_count: number;
+    last_date_label: string;
+  }>;
+  recent_sessions: Array<{
+    id: string;
+    date_label: string;
+    topic: string;
+    category: StudyCategory | null;
+    total_questions: number;
+    answer_count: number;
+    skip_count: number;
+    coach_note_count: number;
+  }>;
+  coach_notes: {
+    strengths: string[];
+    improvements: string[];
+    next_focus: string | null;
+    recent: Array<{
+      session_id: string;
+      date_label: string;
+      topic: string;
+      summary: string;
+      take: string | null;
+      enhance: string | null;
+    }>;
+  };
+}
+
 // Step 2: 카테고리별 통계
 export interface CategoryStat {
   category: StudyCategory;
