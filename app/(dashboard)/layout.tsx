@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { getAuthClaims } from "@/lib/auth";
+import { getAuthClaims, hasLectureAccess } from "@/lib/auth";
 import { GradeNudgeBanner } from "@/components/ui/grade-nudge-banner";
 import { AnnouncementBanner } from "@/components/ui/announcement-banner";
 import { getActiveAnnouncements } from "@/lib/actions/announcements";
@@ -32,15 +32,20 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   // getAuthClaims(): 로컬 JWT 검증 (0ms) — Navbar 깜빡임 제거를 위해 서버에서 인증 정보 전달
-  const claims = await getAuthClaims();
+  // hasLectureAccess(): 강의 메뉴 노출 판단 (관리자 자동 통과 + DB 조회 1회, cache로 동일 요청 내 1회만)
+  const [claims, hasLecAccess] = await Promise.all([
+    getAuthClaims(),
+    hasLectureAccess(),
+  ]);
   const meta = (claims as Record<string, unknown>)?.user_metadata as Record<string, string> | undefined;
   const serverAuth = claims
     ? {
         isLoggedIn: true,
         userName: meta?.display_name || meta?.full_name || meta?.name || "",
         isAdmin: ((claims as Record<string, unknown>)?.app_metadata as Record<string, string> | undefined)?.role === "admin",
+        hasLectureAccess: hasLecAccess,
       }
-    : { isLoggedIn: false, userName: "", isAdmin: false };
+    : { isLoggedIn: false, userName: "", isAdmin: false, hasLectureAccess: false };
 
   return (
     <div className="flex min-h-screen flex-col bg-background">

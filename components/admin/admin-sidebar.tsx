@@ -57,6 +57,7 @@ const menuGroups: MenuGroup[] = [
       { label: "튜터링", href: "/admin/tutoring", icon: Stethoscope },
       { label: "스터디 모임", href: "/admin/study-group", icon: Coffee },
       { label: "오픽 스터디", href: "/admin/study-groups", icon: UsersRound },
+      { label: "강의 권한", href: "/admin/lectures", icon: GraduationCap },
     ],
   },
   {

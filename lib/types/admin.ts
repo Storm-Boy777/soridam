@@ -130,6 +130,29 @@ export interface UserSearchResult {
   is_beta_active: boolean;
 }
 
+// ── 강의 권한 관리 ──
+
+export interface LectureAccessUser {
+  user_id: string;
+  email: string;
+  display_name: string | null;
+  granted_at: string;
+  granted_by_email: string | null;
+  note: string | null;
+}
+
+export interface LectureAccessStats {
+  active: number;
+}
+
+export interface LectureUserSearchResult {
+  user_id: string;
+  email: string;
+  display_name: string | null;
+  current_plan: string;
+  has_lecture_access: boolean;
+}
+
 // ── 감사 로그 ──
 
 export interface AuditLogEntry {

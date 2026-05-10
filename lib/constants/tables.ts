@@ -52,6 +52,11 @@ export const T = {
   study_group_members: "study_group_members",
   opic_study_sessions: "opic_study_sessions",
   opic_study_answers: "opic_study_answers",
+  // 강의 모듈 (061_lectures_restore_and_access.sql)
+  lectures: "lectures",
+  lecture_materials: "lecture_materials",
+  lecture_progress: "lecture_progress",
+  lecture_access: "lecture_access",
 } as const;
 
 // RPC 함수명 상수

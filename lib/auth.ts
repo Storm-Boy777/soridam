@@ -50,3 +50,38 @@ export async function requireAdmin() {
   );
   return { supabase, userId: user.id, userEmail: user.email || "" };
 }
+
+// ── hasLectureAccess(): 네비게이션 노출 판단용 (조용한 boolean) ──
+// 관리자 또는 lecture_access 보유자면 true. 비로그인은 false.
+export const hasLectureAccess = cache(async () => {
+  const user = await getUser();
+  if (!user) return false;
+  if (user.app_metadata?.role === "admin") return true;
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from("lecture_access")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  return !!data;
+});
+
+// ── requireLectureAccess(): 강의 페이지 진입 게이트 ──
+// 비로그인 → /login, 권한 없음 → /. 관리자는 자동 통과.
+export async function requireLectureAccess() {
+  const user = await getUser();
+  if (!user) {
+    redirect("/login");
+  }
+  if (user.app_metadata?.role === "admin") return user;
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from("lecture_access")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!data) {
+    redirect("/");
+  }
+  return user;
+}
