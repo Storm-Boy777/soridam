@@ -124,3 +124,29 @@ export interface GameCardRow {
   created_at: string;
   updated_at: string;
 }
+
+/* ── 패널 멤버 (Talklish 화면 표시용 6명) ── */
+export interface PanelMember {
+  id: string;
+  user_id: string | null;  // profiles.id (NULL이면 레거시/게스트)
+  name: string;            // 별명 또는 display_name 복사본
+  emoji: string;           // 예: "🦊"
+  color: string;           // HEX (예: "#C9522D")
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/** 관리자 UI 조회용 — profile 정보 합본 */
+export interface PanelMemberWithProfile extends PanelMember {
+  email: string | null;
+  display_name: string | null;
+}
+
+export interface PanelUserSearchResult {
+  user_id: string;
+  email: string;
+  display_name: string | null;
+  is_already_member: boolean;
+}

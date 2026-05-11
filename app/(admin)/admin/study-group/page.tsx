@@ -2,17 +2,19 @@
 
 import { useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Headphones, MessageCircle, Ban, ArrowLeftRight, Scale, Link, Plus, Pencil, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
+import { Headphones, MessageCircle, Ban, ArrowLeftRight, Scale, Link, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Users, Search, UserCheck } from "lucide-react";
 import {
   getAdminPodcasts, createPodcast, updatePodcast, deletePodcast,
   getAdminFreetalk, createFreetalk, updateFreetalk, deleteFreetalk,
   getAdminGameCards, createGameCard, updateGameCard, deleteGameCard,
+  getAdminPanelMembers, searchUserForPanel, createPanelMember, updatePanelMember, deletePanelMember,
 } from "@/lib/actions/admin/study-group";
-import type { PodcastRow, FreetalkRow, GameCardRow, GameCardGameType, TabooCard, WouldYouRatherCard, DebateTopic, StoryStarter, FreeTalkCategory } from "@/lib/types/study-group";
+import type { PodcastRow, FreetalkRow, GameCardRow, GameCardGameType, TabooCard, WouldYouRatherCard, DebateTopic, StoryStarter, FreeTalkCategory, PanelMember, PanelMemberWithProfile, PanelUserSearchResult } from "@/lib/types/study-group";
 
 /* ── 탭 정의 ── */
 
 const tabs = [
+  { id: "members", label: "패널 멤버", icon: Users },
   { id: "podcasts", label: "팟캐스트", icon: Headphones },
   { id: "freetalk", label: "프리토킹", icon: MessageCircle },
   { id: "taboo", label: "금칙어", icon: Ban },
@@ -53,12 +55,289 @@ export default function AdminStudyGroupPage() {
       </div>
 
       {/* 탭 콘텐츠 */}
+      {activeTab === "members" && <PanelMembersAdmin />}
       {activeTab === "podcasts" && <PodcastsAdmin />}
       {activeTab === "freetalk" && <FreetalkAdmin />}
       {activeTab === "taboo" && <GameCardsAdmin gameType="taboo" />}
       {activeTab === "wyr" && <GameCardsAdmin gameType="would-you-rather" />}
       {activeTab === "debate" && <GameCardsAdmin gameType="debate" />}
       {activeTab === "story" && <GameCardsAdmin gameType="story-chain" />}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   패널 멤버 관리 (Talklish 화면 표시용 6명)
+   ══════════════════════════════════════════ */
+
+const DEFAULT_COLORS = ["#C9522D", "#3F5A4A", "#7A5A8C", "#B58634", "#4A6B8C", "#8C5A4A"];
+const SAMPLE_EMOJIS = ["🦊", "🐺", "🦉", "🐻", "🐧", "🦝", "🦁", "🐯", "🐮", "🐷"];
+
+function PanelMembersAdmin() {
+  const qc = useQueryClient();
+  const { data: items = [], isLoading } = useQuery({ queryKey: ["admin-panel-members"], queryFn: getAdminPanelMembers });
+  const [editing, setEditing] = useState<PanelMemberWithProfile | null>(null);
+  const [isNew, setIsNew] = useState(false);
+
+  const handleToggle = useCallback(async (item: PanelMember) => {
+    await updatePanelMember(item.id, { is_active: !item.is_active });
+    qc.invalidateQueries({ queryKey: ["admin-panel-members"] });
+  }, [qc]);
+
+  const handleDelete = useCallback(async (id: string) => {
+    if (!confirm("이 멤버를 삭제하시겠어요?")) return;
+    await deletePanelMember(id);
+    qc.invalidateQueries({ queryKey: ["admin-panel-members"] });
+  }, [qc]);
+
+  if (isLoading) return <Loading />;
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-primary-100 bg-primary-50/30 p-3 text-xs text-primary-700">
+        스터디 화면(큰 모니터) 좌·우 사이드에 표시되는 패널 멤버입니다.
+        등록된 사용자에게만 <strong>네비게이션 “스터디” 메뉴</strong>가 노출되고 페이지 접근이 허용돼요.
+      </div>
+
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-foreground-secondary">총 {items.length}명</p>
+        <button
+          onClick={() => { setIsNew(true); setEditing({} as PanelMemberWithProfile); }}
+          className="flex items-center gap-1.5 rounded-lg bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600 transition-colors"
+        >
+          <Plus size={14} /> 멤버 추가
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+        {items.map((item) => (
+          <div
+            key={item.id}
+            className={`flex flex-col items-center gap-2 rounded-xl border p-3 ${
+              item.is_active ? "border-border bg-surface" : "border-border/50 bg-surface-secondary/50 opacity-60"
+            }`}
+          >
+            <div
+              className="flex h-12 w-12 items-center justify-center rounded-full text-2xl"
+              style={{ background: `${item.color}20`, border: `2px solid ${item.color}` }}
+            >
+              {item.emoji}
+            </div>
+            <p className="text-sm font-semibold text-foreground text-center break-all">{item.name}</p>
+            {item.email ? (
+              <p className="text-[10px] text-foreground-muted text-center break-all line-clamp-1" title={item.email}>
+                {item.email}
+              </p>
+            ) : (
+              <p className="text-[10px] text-amber-600">미연결</p>
+            )}
+            <div className="flex items-center gap-1">
+              <button onClick={() => handleToggle(item)} className="p-1 text-foreground-muted hover:text-foreground transition-colors" title={item.is_active ? "비활성화" : "활성화"}>
+                {item.is_active ? <ToggleRight size={16} className="text-green-600" /> : <ToggleLeft size={16} />}
+              </button>
+              <button onClick={() => { setIsNew(false); setEditing(item); }} className="p-1 text-foreground-muted hover:text-primary-600 transition-colors"><Pencil size={12} /></button>
+              <button onClick={() => handleDelete(item.id)} className="p-1 text-foreground-muted hover:text-red-600 transition-colors"><Trash2 size={12} /></button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {editing && (
+        <PanelMemberFormModal
+          initial={isNew ? null : editing}
+          existingCount={items.length}
+          onClose={() => setEditing(null)}
+          onSaved={() => { setEditing(null); qc.invalidateQueries({ queryKey: ["admin-panel-members"] }); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function PanelMemberFormModal({
+  initial,
+  existingCount,
+  onClose,
+  onSaved,
+}: {
+  initial: PanelMemberWithProfile | null;
+  existingCount: number;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const fallbackColor = DEFAULT_COLORS[existingCount % DEFAULT_COLORS.length];
+  const fallbackEmoji = SAMPLE_EMOJIS[existingCount % SAMPLE_EMOJIS.length];
+
+  // 신규 등록 시에만 사용자 검색 단계
+  const isEditing = !!initial?.id;
+  const [searchEmail, setSearchEmail] = useState("");
+  const [searchError, setSearchError] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [picked, setPicked] = useState<PanelUserSearchResult | null>(
+    isEditing && initial?.user_id
+      ? {
+          user_id: initial.user_id,
+          email: initial.email ?? "",
+          display_name: initial.display_name,
+          is_already_member: true,
+        }
+      : null
+  );
+
+  const [name, setName] = useState(initial?.name ?? "");
+  const [emoji, setEmoji] = useState(initial?.emoji ?? fallbackEmoji);
+  const [color, setColor] = useState(initial?.color ?? fallbackColor);
+  const [sortOrder, setSortOrder] = useState(initial?.sort_order ?? existingCount);
+  const [saving, setSaving] = useState(false);
+
+  const handleSearch = async () => {
+    setSearchError("");
+    setSearching(true);
+    const res = await searchUserForPanel(searchEmail);
+    setSearching(false);
+    if (res.error || !res.user) {
+      setSearchError(res.error ?? "조회 실패");
+      return;
+    }
+    if (res.user.is_already_member) {
+      setSearchError("이미 등록된 멤버입니다");
+      return;
+    }
+    setPicked(res.user);
+    // 자동 채움
+    setName(res.user.display_name || res.user.email.split("@")[0] || "");
+  };
+
+  const handleSave = async () => {
+    if (!isEditing && !picked) {
+      alert("사용자를 검색해서 선택해 주세요");
+      return;
+    }
+    if (!name.trim()) { alert("이름을 입력하세요"); return; }
+    setSaving(true);
+    const payload = {
+      user_id: picked?.user_id ?? initial?.user_id ?? null,
+      name: name.trim(),
+      emoji,
+      color,
+      sort_order: sortOrder,
+      is_active: initial?.is_active ?? true,
+    };
+    const result = initial?.id
+      ? await updatePanelMember(initial.id, payload)
+      : await createPanelMember(payload);
+    if (!result.success) { alert(result.error); setSaving(false); return; }
+    onSaved();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 pt-20 overflow-y-auto">
+      <div className="w-full max-w-md rounded-xl bg-surface p-6 shadow-xl">
+        <h3 className="mb-4 text-lg font-bold text-foreground">{isEditing ? "멤버 수정" : "멤버 추가"}</h3>
+
+        {/* 신규 등록 — 검색 단계 */}
+        {!isEditing && !picked && (
+          <div className="space-y-3">
+            <p className="text-xs text-foreground-secondary">
+              이메일로 소리담 사용자를 검색해 멤버로 등록합니다.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                value={searchEmail}
+                onChange={(e) => setSearchEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                placeholder="user@example.com"
+                className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-foreground-muted focus:border-primary-500 focus:outline-none"
+              />
+              <button
+                onClick={handleSearch}
+                disabled={searching || !searchEmail.trim()}
+                className="flex items-center gap-1 rounded-lg bg-foreground px-3 py-2 text-sm font-medium text-white hover:bg-foreground/90 disabled:opacity-50 transition-colors"
+              >
+                <Search size={14} />
+                {searching ? "검색…" : "검색"}
+              </button>
+            </div>
+            {searchError && <p className="text-xs text-accent-500">{searchError}</p>}
+            <div className="flex justify-end pt-3">
+              <button onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground-secondary hover:bg-surface-secondary transition-colors">
+                취소
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 검색 성공 또는 수정 모드 — 폼 */}
+        {(picked || isEditing) && (
+          <>
+            <div
+              className="mb-5 flex flex-col items-center gap-2 rounded-xl border border-border bg-surface-secondary/40 p-4"
+            >
+              <div
+                className="flex h-16 w-16 items-center justify-center rounded-full text-3xl"
+                style={{ background: `${color}20`, border: `2px solid ${color}` }}
+              >
+                {emoji}
+              </div>
+              <p className="text-sm font-semibold text-foreground">{name || "이름"}</p>
+              {(picked?.email ?? initial?.email) && (
+                <p className="flex items-center gap-1 text-[11px] text-foreground-muted">
+                  <UserCheck size={11} className="text-primary-500" />
+                  {picked?.email ?? initial?.email}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <Field label="별명 (display_name 자동, 수정 가능)" value={name} onChange={setName} placeholder="지수" />
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="이모지" value={emoji} onChange={setEmoji} placeholder="🦊" />
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-foreground-secondary">컬러</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={color}
+                      onChange={(e) => setColor(e.target.value)}
+                      className="h-9 w-9 cursor-pointer rounded border border-border"
+                    />
+                    <input
+                      value={color}
+                      onChange={(e) => setColor(e.target.value)}
+                      className="flex-1 rounded-lg border border-border bg-surface px-2 py-2 font-mono text-xs uppercase text-foreground focus:border-primary-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-foreground-secondary">정렬 순서 (작을수록 앞)</label>
+                <input
+                  type="number"
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(Number(e.target.value))}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-2">
+              {!isEditing && (
+                <button
+                  onClick={() => { setPicked(null); setSearchEmail(""); }}
+                  className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground-secondary hover:bg-surface-secondary transition-colors"
+                >
+                  다시 검색
+                </button>
+              )}
+              <button onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground-secondary hover:bg-surface-secondary transition-colors">취소</button>
+              <button onClick={handleSave} disabled={saving || !name.trim()} className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 disabled:opacity-50 transition-colors">
+                {saving ? "저장 중..." : "저장"}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

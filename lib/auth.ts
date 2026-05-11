@@ -85,3 +85,40 @@ export async function requireLectureAccess() {
   }
   return user;
 }
+
+// ── hasStudyPanelAccess(): 네비 노출 판단용 (조용한 boolean) ──
+// 관리자 또는 study_panel_members에 등록된 사용자면 true.
+export const hasStudyPanelAccess = cache(async () => {
+  const user = await getUser();
+  if (!user) return false;
+  if (user.app_metadata?.role === "admin") return true;
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from("study_panel_members")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("is_active", true)
+    .maybeSingle();
+  return !!data;
+});
+
+// ── requireStudyPanelAccess(): /study-group 페이지 진입 게이트 ──
+// 비로그인 → /login, 미등록 → /. 관리자는 자동 통과.
+export async function requireStudyPanelAccess() {
+  const user = await getUser();
+  if (!user) {
+    redirect("/login");
+  }
+  if (user.app_metadata?.role === "admin") return user;
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from("study_panel_members")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (!data) {
+    redirect("/");
+  }
+  return user;
+}

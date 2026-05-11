@@ -19,6 +19,7 @@ type NavItem = {
   soon?: boolean;
   adminOnly?: boolean;
   lectureAccessOnly?: boolean;
+  studyPanelOnly?: boolean;
 };
 
 const publicNav: NavItem[] = [
@@ -34,15 +35,14 @@ const appNav: NavItem[] = [
   { label: "튜터링", href: "/tutoring", adminOnly: true },
   { label: "오픽 스터디", href: "/opic-study" },
   { label: "강의", href: "/lectures", lectureAccessOnly: true },
+  { label: "스터디", href: "/study-group", studyPanelOnly: true },
   { label: "만능패턴", href: "/patterns" },
   { label: "AI 스토어", href: "/store" },
   { label: "소통함", href: "/support" },
 ];
 
 // 관리자 전용 메뉴 (appNav 뒤에 추가)
-const adminOnlyNav: NavItem[] = [
-  { label: "스터디", href: "/study-group" },
-];
+const adminOnlyNav: NavItem[] = [];
 
 /** 서버에서 전달하는 인증 정보 (선택적). 전달 시 클라이언트 getSession() 스킵 → 깜빡임 제거 */
 export interface NavbarServerAuth {
@@ -50,6 +50,7 @@ export interface NavbarServerAuth {
   userName: string;
   isAdmin: boolean;
   hasLectureAccess?: boolean;
+  hasStudyPanelAccess?: boolean;
 }
 
 export function Navbar({ serverAuth }: { serverAuth?: NavbarServerAuth } = {}) {
@@ -58,6 +59,7 @@ export function Navbar({ serverAuth }: { serverAuth?: NavbarServerAuth } = {}) {
   const [userName, setUserName] = useState(serverAuth?.userName ?? "");
   const [isAdmin, setIsAdmin] = useState(serverAuth?.isAdmin ?? false);
   const hasLectureAccess = serverAuth?.hasLectureAccess ?? false;
+  const hasStudyPanelAccess = serverAuth?.hasStudyPanelAccess ?? false;
 
   const handleLogoClick = useCallback((e: React.MouseEvent) => {
     if (pathname === "/") {
@@ -101,12 +103,14 @@ export function Navbar({ serverAuth }: { serverAuth?: NavbarServerAuth } = {}) {
   }, [serverAuth]);
 
   // 초기 상태 확인 전: 최소한의 레이아웃 유지 (깜빡임 방지)
-  // adminOnly: 관리자만, lectureAccessOnly: 권한 보유자(또는 관리자)만
+  // adminOnly: 관리자만, lectureAccessOnly: 권한 보유자(또는 관리자)만,
+  // studyPanelOnly: 패널 멤버 등록자(또는 관리자)만
   const navItems = isLoggedIn
     ? (() => {
         const filtered = appNav.filter((item) => {
           if (item.adminOnly && !isAdmin) return false;
           if (item.lectureAccessOnly && !isAdmin && !hasLectureAccess) return false;
+          if (item.studyPanelOnly && !isAdmin && !hasStudyPanelAccess) return false;
           return true;
         });
         return isAdmin ? [...filtered, ...adminOnlyNav] : filtered;

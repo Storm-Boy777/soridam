@@ -2,7 +2,7 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { T } from "@/lib/constants/tables";
-import type { PodcastRow, FreetalkRow, GameCardRow, GameCardGameType } from "@/lib/types/study-group";
+import type { PodcastRow, FreetalkRow, GameCardRow, GameCardGameType, PanelMember } from "@/lib/types/study-group";
 
 // 팟캐스트 목록 (활성만, sort_order 순)
 export async function fetchPodcasts(): Promise<PodcastRow[]> {
@@ -43,4 +43,16 @@ export async function fetchGameCards(gameType: GameCardGameType): Promise<GameCa
     .order("sort_order");
   if (error) return [];
   return data as GameCardRow[];
+}
+
+// 패널 멤버 (활성만, sort_order 순) — Talklish 화면 표시용
+export async function fetchPanelMembers(): Promise<PanelMember[]> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from(T.study_panel_members)
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order");
+  if (error) return [];
+  return data as PanelMember[];
 }
