@@ -2,7 +2,8 @@
 
 import { useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Headphones, MessageCircle, Ban, ArrowLeftRight, Scale, Link, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Users, Search, UserCheck } from "lucide-react";
+import { Headphones, MessageCircle, Ban, ArrowLeftRight, Scale, Link, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Users, Search, UserCheck, Sparkles, Loader2, Youtube, FileText } from "lucide-react";
+import { createClient } from "@/lib/supabase";
 import {
   getAdminPodcasts, createPodcast, updatePodcast, deletePodcast,
   getAdminFreetalk, createFreetalk, updateFreetalk, deleteFreetalk,
@@ -421,6 +422,88 @@ function PodcastFormModal({ initial, onClose, onSaved }: { initial: PodcastRow |
   const [discussionQuestions, setDiscussionQuestions] = useState(JSON.stringify(initial?.discussion_questions ?? [], null, 2));
   const [saving, setSaving] = useState(false);
 
+  // 자동화 영역 상태
+  const [scriptText, setScriptText] = useState("");
+  const [fetchingMeta, setFetchingMeta] = useState(false);
+  const [metaError, setMetaError] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState("");
+  const [genNotice, setGenNotice] = useState("");
+
+  /** YouTube URL → oEmbed로 title/source 자동 채움 */
+  const handleFetchMeta = async () => {
+    setMetaError("");
+    if (!url.trim()) { setMetaError("YouTube URL을 입력하세요"); return; }
+    setFetchingMeta(true);
+    try {
+      const u = `https://www.youtube.com/oembed?url=${encodeURIComponent(url.trim())}&format=json`;
+      const r = await fetch(u);
+      if (!r.ok) {
+        setMetaError(r.status === 404 ? "YouTube 영상을 찾을 수 없습니다" : `oEmbed 에러 (${r.status})`);
+        return;
+      }
+      const data = await r.json();
+      if (data.title && !title) setTitle(data.title);
+      if (data.author_name && !source) setSource(data.author_name);
+    } catch (e) {
+      setMetaError("메타 정보 가져오기 실패");
+    } finally {
+      setFetchingMeta(false);
+    }
+  };
+
+  /** AI로 컨텐츠 자동 생성 */
+  const handleAIGenerate = async () => {
+    setGenError("");
+    setGenNotice("");
+    if (!scriptText.trim() || scriptText.trim().length < 50) {
+      setGenError("영문 스크립트를 50자 이상 입력해주세요");
+      return;
+    }
+    setGenerating(true);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.functions.invoke("study-podcast-generate", {
+        body: {
+          scriptText: scriptText.trim(),
+          youtubeTitle: title || undefined,
+          channelName: source || undefined,
+          currentDifficulty: difficulty || undefined,
+          currentTopic: topic || undefined,
+        },
+      });
+      if (error || !data?.success) {
+        setGenError(data?.error || error?.message || "AI 생성 실패");
+        return;
+      }
+      const r = data.data as {
+        description: string;
+        warmup_question: string;
+        key_expressions: { english: string; korean: string; example: string }[];
+        comprehension_questions: string[];
+        discussion_questions: string[];
+        difficulty: "beginner" | "intermediate" | "advanced";
+        topic: string;
+      };
+      setDescription(r.description);
+      setWarmupQuestion(r.warmup_question);
+      setKeyExpressions(JSON.stringify(r.key_expressions, null, 2));
+      setComprehensionQuestions(JSON.stringify(r.comprehension_questions, null, 2));
+      setDiscussionQuestions(JSON.stringify(r.discussion_questions, null, 2));
+      if (!topic && r.topic) setTopic(r.topic);
+      if (r.difficulty) setDifficulty(r.difficulty);
+      const tokens = data.meta?.tokens?.total_tokens;
+      setGenNotice(
+        `✓ AI 생성 완료${tokens ? ` (${tokens} 토큰, ${Math.round((data.meta?.elapsed_ms ?? 0) / 100) / 10}s)` : ""}`
+      );
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "AI 호출 중 오류";
+      setGenError(msg);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -442,13 +525,91 @@ function PodcastFormModal({ initial, onClose, onSaved }: { initial: PodcastRow |
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 pt-20 overflow-y-auto">
-      <div className="w-full max-w-2xl rounded-xl bg-surface p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 pt-10 overflow-y-auto">
+      <div className="w-full max-w-3xl rounded-xl bg-surface p-6 shadow-xl">
         <h3 className="mb-4 text-lg font-bold text-foreground">{initial?.id ? "팟캐스트 수정" : "팟캐스트 추가"}</h3>
+
+        {/* ─── 자동화 영역 (신규 등록 시에만) ─── */}
+        {!initial?.id && (
+          <div className="mb-5 rounded-xl border-2 border-dashed border-primary-200 bg-primary-50/30 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Sparkles size={16} className="text-primary-500" />
+              <p className="text-sm font-semibold text-primary-700">자동 채움</p>
+              <span className="text-[10px] text-primary-600">YouTube + 영문 스크립트만 있으면 됩니다</span>
+            </div>
+
+            {/* YouTube URL + oEmbed */}
+            <div>
+              <label className="mb-1 flex items-center gap-1 text-xs font-medium text-foreground-secondary">
+                <Youtube size={12} /> YouTube URL
+              </label>
+              <div className="flex gap-2">
+                <input
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="https://youtu.be/..."
+                  className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-foreground-muted focus:border-primary-500 focus:outline-none"
+                />
+                <button
+                  onClick={handleFetchMeta}
+                  disabled={fetchingMeta || !url.trim()}
+                  className="flex items-center gap-1 rounded-lg bg-foreground px-3 py-2 text-xs font-medium text-white hover:bg-foreground/90 disabled:opacity-50 transition-colors"
+                >
+                  {fetchingMeta ? <Loader2 size={12} className="animate-spin" /> : <Search size={12} />}
+                  메타 채움
+                </button>
+              </div>
+              {metaError && <p className="mt-1 text-[11px] text-accent-500">{metaError}</p>}
+              {(title || source) && !metaError && (
+                <p className="mt-1 text-[11px] text-foreground-secondary">
+                  ✓ {title} <span className="text-foreground-muted">· {source}</span>
+                </p>
+              )}
+            </div>
+
+            {/* 영문 스크립트 */}
+            <div>
+              <label className="mb-1 flex items-center gap-1 text-xs font-medium text-foreground-secondary">
+                <FileText size={12} /> 영문 스크립트 (kongram 등에서 복사)
+              </label>
+              <textarea
+                value={scriptText}
+                onChange={(e) => setScriptText(e.target.value)}
+                rows={6}
+                placeholder="Welcome back to the Mel Robbins Podcast..."
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-mono text-foreground placeholder:text-foreground-muted focus:border-primary-500 focus:outline-none"
+              />
+              <p className="mt-1 text-[10px] text-foreground-muted">
+                {scriptText.length}자 (50자 이상 권장 · 16000자까지 사용)
+              </p>
+            </div>
+
+            <button
+              onClick={handleAIGenerate}
+              disabled={generating || scriptText.trim().length < 50}
+              className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-600 disabled:opacity-50 transition-colors"
+            >
+              {generating ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" /> GPT가 컨텐츠 생성 중… (10~20초)
+                </>
+              ) : (
+                <>
+                  <Sparkles size={14} /> AI로 컨텐츠 자동 생성
+                </>
+              )}
+            </button>
+
+            {genError && <p className="text-[11px] text-accent-500">{genError}</p>}
+            {genNotice && <p className="text-[11px] text-green-600">{genNotice}</p>}
+          </div>
+        )}
+
+        {/* ─── 기본 폼 (수동 편집 / AI 결과 확인 가능) ─── */}
         <div className="space-y-3">
           <Field label="제목" value={title} onChange={setTitle} />
           <div className="grid grid-cols-2 gap-3">
-            <Field label="소스" value={source} onChange={setSource} placeholder="BBC 6 Minute English" />
+            <Field label="소스 (채널명)" value={source} onChange={setSource} placeholder="BBC 6 Minute English" />
             <Field label="URL" value={url} onChange={setUrl} />
           </div>
           <div className="grid grid-cols-3 gap-3">
