@@ -523,14 +523,17 @@ export function OpicStudySessionClient({
   }, [sessionId]);
 
   const handleNextQuestion = useCallback(() => {
+    // 호출 시점의 idx를 함께 전달 (race 보호: 두 명 동시 클릭 시 두 단계 점프 방지)
+    const expectedFromIdx = session.current_question_idx;
     startTransition(async () => {
-      const res = await nextQuestion(sessionId);
+      const res = await nextQuestion(sessionId, expectedFromIdx);
       if (res.error) {
         toast.error(`다음 질문 전환 실패: ${res.error}`);
       }
-      // res.data?.completed: session.status='completed'로 전환됨, 자동 분기
+      // already_advanced: 다른 사람이 먼저 진행 — silent (Realtime이 화면 갱신)
+      // completed: 마지막 질문 → session.status='completed' 자동 분기
     });
-  }, [sessionId]);
+  }, [sessionId, session.current_question_idx]);
 
   // 확인 다이얼로그 상태 (세션 종료 / 모드 전환 / 답변 패스 / 단계 되돌리기)
   const [confirmDialog, setConfirmDialog] = useState<{

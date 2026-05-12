@@ -1652,12 +1652,26 @@ export async function forceReleaseSpeaker(
 }
 
 /** Step 6-7b: 다음 질문 (마지막 질문이면 종료) */
-export async function nextQuestion(sessionId: string): Promise<ActionResult<{ completed: boolean }>> {
+/**
+ * 다음 질문으로 진행.
+ *
+ * 동시 클릭(여러 명 / 더블 클릭 / 자동+수동 race) 시 두 단계 점프를 방지하기 위해
+ * 클라이언트가 보던 시점의 idx를 expectedFromIdx로 받는다.
+ * UPDATE는 expectedFromIdx와 정확히 일치하는 경우에만 적용 — 일치하지 않으면
+ * 이미 다른 사람이 진행한 상태이므로 silently no-op.
+ *
+ * - completed: true면 이번 호출로 세션이 종료됨 (마지막 질문이었음)
+ * - already_advanced: true면 이미 누군가가 진행했음 (race 보호로 차단)
+ */
+export async function nextQuestion(
+  sessionId: string,
+  expectedFromIdx: number
+): Promise<ActionResult<{ completed: boolean; already_advanced: boolean }>> {
   try {
     const { supabase, userId } = await requireUser();
     await requireSessionMember(supabase, sessionId, userId);
 
-    // 현재 세션 상태 조회
+    // 현재 세션 상태 조회 (selected_question_ids 길이 확인용)
     const { data: session, error: fetchErr } = await supabase
       .from(T.opic_study_sessions)
       .select("current_question_idx, selected_question_ids")
@@ -1665,8 +1679,13 @@ export async function nextQuestion(sessionId: string): Promise<ActionResult<{ co
       .single();
     if (fetchErr || !session) return { error: "세션 조회 실패" };
 
+    // 이미 다른 사람이 진행한 상태면 silent no-op
+    if (session.current_question_idx !== expectedFromIdx) {
+      return { data: { completed: false, already_advanced: true } };
+    }
+
     const totalQuestions = (session.selected_question_ids as string[]).length;
-    const nextIdx = session.current_question_idx + 1;
+    const nextIdx = expectedFromIdx + 1;
     const isLast = nextIdx >= totalQuestions;
 
     const updatePayload: Record<string, unknown> = {
@@ -1682,14 +1701,24 @@ export async function nextQuestion(sessionId: string): Promise<ActionResult<{ co
       updatePayload.step = "recording";
     }
 
-    const { error: updErr } = await supabase
+    // UPDATE는 expectedFromIdx와 일치할 때만 — RETURNING으로 영향받은 row 확인
+    const { data: updated, error: updErr } = await supabase
       .from(T.opic_study_sessions)
       .update(updatePayload)
       .eq("id", sessionId)
-      .eq("current_question_idx", session.current_question_idx); // 멱등성
+      .eq("current_question_idx", expectedFromIdx)
+      .select("current_question_idx")
+      .maybeSingle();
 
     if (updErr) return { error: "다음 질문 진행 실패" };
-    return { data: { completed: isLast } };
+
+    // 0 row 영향 — A의 UPDATE commit과 B의 SELECT 사이 race
+    // SELECT는 expectedFromIdx와 같았지만 UPDATE 시점엔 이미 다른 트랜잭션이 갱신함
+    if (!updated) {
+      return { data: { completed: false, already_advanced: true } };
+    }
+
+    return { data: { completed: isLast, already_advanced: false } };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "다음 질문 진행 실패" };
   }
