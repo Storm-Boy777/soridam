@@ -140,21 +140,6 @@ export interface OpicStudyAnswer {
 // AI F/B 결과 JSON 구조
 // ============================================================
 
-// 발음 평가 (Azure 원본 — 내부 사용 전용)
-export interface PronunciationScore {
-  accuracy: number;                        // 0~100
-  fluency: number;
-  prosody: number;
-  completeness: number;
-  pron_score: number;                      // 종합
-
-  words?: Array<{
-    word: string;
-    accuracy: number;
-    error_type?: 'mispronunciation' | 'omission' | 'insertion';
-  }>;
-}
-
 // AI 코칭 결과 — 그룹 토론 자료 형식
 //
 // 핵심 설계: 멤버들이 답변을 한 번 듣고 피드백 주기 어려우니, AI가 transcript
