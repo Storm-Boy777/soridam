@@ -37,9 +37,6 @@ import {
   Eye,
   EyeOff,
   Users,
-  Play,
-  Pause,
-  MessageSquare,
   AlertCircle,
 } from "lucide-react";
 import { createBrowserClient } from "@supabase/ssr";
@@ -47,6 +44,8 @@ import { AvaAvatar } from "@/components/mock-exam/session/ava-avatar";
 import { useRecorder } from "@/lib/hooks/use-recorder";
 import { useQuestionPlayer } from "@/lib/hooks/use-question-player";
 import type { OpicStudyAnswer, FeedbackResult } from "@/lib/types/opic-study";
+import { CoachNoteInline, AudioPlayer } from "../_components/SessionReplay";
+import { SpeechMetrics } from "../_components/SpeechMetrics";
 
 // ============================================================
 // 타입
@@ -1918,306 +1917,69 @@ function CoachingReviewContent({
     );
   }
 
+  return <CoachingReviewBody answer={answer} feedback={feedback} />;
+}
+
+/* ─── 본문 — 다시보기/마이페이지와 통일된 컴포넌트 사용 ─── */
+function CoachingReviewBody({
+  answer,
+  feedback,
+}: {
+  answer: OpicStudyAnswer;
+  feedback: FeedbackResult | null;
+}) {
+  const [durationSec, setDurationSec] = useState<number | null>(null);
+
   return (
     <div className="space-y-3">
-      {/* 1. 한 줄 요약 */}
-      {feedback?.summary && (
-        <div
-          className="rounded-lg p-2.5"
-          style={{
-            background: "var(--bp-tc-tint)",
-            border: "1px solid rgba(201, 100, 66, 0.2)",
-          }}
-        >
-          <p
-            className="mb-1 text-[10px] font-bold uppercase tracking-wider"
-            style={{ color: "var(--bp-tc)" }}
-          >
-            📋 한 줄 요약
-          </p>
-          <p
-            className="text-sm leading-relaxed"
-            style={{ color: "var(--bp-ink)" }}
-          >
-            {feedback.summary}
-          </p>
-        </div>
+      {/* 음성 플레이어 (큰) — progress 클릭/키보드 시킹 + duration → SpeechMetrics */}
+      {answer.audio_url && (
+        <AnswerAudioPlayer audioPath={answer.audio_url} onDuration={setDurationSec} />
       )}
 
-      {/* 2. 답변 흐름 */}
-      {feedback?.flow && (
-        <div
-          className="rounded-lg p-2.5"
+      {/* Transcript (항상 인용 박스로) */}
+      {answer.transcript && (
+        <p
           style={{
-            background: "var(--bp-surface)",
-            border: "1px solid var(--bp-line)",
+            margin: 0,
+            padding: "10px 12px",
+            background: "var(--bp-surface-2)",
+            borderRadius: 8,
+            color: "var(--bp-ink-2)",
+            fontSize: 12,
+            lineHeight: 1.6,
+            fontStyle: "italic",
           }}
         >
-          <p
-            className="mb-2 text-[10px] font-bold uppercase tracking-wider"
-            style={{ color: "var(--bp-ink-3)" }}
-          >
-            🗺️ 답변 흐름
-          </p>
-          <div className="space-y-1.5 text-xs" style={{ color: "var(--bp-ink)" }}>
-            {feedback.flow.intro && (
-              <div className="flex items-start gap-2">
-                <span
-                  className="rounded px-1.5 py-0.5 text-[9px] font-bold flex-shrink-0"
-                  style={{
-                    background: "var(--bp-tc-tint)",
-                    color: "var(--bp-tc)",
-                  }}
-                >
-                  도입
-                </span>
-                <span className="flex-1 leading-relaxed">{feedback.flow.intro}</span>
-              </div>
-            )}
-            {feedback.flow.body && (
-              <div className="flex items-start gap-2">
-                <span
-                  className="rounded px-1.5 py-0.5 text-[9px] font-bold flex-shrink-0"
-                  style={{
-                    background: "var(--bp-tc-tint)",
-                    color: "var(--bp-tc)",
-                  }}
-                >
-                  본론
-                </span>
-                <span className="flex-1 leading-relaxed">{feedback.flow.body}</span>
-              </div>
-            )}
-            {feedback.flow.conclusion && (
-              <div className="flex items-start gap-2">
-                <span
-                  className="rounded px-1.5 py-0.5 text-[9px] font-bold flex-shrink-0"
-                  style={{
-                    background: "var(--bp-tc-tint)",
-                    color: "var(--bp-tc)",
-                  }}
-                >
-                  결론
-                </span>
-                <span className="flex-1 leading-relaxed">{feedback.flow.conclusion}</span>
-              </div>
-            )}
-            {!feedback.flow.intro && !feedback.flow.body && !feedback.flow.conclusion && (
-              <p className="text-xs" style={{ color: "var(--bp-ink-3)" }}>
-                답변이 너무 짧아 흐름 분석이 어려웠어요.
-              </p>
-            )}
-          </div>
-        </div>
+          “{answer.transcript}”
+        </p>
       )}
 
-      {/* 3. 인상 깊은 표현 */}
-      {feedback?.good_expressions && feedback.good_expressions.length > 0 && (
-        <div
-          className="rounded-lg p-2.5"
-          style={{
-            background: "var(--bp-good-tint, #e6efe1)",
-            border: "1px solid rgba(90, 143, 90, 0.3)",
-          }}
-        >
-          <p
-            className="mb-2 text-[10px] font-bold uppercase tracking-wider"
-            style={{ color: "var(--bp-good, #5a8f5a)" }}
-          >
-            ✨ 인상 깊은 표현
-          </p>
-          <div className="space-y-2">
-            {feedback.good_expressions.map((g, i) => (
-              <div key={i} className="text-xs" style={{ color: "var(--bp-ink)" }}>
-                <span
-                  className="font-mono italic"
-                  style={{ color: "var(--bp-good, #5a8f5a)" }}
-                >
-                  &ldquo;{g.quote}&rdquo;
-                </span>
-                <span style={{ color: "var(--bp-ink-2)" }}> — {g.note}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* 발화 정량 + Azure 발음 점수 (다시보기와 동일) */}
+      <SpeechMetrics
+        transcript={answer.transcript}
+        durationSec={durationSec}
+        pronunciation={answer.pronunciation_score}
+      />
 
-      {/* 4. 함께 다듬어볼 표현 (문법/어휘) */}
-      {feedback?.refine_expressions && feedback.refine_expressions.length > 0 && (
-        <div
-          className="rounded-lg p-2.5"
-          style={{
-            background: "var(--bp-tip-tint, #fbf1d1)",
-            border: "1px solid rgba(164, 129, 33, 0.3)",
-          }}
-        >
-          <p
-            className="mb-2 text-[10px] font-bold uppercase tracking-wider"
-            style={{ color: "var(--bp-tip, #a48121)" }}
-          >
-            ✏️ 함께 다듬어볼 표현
-          </p>
-          <div className="space-y-2.5">
-            {feedback.refine_expressions.map((r, i) => (
-              <div key={i} className="text-xs">
-                <p
-                  className="font-mono italic mb-0.5"
-                  style={{ color: "var(--bp-ink)" }}
-                >
-                  &ldquo;{r.quote}&rdquo;
-                </p>
-                <p
-                  className="leading-relaxed"
-                  style={{ color: "var(--bp-ink-2)" }}
-                >
-                  📌 {r.issue}
-                </p>
-                <p
-                  className="leading-relaxed mt-0.5 font-medium"
-                  style={{ color: "var(--bp-tip, #a48121)" }}
-                >
-                  ✨ {r.suggestion}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 5. 발음 패턴 (옵션) */}
-      {feedback?.pronunciation_patterns &&
-        feedback.pronunciation_patterns.length > 0 && (
-          <div
-            className="rounded-lg p-2.5"
-            style={{
-              background: "var(--bp-surface-2)",
-              border: "1px solid var(--bp-line)",
-            }}
-          >
-            <p
-              className="mb-1 text-[10px] font-bold uppercase tracking-wider"
-              style={{ color: "var(--bp-ink-3)" }}
-            >
-              🎤 발음 패턴
-            </p>
-            <ul
-              className="space-y-1 text-xs leading-relaxed"
-              style={{ color: "var(--bp-ink-2)" }}
-            >
-              {feedback.pronunciation_patterns.map((p, i) => (
-                <li key={i}>· {p}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-      {/* 전사 + 음성 재생 */}
-      {(answer.transcript || answer.audio_url) && (
-        <div
-          className="rounded-lg p-2.5"
-          style={{
-            background: "var(--bp-surface)",
-            border: "1px solid var(--bp-line)",
-          }}
-        >
-          <p
-            className="mb-2 text-[10px] font-bold uppercase tracking-wider"
-            style={{ color: "var(--bp-ink-3)" }}
-          >
-            🎙️ 답변 다시 듣기 + 전사
-          </p>
-          {answer.audio_url && (
-            <AnswerAudioPlayer audioPath={answer.audio_url} />
-          )}
-          {answer.transcript && (
-            <p
-              className="mt-2 text-xs leading-relaxed font-mono italic"
-              style={{ color: "var(--bp-ink-2)" }}
-            >
-              {answer.transcript}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* 6. 함께 생각해볼 포인트 */}
-      {feedback?.discussion_hooks && feedback.discussion_hooks.length > 0 && (
-        <div
-          className="rounded-lg p-2.5"
-          style={{
-            background: "var(--bp-surface)",
-            border: "1px dashed var(--bp-line-strong)",
-          }}
-        >
-          <div className="mb-1.5 flex items-center gap-1.5">
-            <MessageSquare size={14} color="var(--bp-tc)" />
-            <p className="text-xs font-bold" style={{ color: "var(--bp-ink)" }}>
-              함께 생각해볼 포인트
-            </p>
-          </div>
-          <ul
-            className="space-y-1.5 text-xs leading-relaxed"
-            style={{ color: "var(--bp-ink-2)" }}
-          >
-            {feedback.discussion_hooks.map((h, i) => (
-              <li key={i}>· {h}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* 7. 다음 발화자에게 */}
-      {feedback?.next_speaker_tip &&
-        (feedback.next_speaker_tip.take || feedback.next_speaker_tip.enhance) && (
-          <div
-            className="rounded-lg p-2.5"
-            style={{
-              background: "var(--bp-tc-tint)",
-              border: "1px solid rgba(201, 100, 66, 0.3)",
-            }}
-          >
-            <p
-              className="mb-1.5 text-[10px] font-bold uppercase tracking-wider"
-              style={{ color: "var(--bp-tc)" }}
-            >
-              🌱 다음 발화자에게
-            </p>
-            <div className="space-y-1.5 text-xs" style={{ color: "var(--bp-ink)" }}>
-              {feedback.next_speaker_tip.take && (
-                <div className="flex items-start gap-1.5">
-                  <span style={{ color: "var(--bp-good, #5a8f5a)" }}>📌</span>
-                  <span className="flex-1">
-                    <span className="font-bold">가져갈 것:</span>{" "}
-                    {feedback.next_speaker_tip.take}
-                  </span>
-                </div>
-              )}
-              {feedback.next_speaker_tip.enhance && (
-                <div className="flex items-start gap-1.5">
-                  <span style={{ color: "var(--bp-tc)" }}>📌</span>
-                  <span className="flex-1">
-                    <span className="font-bold">보강할 것:</span>{" "}
-                    {feedback.next_speaker_tip.enhance}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+      {/* 코치노트 (요약/흐름/표현/패턴/토론거리/다음 발화자 팁) */}
+      {feedback && <CoachNoteInline feedback={feedback} />}
     </div>
   );
 }
 
 // ============================================================
-// 답변 음성 재생 (Storage 경로 → signed URL)
+// 답변 음성 재생 (Storage path → signed URL → 통일 AudioPlayer)
 // ============================================================
 
-function AnswerAudioPlayer({ audioPath }: { audioPath: string }) {
+function AnswerAudioPlayer({
+  audioPath,
+  onDuration,
+}: {
+  audioPath: string;
+  onDuration?: (sec: number) => void;
+}) {
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const [playing, setPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -2237,47 +1999,6 @@ function AnswerAudioPlayer({ audioPath }: { audioPath: string }) {
     };
   }, [audioPath]);
 
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    const onTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const onLoadedMetadata = () => setDuration(audio.duration);
-    const onEnded = () => setPlaying(false);
-    audio.addEventListener("timeupdate", onTimeUpdate);
-    audio.addEventListener("loadedmetadata", onLoadedMetadata);
-    audio.addEventListener("ended", onEnded);
-    return () => {
-      audio.pause();
-      audio.removeEventListener("timeupdate", onTimeUpdate);
-      audio.removeEventListener("loadedmetadata", onLoadedMetadata);
-      audio.removeEventListener("ended", onEnded);
-    };
-  }, [signedUrl]);
-
-  const togglePlay = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (playing) audio.pause();
-    else audio.play();
-    setPlaying(!playing);
-  };
-
-  const seek = (e: React.MouseEvent<HTMLDivElement>) => {
-    const audio = audioRef.current;
-    if (!audio || !duration) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const ratio = (e.clientX - rect.left) / rect.width;
-    audio.currentTime = ratio * duration;
-  };
-
-  const fmt = (sec: number) => {
-    const m = Math.floor(sec / 60);
-    const s = Math.floor(sec % 60);
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  };
-
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
-
   if (!signedUrl) {
     return (
       <div
@@ -2293,68 +2014,7 @@ function AnswerAudioPlayer({ audioPath }: { audioPath: string }) {
     );
   }
 
-  return (
-    <div
-      className="flex items-center gap-3 rounded-lg px-3 py-2"
-      style={{ background: "var(--bp-surface-2)" }}
-    >
-      <audio ref={audioRef} src={signedUrl} preload="metadata" />
-      <button
-        onClick={togglePlay}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors"
-        style={{
-          background: "var(--bp-tc)",
-          color: "#fff",
-        }}
-      >
-        {playing ? (
-          <Pause size={14} fill="currentColor" strokeWidth={0} />
-        ) : (
-          <Play size={14} fill="currentColor" strokeWidth={0} className="ml-0.5" />
-        )}
-      </button>
-      <div className="flex flex-1 items-center gap-2">
-        <span
-          className="text-[10px] font-medium"
-          style={{
-            color: "var(--bp-ink-2)",
-            fontVariantNumeric: "tabular-nums",
-          }}
-        >
-          {fmt(currentTime)}
-        </span>
-        <div
-          className="relative h-1.5 flex-1 cursor-pointer rounded-full"
-          style={{ background: "var(--bp-line-strong)" }}
-          onClick={seek}
-        >
-          <div
-            className="absolute left-0 top-0 h-full rounded-full transition-[width] duration-100"
-            style={{
-              width: `${progress}%`,
-              background: "var(--bp-tc)",
-            }}
-          />
-          <div
-            className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-white shadow-sm transition-[left] duration-100"
-            style={{
-              left: `calc(${progress}% - 6px)`,
-              border: "2px solid var(--bp-tc)",
-            }}
-          />
-        </div>
-        <span
-          className="text-[10px] font-medium"
-          style={{
-            color: "var(--bp-ink-3)",
-            fontVariantNumeric: "tabular-nums",
-          }}
-        >
-          {fmt(duration)}
-        </span>
-      </div>
-    </div>
-  );
+  return <AudioPlayer url={signedUrl} label="답변 음성" onDuration={onDuration} />;
 }
 
 // ============================================================
