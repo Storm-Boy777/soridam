@@ -10,6 +10,7 @@
 import { useState, useMemo } from "react";
 import { Library, ChevronDown, ChevronUp, AlertCircle, Bot, ChevronRight } from "lucide-react";
 import { AudioPlayer, CoachNoteInline } from "./SessionReplay";
+import { SpeechMetrics } from "./SpeechMetrics";
 import type { MyStudySummary } from "@/lib/types/opic-study";
 
 type MyAnswer = MyStudySummary["my_answers"][number];
@@ -228,7 +229,7 @@ function Chip({
 
 function MyAnswerCard({ answer }: { answer: MyAnswer }) {
   const [coachOpen, setCoachOpen] = useState(false);
-  const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const [durationSec, setDurationSec] = useState<number | null>(null);
 
   const fb = answer.feedback_result;
   const hasError = !!fb?.error;
@@ -318,11 +319,15 @@ function MyAnswerCard({ answer }: { answer: MyAnswer }) {
 
         {/* 답변 음성 플레이어 (큰) */}
         {answer.audio_signed_url && (
-          <AudioPlayer url={answer.audio_signed_url} label="내 답변 음성" />
+          <AudioPlayer
+            url={answer.audio_signed_url}
+            label="내 답변 음성"
+            onDuration={setDurationSec}
+          />
         )}
       </div>
 
-      {/* Transcript */}
+      {/* Transcript (항상 표시) */}
       {answer.transcript && (
         <div
           style={{
@@ -331,40 +336,26 @@ function MyAnswerCard({ answer }: { answer: MyAnswer }) {
             background: "var(--bp-surface)",
           }}
         >
-          <button
-            onClick={() => setTranscriptOpen((v) => !v)}
+          <p
             style={{
-              background: "transparent",
-              border: 0,
-              color: "var(--bp-ink-3)",
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: "pointer",
-              padding: 0,
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              marginBottom: transcriptOpen ? 6 : 0,
+              margin: 0,
+              color: "var(--bp-ink-2)",
+              fontSize: 12,
+              lineHeight: 1.6,
+              fontStyle: "italic",
             }}
           >
-            {transcriptOpen ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-            Transcript {transcriptOpen ? "접기" : "보기"}
-          </button>
-          {transcriptOpen && (
-            <p
-              style={{
-                margin: 0,
-                color: "var(--bp-ink-2)",
-                fontSize: 12,
-                lineHeight: 1.6,
-                fontStyle: "italic",
-              }}
-            >
-              “{answer.transcript}”
-            </p>
-          )}
+            “{answer.transcript}”
+          </p>
         </div>
       )}
+
+      {/* 발화 정량 분석 (속도/어휘/필러) + Azure 발음 점수 */}
+      <SpeechMetrics
+        transcript={answer.transcript}
+        durationSec={durationSec}
+        pronunciation={answer.pronunciation_score}
+      />
 
       {/* AI 코치노트 (아코디언) 또는 에러 */}
       {hasError && fb?.error && (
@@ -415,7 +406,7 @@ function MyAnswerCard({ answer }: { answer: MyAnswer }) {
               }}
             >
               <Bot size={13} />
-              AI 코치노트 {coachOpen ? "접기" : "펼치기"}
+              코치노트 {coachOpen ? "접기" : "펼치기"}
             </span>
             {coachOpen ? (
               <ChevronUp size={13} color="var(--bp-tc)" />

@@ -19,7 +19,8 @@ import {
   Sparkles,
   MessageSquare,
 } from "lucide-react";
-import type { SessionHistoryDetail, FeedbackResult } from "@/lib/types/opic-study";
+import type { SessionHistoryDetail, FeedbackResult, PronunciationScore } from "@/lib/types/opic-study";
+import { SpeechMetrics } from "./SpeechMetrics";
 
 type Question = SessionHistoryDetail["questions"][number];
 type Answer = Question["answers"][number];
@@ -29,6 +30,14 @@ const COLOR_BG: Record<"a" | "b" | "c" | "d", string> = {
   b: "var(--bp-mb-b)",
   c: "var(--bp-mb-c)",
   d: "var(--bp-mb-d)",
+};
+
+// 멤버 컬러 tint — 카드 헤더 배경 강조용 (8% alpha)
+const COLOR_TINT: Record<"a" | "b" | "c" | "d", string> = {
+  a: "rgba(201, 100, 66, 0.10)",  // #c96442
+  b: "rgba(90, 143, 156, 0.10)",  // #5a8f9c
+  c: "rgba(164, 129, 33, 0.10)",  // #a48121
+  d: "rgba(107, 99, 144, 0.10)",  // #6b6390
 };
 
 interface Props {
@@ -212,7 +221,7 @@ function QuestionDetail({ question }: { question: Question }) {
           이 질문에는 답변 기록이 없어요.
         </p>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           {sortedAnswers.map((a) => (
             <AnswerCard key={a.user_id} answer={a} />
           ))}
@@ -225,6 +234,8 @@ function QuestionDetail({ question }: { question: Question }) {
 /* ─── 멤버별 답변 카드 ─── */
 
 function AnswerCard({ answer }: { answer: Answer }) {
+  const memberTint = COLOR_TINT[answer.member_color];
+
   // 패스
   if (answer.skipped) {
     return (
@@ -234,10 +245,11 @@ function AnswerCard({ answer }: { answer: Answer }) {
           background: "var(--bp-surface)",
           borderRadius: 12,
           border: "1px solid var(--bp-line)",
-          opacity: 0.6,
+          opacity: 0.65,
           display: "flex",
           alignItems: "center",
           gap: 12,
+          boxShadow: "var(--bp-shadow-sm)",
         }}
       >
         <MemberAvatar color={answer.member_color} initial={answer.member_initial} />
@@ -265,48 +277,32 @@ function AnswerCard({ answer }: { answer: Answer }) {
         border: "1px solid var(--bp-line)",
         borderRadius: 12,
         overflow: "hidden",
+        boxShadow: "var(--bp-shadow-sm)",
       }}
     >
-      {/* 멤버 헤더 + 답변 음성 */}
+      {/* 멤버 헤더 — 컬러 tint 배경 + 큰 이름 */}
       <div
         style={{
           padding: "12px 14px",
-          background: "var(--bp-surface-2)",
-          borderBottom: hasCoaching || hasError ? "1px solid var(--bp-line)" : undefined,
+          background: memberTint,
+          borderBottom: "1px solid var(--bp-line)",
           display: "flex",
           alignItems: "center",
           gap: 12,
         }}
       >
         <MemberAvatar color={answer.member_color} initial={answer.member_initial} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ margin: 0, color: "var(--bp-ink)", fontSize: 13, fontWeight: 800 }}>
-            {answer.member_name}
-          </p>
-          {answer.transcript && (
-            <p
-              style={{
-                margin: "2px 0 0",
-                color: "var(--bp-ink-3)",
-                fontSize: 11,
-                lineHeight: 1.4,
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
-            >
-              “{answer.transcript}”
-            </p>
-          )}
-        </div>
-        {answer.audio_signed_url && (
-          <AudioPlayer url={answer.audio_signed_url} compact label="답변 듣기" />
-        )}
+        <p style={{ margin: 0, color: "var(--bp-ink)", fontSize: 14, fontWeight: 850 }}>
+          {answer.member_name}
+        </p>
       </div>
 
-      {/* Transcript 전체 (펼치기) */}
-      {answer.transcript && <TranscriptExpand text={answer.transcript} />}
+      {/* 답변 영역 — 음성 플레이어 + 발화 분석 + Transcript 토글 */}
+      <AnswerBody
+        audioUrl={answer.audio_signed_url}
+        transcript={answer.transcript}
+        pronunciation={answer.pronunciation_score}
+      />
 
       {/* AI 코치노트 또는 에러 */}
       {hasError && fb?.error && (
@@ -337,41 +333,68 @@ function AnswerCard({ answer }: { answer: Answer }) {
   );
 }
 
-/* ─── Transcript 펼치기 ─── */
+/* ─── 답변 영역: 음성 플레이어 + Transcript (항상 표시) ─── */
 
-function TranscriptExpand({ text }: { text: string }) {
-  const [open, setOpen] = useState(false);
-  if (text.length <= 100) return null;
+function AnswerBody({
+  audioUrl,
+  transcript,
+  pronunciation,
+}: {
+  audioUrl: string | null;
+  transcript: string | null;
+  pronunciation?: PronunciationScore | null;
+}) {
+  const [durationSec, setDurationSec] = useState<number | null>(null);
+
+  if (!audioUrl && !transcript && !pronunciation) return null;
+
   return (
-    <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--bp-line)" }}>
-      <button
-        onClick={() => setOpen((v) => !v)}
+    <>
+      <div
         style={{
-          background: "transparent",
-          border: 0,
-          color: "var(--bp-ink-3)",
-          fontSize: 11,
-          fontWeight: 700,
-          cursor: "pointer",
-          padding: 0,
+          padding: "12px 14px",
+          background: "var(--bp-surface)",
+          borderBottom: "1px solid var(--bp-line)",
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
         }}
       >
-        {open ? "▲ Transcript 접기" : "▼ Transcript 전체 보기"}
-      </button>
-      {open && (
-        <p
-          style={{
-            margin: "6px 0 0",
-            color: "var(--bp-ink-2)",
-            fontSize: 12,
-            lineHeight: 1.6,
-            fontStyle: "italic",
-          }}
-        >
-          “{text}”
-        </p>
-      )}
-    </div>
+        {/* 큰 음성 플레이어 — metadata 로드 시 duration을 SpeechMetrics에 전달 */}
+        {audioUrl && (
+          <AudioPlayer
+            url={audioUrl}
+            label="답변 음성"
+            onDuration={setDurationSec}
+          />
+        )}
+
+        {/* Transcript (항상 표시) */}
+        {transcript && (
+          <p
+            style={{
+              margin: 0,
+              padding: "10px 12px",
+              background: "var(--bp-surface-2)",
+              borderRadius: 8,
+              color: "var(--bp-ink-2)",
+              fontSize: 12,
+              lineHeight: 1.6,
+              fontStyle: "italic",
+            }}
+          >
+            “{transcript}”
+          </p>
+        )}
+      </div>
+
+      {/* 발화 정량 분석 + Azure 발음 점수 */}
+      <SpeechMetrics
+        transcript={transcript}
+        durationSec={durationSec}
+        pronunciation={pronunciation}
+      />
+    </>
   );
 }
 
@@ -388,7 +411,7 @@ export function CoachNoteInline({ feedback }: { feedback: FeedbackResult }) {
         background: "var(--bp-surface)",
       }}
     >
-      <SectionHeader icon={<Bot size={14} />} title="AI 코치노트" />
+      <SectionHeader icon={<Bot size={14} />} title="코치노트" />
 
       {/* 한 줄 요약 */}
       {feedback.summary && (
@@ -486,8 +509,19 @@ export function CoachNoteInline({ feedback }: { feedback: FeedbackResult }) {
       {/* 토론거리 */}
       {feedback.discussion_hooks && feedback.discussion_hooks.length > 0 && (
         <div>
-          <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 800, color: "var(--bp-ink-3)", letterSpacing: 0.5 }}>
-            <MessageSquare size={11} style={{ verticalAlign: "middle", marginRight: 3 }} />
+          <p
+            style={{
+              margin: "0 0 6px",
+              fontSize: 11,
+              fontWeight: 800,
+              color: "var(--bp-ink-3)",
+              letterSpacing: 0.5,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+            }}
+          >
+            <MessageSquare size={11} color="var(--bp-tc)" strokeWidth={2.5} />
             토론거리
           </p>
           <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: "var(--bp-ink-2)", lineHeight: 1.6 }}>
@@ -508,8 +542,19 @@ export function CoachNoteInline({ feedback }: { feedback: FeedbackResult }) {
             border: "1px solid var(--bp-line)",
           }}
         >
-          <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 800, color: "var(--bp-ink-3)", letterSpacing: 0.5 }}>
-            <Sparkles size={11} style={{ verticalAlign: "middle", marginRight: 3 }} />
+          <p
+            style={{
+              margin: "0 0 6px",
+              fontSize: 11,
+              fontWeight: 800,
+              color: "var(--bp-ink-3)",
+              letterSpacing: 0.5,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+            }}
+          >
+            <Sparkles size={11} color="var(--bp-tc)" strokeWidth={2.5} />
             다음 발화자 팁
           </p>
           {feedback.next_speaker_tip.take && (
@@ -616,10 +661,13 @@ export function AudioPlayer({
   url,
   compact = false,
   label,
+  onDuration,
 }: {
   url: string;
   compact?: boolean;
   label?: string;
+  /** metadata 로드 시 duration(초)을 부모에 알림 */
+  onDuration?: (sec: number) => void;
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -632,6 +680,26 @@ export function AudioPlayer({
     if (el.paused) el.play().catch(() => setPlaying(false));
     else el.pause();
   }, []);
+
+  const seekToRatio = useCallback(
+    (ratio: number) => {
+      const el = audioRef.current;
+      if (!el || !duration) return;
+      const clamped = Math.max(0, Math.min(1, ratio));
+      const t = clamped * duration;
+      el.currentTime = t;
+      setCurrent(t);
+    },
+    [duration]
+  );
+
+  const handleBarClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      seekToRatio((e.clientX - rect.left) / rect.width);
+    },
+    [seekToRatio]
+  );
 
   // URL 변경 시 정리
   useEffect(() => {
@@ -675,7 +743,11 @@ export function AudioPlayer({
           ref={audioRef}
           src={url}
           preload="metadata"
-          onLoadedMetadata={(e) => setDuration((e.target as HTMLAudioElement).duration || 0)}
+          onLoadedMetadata={(e) => {
+            const d = (e.target as HTMLAudioElement).duration || 0;
+            setDuration(d);
+            if (d > 0) onDuration?.(d);
+          }}
           onTimeUpdate={(e) => setCurrent((e.target as HTMLAudioElement).currentTime)}
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
@@ -721,8 +793,18 @@ export function AudioPlayer({
       </button>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, color: "var(--bp-ink-3)", letterSpacing: 0.5 }}>
-            <Volume2 size={9} style={{ verticalAlign: "middle", marginRight: 3 }} />
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: "var(--bp-ink-3)",
+              letterSpacing: 0.5,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
+            <Volume2 size={9} />
             {label ?? "오디오"}
           </span>
           <span style={{ fontSize: 10, color: "var(--bp-ink-3)", fontVariantNumeric: "tabular-nums" }}>
@@ -730,28 +812,59 @@ export function AudioPlayer({
           </span>
         </div>
         <div
+          role="slider"
+          aria-label="재생 위치"
+          aria-valuemin={0}
+          aria-valuemax={Math.round(duration)}
+          aria-valuenow={Math.round(current)}
+          tabIndex={0}
+          onClick={handleBarClick}
+          onKeyDown={(e) => {
+            if (!duration) return;
+            if (e.key === "ArrowLeft") {
+              e.preventDefault();
+              seekToRatio((current - 3) / duration);
+            } else if (e.key === "ArrowRight") {
+              e.preventDefault();
+              seekToRatio((current + 3) / duration);
+            }
+          }}
           style={{
-            height: 4,
-            borderRadius: 999,
-            background: "var(--bp-line)",
-            overflow: "hidden",
+            cursor: duration ? "pointer" : "default",
+            paddingTop: 8,
+            paddingBottom: 8,
+            marginTop: -8,
+            marginBottom: -8,
           }}
         >
           <div
             style={{
-              width: `${progress}%`,
-              height: "100%",
-              background: "var(--bp-tc)",
-              transition: "width 0.1s",
+              height: 4,
+              borderRadius: 999,
+              background: "var(--bp-line)",
+              overflow: "hidden",
             }}
-          />
+          >
+            <div
+              style={{
+                width: `${progress}%`,
+                height: "100%",
+                background: "var(--bp-tc)",
+                transition: "width 0.1s",
+              }}
+            />
+          </div>
         </div>
       </div>
       <audio
         ref={audioRef}
         src={url}
         preload="metadata"
-        onLoadedMetadata={(e) => setDuration((e.target as HTMLAudioElement).duration || 0)}
+        onLoadedMetadata={(e) => {
+          const d = (e.target as HTMLAudioElement).duration || 0;
+          setDuration(d);
+          if (d > 0) onDuration?.(d);
+        }}
         onTimeUpdate={(e) => setCurrent((e.target as HTMLAudioElement).currentTime)}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}

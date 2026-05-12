@@ -327,7 +327,7 @@ export async function getSessionHistoryDetail(
     const { data: answers } = await supabase
       .from(T.opic_study_answers)
       .select(
-        "user_id, question_id, question_idx, audio_url, transcript, feedback_result, created_at"
+        "user_id, question_id, question_idx, audio_url, transcript, feedback_result, pronunciation_score, created_at"
       )
       .eq("session_id", sessionId);
 
@@ -405,6 +405,9 @@ export async function getSessionHistoryDetail(
             transcript: (a.transcript as string | null) ?? null,
             feedback_result:
               (a.feedback_result as SessionHistoryDetail["questions"][number]["answers"][number]["feedback_result"]) ??
+              null,
+            pronunciation_score:
+              (a.pronunciation_score as SessionHistoryDetail["questions"][number]["answers"][number]["pronunciation_score"]) ??
               null,
             skipped: !audioPath,
             created_at: a.created_at as string,
@@ -527,7 +530,7 @@ export async function getMyStudySummary(
     const { data: answers } = await supabase
       .from(T.opic_study_answers)
       .select(
-        "session_id, question_id, question_idx, audio_url, transcript, feedback_result, created_at"
+        "session_id, question_id, question_idx, audio_url, transcript, feedback_result, pronunciation_score, created_at"
       )
       .eq("user_id", userId)
       .in("session_id", sessionIds)
@@ -766,6 +769,9 @@ export async function getMyStudySummary(
             transcript: (a.transcript as string | null) ?? null,
             feedback_result:
               (a.feedback_result as MyStudySummary["my_answers"][number]["feedback_result"]) ??
+              null,
+            pronunciation_score:
+              (a.pronunciation_score as MyStudySummary["my_answers"][number]["pronunciation_score"]) ??
               null,
             created_at: a.created_at as string,
           };

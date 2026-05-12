@@ -168,6 +168,20 @@ export interface PronunciationScore {
 //   - pronunciation_patterns: 발음 큰 패턴 (옵션 — 자주 하는 오류)
 //   - discussion_hooks  : 함께 생각해볼 포인트 (콘텐츠 토론 hooks)
 //   - next_speaker_tip  : 다음 발화자 take-away (가져갈 것 + 보강할 것)
+/** Azure Pronunciation Assessment 점수 + 단어별 분석 (EF가 저장) */
+export interface PronunciationScore {
+  accuracy: number;        // 0~100, 단어 발음 정확도
+  fluency: number;         // 0~100, 끊김 없음
+  prosody: number;         // 0~100, 운율/억양
+  completeness: number;    // 0~100, 답변 완결성
+  pron_score: number;      // 0~100, 종합
+  words: Array<{
+    word: string;
+    accuracy: number;
+    error_type: string | null;  // null | mispronunciation | omission | insertion
+  }>;
+}
+
 export interface FeedbackResult {
   summary: string;
   flow: {
@@ -421,6 +435,7 @@ export interface SessionHistoryDetail {
       audio_signed_url: string | null;          // private bucket signed URL (1h)
       transcript: string | null;
       feedback_result: FeedbackResult | null;   // 7섹션 코치노트 또는 error
+      pronunciation_score: PronunciationScore | null;  // Azure 발음 분석
       skipped: boolean;                          // audio_url null이면 true
       created_at: string;
     }>;
@@ -489,6 +504,7 @@ export interface MyStudySummary {
     audio_signed_url: string | null;
     transcript: string | null;
     feedback_result: FeedbackResult | null;
+    pronunciation_score: PronunciationScore | null;
     created_at: string;
   }>;
 }
