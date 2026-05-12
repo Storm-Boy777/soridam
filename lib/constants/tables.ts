@@ -58,6 +58,8 @@ export const T = {
   lecture_materials: "lecture_materials",
   lecture_progress: "lecture_progress",
   lecture_access: "lecture_access",
+  // 기출 보관함 권한 (065_exam_archive_access.sql)
+  exam_archive_access: "exam_archive_access",
 } as const;
 
 // RPC 함수명 상수

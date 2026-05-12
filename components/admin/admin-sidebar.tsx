@@ -14,6 +14,7 @@ import {
   FileCode,
   ClipboardList,
   GraduationCap,
+  Library,
   Stethoscope,
   Megaphone,
   MessageCircle,
@@ -52,6 +53,7 @@ const menuGroups: MenuGroup[] = [
   {
     label: "학습 모듈",
     items: [
+      { label: "기출 보관함", href: "/admin/exam-archive", icon: Library },
       { label: "모의고사", href: "/admin/mock-exam", icon: GraduationCap },
       { label: "스크립트", href: "/admin/scripts", icon: FileCode },
       { label: "튜터링", href: "/admin/tutoring", icon: Stethoscope },

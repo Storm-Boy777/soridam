@@ -3,10 +3,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { BarChart3, Send, MessageSquare } from "lucide-react";
+import { BarChart3, Send, MessageSquare, Library } from "lucide-react";
 import { FrequencyTab } from "./frequency/frequency-tab";
 import { SubmitTab } from "./submit/submit-tab";
 import { ListTab } from "./list/list-tab";
+import { ExamArchiveTab } from "./exam-archive/exam-archive-tab";
 import type { ReviewStats, FrequencyItem, Submission, SubmissionWithQuestions } from "@/lib/types/reviews";
 
 /* ── 상수 ── */
@@ -15,6 +16,7 @@ const tabs = [
   { id: "submit", label: "후기 제출", icon: Send },
   { id: "list", label: "시험 후기", icon: MessageSquare },
   { id: "frequency", label: "빈도 분석", icon: BarChart3 },
+  { id: "archive", label: "기출 보관함", icon: Library },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
@@ -27,9 +29,10 @@ interface ReviewsContentProps {
   initialSubmissions: Submission[];
   initialPublicReviews: { reviews: Submission[]; total: number };
   initialSubmissionDetails: Record<number, SubmissionWithQuestions>;
+  hasExamArchiveAccess: boolean;
 }
 
-export function ReviewsContent({ initialStats, initialFrequency, initialSubmissions, initialPublicReviews, initialSubmissionDetails }: ReviewsContentProps) {
+export function ReviewsContent({ initialStats, initialFrequency, initialSubmissions, initialPublicReviews, initialSubmissionDetails, hasExamArchiveAccess }: ReviewsContentProps) {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
 
@@ -86,6 +89,7 @@ export function ReviewsContent({ initialStats, initialFrequency, initialSubmissi
       )}
       {activeTab === "submit" && <SubmitTab initialSubmissions={initialSubmissions} />}
       {activeTab === "list" && <ListTab initialData={initialPublicReviews} />}
+      {activeTab === "archive" && <ExamArchiveTab hasAccess={hasExamArchiveAccess} />}
     </div>
   );
 }

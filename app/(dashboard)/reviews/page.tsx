@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { ReviewsContent } from "@/components/reviews/reviews-content";
 import { getStatsAndFrequency, getMySubmissions, getPublicReviews, getSubmissionsWithQuestionsBatch } from "@/lib/actions/reviews";
+import { hasExamArchiveAccess } from "@/lib/auth";
 
 export const metadata = {
   title: "시험후기",
@@ -8,11 +9,12 @@ export const metadata = {
 
 // 비동기 서버 컴포넌트: 통계 + 내 제출 이력 + 완료 후기 상세를 병렬 조회하여 전달
 async function ReviewsDataLoader() {
-  // 1단계: 목록 데이터 + 유료 여부 병렬 조회
-  const [{ stats, frequency }, submissionsResult, publicReviewsResult] = await Promise.all([
+  // 1단계: 목록 데이터 + 유료 여부 + 기출 보관함 접근 권한 병렬 조회
+  const [{ stats, frequency }, submissionsResult, publicReviewsResult, examArchiveAccess] = await Promise.all([
     getStatsAndFrequency(),
     getMySubmissions(),
     getPublicReviews({ page: 1, limit: 10 }),
+    hasExamArchiveAccess(),
   ]);
 
   const submissions = submissionsResult.data || [];
@@ -28,6 +30,7 @@ async function ReviewsDataLoader() {
       initialSubmissions={submissions}
       initialPublicReviews={publicReviewsResult.data || { reviews: [], total: 0 }}
       initialSubmissionDetails={submissionDetails}
+      hasExamArchiveAccess={examArchiveAccess}
     />
   );
 }
@@ -38,7 +41,7 @@ function ReviewsPlaceholder() {
     <div>
       {/* 탭 세그먼트 스켈레톤 */}
       <div className="mb-4 flex border-b border-border sm:mb-6">
-        {["빈도 분석", "후기 제출", "시험 후기"].map((label) => (
+        {["빈도 분석", "후기 제출", "시험 후기", "기출 보관함"].map((label) => (
           <div
             key={label}
             className="flex items-center justify-center gap-1.5 px-4 py-3 text-xs font-medium text-foreground-muted sm:gap-2 sm:px-6 sm:text-sm"

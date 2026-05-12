@@ -86,6 +86,36 @@ export async function requireLectureAccess() {
   return user;
 }
 
+// ── hasExamArchiveAccess(): 기출 보관함 접근 권한 ──
+// 다음 중 하나 만족 시 true:
+//   1) 관리자
+//   2) exam_archive_access 보유자
+//   3) polar_balances.balance_cents > 0 (크레딧 잔액 보유)
+// 비로그인은 false. 호출 측에서 false 시 "관리자에게 문의" 안내.
+export const hasExamArchiveAccess = cache(async () => {
+  const user = await getUser();
+  if (!user) return false;
+  if (user.app_metadata?.role === "admin") return true;
+  const supabase = await createServerSupabaseClient();
+
+  const [{ data: access }, { data: balance }] = await Promise.all([
+    supabase
+      .from("exam_archive_access")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("polar_balances")
+      .select("balance_cents")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+  ]);
+
+  if (access) return true;
+  if (balance && (balance.balance_cents ?? 0) > 0) return true;
+  return false;
+});
+
 // ── hasStudyPanelAccess(): 네비 노출 판단용 (조용한 boolean) ──
 // 관리자 또는 study_panel_members에 등록된 사용자면 true.
 export const hasStudyPanelAccess = cache(async () => {

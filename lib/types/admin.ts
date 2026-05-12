@@ -153,6 +153,29 @@ export interface LectureUserSearchResult {
   has_lecture_access: boolean;
 }
 
+// ── 기출 보관함 권한 관리 ──
+
+export interface ExamArchiveAccessUser {
+  user_id: string;
+  email: string;
+  display_name: string | null;
+  granted_at: string;
+  granted_by_email: string | null;
+  note: string | null;
+}
+
+export interface ExamArchiveAccessStats {
+  active: number;
+}
+
+export interface ExamArchiveUserSearchResult {
+  user_id: string;
+  email: string;
+  display_name: string | null;
+  current_plan: string;
+  has_exam_archive_access: boolean;
+}
+
 // ── 감사 로그 ──
 
 export interface AuditLogEntry {
