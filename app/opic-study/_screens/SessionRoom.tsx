@@ -19,7 +19,9 @@
  *   coaching_review  — 답변자의 코치노트를 전원이 함께 봄 (토론)
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { toast } from "sonner";
+import { retryFeedback } from "@/lib/actions/opic-study";
 import {
   Volume2,
   RotateCcw,
@@ -63,7 +65,66 @@ type SpeakerStep =
   | "record"
   | "uploading"
   | "submitted"
-  | "failed";
+  | "failed"
+  | "mic_denied";
+
+type EnvWarning =
+  | { type: "inapp"; appName: string; message: string }
+  | { type: "unsupported"; message: string }
+  | { type: "insecure"; message: string };
+
+/** 인앱 브라우저 + 마이크 API 지원 + HTTPS 환경 체크 */
+function detectEnvironment(): EnvWarning | null {
+  if (typeof window === "undefined" || typeof navigator === "undefined") return null;
+
+  // 1) 인앱 브라우저 (카톡/네이버 등은 마이크 권한 prompt 자체가 작동 안 함)
+  const ua = navigator.userAgent;
+  let appName = "";
+  if (/KAKAOTALK/i.test(ua)) appName = "카카오톡";
+  else if (/NAVER\(inapp/i.test(ua)) appName = "네이버 앱";
+  else if (/Instagram/i.test(ua)) appName = "인스타그램";
+  else if (/FBAN|FBAV/i.test(ua)) appName = "페이스북";
+  else if (/Line/i.test(ua) && /Mobile/i.test(ua)) appName = "라인";
+  else if (/DaumApps/i.test(ua)) appName = "다음 앱";
+  if (appName) {
+    return {
+      type: "inapp",
+      appName,
+      message: `${appName} 인앱 브라우저에서는 마이크 녹음이 안 돼요. 우측 상단 메뉴(⋮)에서 'Chrome/Safari로 열기'를 선택하거나, 링크를 복사해 일반 브라우저에 붙여넣어 주세요.`,
+    };
+  }
+
+  // 2) MediaDevices API 미지원
+  if (!navigator.mediaDevices?.getUserMedia) {
+    return {
+      type: "unsupported",
+      message: "이 브라우저는 마이크 녹음을 지원하지 않아요. 최신 Chrome 또는 Safari를 사용해주세요.",
+    };
+  }
+
+  // 3) MediaRecorder API 미지원
+  if (typeof MediaRecorder === "undefined") {
+    return {
+      type: "unsupported",
+      message: "이 브라우저는 녹음 기능을 지원하지 않아요. 최신 Chrome 또는 Safari를 사용해주세요.",
+    };
+  }
+
+  // 4) HTTPS 필수 (localhost 예외)
+  const host = window.location.hostname;
+  if (
+    window.location.protocol !== "https:" &&
+    host !== "localhost" &&
+    !host.startsWith("127.")
+  ) {
+    return {
+      type: "insecure",
+      message: "마이크 녹음은 HTTPS 환경에서만 가능해요. 보안 URL로 접속해주세요.",
+    };
+  }
+
+  return null;
+}
 
 type GuideKey = "speaker" | "listen" | "replay" | "record" | "coach";
 
@@ -286,6 +347,13 @@ export function SessionRoom(props: SessionRoomProps) {
   >("idle");
   const [showQuestion, setShowQuestion] = useState(false);
 
+  // ── 환경 사전 체크 (인앱 브라우저 / API 미지원 / HTTPS) ──
+  const [envWarning, setEnvWarning] = useState<EnvWarning | null>(null);
+  const [envDismissed, setEnvDismissed] = useState(false);
+  useEffect(() => {
+    setEnvWarning(detectEnvironment());
+  }, []);
+
   const autoStartRecording = useCallback(() => {
     if (recorder.state !== "idle" || uploadState !== "idle") return;
     recorder.startRecording();
@@ -421,6 +489,7 @@ export function SessionRoom(props: SessionRoomProps) {
   }, [questionIdx]);
 
   const speakerStep: SpeakerStep = useMemo(() => {
+    if (recorder.error) return "mic_denied";
     if (uploadState === "failed") return "failed";
     if (uploadState === "uploading") return "uploading";
     if (uploadState === "submitted") return "submitted";
@@ -433,6 +502,7 @@ export function SessionRoom(props: SessionRoomProps) {
     questionPlayer.canReplay,
     questionPlayer.hasReplayed,
     recorder.state,
+    recorder.error,
     uploadState,
   ]);
 
@@ -508,6 +578,14 @@ export function SessionRoom(props: SessionRoomProps) {
           .map((m) => m.name)}
       />
 
+      {/* 환경 경고 배너 — 인앱 브라우저 / API 미지원 / HTTPS */}
+      {envWarning && !envDismissed && (
+        <EnvWarningBanner
+          warning={envWarning}
+          onDismiss={() => setEnvDismissed(true)}
+        />
+      )}
+
       {/* 스크롤 영역 — TopBar 아래 콘텐츠 자체 스크롤 */}
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-5xl px-3 py-2 sm:px-6 sm:py-4">
@@ -549,6 +627,7 @@ export function SessionRoom(props: SessionRoomProps) {
                 }
                 onNextSpeaker={onNextSpeaker}
                 onNextQuestion={onNextQuestion}
+                sessionId={props.sessionId}
               />
             ) : (
               <div className="flex flex-col gap-2 md:flex-row md:gap-5">
@@ -589,6 +668,17 @@ export function SessionRoom(props: SessionRoomProps) {
                     onClaim={onClaimSpeaker}
                     onSkip={onSkipAnswer}
                     myAnsweredAlready={!!myAnswer}
+                    recorderError={recorder.error}
+                    onRecorderRetry={() => {
+                      // recorder.error clear + 다시 녹음 시도
+                      recorder.reset();
+                      // 다음 tick에 startRecording (state 갱신 후)
+                      setTimeout(() => {
+                        recorder.startRecording().catch(() => {
+                          // error는 hook 내부에서 set됨 — UI가 자동 갱신
+                        });
+                      }, 50);
+                    }}
                   />
                 </div>
 
@@ -966,6 +1056,8 @@ function LeftControls({
   onClaim,
   onSkip,
   myAnsweredAlready,
+  recorderError,
+  onRecorderRetry,
 }: {
   phase: SessionPhase;
   speakerStep: SpeakerStep;
@@ -976,6 +1068,8 @@ function LeftControls({
   onClaim: () => void;
   onSkip?: () => void;
   myAnsweredAlready: boolean;
+  recorderError?: string | null;
+  onRecorderRetry?: () => void;
 }) {
   return (
     <div
@@ -1135,6 +1229,48 @@ function LeftControls({
             >
               <AlertCircle size={18} />
               업로드 실패 — 다시 시도해 주세요
+            </div>
+          )}
+
+          {/* 마이크 권한 거부 — 명시적 안내 + 재시도 버튼 */}
+          {speakerStep === "mic_denied" && (
+            <div
+              className="space-y-2 rounded-lg p-3"
+              style={{
+                background: "rgba(220, 38, 38, 0.06)",
+                border: "1px solid rgba(220, 38, 38, 0.25)",
+              }}
+            >
+              <div className="flex items-start gap-2">
+                <AlertCircle
+                  size={18}
+                  style={{ color: "rgb(220, 38, 38)" }}
+                  className="mt-0.5 flex-shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold" style={{ color: "rgb(185, 28, 28)" }}>
+                    마이크를 사용할 수 없어요
+                  </p>
+                  <p className="mt-0.5 text-xs leading-relaxed" style={{ color: "var(--bp-ink-2)" }}>
+                    {recorderError || "권한을 허용해 주세요."}
+                  </p>
+                  <ul className="mt-2 list-disc pl-4 text-[11px] leading-relaxed" style={{ color: "var(--bp-ink-3)" }}>
+                    <li>주소창 옆 자물쇠/카메라 아이콘 → 마이크 허용</li>
+                    <li>다른 앱이 마이크를 잡고 있는지 확인</li>
+                    <li>카카오톡/네이버 인앱이면 Chrome/Safari로 열기</li>
+                  </ul>
+                </div>
+              </div>
+              {onRecorderRetry && (
+                <button
+                  onClick={onRecorderRetry}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-all hover:opacity-90 active:scale-95"
+                  style={{ background: "var(--bp-tc)", color: "#fff" }}
+                >
+                  <RefreshCw size={14} />
+                  허용 후 다시 시도
+                </button>
+              )}
             </div>
           )}
           {onSkip && (speakerStep === "listen" || speakerStep === "replay") && (
@@ -1583,6 +1719,7 @@ function CoachingReviewLayout({
   membersLeft,
   onNextSpeaker,
   onNextQuestion,
+  sessionId,
 }: {
   selectedReviewItem: { member: MemberLite; answer: OpicStudyAnswer };
   answeredMembersOrdered: { member: MemberLite; answer: OpicStudyAnswer }[];
@@ -1597,6 +1734,7 @@ function CoachingReviewLayout({
   membersLeft: number;
   onNextSpeaker: () => void;
   onNextQuestion: () => void;
+  sessionId: string;
 }) {
   const { member, answer } = selectedReviewItem;
   return (
@@ -1664,7 +1802,17 @@ function CoachingReviewLayout({
       </div>
 
       {/* 본문 — 코치노트 전체 너비 */}
-      <CoachingReviewContent member={member} answer={answer} />
+      <CoachingReviewContent
+        member={member}
+        answer={answer}
+        sessionId={sessionId}
+        onSkip={allDone ? onNextQuestion : onNextSpeaker}
+        skipLabel={
+          allDone
+            ? (isLastQuestion ? "스터디 마무리하기" : `다음 질문으로 (Q${nextQuestionNumber})`)
+            : `다음 발화자로 (${membersLeft}명 남음)`
+        }
+      />
 
       {/* 하단 액션 — 다음 발화자 / 다음 질문 */}
       <div
@@ -1742,13 +1890,34 @@ function CoachingReviewLayout({
 function CoachingReviewContent({
   member,
   answer,
+  sessionId,
+  onSkip,
+  skipLabel,
 }: {
   member: MemberLite;
   answer: OpicStudyAnswer;
+  sessionId: string;
+  onSkip: () => void;
+  skipLabel: string;
 }) {
-  const feedback = answer.feedback_result as FeedbackResult;
+  const feedback = answer.feedback_result as FeedbackResult | null;
   // member 변수는 wrapper 헤더에서 사용 — 콘텐츠는 답변자 무관
   void member;
+
+  // EF 단계별 실패 → 에러 카드 + 재시도 + 건너뛰기 버튼
+  if (feedback?.error) {
+    return (
+      <CoachingErrorCard
+        error={feedback.error}
+        sessionId={sessionId}
+        questionIdx={answer.question_idx}
+        isMyAnswer={member.isMe}
+        onSkip={onSkip}
+        skipLabel={skipLabel}
+      />
+    );
+  }
+
   return (
     <div className="space-y-3">
       {/* 1. 한 줄 요약 */}
@@ -2398,6 +2567,205 @@ function MembersStrip({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// ============================================================
+// EnvWarningBanner — 인앱 브라우저 / API 미지원 / HTTPS 경고
+// ============================================================
+
+function EnvWarningBanner({
+  warning,
+  onDismiss,
+}: {
+  warning: EnvWarning;
+  onDismiss: () => void;
+}) {
+  const titleByType: Record<EnvWarning["type"], string> = {
+    inapp: "인앱 브라우저 — 마이크 사용 불가",
+    unsupported: "녹음 미지원 브라우저",
+    insecure: "보안 연결 필요",
+  };
+
+  return (
+    <div
+      className="flex flex-shrink-0 items-start gap-3 border-b px-4 py-3 sm:px-6"
+      style={{
+        background: "rgba(220, 38, 38, 0.08)",
+        borderColor: "rgba(220, 38, 38, 0.25)",
+      }}
+    >
+      <AlertCircle
+        size={20}
+        style={{ color: "rgb(220, 38, 38)" }}
+        className="mt-0.5 flex-shrink-0"
+      />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold" style={{ color: "rgb(185, 28, 28)" }}>
+          ⚠️ {titleByType[warning.type]}
+        </p>
+        <p
+          className="mt-1 text-xs leading-relaxed"
+          style={{ color: "var(--bp-ink-2)" }}
+        >
+          {warning.message}
+        </p>
+        {warning.type === "inapp" && (
+          <button
+            onClick={() => {
+              // 클립보드 복사 — 사용자가 외부 브라우저에 붙여넣기
+              if (typeof navigator !== "undefined" && navigator.clipboard) {
+                navigator.clipboard.writeText(window.location.href);
+                toast.success("링크가 복사되었습니다. Chrome/Safari에 붙여넣어 주세요.");
+              }
+            }}
+            className="mt-2 inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold transition-all hover:opacity-90 active:scale-95"
+            style={{ background: "var(--bp-tc)", color: "#fff" }}
+          >
+            링크 복사하기
+          </button>
+        )}
+      </div>
+      <button
+        onClick={onDismiss}
+        className="flex-shrink-0 rounded p-1 text-xs"
+        style={{ color: "var(--bp-ink-3)" }}
+        aria-label="닫기"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// CoachingErrorCard — AI 평가 실패 단계 안내 + 재시도 버튼
+// ============================================================
+
+const STAGE_LABELS: Record<string, string> = {
+  init: "초기화",
+  session_lookup: "세션 정보 조회",
+  question_lookup: "질문 정보 조회",
+  audio_download: "음성 파일 다운로드",
+  whisper: "음성 → 텍스트 변환 (Whisper)",
+  azure: "발음 평가 (Azure)",
+  prompt_load: "프롬프트 로드",
+  gpt: "AI 코칭 생성 (GPT)",
+  parse: "AI 응답 파싱",
+  validate: "AI 응답 검증",
+  db_update: "결과 저장",
+};
+
+function CoachingErrorCard({
+  error,
+  sessionId,
+  questionIdx,
+  isMyAnswer,
+  onSkip,
+  skipLabel,
+}: {
+  error: { stage: string; message: string; timestamp: string };
+  sessionId: string;
+  questionIdx: number;
+  isMyAnswer: boolean;
+  onSkip: () => void;
+  skipLabel: string;
+}) {
+  const [retrying, startRetry] = useTransition();
+
+  const handleRetry = () => {
+    startRetry(async () => {
+      const res = await retryFeedback({ sessionId, questionIdx });
+      if (res.error) {
+        toast.error(`재시도 실패: ${res.error}`);
+      } else {
+        toast.success("AI 평가를 다시 요청했어요. 잠시 기다려 주세요.");
+      }
+    });
+  };
+
+  const stageLabel = STAGE_LABELS[error.stage] ?? error.stage;
+  const ts = new Date(error.timestamp).toLocaleTimeString("ko-KR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
+  return (
+    <div
+      className="rounded-lg p-4"
+      style={{
+        background: "rgba(220, 38, 38, 0.06)",
+        border: "1px solid rgba(220, 38, 38, 0.25)",
+      }}
+    >
+      <div className="mb-3 flex items-start gap-2">
+        <AlertCircle size={20} style={{ color: "rgb(220, 38, 38)" }} className="mt-0.5 flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold" style={{ color: "rgb(185, 28, 28)" }}>
+            AI 코칭 생성 실패
+          </p>
+          <p className="mt-0.5 text-xs" style={{ color: "var(--bp-ink-2)" }}>
+            <strong>{stageLabel}</strong> 단계에서 멈췄어요 · {ts}
+          </p>
+        </div>
+      </div>
+
+      <div
+        className="mb-3 rounded p-2.5 font-mono text-[11px] leading-relaxed"
+        style={{
+          background: "rgba(0,0,0,0.04)",
+          color: "var(--bp-ink-2)",
+          maxHeight: "120px",
+          overflowY: "auto",
+          wordBreak: "break-all",
+        }}
+      >
+        {error.message}
+      </div>
+
+      {/* 액션 버튼: 재시도(본인만) + 건너뛰기(모두) */}
+      <div className="flex flex-col gap-2 sm:flex-row">
+        {isMyAnswer && (
+          <button
+            onClick={handleRetry}
+            disabled={retrying}
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
+            style={{ background: "var(--bp-tc)", color: "#fff" }}
+          >
+            {retrying ? (
+              <>
+                <Loader2 size={14} className="animate-spin" /> 재요청 중…
+              </>
+            ) : (
+              <>
+                <RefreshCw size={14} /> 다시 시도
+              </>
+            )}
+          </button>
+        )}
+        <button
+          onClick={onSkip}
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold transition-all hover:opacity-90 active:scale-95"
+          style={{
+            background: "var(--bp-surface)",
+            color: "var(--bp-ink)",
+            border: "1px solid var(--bp-line-strong)",
+          }}
+        >
+          <SkipForward size={14} />
+          {skipLabel}
+        </button>
+      </div>
+      {!isMyAnswer && (
+        <p
+          className="mt-2 text-center text-[11px]"
+          style={{ color: "var(--bp-ink-3)" }}
+        >
+          본인 답변만 재시도할 수 있어요. 진행을 원하면 위 버튼을 눌러주세요.
+        </p>
+      )}
     </div>
   );
 }

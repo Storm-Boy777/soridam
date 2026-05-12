@@ -194,6 +194,14 @@ export interface FeedbackResult {
   // 메타
   target_grade: string;
   generated_at: string;
+
+  // 에러 마커 — EF 단계별 실패 시 채워짐 (다른 필드는 placeholder)
+  // 존재 시 UI는 코칭 대신 에러 카드 + 재시도 버튼 표시
+  error?: {
+    stage: string;        // audio_download | whisper | azure | prompt_load | gpt | parse | validate | db_update
+    message: string;
+    timestamp: string;
+  };
 }
 
 // AI 가이드 — 질문별 풀 한글 가이드 (둘러보기 + Step5 공유)

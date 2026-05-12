@@ -94,7 +94,7 @@ function toDbPronunciationScore(azure: PronunciationResult) {
   };
 }
 
-// Whisper STT
+// Whisper STT (30초 timeout)
 async function whisperSTT(audioBuffer: ArrayBuffer): Promise<{ transcript: string; tokens_in: number; tokens_out: number }> {
   const formData = new FormData();
   formData.append(
@@ -109,11 +109,12 @@ async function whisperSTT(audioBuffer: ArrayBuffer): Promise<{ transcript: strin
     method: "POST",
     headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
     body: formData,
+    signal: AbortSignal.timeout(30_000),
   });
 
   if (!resp.ok) {
     const err = await resp.text();
-    throw new Error(`Whisper STT 실패 (${resp.status}): ${err}`);
+    throw new Error(`Whisper ${resp.status}: ${err.slice(0, 200)}`);
   }
 
   const json = await resp.json();
@@ -194,8 +195,8 @@ async function logSystemUsage(
 
 // 비용 계산
 function calcGptCost(tokens_in: number, tokens_out: number): number {
-  // gpt-4.1: $2/1M in, $8/1M out
-  return (tokens_in * 2.0 + tokens_out * 8.0) / 1_000_000;
+  // gpt-4.1-mini: $0.40/1M in, $1.60/1M out
+  return (tokens_in * 0.40 + tokens_out * 1.60) / 1_000_000;
 }
 function calcWhisperCost(durationSec: number): number {
   // $0.006/min
@@ -227,25 +228,61 @@ Deno.serve(async (req: Request) => {
   let userId = "";
   let questionId = "";
   let questionIdx = -1;
+  let stage: string = "init";
 
+  // 입력 파싱 (실패 시 DB에 저장 못함 — 단순 400 응답)
+  let audioUrl = "";
   try {
     const body = await req.json();
     sessionId = body.session_id;
     userId = body.user_id;
     questionId = body.question_id;
     questionIdx = body.question_idx;
-    const audioUrl = body.audio_url as string;
+    audioUrl = body.audio_url as string;
+  } catch {
+    return new Response(JSON.stringify({ error: "invalid body" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
-    if (!sessionId || !userId || !questionId || questionIdx === undefined || !audioUrl) {
-      return new Response(JSON.stringify({ error: "missing required fields" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+  if (!sessionId || !userId || !questionId || questionIdx === undefined || !audioUrl) {
+    return new Response(JSON.stringify({ error: "missing required fields" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // supabase client는 catch에서도 사용 (에러를 DB에 기록)
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+  // 단계별 에러를 DB의 feedback_result.error에 저장 → UI가 Realtime으로 받음
+  const saveErrorToDb = async (stageName: string, errMessage: string) => {
+    try {
+      await supabase
+        .from("opic_study_answers")
+        .update({
+          feedback_result: {
+            error: {
+              stage: stageName,
+              message: errMessage.slice(0, 500),
+              timestamp: new Date().toISOString(),
+            },
+          },
+          feedback_generated_at: new Date().toISOString(),
+        })
+        .eq("session_id", sessionId)
+        .eq("user_id", userId)
+        .eq("question_idx", questionIdx);
+    } catch (saveErr) {
+      console.error("[opic-study-feedback] error 저장 실패:", saveErr);
     }
+  };
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  try {
 
     // ─── 1. 세션 + 질문 + 답변자 메타 조회 ───
+    stage = "session_lookup";
 
     const { data: sessionData, error: sErr } = await supabase
       .from("opic_study_sessions")
@@ -254,10 +291,7 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (sErr || !sessionData) {
-      return new Response(JSON.stringify({ error: "session not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      throw new Error(`session not found: ${sErr?.message ?? ""}`);
     }
     const session = sessionData as unknown as SessionMeta & { group_id: string };
 
@@ -270,6 +304,7 @@ Deno.serve(async (req: Request) => {
     const answererTargetGrade =
       (answererProfile?.target_grade as string | null) || "AL"; // 미설정 시 기본 AL
 
+    stage = "question_lookup";
     const { data: question, error: qErr } = await supabase
       .from("questions")
       .select("id, question_type_eng, question_english")
@@ -277,22 +312,20 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (qErr || !question) {
-      return new Response(JSON.stringify({ error: "question not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      throw new Error(`question not found: ${qErr?.message ?? ""}`);
     }
 
     const answererName = await getAnswererName(supabase, userId, session.group_id);
 
     // ─── 2. audio 다운로드 ───
-
+    stage = "audio_download";
     const audioBuffer = await downloadAudio(supabase, audioUrl);
     const audioDurationSec = Math.max(1, Math.round(audioBuffer.byteLength / 32000)); // 추정 (16kHz mono PCM 가정)
 
-    // ─── 3 & 4. Whisper STT + Azure 발음 평가 (병렬) ───
-    // Azure는 reference text가 필요해서 Whisper 결과 의존 → 순차
+    // ─── 3 & 4. Whisper STT + Azure 발음 평가 ───
+    // Whisper/Azure 실패는 fatal 아님 (transcript/pronunciation 없이도 GPT 진행)
 
+    stage = "whisper";
     const whisperStart = Date.now();
     let transcript = "";
     let whisperOk = false;
@@ -301,7 +334,7 @@ Deno.serve(async (req: Request) => {
       transcript = result.transcript;
       whisperOk = true;
     } catch (err) {
-      console.error("[opic-study-feedback] Whisper 실패:", err);
+      console.error("[opic-study-feedback] Whisper 실패 (계속 진행):", err);
       // 빈 transcript로 계속 진행 (GPT는 발음 데이터로만 코칭)
     }
     const whisperMs = Date.now() - whisperStart;
@@ -321,14 +354,16 @@ Deno.serve(async (req: Request) => {
 
     let pronunciation: ReturnType<typeof toDbPronunciationScore> | null = null;
     if (transcript) {
+      stage = "azure";
       const azureStart = Date.now();
       try {
-        const azureResult = await assessPronunciation(
-          audioBuffer,
-          transcript,
-          AZURE_SPEECH_KEY,
-          AZURE_SPEECH_REGION
-        );
+        // Azure SDK 자체에 timeout 옵션 없음 → Promise.race로 30초 강제 cap
+        const azureResult = await Promise.race([
+          assessPronunciation(audioBuffer, transcript, AZURE_SPEECH_KEY, AZURE_SPEECH_REGION),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Azure timeout 30s")), 30_000)
+          ),
+        ]);
         pronunciation = toDbPronunciationScore(azureResult);
 
         await logSystemUsage(supabase, {
@@ -348,6 +383,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // ─── 5. 프롬프트 로드 + 변수 치환 (system + user 별도 row) ───
+    stage = "prompt_load";
 
     const [systemRes, userRes] = await Promise.all([
       supabase.from("evaluation_prompts").select("prompt_text").eq("key", "opic_study_feedback").maybeSingle(),
@@ -355,10 +391,7 @@ Deno.serve(async (req: Request) => {
     ]);
 
     if (!systemRes.data?.prompt_text || !userRes.data?.prompt_text) {
-      return new Response(JSON.stringify({ error: "prompt not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      throw new Error("evaluation_prompts에 'opic_study_feedback' / 'opic_study_feedback_user' 키가 없습니다");
     }
 
     const systemPromptText = systemRes.data.prompt_text as string;
@@ -399,7 +432,8 @@ Deno.serve(async (req: Request) => {
       pronunciation_text: pronText,
     });
 
-    // ─── 6. GPT-4.1 호출 ───
+    // ─── 6. GPT-4.1-mini 호출 (45초 timeout, finish_reason 체크) ───
+    stage = "gpt";
 
     const gptStart = Date.now();
     const openaiResp = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -409,58 +443,61 @@ Deno.serve(async (req: Request) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4.1",
+        model: "gpt-4.1-mini",
         messages: [
           { role: "system", content: systemPromptText },
           { role: "user", content: userPrompt },
         ],
         response_format: { type: "json_object" },
         temperature: 0.5,
-        max_tokens: 800,
+        max_tokens: 2000,
       }),
+      signal: AbortSignal.timeout(45_000),
     });
 
     if (!openaiResp.ok) {
       const errText = await openaiResp.text();
-      console.error("[opic-study-feedback] GPT 에러:", errText);
-      return new Response(JSON.stringify({ error: "AI 코칭 생성 실패" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      throw new Error(`GPT ${openaiResp.status}: ${errText.slice(0, 300)}`);
     }
 
     const openaiData = await openaiResp.json();
+    const finishReason = openaiData.choices?.[0]?.finish_reason as string | undefined;
     const content = openaiData.choices?.[0]?.message?.content;
     if (!content) {
-      return new Response(JSON.stringify({ error: "empty AI response" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      throw new Error(`GPT 빈 응답 (finish_reason=${finishReason ?? "?"})`);
+    }
+    if (finishReason === "length") {
+      console.warn("[opic-study-feedback] GPT 응답이 max_tokens에 잘림 — JSON 파싱이 실패할 수 있음");
     }
 
+    stage = "parse";
     let parsed: FeedbackOutput;
     try {
       parsed = JSON.parse(content);
-    } catch {
-      return new Response(JSON.stringify({ error: "invalid AI JSON" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    } catch (parseErr) {
+      throw new Error(
+        `JSON 파싱 실패 (finish_reason=${finishReason ?? "?"}): ${(parseErr as Error).message}`
+      );
     }
 
-    // 기본 검증 (신규 토론 자료 구조)
-    if (!parsed.summary || !parsed.flow || !Array.isArray(parsed.good_expressions)) {
-      console.error("[opic-study-feedback] AI 응답 검증 실패:", parsed);
-      return new Response(JSON.stringify({ error: "AI 응답 형식 오류" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // 누락 필드 기본값
-    parsed.refine_expressions = parsed.refine_expressions || [];
-    parsed.pronunciation_patterns = parsed.pronunciation_patterns || [];
-    parsed.discussion_hooks = parsed.discussion_hooks || [];
+    // ─── 검증 + fallback: 502 대신 부분 결과라도 저장해서 UI 무한 대기 방지 ───
+    stage = "validate";
+    parsed.summary = typeof parsed.summary === "string" && parsed.summary
+      ? parsed.summary
+      : "AI 응답에 summary가 누락되었습니다.";
+    parsed.flow = typeof parsed.flow === "string" && parsed.flow ? parsed.flow : "";
+    parsed.good_expressions = Array.isArray(parsed.good_expressions)
+      ? parsed.good_expressions
+      : [];
+    parsed.refine_expressions = Array.isArray(parsed.refine_expressions)
+      ? parsed.refine_expressions
+      : [];
+    parsed.pronunciation_patterns = Array.isArray(parsed.pronunciation_patterns)
+      ? parsed.pronunciation_patterns
+      : [];
+    parsed.discussion_hooks = Array.isArray(parsed.discussion_hooks)
+      ? parsed.discussion_hooks
+      : [];
     parsed.next_speaker_tip = parsed.next_speaker_tip || { take: "", enhance: "" };
 
     const gptMs = Date.now() - gptStart;
@@ -473,7 +510,7 @@ Deno.serve(async (req: Request) => {
       session_id: sessionId,
       feature: "opic_study_feedback",
       service: "openai_chat",
-      model: "gpt-4.1",
+      model: "gpt-4.1-mini",
       tokens_in: tokensIn,
       tokens_out: tokensOut,
       cost_usd: calcGptCost(tokensIn, tokensOut),
@@ -481,6 +518,7 @@ Deno.serve(async (req: Request) => {
     });
 
     // ─── 7. opic_study_answers UPDATE ───
+    stage = "db_update";
 
     const feedbackResult = {
       // 신규 토론 자료 구조
@@ -509,11 +547,7 @@ Deno.serve(async (req: Request) => {
       .eq("question_idx", questionIdx);
 
     if (uErr) {
-      console.error("[opic-study-feedback] DB UPDATE 실패:", uErr.message);
-      return new Response(JSON.stringify({ error: "DB 저장 실패" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      throw new Error(`DB UPDATE 실패: ${uErr.message}`);
     }
 
     // ─── 8. "모든 멤버 답변 완료" 자동 감지 → step='feedback_share' ───
@@ -558,9 +592,19 @@ Deno.serve(async (req: Request) => {
       }
     );
   } catch (err) {
-    console.error("[opic-study-feedback] 예외:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[opic-study-feedback] 실패 — stage=${stage}, msg=${message}`);
+
+    // 단계별 에러를 DB에 저장 → UI가 Realtime으로 받아 안내
+    await saveErrorToDb(stage, message);
+
     return new Response(
-      JSON.stringify({ error: err instanceof Error ? err.message : "internal error" }),
+      JSON.stringify({
+        ok: false,
+        stage,
+        error: message,
+        total_ms: Date.now() - totalStart,
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
