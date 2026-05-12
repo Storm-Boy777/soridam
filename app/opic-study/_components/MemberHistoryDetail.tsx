@@ -18,6 +18,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import type { SessionHistoryDetail } from "@/lib/types/opic-study";
+import { SessionReplay } from "./SessionReplay";
 
 const CATEGORY_LABEL: Record<string, string> = {
   general: "일반",
@@ -185,53 +186,10 @@ export function MemberHistoryDetail({ detail }: Props) {
               boxShadow: "var(--bp-shadow-sm)",
             }}
           >
-            <SectionTitle icon={<ListChecks size={18} />}>진행한 문항</SectionTitle>
-            <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-              {detail.questions.map((q) => (
-                <div
-                  key={`${q.number}-${q.question_id ?? "none"}`}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "42px minmax(0, 1fr) auto",
-                    gap: 12,
-                    alignItems: "center",
-                    padding: "13px 14px",
-                    borderRadius: 12,
-                    background: "var(--bp-surface-2)",
-                    border: "1px solid var(--bp-line)",
-                  }}
-                >
-                  <span
-                    style={{
-                      color: "var(--bp-tc)",
-                      fontSize: 13,
-                      fontWeight: 850,
-                    }}
-                  >
-                    Q{q.number}
-                  </span>
-                  <span style={{ minWidth: 0 }}>
-                    <span
-                      style={{
-                        display: "block",
-                        color: "var(--bp-ink)",
-                        fontSize: 14,
-                        fontWeight: 750,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {q.label}
-                    </span>
-                    <span style={{ color: "var(--bp-ink-3)", fontSize: 12 }}>
-                      답변 {q.answer_count} · 패스 {q.skip_count} · 코치노트 {q.coach_note_count}
-                    </span>
-                  </span>
-                  <StatusTag status={q.status} />
-                </div>
-              ))}
-            </div>
+            <SectionTitle icon={<ListChecks size={18} />}>
+              세션 복기 — 다시 듣고 코칭 보기
+            </SectionTitle>
+            <SessionReplay questions={detail.questions} />
           </section>
 
           <section

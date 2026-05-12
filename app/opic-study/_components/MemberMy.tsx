@@ -23,6 +23,7 @@ import {
   Users,
 } from "lucide-react";
 import type { MyStudySummary, StudyGroupStatus } from "@/lib/types/opic-study";
+import { MyAnswerLibrary } from "./MyAnswerLibrary";
 
 const CATEGORY_LABEL: Record<string, string> = {
   general: "일반",
@@ -199,6 +200,9 @@ export function MemberMy({
             </div>
           </section>
 
+          {/* 내 답변 라이브러리 — 음성 + transcript + 코치노트 다시보기 */}
+          <MyAnswerLibrary answers={summary.my_answers} />
+
           <section
             style={{
               display: "grid",
@@ -290,126 +294,6 @@ export function MemberMy({
                 </EmptyText>
               )}
             </Panel>
-          </section>
-
-          <section>
-            <SectionLabel>최근 내 참여 세션</SectionLabel>
-            {summary.recent_sessions.length === 0 ? (
-              <EmptyBox>
-                아직 내가 답변하거나 패스한 세션이 없어요. 첫 세션을 시작하면 여기에 기록이 쌓입니다.
-              </EmptyBox>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {summary.recent_sessions.slice(0, 5).map((session) => (
-                  <button
-                    key={session.id}
-                    onClick={() => router.push(`/opic-study/history/${session.id}`)}
-                    style={{
-                      width: "100%",
-                      display: "grid",
-                      gridTemplateColumns: "54px 1fr auto",
-                      gap: 14,
-                      alignItems: "center",
-                      padding: "16px 18px",
-                      borderRadius: 12,
-                      border: "1px solid var(--bp-line)",
-                      background: "var(--bp-surface)",
-                      boxShadow: "var(--bp-shadow-sm)",
-                      cursor: "pointer",
-                      textAlign: "left",
-                    }}
-                  >
-                    <span
-                      style={{
-                        color: "var(--bp-ink-2)",
-                        fontSize: 14,
-                        fontWeight: 850,
-                        fontVariantNumeric: "tabular-nums",
-                      }}
-                    >
-                      {session.date_label}
-                    </span>
-                    <span style={{ minWidth: 0 }}>
-                      <span
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 8,
-                          flexWrap: "wrap",
-                          marginBottom: 5,
-                        }}
-                      >
-                        <span style={{ fontSize: 14, fontWeight: 850 }}>
-                          {session.topic} 콤보
-                        </span>
-                        {session.category && (
-                          <span style={tagStyle}>
-                            {CATEGORY_LABEL[session.category] ?? session.category}
-                          </span>
-                        )}
-                      </span>
-                      <span style={{ color: "var(--bp-ink-3)", fontSize: 12 }}>
-                        {session.total_questions}문항 · 답변 {session.answer_count} · 패스 {session.skip_count} · 코치노트 {session.coach_note_count}
-                      </span>
-                    </span>
-                    <ChevronRight size={16} color="var(--bp-ink-3)" />
-                  </button>
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section>
-            <SectionLabel>최근 코치노트</SectionLabel>
-            {summary.coach_notes.recent.length === 0 ? (
-              <EmptyBox>답변 후 코치노트가 생성되면 최근 피드백을 모아서 보여줄게요.</EmptyBox>
-            ) : (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-                  gap: 12,
-                }}
-              >
-                {summary.coach_notes.recent.slice(0, 3).map((note) => (
-                  <button
-                    key={`${note.session_id}-${note.date_label}-${note.summary}`}
-                    onClick={() => router.push(`/opic-study/history/${note.session_id}`)}
-                    style={{
-                      padding: 18,
-                      borderRadius: 12,
-                      border: "1px solid var(--bp-line)",
-                      background: "var(--bp-surface)",
-                      boxShadow: "var(--bp-shadow-sm)",
-                      textAlign: "left",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <div
-                      style={{
-                        color: "var(--bp-ink-3)",
-                        fontSize: 12,
-                        fontWeight: 700,
-                        marginBottom: 8,
-                      }}
-                    >
-                      {note.date_label} · {note.topic}
-                    </div>
-                    <p
-                      style={{
-                        margin: 0,
-                        color: "var(--bp-ink)",
-                        fontSize: 14,
-                        fontWeight: 700,
-                        lineHeight: 1.55,
-                      }}
-                    >
-                      {note.summary}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            )}
           </section>
 
           <section>

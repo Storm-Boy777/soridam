@@ -59,6 +59,7 @@ export default async function OpicStudyMyPage() {
       next_focus: null,
       recent: [],
     },
+    my_answers: [],
   };
 
   const summary = primaryGroup

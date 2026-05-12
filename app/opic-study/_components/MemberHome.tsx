@@ -1273,6 +1273,7 @@ function DayDot({
   label: string;
   status: WeekDayStatus["status"];
 }) {
+  // ─── 비운영일 (스터디 없는 날) — 매우 옅게 ───
   if (status === "off") {
     return (
       <div
@@ -1281,66 +1282,108 @@ function DayDot({
           flexDirection: "column",
           alignItems: "center",
           gap: 6,
-          opacity: 0.4,
         }}
       >
         <div
           style={{
             width: 32,
             height: 32,
+            borderRadius: 999,
+            border: "1px dashed var(--bp-line)",
+            background: "transparent",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
+          title="스터디 없는 날"
         >
           <div
             style={{
-              width: 4,
-              height: 4,
+              width: 3,
+              height: 3,
               borderRadius: 999,
               background: "var(--bp-ink-4)",
+              opacity: 0.5,
             }}
           />
         </div>
-        <span className="t-xs" style={{ color: "var(--bp-ink-4)", fontWeight: 500 }}>
+        <span className="t-xs" style={{ color: "var(--bp-ink-4)", fontWeight: 500, opacity: 0.7 }}>
           {label}
+        </span>
+        <span style={{ fontSize: 9, color: "var(--bp-ink-4)", opacity: 0.6, lineHeight: 1 }}>
+          ─
         </span>
       </div>
     );
   }
 
-  const config = {
+  // ─── 운영일 4가지 — 강도별 시각 구분 ───
+  // 색상 톤:
+  //   done   → 녹색 채움 (한 거, 성취감)
+  //   live   → 진한 테라코타 + pulse (지금 진행)
+  //   today  → 테라코타 옅은 배경 + 진한 테두리 (오늘, 대기)
+  //   upcoming → 옅은 테라코타 테두리 + 점 (할 거)
+  const GREEN = "#4a8e60";
+  const GREEN_TINT = "rgba(74, 142, 96, 0.12)";
+  const TC = "var(--bp-tc)";
+  const TC_TINT = "rgba(201, 100, 66, 0.12)";
+  const TC_LIGHT = "rgba(201, 100, 66, 0.30)";
+
+  type Config = {
+    ring: string;
+    fill: string;
+    iconColor: string;
+    icon: string;
+    label: string;
+    sublabel: string;
+    sublabelColor: string;
+    pulse?: boolean;
+  };
+
+  const config: Config = {
     done: {
-      ring: "var(--bp-ink-4)",
-      fill: "var(--bp-ink-4)",
-      label: "var(--bp-ink-3)",
+      ring: GREEN,
+      fill: GREEN,
+      iconColor: "#fff",
       icon: "✓",
+      label: GREEN,
+      sublabel: "완료",
+      sublabelColor: GREEN,
     },
     live: {
-      ring: "var(--bp-tc)",
-      fill: "var(--bp-tc)",
-      label: "var(--bp-tc)",
+      ring: TC,
+      fill: TC,
+      iconColor: "#fff",
       icon: "●",
+      label: TC,
+      sublabel: "LIVE",
+      sublabelColor: TC,
+      pulse: true,
     },
     today: {
-      ring: "var(--bp-tc)",
-      fill: "transparent",
-      label: "var(--bp-ink)",
+      ring: TC,
+      fill: TC_TINT,
+      iconColor: TC,
       icon: "",
+      label: TC,
+      sublabel: "오늘",
+      sublabelColor: TC,
     },
     upcoming: {
-      ring: "var(--bp-line)",
+      ring: TC_LIGHT,
       fill: "transparent",
-      label: "var(--bp-ink-3)",
+      iconColor: TC_LIGHT,
       icon: "",
+      label: "var(--bp-ink-2)",
+      sublabel: "예정",
+      sublabelColor: "var(--bp-ink-3)",
     },
-    off: {
-      ring: "transparent",
-      fill: "transparent",
-      label: "var(--bp-ink-4)",
-      icon: "",
-    },
+    // off는 위에서 early return
+    off: {} as Config,
   }[status];
+
+  // today/upcoming은 가운데 작은 점으로 운영일 표시
+  const showInnerDot = (status === "today" || status === "upcoming") && !config.icon;
 
   return (
     <div
@@ -1363,14 +1406,53 @@ function DayDot({
           justifyContent: "center",
           fontSize: 13,
           fontWeight: 700,
-          color: status === "done" || status === "live" ? "#fff" : config.label,
+          color: config.iconColor,
+          position: "relative",
+          animation: config.pulse ? "tlk-day-pulse 1.6s ease-in-out infinite" : undefined,
+          boxShadow: status === "live"
+            ? "0 0 0 4px rgba(201, 100, 66, 0.18)"
+            : status === "today"
+              ? "0 0 0 3px rgba(201, 100, 66, 0.10)"
+              : undefined,
         }}
       >
-        {config.icon}
+        {showInnerDot ? (
+          <div
+            style={{
+              width: status === "today" ? 8 : 5,
+              height: status === "today" ? 8 : 5,
+              borderRadius: 999,
+              background: status === "today" ? TC : TC_LIGHT,
+            }}
+          />
+        ) : (
+          config.icon
+        )}
       </div>
-      <span className="t-xs" style={{ color: config.label, fontWeight: 600 }}>
+      <span
+        className="t-xs"
+        style={{ color: config.label, fontWeight: status === "live" || status === "today" ? 700 : 600 }}
+      >
         {label}
       </span>
+      <span
+        style={{
+          fontSize: 9,
+          fontWeight: 700,
+          letterSpacing: 0.5,
+          color: config.sublabelColor,
+          lineHeight: 1,
+          textTransform: "uppercase",
+        }}
+      >
+        {config.sublabel}
+      </span>
+      <style>{`
+        @keyframes tlk-day-pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.08); }
+        }
+      `}</style>
     </div>
   );
 }

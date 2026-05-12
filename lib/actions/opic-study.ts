@@ -326,7 +326,9 @@ export async function getSessionHistoryDetail(
     const { memberMeta, memberCount } = await getStudyMemberMeta(supabase, groupId);
     const { data: answers } = await supabase
       .from(T.opic_study_answers)
-      .select("user_id, question_id, question_idx, audio_url, feedback_result")
+      .select(
+        "user_id, question_id, question_idx, audio_url, transcript, feedback_result, created_at"
+      )
       .eq("session_id", sessionId);
 
     const answerRows = answers ?? [];
@@ -339,9 +341,27 @@ export async function getSessionHistoryDetail(
     const { data: questions } = questionIds.length > 0
       ? await supabase
           .from(T.questions)
-          .select("id, question_english, question_short, question_type_kor")
+          .select(
+            "id, question_english, question_korean, question_short, question_type_kor, audio_url"
+          )
           .in("id", questionIds)
       : { data: [] };
+
+    // ── 답변 음성 signed URL 발급 (private bucket, 1시간) ──
+    const audioUrls = answerRows
+      .map((a) => a.audio_url as string | null)
+      .filter((u): u is string => !!u);
+    const signedUrlMap = new Map<string, string>();
+    if (audioUrls.length > 0) {
+      const { data: signed } = await supabase.storage
+        .from("opic-study-recordings")
+        .createSignedUrls(audioUrls, 3600);
+      for (const item of signed ?? []) {
+        if (item.path && item.signedUrl && !item.error) {
+          signedUrlMap.set(item.path, item.signedUrl);
+        }
+      }
+    }
 
     const questionMap = new Map((questions ?? []).map((q) => [q.id as string, q]));
     const maxQuestionIdx = Math.max(
@@ -368,6 +388,29 @@ export async function getSessionHistoryDetail(
                 ? "skipped"
                 : "waiting";
 
+        // 멤버별 답변 풀 본문 (복기 다시보기)
+        const detailedAnswers = questionAnswers.map((a) => {
+          const meta = memberMeta.get(a.user_id as string) ?? {
+            name: "멤버",
+            initial: "M",
+            color: "a" as const,
+          };
+          const audioPath = a.audio_url as string | null;
+          return {
+            user_id: a.user_id as string,
+            member_name: meta.name,
+            member_initial: meta.initial,
+            member_color: meta.color,
+            audio_signed_url: audioPath ? signedUrlMap.get(audioPath) ?? null : null,
+            transcript: (a.transcript as string | null) ?? null,
+            feedback_result:
+              (a.feedback_result as SessionHistoryDetail["questions"][number]["answers"][number]["feedback_result"]) ??
+              null,
+            skipped: !audioPath,
+            created_at: a.created_at as string,
+          };
+        });
+
         return {
           number: i + 1,
           question_id: questionId,
@@ -376,11 +419,14 @@ export async function getSessionHistoryDetail(
             (question?.question_english as string | null) ||
             `${session.selected_topic ?? "콤보"} ${i + 1}번 질문`,
           question_english: (question?.question_english as string | null) ?? null,
+          question_korean: (question?.question_korean as string | null) ?? null,
+          question_audio_url: (question?.audio_url as string | null) ?? null,
           question_type_kor: (question?.question_type_kor as string | null) ?? null,
           answer_count: answerCount,
           skip_count: skipCount,
           coach_note_count: coachNoteCount,
           status,
+          answers: detailedAnswers,
         };
       }
     );
@@ -472,6 +518,7 @@ export async function getMyStudySummary(
             next_focus: null,
             recent: [],
           },
+          my_answers: [],
         },
       };
     }
@@ -479,11 +526,69 @@ export async function getMyStudySummary(
     const sessionIds = sessions.map((s) => s.id as string);
     const { data: answers } = await supabase
       .from(T.opic_study_answers)
-      .select("session_id, question_idx, audio_url, feedback_result, created_at")
+      .select(
+        "session_id, question_id, question_idx, audio_url, transcript, feedback_result, created_at"
+      )
       .eq("user_id", userId)
-      .in("session_id", sessionIds);
+      .in("session_id", sessionIds)
+      .order("created_at", { ascending: false });
 
     const answerRows = answers ?? [];
+
+    // ─── 본인 답변 라이브러리용: 음성 signed URL + 질문 본문 ───
+    // 음성이 있는 답변만 (패스 제외) 최근 50개
+    const recentAnswered = answerRows
+      .filter((a) => !!a.audio_url)
+      .slice(0, 50);
+
+    const audioPaths = recentAnswered
+      .map((a) => a.audio_url as string)
+      .filter(Boolean);
+    const signedUrlMap = new Map<string, string>();
+    if (audioPaths.length > 0) {
+      const { data: signed } = await supabase.storage
+        .from("opic-study-recordings")
+        .createSignedUrls(audioPaths, 3600);
+      for (const item of signed ?? []) {
+        if (item.path && item.signedUrl && !item.error) {
+          signedUrlMap.set(item.path, item.signedUrl);
+        }
+      }
+    }
+
+    const myAnswerQuestionIds = Array.from(
+      new Set(recentAnswered.map((a) => a.question_id as string).filter(Boolean))
+    );
+    const myAnswerQuestionMap = new Map<
+      string,
+      { question_english: string | null; question_korean: string | null; question_type_kor: string | null }
+    >();
+    if (myAnswerQuestionIds.length > 0) {
+      const { data: qrows } = await supabase
+        .from(T.questions)
+        .select("id, question_english, question_korean, question_type_kor")
+        .in("id", myAnswerQuestionIds);
+      for (const q of qrows ?? []) {
+        myAnswerQuestionMap.set(q.id as string, {
+          question_english: (q.question_english as string | null) ?? null,
+          question_korean: (q.question_korean as string | null) ?? null,
+          question_type_kor: (q.question_type_kor as string | null) ?? null,
+        });
+      }
+    }
+
+    // 세션 메타 룩업
+    const sessionMetaMap = new Map<string, { topic: string; category: StudyCategory | null; date_label: string }>();
+    for (const s of sessions) {
+      sessionMetaMap.set(s.id as string, {
+        topic: (s.selected_topic as string | null) ?? "미선택",
+        category: (s.selected_category as StudyCategory | null) ?? null,
+        date_label: formatShortDate(
+          (s.ended_at as string | null) ?? (s.started_at as string)
+        ),
+      });
+    }
+
     const answersBySession = new Map<string, typeof answerRows>();
     for (const answer of answerRows) {
       const sid = answer.session_id as string;
@@ -494,10 +599,19 @@ export async function getMyStudySummary(
 
     const activeSession =
       sessions.find((s) => s.status === "active") ?? null;
-    const participatedSessions = sessions.filter(
+    // 통계용 — 답변/패스 어느 쪽이든 있으면 "참여"로 간주
+    const engagedSessions = sessions.filter(
       (s) =>
         s.status === "completed" &&
         (answersBySession.get(s.id as string)?.length ?? 0) > 0
+    );
+    // 라이브러리/최근 리스트용 — 실제 답변(audio_url 있음)이 1개라도 있는 세션만
+    const participatedSessions = sessions.filter(
+      (s) =>
+        s.status === "completed" &&
+        (answersBySession
+          .get(s.id as string)
+          ?.some((a) => !!a.audio_url) ?? false)
     );
 
     const answerCount = answerRows.filter((a) => !!a.audio_url).length;
@@ -609,7 +723,8 @@ export async function getMyStudySummary(
     return {
       data: {
         stats: {
-          participated_sessions: participatedSessions.length,
+          // "참여 세션"은 패스만 한 세션도 포함 (다른 멤버 답변 함께 들었으니 참여)
+          participated_sessions: engagedSessions.length,
           answer_count: answerCount,
           skip_count: skipCount,
           coach_note_count: coachNoteCount,
@@ -631,6 +746,30 @@ export async function getMyStudySummary(
           next_focus: improvements[0] ?? null,
           recent: recentCoachNotes,
         },
+        my_answers: recentAnswered.map((a) => {
+          const audioPath = a.audio_url as string | null;
+          const qMeta = a.question_id
+            ? myAnswerQuestionMap.get(a.question_id as string)
+            : null;
+          const sMeta = sessionMetaMap.get(a.session_id as string);
+          return {
+            session_id: a.session_id as string,
+            question_id: (a.question_id as string | null) ?? null,
+            question_idx: Number(a.question_idx ?? 0),
+            question_english: qMeta?.question_english ?? null,
+            question_korean: qMeta?.question_korean ?? null,
+            question_type_kor: qMeta?.question_type_kor ?? null,
+            topic: sMeta?.topic ?? "미선택",
+            category: sMeta?.category ?? null,
+            date_label: sMeta?.date_label ?? "─",
+            audio_signed_url: audioPath ? signedUrlMap.get(audioPath) ?? null : null,
+            transcript: (a.transcript as string | null) ?? null,
+            feedback_result:
+              (a.feedback_result as MyStudySummary["my_answers"][number]["feedback_result"]) ??
+              null,
+            created_at: a.created_at as string,
+          };
+        }),
       },
     };
   } catch (err) {

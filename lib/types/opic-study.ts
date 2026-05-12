@@ -405,11 +405,25 @@ export interface SessionHistoryDetail {
     question_id: string | null;
     label: string;
     question_english: string | null;
+    question_korean: string | null;            // 신규
+    question_audio_url: string | null;         // 신규 (질문 음성 URL — public)
     question_type_kor: string | null;
     answer_count: number;
     skip_count: number;
     coach_note_count: number;
     status: "completed" | "skipped" | "mixed" | "waiting";
+    // 신규 — 멤버별 답변 풀 본문 (복기 다시보기용)
+    answers: Array<{
+      user_id: string;
+      member_name: string;
+      member_initial: string;
+      member_color: "a" | "b" | "c" | "d";
+      audio_signed_url: string | null;          // private bucket signed URL (1h)
+      transcript: string | null;
+      feedback_result: FeedbackResult | null;   // 7섹션 코치노트 또는 error
+      skipped: boolean;                          // audio_url null이면 true
+      created_at: string;
+    }>;
   }>;
   members: Array<{
     user_id: string;
@@ -461,6 +475,22 @@ export interface MyStudySummary {
       enhance: string | null;
     }>;
   };
+  // 신규 — 본인 답변 라이브러리 (최근 50개, 음성/transcript/코치노트 풀)
+  my_answers: Array<{
+    session_id: string;
+    question_id: string | null;
+    question_idx: number;
+    question_english: string | null;
+    question_korean: string | null;
+    question_type_kor: string | null;
+    topic: string;
+    category: StudyCategory | null;
+    date_label: string;
+    audio_signed_url: string | null;
+    transcript: string | null;
+    feedback_result: FeedbackResult | null;
+    created_at: string;
+  }>;
 }
 
 // Step 2: 카테고리별 통계
