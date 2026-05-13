@@ -1360,7 +1360,7 @@ export async function advanceLobby(sessionId: string): Promise<ActionResult> {
  */
 export async function rollbackStep(
   sessionId: string,
-  targetStep: "category_select" | "topic_select"
+  targetStep: "category_select" | "topic_select" | "combo_select"
 ): Promise<ActionResult> {
   try {
     const { supabase, userId } = await requireUser();
@@ -1389,6 +1389,22 @@ export async function rollbackStep(
         })
         .eq("id", sessionId)
         .eq("step", "combo_select");
+      if (error) return { error: "단계 되돌리기 실패" };
+    } else if (targetStep === "combo_select") {
+      // Step 5 (guide) → Step 4 (combo_select)
+      // selected_topic은 유지, combo와 AI 가이드 리셋 → 같은 토픽에서 콤보만 다시 고름
+      const { error } = await supabase
+        .from(T.opic_study_sessions)
+        .update({
+          step: "combo_select",
+          selected_combo_sig: null,
+          selected_question_ids: [],
+          ai_guide_intro: null,
+          ai_guide_approaches: null,
+          ai_guide_generated_at: null,
+        })
+        .eq("id", sessionId)
+        .eq("step", "guide");
       if (error) return { error: "단계 되돌리기 실패" };
     } else {
       return { error: "지원하지 않는 단계입니다" };

@@ -725,6 +725,24 @@ export function OpicStudySessionClient({
     });
   }, [sessionId]);
 
+  const handleRollbackToCombo = useCallback(() => {
+    setConfirmDialog({
+      type: "rollback",
+      title: "콤보를 다시 고를까요?",
+      description: "모든 멤버 화면이 콤보 선택으로 함께 돌아가요.",
+      confirmLabel: "돌아가기",
+      variant: "warning",
+      icon: "⏮",
+      onConfirm: () => {
+        setConfirmDialog(null);
+        startTransition(async () => {
+          const res = await rollbackStep(sessionId, "combo_select");
+          if (res.error) toast.error(res.error);
+        });
+      },
+    });
+  }, [sessionId]);
+
   const handleSubmitAnswer = useCallback(
     async (audioBlob: Blob) => {
       const questionId = session.selected_question_ids[idx];
@@ -940,7 +958,9 @@ export function OpicStudySessionClient({
           // 통합 화면(category_select+topic_select)에서는 컴포넌트 내부에서 카테고리 단계 복귀를 다룸 — 외곽 ←는 홈
           session.step === "combo_select"
             ? handleRollbackToTopic
-            : undefined
+            : session.step === "guide"
+              ? handleRollbackToCombo
+              : undefined
         }
         rightContent={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
