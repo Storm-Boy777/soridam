@@ -22,6 +22,15 @@ export interface MicTestResponse {
   result: "ok" | "fail";
 }
 
+export interface MemberMicStatus {
+  userId: string;
+  name: string;
+  initial: string;
+  colorKey: "a" | "b" | "c" | "d";
+  status: "untested" | "ok" | "failed";
+  isMe: boolean;
+}
+
 interface TesterProps {
   mode: "tester";
   open: boolean;
@@ -34,6 +43,8 @@ interface TesterProps {
   responses: MicTestResponse[];
   /** 본인 통과 처리 콜백 (1명 이상 ✅) */
   onPassed: () => void;
+  /** 멤버별 mic status (패널 표시용) */
+  memberStatuses?: MemberMicStatus[];
 }
 
 interface ListenerProps {
@@ -90,6 +101,7 @@ function TesterBody({
   broadcastRequest,
   responses,
   onPassed,
+  memberStatuses,
 }: TesterProps) {
   type Phase = "ready" | "recording" | "uploading" | "waiting" | "passed" | "failed";
   const [phase, setPhase] = useState<Phase>("ready");
@@ -228,6 +240,11 @@ function TesterBody({
           <X size={18} />
         </button>
       </div>
+
+      {/* 멤버 status 패널 — 모든 phase에서 상단 노출 */}
+      {memberStatuses && memberStatuses.length > 0 && (phase === "ready" || phase === "waiting" || phase === "passed") && (
+        <MemberStatusPanel statuses={memberStatuses} />
+      )}
 
       {/* 본문 */}
       <div style={{ padding: 20 }}>
@@ -651,6 +668,130 @@ function ListenerBody({ onClose, testerName, audioUrl, onSubmitResponse }: Liste
         </div>
       </div>
     </>
+  );
+}
+
+/* ─── 멤버 status 패널 ─── */
+
+const MEMBER_COLOR_BG: Record<"a" | "b" | "c" | "d", string> = {
+  a: "var(--bp-mb-a)",
+  b: "var(--bp-mb-b)",
+  c: "var(--bp-mb-c)",
+  d: "var(--bp-mb-d)",
+};
+
+function MemberStatusPanel({ statuses }: { statuses: MemberMicStatus[] }) {
+  const okCount = statuses.filter((s) => s.status === "ok").length;
+  const total = statuses.length;
+  const allOk = okCount === total;
+
+  return (
+    <div
+      style={{
+        padding: "10px 20px",
+        background: allOk
+          ? "rgba(45, 122, 61, 0.06)"
+          : "var(--bp-surface-2)",
+        borderBottom: "1px solid var(--bp-line)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 8,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 800,
+            letterSpacing: 0.5,
+            color: "var(--bp-ink-3)",
+            textTransform: "uppercase",
+          }}
+        >
+          멤버 마이크 상태
+        </span>
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 800,
+            color: allOk ? "#2d7a3d" : "var(--bp-ink-2)",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {okCount}/{total} 통과
+        </span>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {statuses.map((m) => {
+          const icon =
+            m.status === "ok" ? "✓" : m.status === "failed" ? "⚠" : "⏳";
+          const tint =
+            m.status === "ok"
+              ? "rgba(74, 142, 96, 0.12)"
+              : m.status === "failed"
+                ? "rgba(220, 38, 38, 0.10)"
+                : "var(--bp-surface)";
+          const border =
+            m.status === "ok"
+              ? "rgba(74, 142, 96, 0.35)"
+              : m.status === "failed"
+                ? "rgba(220, 38, 38, 0.30)"
+                : "var(--bp-line)";
+          const textColor =
+            m.status === "ok"
+              ? "#2d7a3d"
+              : m.status === "failed"
+                ? "rgb(185, 28, 28)"
+                : "var(--bp-ink-2)";
+          return (
+            <span
+              key={m.userId}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "3px 8px",
+                background: tint,
+                border: `1px solid ${border}`,
+                borderRadius: 999,
+                fontSize: 11,
+                fontWeight: 700,
+                color: textColor,
+              }}
+            >
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 16,
+                  height: 16,
+                  borderRadius: 999,
+                  background: MEMBER_COLOR_BG[m.colorKey],
+                  color: "#fff",
+                  fontSize: 9,
+                  fontWeight: 800,
+                  flexShrink: 0,
+                }}
+              >
+                {m.initial}
+              </span>
+              <span>{m.name}</span>
+              {m.isMe && (
+                <span style={{ fontSize: 9, opacity: 0.7, fontWeight: 600 }}>
+                  (나)
+                </span>
+              )}
+              <span style={{ fontSize: 10, fontWeight: 800 }}>{icon}</span>
+            </span>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

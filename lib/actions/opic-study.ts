@@ -940,6 +940,24 @@ export async function createSession(groupId: string): Promise<ActionResult<{ ses
 }
 
 /** 세션 종료 (정상 완료) */
+/** 마이크 테스트 webm 일괄 정리 (세션 종료 시 호출) — 실패해도 본 작업은 영향 X */
+async function cleanupMicTestFiles(
+  supabase: Awaited<ReturnType<typeof requireUser>>["supabase"],
+  sessionId: string
+): Promise<void> {
+  try {
+    const prefix = `mic-test/${sessionId}`;
+    const { data: files } = await supabase.storage
+      .from("opic-study-recordings")
+      .list(prefix, { limit: 100 });
+    if (!files || files.length === 0) return;
+    const paths = files.map((f) => `${prefix}/${f.name}`);
+    await supabase.storage.from("opic-study-recordings").remove(paths);
+  } catch {
+    // 정리 실패는 무시 — 세션 종료 흐름 차단 안 함
+  }
+}
+
 export async function endSession(sessionId: string): Promise<ActionResult> {
   try {
     const { supabase, userId } = await requireUser();
@@ -955,6 +973,9 @@ export async function endSession(sessionId: string): Promise<ActionResult> {
       .eq("id", sessionId);
 
     if (error) return { error: "세션 종료 실패" };
+
+    // 마이크 테스트 webm 정리 (실패해도 본 작업 영향 X)
+    await cleanupMicTestFiles(supabase, sessionId);
     return { data: null };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "세션 종료 실패" };
@@ -976,6 +997,9 @@ export async function abandonSession(sessionId: string): Promise<ActionResult> {
       .eq("id", sessionId);
 
     if (error) return { error: "세션 포기 실패" };
+
+    // 마이크 테스트 webm 정리 (실패해도 본 작업 영향 X)
+    await cleanupMicTestFiles(supabase, sessionId);
     return { data: null };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "세션 포기 실패" };

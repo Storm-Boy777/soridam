@@ -694,6 +694,31 @@ export function OpicStudySessionClient({
     [members, currentUserId, onlineUserIds]
   );
 
+  // 마이크 통과 멤버 수 (헤더 버튼 + 모달에 표시)
+  const micPassedCount = useMemo(
+    () => members.filter((m) => micStatusMap[m.userId] === "ok").length,
+    [members, micStatusMap]
+  );
+  const allMicPassed = micPassedCount === members.length;
+  const myMicOk = micStatusMap[currentUserId] === "ok";
+
+  // 멤버별 mic status 리스트 (모달에 전달)
+  const memberMicStatuses = useMemo(
+    () =>
+      members.map((m) => ({
+        userId: m.userId,
+        name: m.name,
+        initial: m.initial,
+        colorKey: m.key,
+        status: (micStatusMap[m.userId] ?? "untested") as
+          | "untested"
+          | "ok"
+          | "failed",
+        isMe: m.userId === currentUserId,
+      })),
+    [members, currentUserId, micStatusMap]
+  );
+
   // ============================================================
   // 종료 시 라우팅
   // ============================================================
@@ -1109,39 +1134,59 @@ export function OpicStudySessionClient({
         }
         rightContent={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {/* 마이크 테스트 버튼 — 모든 step에서 노출 */}
-            {!isSessionCompleted && (
+            {/* 마이크 테스트 버튼 — 모든 step에서 노출
+                라벨에 통과 수 표시 (예: "마이크 ✓ 3/4"). 모두 통과 시 전체 초록 강조. */}
+            {!isSessionCompleted && members.length > 0 && (
               <button
                 onClick={handleOpenMicTest}
-                aria-label="마이크 테스트"
-                title="실제 답변과 동일하게 녹음 → 다른 멤버가 듣고 확인"
+                aria-label={`마이크 테스트 — ${micPassedCount}/${members.length}명 통과`}
+                title={
+                  allMicPassed
+                    ? "모두 마이크 정상 ✓"
+                    : "실제 답변과 동일하게 녹음 → 다른 멤버가 듣고 확인"
+                }
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: 4,
+                  gap: 5,
                   padding: "5px 9px",
                   fontSize: 11,
-                  fontWeight: 600,
-                  color:
-                    micStatusMap[currentUserId] === "ok"
+                  fontWeight: 700,
+                  color: allMicPassed
+                    ? "#2d7a3d"
+                    : myMicOk
                       ? "#4a8e60"
                       : "var(--foreground-secondary, #6B6B7B)",
-                  background:
-                    micStatusMap[currentUserId] === "ok"
+                  background: allMicPassed
+                    ? "rgba(45, 122, 61, 0.10)"
+                    : myMicOk
                       ? "rgba(74, 142, 96, 0.10)"
                       : "var(--surface-secondary, #F3F2EF)",
                   border: `1px solid ${
-                    micStatusMap[currentUserId] === "ok"
-                      ? "rgba(74, 142, 96, 0.3)"
-                      : "var(--border, #E8E6E1)"
+                    allMicPassed
+                      ? "rgba(45, 122, 61, 0.30)"
+                      : myMicOk
+                        ? "rgba(74, 142, 96, 0.3)"
+                        : "var(--border, #E8E6E1)"
                   }`,
                   borderRadius: 8,
                   cursor: "pointer",
+                  fontVariantNumeric: "tabular-nums",
                 }}
               >
-                <Mic size={12} strokeWidth={1.8} aria-hidden="true" />
+                <Mic size={12} strokeWidth={2} aria-hidden="true" />
                 <span className="hidden sm:inline">
-                  {micStatusMap[currentUserId] === "ok" ? "마이크 ✓" : "마이크 테스트"}
+                  {myMicOk ? "마이크 ✓" : "마이크 테스트"}
+                </span>
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 800,
+                    opacity: 0.9,
+                    paddingLeft: 2,
+                  }}
+                >
+                  {micPassedCount}/{members.length}
                 </span>
               </button>
             )}
@@ -1219,6 +1264,7 @@ export function OpicStudySessionClient({
         broadcastRequest={broadcastMicTestRequest}
         responses={micTestResponses}
         onPassed={handleMicTestPassed}
+        memberStatuses={memberMicStatuses}
       />
 
       {/* 다른 멤버 마이크 듣기 모달 (broadcast 수신 시 자동 표시) */}
