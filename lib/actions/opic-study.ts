@@ -940,46 +940,6 @@ export async function createSession(groupId: string): Promise<ActionResult<{ ses
 }
 
 /** 세션 종료 (정상 완료) */
-/** 마이크 테스트 webm 일괄 정리 (세션 종료 시 호출) — 실패해도 본 작업은 영향 X
- *  Storage path 형식: {sessionId}/{userId}/mic-test-{ts}.webm
- *  → 세션 내 각 user 디렉토리에서 mic-test- prefix 파일만 삭제 (실제 답변 0.webm/1.webm 등은 유지)
- */
-async function cleanupMicTestFiles(
-  supabase: Awaited<ReturnType<typeof requireUser>>["supabase"],
-  sessionId: string
-): Promise<void> {
-  try {
-    // 세션 내 user 디렉토리 목록
-    const { data: userDirs } = await supabase.storage
-      .from("opic-study-recordings")
-      .list(sessionId, { limit: 50 });
-    if (!userDirs || userDirs.length === 0) return;
-
-    // 각 user 디렉토리 안의 mic-test- prefix 파일 수집
-    const toDelete: string[] = [];
-    for (const entry of userDirs) {
-      // 폴더만 처리 (파일은 id가 없거나 metadata가 다름 — Supabase storage list 결과 특성)
-      const { data: files } = await supabase.storage
-        .from("opic-study-recordings")
-        .list(`${sessionId}/${entry.name}`, { limit: 100 });
-      if (!files) continue;
-      for (const f of files) {
-        if (f.name.startsWith("mic-test-")) {
-          toDelete.push(`${sessionId}/${entry.name}/${f.name}`);
-        }
-      }
-    }
-
-    if (toDelete.length > 0) {
-      await supabase.storage
-        .from("opic-study-recordings")
-        .remove(toDelete);
-    }
-  } catch {
-    // 정리 실패는 무시 — 세션 종료 흐름 차단 안 함
-  }
-}
-
 export async function endSession(sessionId: string): Promise<ActionResult> {
   try {
     const { supabase, userId } = await requireUser();
@@ -995,9 +955,6 @@ export async function endSession(sessionId: string): Promise<ActionResult> {
       .eq("id", sessionId);
 
     if (error) return { error: "세션 종료 실패" };
-
-    // 마이크 테스트 webm 정리 (실패해도 본 작업 영향 X)
-    await cleanupMicTestFiles(supabase, sessionId);
     return { data: null };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "세션 종료 실패" };
@@ -1019,9 +976,6 @@ export async function abandonSession(sessionId: string): Promise<ActionResult> {
       .eq("id", sessionId);
 
     if (error) return { error: "세션 포기 실패" };
-
-    // 마이크 테스트 webm 정리 (실패해도 본 작업 영향 X)
-    await cleanupMicTestFiles(supabase, sessionId);
     return { data: null };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "세션 포기 실패" };

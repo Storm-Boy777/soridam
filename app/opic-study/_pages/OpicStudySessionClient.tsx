@@ -20,7 +20,7 @@
  * - completed → LiveStep7 (종료)
  */
 
-import { useEffect, useState, useTransition, useCallback, useMemo, useContext, useRef } from "react";
+import { useEffect, useState, useTransition, useCallback, useMemo, useContext } from "react";
 import {
   Globe,
   Building2,
@@ -170,20 +170,8 @@ export function OpicStudySessionClient({
   const [combos, setCombos] = useState<ComboForStudy[] | null>(null);
   const [contentLoading, setContentLoading] = useState(false);
 
-  // 마이크 자가 진단 상태
+  // 마이크 자가 진단 — 본인 마이크 점검만 (broadcast/upload/멤버 상태 X)
   const [micTestModalOpen, setMicTestModalOpen] = useState(false);
-  const [incomingMicTest, setIncomingMicTest] = useState<{
-    fromUserId: string;
-    fromName: string;
-    audioUrl: string;
-    ts: number;
-  } | null>(null);
-  const [micTestResponses, setMicTestResponses] = useState<
-    Array<{ fromUserId: string; fromName: string; result: "ok" | "fail" }>
-  >([]);
-  const [micStatusMap, setMicStatusMap] = useState<
-    Record<string, "untested" | "ok" | "failed">
-  >({});
 
   const supabase = useMemo(
     () =>
@@ -413,172 +401,13 @@ export function OpicStudySessionClient({
     // tabId/presenceKey는 useMemo로 안정화되어 있어 영향 없음
   }, [sessionId, currentUserId, tabId, supabase]);
 
-  // ============================================================
-  // 마이크 자가 진단 broadcast 채널
-  // ============================================================
-  const micTestBroadcastRef = useRef<ReturnType<typeof supabase.channel> | null>(
-    null
-  );
-
-  useEffect(() => {
-    const ch = supabase.channel(`opic-study-mic-test:${sessionId}`);
-    micTestBroadcastRef.current = ch;
-
-    ch.on(
-      "broadcast",
-      { event: "request" },
-      ({ payload }) => {
-        const p = payload as {
-          from_user_id: string;
-          audio_url: string;
-          ts: number;
-        };
-        // 본인은 무시
-        if (p.from_user_id === currentUserId) return;
-        const fromMember = memberByUserId[p.from_user_id];
-        setIncomingMicTest({
-          fromUserId: p.from_user_id,
-          fromName: fromMember?.name ?? "멤버",
-          audioUrl: p.audio_url,
-          ts: p.ts,
-        });
-      }
-    )
-      .on(
-        "broadcast",
-        { event: "response" },
-        ({ payload }) => {
-          const p = payload as {
-            from_user_id: string;
-            to_user_id: string;
-            result: "ok" | "fail";
-          };
-          // 본인 마이크 테스트에 대한 응답만 수신
-          if (p.to_user_id !== currentUserId) return;
-          const fromMember = memberByUserId[p.from_user_id];
-          setMicTestResponses((prev) => {
-            // 같은 응답자 중복 방지
-            if (prev.some((r) => r.fromUserId === p.from_user_id)) return prev;
-            return [
-              ...prev,
-              {
-                fromUserId: p.from_user_id,
-                fromName: fromMember?.name ?? "멤버",
-                result: p.result,
-              },
-            ];
-          });
-        }
-      )
-      .on(
-        "broadcast",
-        { event: "status" },
-        ({ payload }) => {
-          const p = payload as {
-            user_id: string;
-            status: "untested" | "ok" | "failed";
-          };
-          setMicStatusMap((prev) => ({ ...prev, [p.user_id]: p.status }));
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(ch);
-      micTestBroadcastRef.current = null;
-    };
-  }, [sessionId, currentUserId, supabase, memberByUserId]);
-
-  // 본인 마이크 통과 시 다른 멤버에게 status broadcast
-  const broadcastMicStatus = useCallback(
-    (status: "untested" | "ok" | "failed") => {
-      micTestBroadcastRef.current?.send({
-        type: "broadcast",
-        event: "status",
-        payload: { user_id: currentUserId, status },
-      });
-      setMicStatusMap((prev) => ({ ...prev, [currentUserId]: status }));
-    },
-    [currentUserId]
-  );
-
-  // 마이크 webm 업로드 → signed URL
-  // path 형식: {sessionId}/{userId}/mic-test-{ts}.webm
-  //   - Storage RLS가 [1]=sessionId, [2]=userId를 요구하기 때문에 본인 user 디렉토리 안에
-  //     mic-test-* prefix 파일로 저장 (실제 답변은 0.webm/1.webm 등 — 충돌 X)
-  const uploadMicTestBlob = useCallback(
-    async (blob: Blob): Promise<string> => {
-      const ts = Date.now();
-      const path = `${sessionId}/${currentUserId}/mic-test-${ts}.webm`;
-      const { error: uploadError } = await supabase.storage
-        .from("opic-study-recordings")
-        .upload(path, blob, {
-          contentType: "audio/webm",
-          upsert: true,
-        });
-      if (uploadError) {
-        console.error("[mic-test upload] failed:", uploadError);
-        throw new Error(uploadError.message);
-      }
-      const { data: signedData, error: signError } = await supabase.storage
-        .from("opic-study-recordings")
-        .createSignedUrl(path, 600); // 10분 유효
-      if (signError || !signedData?.signedUrl) {
-        console.error("[mic-test signed url] failed:", signError);
-        throw new Error(signError?.message ?? "signed URL 생성 실패");
-      }
-      return signedData.signedUrl;
-    },
-    [sessionId, currentUserId, supabase]
-  );
-
-  // broadcast 마이크 테스트 요청 (audio_url 전송)
-  const broadcastMicTestRequest = useCallback(
-    (audioUrl: string) => {
-      micTestBroadcastRef.current?.send({
-        type: "broadcast",
-        event: "request",
-        payload: {
-          from_user_id: currentUserId,
-          audio_url: audioUrl,
-          ts: Date.now(),
-        },
-      });
-      // 본인 응답 누적 리셋
-      setMicTestResponses([]);
-    },
-    [currentUserId]
-  );
-
-  // 청취자 응답 전송
-  const submitMicTestResponse = useCallback(
-    (result: "ok" | "fail") => {
-      if (!incomingMicTest) return;
-      micTestBroadcastRef.current?.send({
-        type: "broadcast",
-        event: "response",
-        payload: {
-          from_user_id: currentUserId,
-          to_user_id: incomingMicTest.fromUserId,
-          result,
-        },
-      });
-    },
-    [currentUserId, incomingMicTest]
-  );
-
   const handleOpenMicTest = useCallback(() => {
-    setMicTestResponses([]);
     setMicTestModalOpen(true);
   }, []);
 
   const handleCloseMicTest = useCallback(() => {
     setMicTestModalOpen(false);
   }, []);
-
-  const handleMicTestPassed = useCallback(() => {
-    broadcastMicStatus("ok");
-  }, [broadcastMicStatus]);
 
   // ============================================================
   // 자동 가이드 생성 트리거
@@ -699,30 +528,6 @@ export function OpicStudySessionClient({
     [members, currentUserId, onlineUserIds]
   );
 
-  // 마이크 통과 멤버 수 (헤더 버튼 + 모달에 표시)
-  const micPassedCount = useMemo(
-    () => members.filter((m) => micStatusMap[m.userId] === "ok").length,
-    [members, micStatusMap]
-  );
-  const allMicPassed = micPassedCount === members.length;
-  const myMicOk = micStatusMap[currentUserId] === "ok";
-
-  // 멤버별 mic status 리스트 (모달에 전달)
-  const memberMicStatuses = useMemo(
-    () =>
-      members.map((m) => ({
-        userId: m.userId,
-        name: m.name,
-        initial: m.initial,
-        colorKey: m.key,
-        status: (micStatusMap[m.userId] ?? "untested") as
-          | "untested"
-          | "ok"
-          | "failed",
-        isMe: m.userId === currentUserId,
-      })),
-    [members, currentUserId, micStatusMap]
-  );
 
   // ============================================================
   // 종료 시 라우팅
@@ -1139,60 +944,27 @@ export function OpicStudySessionClient({
         }
         rightContent={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {/* 마이크 테스트 버튼 — 모든 step에서 노출
-                라벨에 통과 수 표시 (예: "마이크 ✓ 3/4"). 모두 통과 시 전체 초록 강조. */}
-            {!isSessionCompleted && members.length > 0 && (
+            {/* 마이크 테스트 버튼 — 본인 마이크 점검 (아이콘만) */}
+            {!isSessionCompleted && (
               <button
                 onClick={handleOpenMicTest}
-                aria-label={`마이크 테스트 — ${micPassedCount}/${members.length}명 통과`}
-                title={
-                  allMicPassed
-                    ? "모두 마이크 정상 ✓"
-                    : "실제 답변과 동일하게 녹음 → 다른 멤버가 듣고 확인"
-                }
+                aria-label="마이크 테스트"
+                title="본인 마이크 점검 — 녹음 후 들어보기"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: 5,
-                  padding: "5px 9px",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: allMicPassed
-                    ? "#2d7a3d"
-                    : myMicOk
-                      ? "#4a8e60"
-                      : "var(--foreground-secondary, #6B6B7B)",
-                  background: allMicPassed
-                    ? "rgba(45, 122, 61, 0.10)"
-                    : myMicOk
-                      ? "rgba(74, 142, 96, 0.10)"
-                      : "var(--surface-secondary, #F3F2EF)",
-                  border: `1px solid ${
-                    allMicPassed
-                      ? "rgba(45, 122, 61, 0.30)"
-                      : myMicOk
-                        ? "rgba(74, 142, 96, 0.3)"
-                        : "var(--border, #E8E6E1)"
-                  }`,
+                  justifyContent: "center",
+                  width: 30,
+                  height: 28,
+                  padding: 0,
+                  color: "var(--foreground-secondary, #6B6B7B)",
+                  background: "var(--surface-secondary, #F3F2EF)",
+                  border: "1px solid var(--border, #E8E6E1)",
                   borderRadius: 8,
                   cursor: "pointer",
-                  fontVariantNumeric: "tabular-nums",
                 }}
               >
-                <Mic size={12} strokeWidth={2} aria-hidden="true" />
-                <span className="hidden sm:inline">
-                  {myMicOk ? "마이크 ✓" : "마이크 테스트"}
-                </span>
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 800,
-                    opacity: 0.9,
-                    paddingLeft: 2,
-                  }}
-                >
-                  {micPassedCount}/{members.length}
-                </span>
+                <Mic size={13} strokeWidth={2} aria-hidden="true" />
               </button>
             )}
             <span
@@ -1260,29 +1032,8 @@ export function OpicStudySessionClient({
         onCancel={() => setConfirmDialog(null)}
       />
 
-      {/* 본인 마이크 테스트 모달 */}
-      <MicTestModal
-        mode="tester"
-        open={micTestModalOpen}
-        onClose={handleCloseMicTest}
-        uploadBlob={uploadMicTestBlob}
-        broadcastRequest={broadcastMicTestRequest}
-        responses={micTestResponses}
-        onPassed={handleMicTestPassed}
-        memberStatuses={memberMicStatuses}
-      />
-
-      {/* 다른 멤버 마이크 듣기 모달 (broadcast 수신 시 자동 표시) */}
-      {incomingMicTest && (
-        <MicTestModal
-          mode="listener"
-          open={!!incomingMicTest}
-          onClose={() => setIncomingMicTest(null)}
-          testerName={incomingMicTest.fromName}
-          audioUrl={incomingMicTest.audioUrl}
-          onSubmitResponse={submitMicTestResponse}
-        />
-      )}
+      {/* 본인 마이크 자가 진단 모달 */}
+      <MicTestModal open={micTestModalOpen} onClose={handleCloseMicTest} />
     </SessionFrameContext.Provider>
   );
 
