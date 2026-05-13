@@ -256,6 +256,13 @@ export async function getGroupHistory(groupId: string): Promise<ActionResult<Ses
       );
       const totalQuestions = Math.max(selectedQuestionIds.length, maxAnsweredQuestionIdx + 1);
 
+      // 모든 참여자(답변 + 패스) user_id 수집 — 패스만 한 멤버도 멤버 패널에 표시
+      const participantUserIds = new Set<string>();
+      for (const a of answers) {
+        participantUserIds.add(a.user_id as string);
+      }
+
+      // feedback이 있는 멤버는 strength/improvement 채움 (없으면 null)
       type FbAcc = { strength: string | null; improvement: string | null };
       const memberFb = new Map<string, FbAcc>();
       for (const a of answers) {
@@ -268,19 +275,20 @@ export async function getGroupHistory(groupId: string): Promise<ActionResult<Ses
         });
       }
 
-      const memberHighlights = Array.from(memberFb.entries()).map(([uid, fb]) => {
+      const memberHighlights = Array.from(participantUserIds).map((uid) => {
         const meta = memberMeta.get(uid) ?? {
           name: "멤버",
           initial: "M",
           color: "a" as const,
         };
+        const fb = memberFb.get(uid);
         return {
           user_id: uid,
           name: meta.name,
           initial: meta.initial,
           color: meta.color,
-          strength: fb.strength,
-          improvement: fb.improvement,
+          strength: fb?.strength ?? null,
+          improvement: fb?.improvement ?? null,
         };
       });
 
