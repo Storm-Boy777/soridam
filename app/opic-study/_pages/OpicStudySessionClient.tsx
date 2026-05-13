@@ -503,10 +503,13 @@ export function OpicStudySessionClient({
   );
 
   // 마이크 webm 업로드 → signed URL
+  // path 형식: {sessionId}/{userId}/mic-test-{ts}.webm
+  //   - Storage RLS가 [1]=sessionId, [2]=userId를 요구하기 때문에 본인 user 디렉토리 안에
+  //     mic-test-* prefix 파일로 저장 (실제 답변은 0.webm/1.webm 등 — 충돌 X)
   const uploadMicTestBlob = useCallback(
     async (blob: Blob): Promise<string> => {
       const ts = Date.now();
-      const path = `mic-test/${sessionId}/${currentUserId}-${ts}.webm`;
+      const path = `${sessionId}/${currentUserId}/mic-test-${ts}.webm`;
       const { error: uploadError } = await supabase.storage
         .from("opic-study-recordings")
         .upload(path, blob, {
@@ -514,12 +517,14 @@ export function OpicStudySessionClient({
           upsert: true,
         });
       if (uploadError) {
+        console.error("[mic-test upload] failed:", uploadError);
         throw new Error(uploadError.message);
       }
       const { data: signedData, error: signError } = await supabase.storage
         .from("opic-study-recordings")
         .createSignedUrl(path, 600); // 10분 유효
       if (signError || !signedData?.signedUrl) {
+        console.error("[mic-test signed url] failed:", signError);
         throw new Error(signError?.message ?? "signed URL 생성 실패");
       }
       return signedData.signedUrl;
