@@ -34,8 +34,18 @@ interface UseRecorderOptions {
   silenceTimeout?: number;   // 무음 경고까지 시간 (초, 기본 3)
   lowVolumeThreshold?: number; // 낮은 볼륨 임계값 (0~1, 기본 0.08)
   timeWarningAt?: number;    // 종료 경고 시점 (남은 초, 기본 30)
-  /** onstop 시 빈 녹음 차단 (마이크 테스트 모달은 false로 두고 직접 검사) */
+  /**
+   * onstop 시 빈 녹음 자동 차단 (blob size + 평균 볼륨 + 무음 비율 종합 판정)
+   * 기본 false — 실제 답변 녹음 흐름에 영향 X.
+   * 마이크 자가 진단 모달은 직접 검사하므로 false로 두고 외부에서 처리.
+   */
   validateOnStop?: boolean;
+  /**
+   * 녹음 시작 1.5초 후 자가진단 (지속적 무음이면 mic_silent 에러로 즉시 중단)
+   * 기본 false — 실제 답변 녹음 흐름에 영향 X.
+   * 사용자가 작게 말하기 시작하는 경우 false positive 방지.
+   */
+  selfCheckEnabled?: boolean;
 }
 
 interface UseRecorderReturn {
@@ -108,7 +118,8 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
     silenceTimeout = 3,
     lowVolumeThreshold = 0.15,   // 4x 증폭 기준: 너무 조용
     timeWarningAt = 30,
-    validateOnStop = true,
+    validateOnStop = false,
+    selfCheckEnabled = false,
   } = options;
 
   const [state, setState] = useState<RecordingState>("idle");
@@ -342,28 +353,30 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
       recorder.start();
       setState("recording");
 
-      // M4: 녹음 시작 1.5초 자가진단 — 모든 샘플이 거의 무음이면 즉시 중단
-      // (사용자가 답변 중인 경우는 무음 비율이 일부라도 떨어지므로 false positive 최소)
-      selfCheckTimerRef.current = setTimeout(() => {
-        const samples = volumeSamplesRef.current;
-        if (samples.length < 10) return; // 샘플이 충분치 않으면 패스
-        const maxVol = Math.max(...samples);
-        // 1.5초 동안 한 번도 0.015 이상 안 올라간 경우 = 마이크 무반응
-        if (maxVol < 0.015) {
-          setErrorCode("mic_silent");
-          setError(
-            "마이크에서 소리가 들어오지 않아요. 다른 앱이 마이크를 사용 중이거나, 시스템 마이크 권한을 확인해 주세요."
-          );
-          try {
-            cancelledRef.current = true; // onstop 차단
-            mediaRecorderRef.current?.stop();
-          } catch {
-            /* noop */
+      // M4: 녹음 시작 1.5초 자가진단 — selfCheckEnabled=true 일 때만 활성
+      // (실제 답변 녹음에서는 사용자가 천천히 말하기 시작하는 케이스도 있어 기본 OFF)
+      if (selfCheckEnabled) {
+        selfCheckTimerRef.current = setTimeout(() => {
+          const samples = volumeSamplesRef.current;
+          if (samples.length < 10) return; // 샘플이 충분치 않으면 패스
+          const maxVol = Math.max(...samples);
+          // 1.5초 동안 한 번도 0.015 이상 안 올라간 경우 = 마이크 무반응
+          if (maxVol < 0.015) {
+            setErrorCode("mic_silent");
+            setError(
+              "마이크에서 소리가 들어오지 않아요. 다른 앱이 마이크를 사용 중이거나, 시스템 마이크 권한을 확인해 주세요."
+            );
+            try {
+              cancelledRef.current = true; // onstop 차단
+              mediaRecorderRef.current?.stop();
+            } catch {
+              /* noop */
+            }
+            cleanup();
+            setState("idle");
           }
-          cleanup();
-          setState("idle");
-        }
-      }, 1500);
+        }, 1500);
+      }
 
       // 녹음 시간 타이머
       setDuration(0);
@@ -400,7 +413,7 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
         setError("마이크를 사용할 수 없어요. 디바이스 연결을 확인해 주세요.");
       }
     }
-  }, [maxDuration, timeWarningAt, updateVolume, validateOnStop]);
+  }, [maxDuration, timeWarningAt, updateVolume, validateOnStop, selfCheckEnabled]);
 
   // 녹음 중지
   const stopRecording = useCallback(() => {
