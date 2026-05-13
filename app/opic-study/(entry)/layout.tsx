@@ -1,7 +1,11 @@
 import type { ReactNode } from "react";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { getAuthClaims } from "@/lib/auth";
+import {
+  getAuthClaims,
+  hasLectureAccess,
+  hasStudyPanelAccess,
+} from "@/lib/auth";
 
 /**
  * 오픽 스터디 — 진입 페이지 layout
@@ -16,7 +20,12 @@ export default async function OpicStudyEntryLayout({
 }: {
   children: ReactNode;
 }) {
-  const claims = await getAuthClaims();
+  // 권한 메뉴(강의/스터디 패널) 노출 판단 — 서버에서 1회 조회해 Navbar에 전달
+  const [claims, hasLecAccess, hasPanelAccess] = await Promise.all([
+    getAuthClaims(),
+    hasLectureAccess(),
+    hasStudyPanelAccess(),
+  ]);
   const meta = (claims as Record<string, unknown>)?.user_metadata as
     | Record<string, string>
     | undefined;
@@ -29,8 +38,16 @@ export default async function OpicStudyEntryLayout({
           ((claims as Record<string, unknown>)?.app_metadata as
             | Record<string, string>
             | undefined)?.role === "admin",
+        hasLectureAccess: hasLecAccess,
+        hasStudyPanelAccess: hasPanelAccess,
       }
-    : { isLoggedIn: false, userName: "", isAdmin: false };
+    : {
+        isLoggedIn: false,
+        userName: "",
+        isAdmin: false,
+        hasLectureAccess: false,
+        hasStudyPanelAccess: false,
+      };
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
