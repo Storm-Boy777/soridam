@@ -57,40 +57,22 @@ export default async function OpicStudyLobbyPage({ params }: PageProps) {
     redirect(`/opic-study/session/${sessionId}`);
   }
 
-  // 그룹 멤버 + profile 조회 (FK 분리)
-  const { data: rawMembers } = await supabase
-    .from("study_group_members")
-    .select("user_id, display_name")
-    .eq("group_id", session.group_id);
-
-  const memberUserIds = (rawMembers ?? []).map((m) => m.user_id as string);
-  const { data: profiles } = memberUserIds.length > 0
-    ? await supabase
-        .from("profiles")
-        .select("id, email, display_name")
-        .in("id", memberUserIds)
-    : { data: [] };
-  const profileMap = new Map(
-    (profiles ?? []).map((p) => [p.id as string, p])
+  // 성능 최적화 — 멤버+profile 매핑을 RPC로 1 RTT (RPC 066, FK 분리 해소)
+  const { data: rawMembers } = await supabase.rpc(
+    "get_opic_study_group_members",
+    { p_group_id: session.group_id }
   );
 
-  const memberList = (rawMembers ?? []).map((m, idx) => {
-    const colors: Array<"a" | "b" | "c" | "d"> = ["a", "b", "c", "d"];
-    const color = colors[idx % 4];
-    const userId = m.user_id as string;
-    const p = profileMap.get(userId);
-    const name =
-      (m.display_name as string | null) ??
-      (p?.display_name as string | null) ??
-      (p?.email as string | undefined)?.split("@")[0] ??
-      "멤버";
-    return {
-      key: color,
-      userId,
-      name,
-      isMe: userId === user.id,
-    };
-  });
+  const colors: Array<"a" | "b" | "c" | "d"> = ["a", "b", "c", "d"];
+  const memberList = ((rawMembers ?? []) as Array<{
+    user_id: string;
+    display_name: string;
+  }>).map((m, idx) => ({
+    key: colors[idx % 4],
+    userId: m.user_id,
+    name: m.display_name,
+    isMe: m.user_id === user.id,
+  }));
 
   const groupMeta = session.study_groups as unknown as {
     name: string;

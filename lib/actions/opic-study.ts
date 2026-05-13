@@ -143,43 +143,14 @@ export async function getMyActiveGroups(): Promise<ActionResult<StudyGroupWithSt
   try {
     const { supabase, userId } = await requireUser();
 
-    // 내 멤버십 → 활성 그룹들
-    const { data: memberships } = await supabase
-      .from(T.study_group_members)
-      .select("group_id")
-      .eq("user_id", userId);
-
-    const groupIds = (memberships || []).map((m) => m.group_id);
-    if (groupIds.length === 0) return { data: [] };
-
-    const { data: groups, error } = await supabase
-      .from(T.study_groups)
-      .select("*")
-      .in("id", groupIds)
-      .eq("status", "active")
-      .order("start_date", { ascending: false });
-
-    if (error) return { error: "그룹 조회 실패" };
-    if (!groups || groups.length === 0) return { data: [] };
-
-    // 통계 계산 (각 그룹별)
-    const stats = await Promise.all(
-      groups.map(async (g) => {
-        const [{ count: memberCount }, { count: activeCount }, { count: completedCount }] = await Promise.all([
-          supabase.from(T.study_group_members).select("*", { count: "exact", head: true }).eq("group_id", g.id),
-          supabase.from(T.opic_study_sessions).select("*", { count: "exact", head: true }).eq("group_id", g.id).eq("status", "active"),
-          supabase.from(T.opic_study_sessions).select("*", { count: "exact", head: true }).eq("group_id", g.id).eq("status", "completed"),
-        ]);
-        return {
-          ...(g as StudyGroup),
-          member_count: memberCount ?? 0,
-          active_session_count: activeCount ?? 0,
-          completed_session_count: completedCount ?? 0,
-        } as StudyGroupWithStats;
-      })
+    // 성능 최적화 — 그룹 + 멤버수 + 활성/완료 세션수를 RPC로 1 RTT (N+1 해소, RPC 066)
+    const { data, error } = await supabase.rpc(
+      "get_opic_study_my_groups_with_stats",
+      { p_user_id: userId, p_status: "active" }
     );
 
-    return { data: stats };
+    if (error) return { error: "그룹 조회 실패" };
+    return { data: (data ?? []) as StudyGroupWithStats[] };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "그룹 조회 실패" };
   }
@@ -190,23 +161,14 @@ export async function getMyClosedGroups(): Promise<ActionResult<StudyGroup[]>> {
   try {
     const { supabase, userId } = await requireUser();
 
-    const { data: memberships } = await supabase
-      .from(T.study_group_members)
-      .select("group_id")
-      .eq("user_id", userId);
-
-    const groupIds = (memberships || []).map((m) => m.group_id);
-    if (groupIds.length === 0) return { data: [] };
-
-    const { data, error } = await supabase
-      .from(T.study_groups)
-      .select("*")
-      .in("id", groupIds)
-      .eq("status", "closed")
-      .order("end_date", { ascending: false });
+    // 성능 최적화 — 동일 RPC 재사용 (closed 상태)
+    const { data, error } = await supabase.rpc(
+      "get_opic_study_my_groups_with_stats",
+      { p_user_id: userId, p_status: "closed" }
+    );
 
     if (error) return { error: "이력 조회 실패" };
-    return { data: (data || []) as StudyGroup[] };
+    return { data: (data ?? []) as StudyGroup[] };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "이력 조회 실패" };
   }
@@ -218,29 +180,51 @@ export async function getGroupHistory(groupId: string): Promise<ActionResult<Ses
     const { supabase, userId } = await requireUser();
     await requireGroupMember(supabase, groupId, userId);
 
-    const { data: sessions, error } = await supabase
-      .from(T.opic_study_sessions)
-      .select("id, selected_category, selected_topic, selected_combo_sig, selected_question_ids, started_at, ended_at, status")
-      .eq("group_id", groupId)
-      .order("started_at", { ascending: false })
-      .limit(50);
+    // 성능 최적화 — sessions + 모든 답변 nested + 멤버 메타 병렬 (RPC 066)
+    type HistoryRow = {
+      id: string;
+      selected_category: string | null;
+      selected_topic: string | null;
+      selected_combo_sig: string | null;
+      selected_question_ids: string[] | null;
+      started_at: string;
+      ended_at: string | null;
+      status: string;
+      answers: Array<{
+        session_id: string;
+        user_id: string;
+        question_idx: number | null;
+        audio_url: string | null;
+        feedback_result: unknown;
+      }> | null;
+    };
+    const [historyRes, memberMetaRes] = await Promise.all([
+      supabase.rpc("get_opic_study_group_history", {
+        p_group_id: groupId,
+        p_limit: 50,
+      }),
+      getStudyMemberMeta(supabase, groupId),
+    ]);
 
-    if (error) return { error: "이력 조회 실패" };
-    if (!sessions || sessions.length === 0) return { data: [] };
+    if (historyRes.error) return { error: "이력 조회 실패" };
+    const sessions = (historyRes.data ?? []) as HistoryRow[];
+    if (sessions.length === 0) return { data: [] };
 
-    const { memberMeta, memberCount } = await getStudyMemberMeta(supabase, groupId);
-    const sessionIds = sessions.map((s) => s.id as string);
-    const { data: allAnswers } = await supabase
-      .from(T.opic_study_answers)
-      .select("session_id, user_id, question_idx, audio_url, feedback_result")
-      .in("session_id", sessionIds);
+    const { memberMeta, memberCount } = memberMetaRes;
 
-    const answersBySession = new Map<string, NonNullable<typeof allAnswers>>();
-    for (const answer of allAnswers ?? []) {
-      const sid = answer.session_id as string;
-      const list = answersBySession.get(sid) ?? [];
-      list.push(answer);
-      answersBySession.set(sid, list);
+    // RPC nested answers를 기존 형식으로 변환
+    const answersBySession = new Map<
+      string,
+      Array<{
+        session_id: string;
+        user_id: string;
+        question_idx: number | null;
+        audio_url: string | null;
+        feedback_result: unknown;
+      }>
+    >();
+    for (const s of sessions) {
+      answersBySession.set(s.id, s.answers ?? []);
     }
 
     const enriched = sessions.map((s) => {
@@ -502,15 +486,44 @@ export async function getMyStudySummary(
     const { supabase, userId } = await requireUser();
     await requireGroupMember(supabase, groupId, userId);
 
-    const { data: sessions, error } = await supabase
-      .from(T.opic_study_sessions)
-      .select("id, selected_category, selected_topic, selected_question_ids, started_at, ended_at, status")
-      .eq("group_id", groupId)
-      .order("started_at", { ascending: false })
-      .limit(80);
+    // 성능 최적화 — sessions + 본인 답변(nested jsonb)을 1 RTT로 (RPC 066)
+    type SummaryRow = {
+      id: string;
+      selected_category: string | null;
+      selected_topic: string | null;
+      selected_question_ids: string[] | null;
+      started_at: string;
+      ended_at: string | null;
+      status: string;
+      my_answers: Array<{
+        session_id: string;
+        question_id: string | null;
+        question_idx: number | null;
+        audio_url: string | null;
+        transcript: string | null;
+        feedback_result: unknown;
+        pronunciation_score: unknown;
+        created_at: string;
+      }> | null;
+    };
+    const { data: rpcRows, error } = await supabase.rpc(
+      "get_opic_study_my_summary",
+      { p_user_id: userId, p_group_id: groupId, p_limit: 80 }
+    );
+
+    const sessionRows = (rpcRows ?? []) as SummaryRow[];
+    const sessions = sessionRows.map((r) => ({
+      id: r.id,
+      selected_category: r.selected_category,
+      selected_topic: r.selected_topic,
+      selected_question_ids: r.selected_question_ids,
+      started_at: r.started_at,
+      ended_at: r.ended_at,
+      status: r.status,
+    }));
 
     if (error) return { error: "내 학습 요약 조회 실패" };
-    if (!sessions || sessions.length === 0) {
+    if (sessions.length === 0) {
       return {
         data: {
           stats: {
@@ -534,17 +547,12 @@ export async function getMyStudySummary(
       };
     }
 
-    const sessionIds = sessions.map((s) => s.id as string);
-    const { data: answers } = await supabase
-      .from(T.opic_study_answers)
-      .select(
-        "session_id, question_id, question_idx, audio_url, transcript, feedback_result, pronunciation_score, created_at"
-      )
-      .eq("user_id", userId)
-      .in("session_id", sessionIds)
-      .order("created_at", { ascending: false });
-
-    const answerRows = answers ?? [];
+    // RPC가 이미 본인 답변을 nested로 반환 — flat 리스트로 변환 후 시간 역순 정렬
+    const answerRows = sessionRows
+      .flatMap((r) => r.my_answers ?? [])
+      .sort((a, b) =>
+        (b.created_at ?? "") > (a.created_at ?? "") ? 1 : -1
+      );
 
     // ─── 본인 답변 라이브러리용: 음성 signed URL + 질문 본문 ───
     // 음성이 있는 답변만 (패스 제외) 최근 50개
@@ -555,37 +563,44 @@ export async function getMyStudySummary(
     const audioPaths = recentAnswered
       .map((a) => a.audio_url as string)
       .filter(Boolean);
-    const signedUrlMap = new Map<string, string>();
-    if (audioPaths.length > 0) {
-      const { data: signed } = await supabase.storage
-        .from("opic-study-recordings")
-        .createSignedUrls(audioPaths, 3600);
-      for (const item of signed ?? []) {
-        if (item.path && item.signedUrl && !item.error) {
-          signedUrlMap.set(item.path, item.signedUrl);
-        }
-      }
-    }
-
     const myAnswerQuestionIds = Array.from(
       new Set(recentAnswered.map((a) => a.question_id as string).filter(Boolean))
     );
+
+    // 성능 최적화 — signed URLs + questions 병렬 (RTT 1회 절감)
+    const [signedRes, questionsRes] = await Promise.all([
+      audioPaths.length > 0
+        ? supabase.storage
+            .from("opic-study-recordings")
+            .createSignedUrls(audioPaths, 3600)
+        : Promise.resolve({ data: [] as Array<{ path: string | null; signedUrl: string; error: string | null }> }),
+      myAnswerQuestionIds.length > 0
+        ? supabase
+            .from(T.questions)
+            .select(
+              "id, question_english, question_korean, question_type_kor"
+            )
+            .in("id", myAnswerQuestionIds)
+        : Promise.resolve({ data: [] as Array<{ id: string; question_english: string | null; question_korean: string | null; question_type_kor: string | null }> }),
+    ]);
+
+    const signedUrlMap = new Map<string, string>();
+    for (const item of signedRes.data ?? []) {
+      if (item.path && item.signedUrl && !item.error) {
+        signedUrlMap.set(item.path, item.signedUrl);
+      }
+    }
+
     const myAnswerQuestionMap = new Map<
       string,
       { question_english: string | null; question_korean: string | null; question_type_kor: string | null }
     >();
-    if (myAnswerQuestionIds.length > 0) {
-      const { data: qrows } = await supabase
-        .from(T.questions)
-        .select("id, question_english, question_korean, question_type_kor")
-        .in("id", myAnswerQuestionIds);
-      for (const q of qrows ?? []) {
-        myAnswerQuestionMap.set(q.id as string, {
-          question_english: (q.question_english as string | null) ?? null,
-          question_korean: (q.question_korean as string | null) ?? null,
-          question_type_kor: (q.question_type_kor as string | null) ?? null,
-        });
-      }
+    for (const q of questionsRes.data ?? []) {
+      myAnswerQuestionMap.set(q.id as string, {
+        question_english: (q.question_english as string | null) ?? null,
+        question_korean: (q.question_korean as string | null) ?? null,
+        question_type_kor: (q.question_type_kor as string | null) ?? null,
+      });
     }
 
     // 세션 메타 룩업
@@ -999,40 +1014,31 @@ export async function getCategoryStats(): Promise<ActionResult<CategoryStat[]>> 
   try {
     const { supabase } = await requireUser();
 
-    // 시험후기 모듈에서 직접 집계 — question_ids로 콤보 시그니처 생성하여 고유 카운트
-    const { data, error } = await supabase
-      .from(T.submission_combos)
-      .select(
-        "topic, combo_type, question_ids, submissions!inner(status, exam_approved)"
-      )
-      .eq("submissions.status", "complete")
-      .eq("submissions.exam_approved", "approved");
+    // 성능 최적화 — submission_combos 전체 raw + JS Set 집계 → SQL aggregate (RPC 066)
+    const { data, error } = await supabase.rpc(
+      "get_opic_study_category_stats"
+    );
 
     if (error) return { error: "카테고리 통계 조회 실패" };
 
-    // 카테고리별 그루핑 — comboSigs Set으로 고유 콤보 카운트
-    // (같은 콤보가 여러 시험에 출제되어도 1개로 카운트)
-    const groups: Record<
-      StudyCategory,
-      { topics: Set<string>; comboSigs: Set<string> }
-    > = {
-      general: { topics: new Set(), comboSigs: new Set() },
-      roleplay: { topics: new Set(), comboSigs: new Set() },
-      advance: { topics: new Set(), comboSigs: new Set() },
-    };
-
-    for (const row of data || []) {
-      const cat = comboTypeToCategory(row.combo_type as string);
-      const qids = (row.question_ids as string[] | null) ?? [];
-      if (qids.length === 0) continue;
-      groups[cat].comboSigs.add(buildComboSignature(qids));
-      groups[cat].topics.add(row.topic as string);
+    // RPC는 데이터 있는 카테고리만 반환 — 빈 카테고리는 0으로 채움
+    const map = new Map<string, { topic_count: number; combo_count: number }>();
+    for (const row of (data ?? []) as Array<{
+      category: string;
+      topic_count: number;
+      combo_count: number;
+    }>) {
+      map.set(row.category, {
+        topic_count: row.topic_count,
+        combo_count: row.combo_count,
+      });
     }
-
-    const stats: CategoryStat[] = (["general", "roleplay", "advance"] as const).map((cat) => ({
+    const stats: CategoryStat[] = (
+      ["general", "roleplay", "advance"] as const
+    ).map((cat) => ({
       category: cat,
-      topic_count: groups[cat].topics.size,
-      combo_count: groups[cat].comboSigs.size,
+      topic_count: map.get(cat)?.topic_count ?? 0,
+      combo_count: map.get(cat)?.combo_count ?? 0,
     }));
 
     return { data: stats };
@@ -1047,67 +1053,28 @@ export async function getTopicsForStudy(input: { category: StudyCategory; groupI
     const { supabase, userId } = await requireUser();
     await requireGroupMember(supabase, input.groupId, userId);
 
-    // 1. 시험후기 raw 데이터 — question_ids로 콤보 시그니처 만들어 고유 카운트
-    const { data: combos, error } = await supabase
-      .from(T.submission_combos)
-      .select(
-        "topic, combo_type, question_ids, submissions!inner(status, exam_approved)"
-      )
-      .eq("submissions.status", "complete")
-      .eq("submissions.exam_approved", "approved");
+    // 성능 최적화 — 시험후기 raw + JS 집계 → SQL CTE 1회 (RPC 066)
+    const { data, error } = await supabase.rpc(
+      "get_opic_study_topics_for_study",
+      { p_category: input.category, p_group_id: input.groupId }
+    );
 
     if (error) return { error: "토픽 조회 실패" };
-
-    // 2. 카테고리 필터 + 토픽별 (a) 고유 콤보 시그니처 Set, (b) 실제 출제 row 수
-    //    - combo_count = 고유 콤보 종류 수 (화면 표시 "콤보 X개")
-    //    - submission_count = 실제 출제 횟수 (정렬 주 지표 — 사용자 지시)
-    const filtered = (combos || []).filter(
-      (c) => comboTypeToCategory(c.combo_type as string) === input.category
-    );
-    const topicSigs: Record<string, Set<string>> = {};
-    const topicSubmissionCount: Record<string, number> = {};
-    for (const c of filtered) {
-      const topic = c.topic as string;
-      const qids = (c.question_ids as string[] | null) ?? [];
-      if (qids.length === 0) continue;
-      if (!topicSigs[topic]) topicSigs[topic] = new Set();
-      topicSigs[topic].add(buildComboSignature(qids));
-      topicSubmissionCount[topic] = (topicSubmissionCount[topic] || 0) + 1;
-    }
-
-    // 3. 그룹 학습 이력
-    const { data: studied } = await supabase
-      .from(T.opic_study_sessions)
-      .select("selected_topic, selected_category")
-      .eq("group_id", input.groupId)
-      .eq("status", "completed")
-      .eq("selected_category", input.category)
-      .not("selected_topic", "is", null);
-
-    const studyCounts: Record<string, number> = {};
-    for (const s of studied || []) {
-      const t = s.selected_topic as string;
-      if (t) studyCounts[t] = (studyCounts[t] || 0) + 1;
-    }
-
-    // 4. 결과 조립 — submission_count desc 정렬 (실제 출제 빈도)
-    //    동률 시 combo_count desc (콤보 다양성)로 보조 정렬
-    const topics: TopicForStudy[] = Object.entries(topicSigs)
-      .map(([topic, sigs]) => ({
-        topic,
-        category: input.category,
-        combo_count: sigs.size,
-        submission_count: topicSubmissionCount[topic] || 0,
-        studied_count: studyCounts[topic] || 0,
-      }))
-      .sort((a, b) => {
-        if (b.submission_count !== a.submission_count) {
-          return b.submission_count - a.submission_count;
-        }
-        return b.combo_count - a.combo_count;
-      });
-
-    return { data: topics };
+    return {
+      data: ((data ?? []) as Array<{
+        topic: string;
+        category: string;
+        combo_count: number;
+        submission_count: number;
+        studied_count: number;
+      }>).map((row) => ({
+        topic: row.topic,
+        category: row.category as StudyCategory,
+        combo_count: row.combo_count,
+        submission_count: row.submission_count,
+        studied_count: row.studied_count,
+      })),
+    };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "토픽 조회 실패" };
   }
@@ -1145,6 +1112,10 @@ export async function getCombosForStudy(input: {
       };
     };
 
+    // 성능 최적화 — 카테고리 필터를 SQL에서 처리 (combo_type IN [...])
+    // 기존: 전체 row 다운로드 후 JS filter → general의 경우 1/3 양만 다운로드
+    const comboTypeFilter = CATEGORY_TO_COMBO_TYPES[input.category];
+
     const { data: rawData, error } = await supabase
       .from(T.submission_questions)
       .select(
@@ -1153,17 +1124,13 @@ export async function getCombosForStudy(input: {
           "submissions!inner(status, exam_approved, exam_date, achieved_level)"
       )
       .eq("topic", input.topic)
+      .in("combo_type", comboTypeFilter)
       .eq("submissions.status", "complete")
       .eq("submissions.exam_approved", "approved");
 
     if (error) return { error: "콤보 조회 실패" };
 
-    const rows = (rawData ?? []) as unknown as RawRow[];
-
-    // 2. 카테고리 필터
-    const filtered = rows.filter(
-      (r) => comboTypeToCategory(r.combo_type) === input.category
-    );
+    const filtered = (rawData ?? []) as unknown as RawRow[];
 
     // 3. submission_id로 그루핑 → 콤보 객체
     type RawCombo = {

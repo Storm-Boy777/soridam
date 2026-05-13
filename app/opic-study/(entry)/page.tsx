@@ -112,6 +112,7 @@ export default async function OpicStudyHomePage() {
   const schedule = targetGroup?.schedule ?? fallbackSchedule;
 
   // 다음 세션의 실제 멤버 정보 조회 + 활성 세션 ID 조회
+  // 성능 최적화 — 멤버+profile (RPC 1 RTT) + 활성 세션 ID 병렬 (RPC 066)
   let nextSessionMemberCount = 0;
   let nextSessionMembers: Array<{
     key: "a" | "b" | "c" | "d";
@@ -121,51 +122,36 @@ export default async function OpicStudyHomePage() {
   let activeSessionId: string | null = null;
   if (targetGroup) {
     const supabase = await createServerSupabaseClient();
-    const { data: rawMembers } = await supabase
-      .from("study_group_members")
-      .select("user_id, display_name")
-      .eq("group_id", targetGroup.id)
-      .order("joined_at", { ascending: true });
+    const [membersRes, activeSessionRes] = await Promise.all([
+      supabase.rpc("get_opic_study_group_members", {
+        p_group_id: targetGroup.id,
+      }),
+      activeGroup
+        ? supabase
+            .from("opic_study_sessions")
+            .select("id")
+            .eq("group_id", targetGroup.id)
+            .eq("status", "active")
+            .order("started_at", { ascending: false })
+            .limit(1)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
 
-    const userIds = (rawMembers ?? []).map((m) => m.user_id as string);
-    const { data: profiles } = userIds.length > 0
-      ? await supabase
-          .from("profiles")
-          .select("id, email, display_name")
-          .in("id", userIds)
-      : { data: [] };
-    const profileMap = new Map((profiles ?? []).map((p) => [p.id as string, p]));
-
+    const members = (membersRes.data ?? []) as Array<{
+      user_id: string;
+      display_name: string;
+    }>;
     const colors: Array<"a" | "b" | "c" | "d"> = ["a", "b", "c", "d"];
-    nextSessionMemberCount = rawMembers?.length ?? 0;
-    // 모든 멤버 전달 (UI에서 4 dot + "+N" 처리 — 5명 이상 그룹 지원)
-    nextSessionMembers = (rawMembers ?? []).map((m, idx) => {
-      const userId = m.user_id as string;
-      const p = profileMap.get(userId);
-      const name =
-        (m.display_name as string | null) ??
-        (p?.display_name as string | null) ??
-        (p?.email as string | undefined)?.split("@")[0] ??
-        "M";
-      return {
-        key: colors[idx % 4],
-        initial: name.charAt(0).toUpperCase(),
-        userId,
-      };
-    });
+    nextSessionMemberCount = members.length;
+    nextSessionMembers = members.map((m, idx) => ({
+      key: colors[idx % 4],
+      initial: (m.display_name || "M").charAt(0).toUpperCase(),
+      userId: m.user_id,
+    }));
 
-    // 활성 세션 ID 조회 (presence channel 식별용)
-    if (activeGroup) {
-      const { data: activeSession } = await supabase
-        .from("opic_study_sessions")
-        .select("id")
-        .eq("group_id", targetGroup.id)
-        .eq("status", "active")
-        .order("started_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      activeSessionId = (activeSession?.id as string | undefined) ?? null;
-    }
+    activeSessionId =
+      ((activeSessionRes.data as { id?: string } | null)?.id) ?? null;
   }
 
   // 학습 통계 — 답변 0건 멤버는 totalAnswers=0, lastParticipationDaysAgo=null

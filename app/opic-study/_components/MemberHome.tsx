@@ -98,6 +98,8 @@ export function MemberHome(props: MemberHomeProps) {
   // Realtime presence — 활성 세션의 lobby/세션 룸에 입장한 멤버 추적
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
 
+  // 성능 최적화 — 매초 → 15초마다 갱신
+  // (분 단위 임계점 감지 + 매초 setState로 인한 불필요한 리렌더 방지)
   useEffect(() => {
     const id = setInterval(() => {
       setSessionState(
@@ -105,7 +107,7 @@ export function MemberHome(props: MemberHomeProps) {
           hasActiveSession: props.hasActiveSession,
         })
       );
-    }, 1000);
+    }, 15000);
     return () => clearInterval(id);
   }, [props.schedule, props.hasActiveSession]);
 

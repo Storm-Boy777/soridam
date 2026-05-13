@@ -47,52 +47,36 @@ export default async function OpicStudySessionPage({ params }: PageProps) {
     redirect("/opic-study?reason=not-member");
   }
 
-  // 그룹 멤버 + profile 조회 (FK 분리)
-  const { data: rawMembers } = await supabase
-    .from("study_group_members")
-    .select("user_id, display_name")
-    .eq("group_id", session.group_id);
+  // 성능 최적화 — 멤버+profile 매핑 + 본인 target_grade 병렬 (RPC 066, FK 분리 해소)
+  const [rawMembersRes, meProfileRes] = await Promise.all([
+    supabase.rpc("get_opic_study_group_members", {
+      p_group_id: session.group_id,
+    }),
+    supabase
+      .from("profiles")
+      .select("target_grade")
+      .eq("id", user.id)
+      .maybeSingle(),
+  ]);
 
-  const memberUserIds = (rawMembers ?? []).map((m) => m.user_id as string);
-  const { data: profiles } = memberUserIds.length > 0
-    ? await supabase
-        .from("profiles")
-        .select("id, email, display_name")
-        .in("id", memberUserIds)
-    : { data: [] };
-  const profileMap = new Map(
-    (profiles ?? []).map((p) => [p.id as string, p])
-  );
-
-  const members = (rawMembers ?? []).map((m, idx) => {
-    const colors: Array<"a" | "b" | "c" | "d"> = ["a", "b", "c", "d"];
-    const color = colors[idx % 4];
-    const userId = m.user_id as string;
-    const p = profileMap.get(userId);
-    const name =
-      (m.display_name as string | null) ??
-      (p?.display_name as string | null) ??
-      (p?.email as string | undefined)?.split("@")[0] ??
-      "멤버";
-    return {
-      key: color,
-      userId,
-      name,
-      initial: name.charAt(0).toUpperCase(),
-    };
-  });
+  const colors: Array<"a" | "b" | "c" | "d"> = ["a", "b", "c", "d"];
+  const members = ((rawMembersRes.data ?? []) as Array<{
+    user_id: string;
+    display_name: string;
+  }>).map((m, idx) => ({
+    key: colors[idx % 4],
+    userId: m.user_id,
+    name: m.display_name,
+    initial: (m.display_name || "M").charAt(0).toUpperCase(),
+  }));
 
   const groupMeta = session.study_groups as unknown as {
     name: string;
   };
 
-  // 본인의 목표 등급 (마이페이지에서 설정한 값, 없으면 기본 AL)
-  const { data: meProfile } = await supabase
-    .from("profiles")
-    .select("target_grade")
-    .eq("id", user.id)
-    .maybeSingle();
-  const myTargetGrade = (meProfile?.target_grade as string | null) || "AL";
+  const myTargetGrade =
+    ((meProfileRes.data as { target_grade?: string } | null)?.target_grade) ||
+    "AL";
 
   return (
     <OpicStudySessionClient
