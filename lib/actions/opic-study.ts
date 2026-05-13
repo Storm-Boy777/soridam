@@ -1360,7 +1360,7 @@ export async function advanceLobby(sessionId: string): Promise<ActionResult> {
  */
 export async function rollbackStep(
   sessionId: string,
-  targetStep: "category_select" | "topic_select" | "combo_select"
+  targetStep: "category_select" | "topic_select" | "combo_select" | "guide"
 ): Promise<ActionResult> {
   try {
     const { supabase, userId } = await requireUser();
@@ -1405,6 +1405,19 @@ export async function rollbackStep(
         })
         .eq("id", sessionId)
         .eq("step", "guide");
+      if (error) return { error: "단계 되돌리기 실패" };
+    } else if (targetStep === "guide") {
+      // Step 6 (recording) → Step 5 (guide)
+      // 답변 데이터(opic_study_answers)는 그대로 유지 — 가이드 다시 보고 같은 자리에서 재개
+      // 발화자만 리셋해서 누가 다시 시작할지 결정할 수 있게
+      const { error } = await supabase
+        .from(T.opic_study_sessions)
+        .update({
+          step: "guide",
+          current_speaker_user_id: null,
+        })
+        .eq("id", sessionId)
+        .eq("step", "recording");
       if (error) return { error: "단계 되돌리기 실패" };
     } else {
       return { error: "지원하지 않는 단계입니다" };

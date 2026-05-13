@@ -743,6 +743,25 @@ export function OpicStudySessionClient({
     });
   }, [sessionId]);
 
+  const handleRollbackToGuide = useCallback(() => {
+    setConfirmDialog({
+      type: "rollback",
+      title: "가이드로 돌아갈까요?",
+      description:
+        "모든 멤버 화면이 가이드로 함께 돌아가요. 지금까지의 답변은 그대로 유지됩니다.",
+      confirmLabel: "돌아가기",
+      variant: "warning",
+      icon: "⏮",
+      onConfirm: () => {
+        setConfirmDialog(null);
+        startTransition(async () => {
+          const res = await rollbackStep(sessionId, "guide");
+          if (res.error) toast.error(res.error);
+        });
+      },
+    });
+  }, [sessionId]);
+
   const handleSubmitAnswer = useCallback(
     async (audioBlob: Blob) => {
       const questionId = session.selected_question_ids[idx];
@@ -960,7 +979,9 @@ export function OpicStudySessionClient({
             ? handleRollbackToTopic
             : session.step === "guide"
               ? handleRollbackToCombo
-              : undefined
+              : session.step === "recording"
+                ? handleRollbackToGuide
+                : undefined
         }
         rightContent={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
