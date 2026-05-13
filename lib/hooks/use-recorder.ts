@@ -13,6 +13,20 @@ export type RecordingState =
 
 export type VolumeWarning = "none" | "silent" | "too_quiet" | "time_warning";
 
+// ── 마이크 에러 코드 (UI에서 가이드 분기) ──
+//   mic_denied      : 권한 거부
+//   mic_silent      : 녹음 시작 후 1.5초간 거의 무음 (디바이스/점유 의심)
+//   mic_taken       : 도중 mute 발생 (다른 앱이 마이크 빼앗아감)
+//   empty_recording : onstop 시 webm 크기/볼륨이 무용 (Whisper 환각 사전 차단)
+//   mic_unavailable : track readyState != live 또는 트랙 없음
+export type MicErrorCode =
+  | "mic_denied"
+  | "mic_silent"
+  | "mic_taken"
+  | "empty_recording"
+  | "mic_unavailable"
+  | null;
+
 interface UseRecorderOptions {
   maxDuration?: number;      // 최대 녹음 시간 (초, 기본 240 = 4분)
   minDuration?: number;      // 최소 녹음 시간 (초, 기본 1)
@@ -20,6 +34,8 @@ interface UseRecorderOptions {
   silenceTimeout?: number;   // 무음 경고까지 시간 (초, 기본 3)
   lowVolumeThreshold?: number; // 낮은 볼륨 임계값 (0~1, 기본 0.08)
   timeWarningAt?: number;    // 종료 경고 시점 (남은 초, 기본 30)
+  /** onstop 시 빈 녹음 차단 (마이크 테스트 모달은 false로 두고 직접 검사) */
+  validateOnStop?: boolean;
 }
 
 interface UseRecorderReturn {
@@ -34,6 +50,10 @@ interface UseRecorderReturn {
   stopRecording: () => void;
   reset: () => void;
   error: string | null;
+  /** 구체 에러 코드 — UI에서 가이드 분기용 */
+  errorCode: MicErrorCode;
+  /** 녹음 중 누적 평균 볼륨 (onstop 후 결과 페이지에서 참고용) */
+  avgVolume: number;
 }
 
 // WebM → WAV 변환 (Azure Pronunciation Assessment 호환)
@@ -88,6 +108,7 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
     silenceTimeout = 3,
     lowVolumeThreshold = 0.15,   // 4x 증폭 기준: 너무 조용
     timeWarningAt = 30,
+    validateOnStop = true,
   } = options;
 
   const [state, setState] = useState<RecordingState>("idle");
@@ -96,6 +117,8 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
   const [warning, setWarning] = useState<VolumeWarning>("none");
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<MicErrorCode>(null);
+  const [avgVolume, setAvgVolume] = useState(0);
 
   // refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -112,6 +135,15 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
   // 무음 감지 (UX 2-3)
   const silenceStartRef = useRef<number | null>(null);
 
+  // 누적 볼륨 샘플 (onstop 시 무음 webm 차단용)
+  const volumeSamplesRef = useRef<number[]>([]);
+  // 1.5초 자가진단 timer
+  const selfCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // track mute 이벤트 핸들러 (cleanup용)
+  const trackRef = useRef<MediaStreamTrack | null>(null);
+  const trackMuteHandlerRef = useRef<(() => void) | null>(null);
+  const trackEndedHandlerRef = useRef<(() => void) | null>(null);
+
   // ── 볼륨 분석 (소리담 검증 패턴: getByteFrequencyData + 증폭) ──
   const updateVolume = useCallback(() => {
     if (!analyserRef.current) return;
@@ -124,6 +156,9 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
     const avg = dataArray.reduce((sum, v) => sum + v, 0) / dataArray.length;
     const normalizedVolume = Math.min(1, (avg / 255) * 4);
     setVolume(normalizedVolume);
+
+    // 누적 샘플 저장 — onstop 시 무음 webm 차단에 사용
+    volumeSamplesRef.current.push(normalizedVolume);
 
     // 무음 감지
     if (normalizedVolume < silenceThreshold) {
@@ -152,19 +187,72 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
     try {
       cancelledRef.current = false;
       setError(null);
+      setErrorCode(null);
       setAudioBlob(null);
+      setAvgVolume(0);
       setWarning("none");
       silenceStartRef.current = null;
+      volumeSamplesRef.current = [];
 
+      // M1: autoGainControl 추가 — 작은 음성 자동 증폭
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           sampleRate: 16000,
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
+          autoGainControl: true,
         },
       });
       streamRef.current = stream;
+
+      // M5: getUserMedia 결과 트랙 검증
+      const audioTracks = stream.getAudioTracks();
+      if (audioTracks.length === 0) {
+        setErrorCode("mic_unavailable");
+        setError("마이크를 찾을 수 없어요. 시스템 마이크 연결을 확인해 주세요.");
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
+
+      const track = audioTracks[0];
+      if (track.readyState !== "live") {
+        setErrorCode("mic_unavailable");
+        setError("마이크가 사용 불가능한 상태예요. 다른 앱이 마이크를 사용 중인지 확인해 주세요.");
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
+      if (track.muted) {
+        setErrorCode("mic_taken");
+        setError("마이크가 음소거 상태예요. 다른 앱이 마이크를 사용 중인지 확인해 주세요.");
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
+
+      // M3: 도중 mute / ended 이벤트 모니터링
+      const onTrackMute = () => {
+        setErrorCode("mic_taken");
+        setError("녹음 중 마이크가 끊겼어요. 다른 앱이 마이크를 점유했을 수 있어요.");
+        try {
+          mediaRecorderRef.current?.stop();
+        } catch {
+          /* noop */
+        }
+      };
+      const onTrackEnded = () => {
+        setErrorCode("mic_unavailable");
+        setError("녹음 중 마이크 연결이 끊겼어요. 디바이스 연결을 확인해 주세요.");
+        try {
+          mediaRecorderRef.current?.stop();
+        } catch {
+          /* noop */
+        }
+      };
+      track.addEventListener("mute", onTrackMute);
+      track.addEventListener("ended", onTrackEnded);
+      trackRef.current = track;
+      trackMuteHandlerRef.current = onTrackMute;
+      trackEndedHandlerRef.current = onTrackEnded;
 
       // Web Audio API 볼륨 분석
       const audioCtx = new AudioContext();
@@ -192,10 +280,51 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
 
+      // M6: 녹음 도중 에러 핸들러
+      recorder.onerror = (e) => {
+        const err = e as Event & { error?: { name?: string } };
+        setErrorCode("mic_unavailable");
+        setError(
+          `녹음 중 오류가 발생했어요${err.error?.name ? ` (${err.error.name})` : ""}`
+        );
+      };
+
       recorder.onstop = async () => {
         // reset()에서 stop한 경우 무시 (비동기 레이스 컨디션 방지)
         if (cancelledRef.current) return;
         const webmBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+
+        // 누적 평균 볼륨 계산
+        const samples = volumeSamplesRef.current;
+        const meanVol =
+          samples.length > 0
+            ? samples.reduce((s, v) => s + v, 0) / samples.length
+            : 0;
+        const silentRatio =
+          samples.length > 0
+            ? samples.filter((v) => v < 0.02).length / samples.length
+            : 1;
+        setAvgVolume(meanVol);
+
+        // M2: 빈 녹음 차단 — 셋 중 둘 이상 만족 시 무음 webm 판정
+        // (false positive 방지 위해 단일 조건은 통과)
+        const isEmptyBlob = webmBlob.size < 5000;       // 5KB 미만 = 사실상 빈 webm
+        const isSilentVolume = meanVol < 0.01;          // 평균 볼륨 거의 0
+        const isMostlySilent = silentRatio > 0.95;      // 95% 이상 무음
+        const failures =
+          (isEmptyBlob ? 1 : 0) +
+          (isSilentVolume ? 1 : 0) +
+          (isMostlySilent ? 1 : 0);
+
+        if (validateOnStop && failures >= 2) {
+          // 무음 webm 차단 — setAudioBlob 호출 안 함 → 자동 업로드 차단
+          setErrorCode("empty_recording");
+          setError(
+            "녹음에 음성이 거의 들리지 않아요. 마이크 상태를 확인하고 다시 녹음해 주세요."
+          );
+          setState("idle");
+          return;
+        }
 
         // WebM → WAV 변환 (Azure Pronunciation Assessment는 WAV/PCM만 지원)
         try {
@@ -212,6 +341,29 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
       startTimeRef.current = Date.now();
       recorder.start();
       setState("recording");
+
+      // M4: 녹음 시작 1.5초 자가진단 — 모든 샘플이 거의 무음이면 즉시 중단
+      // (사용자가 답변 중인 경우는 무음 비율이 일부라도 떨어지므로 false positive 최소)
+      selfCheckTimerRef.current = setTimeout(() => {
+        const samples = volumeSamplesRef.current;
+        if (samples.length < 10) return; // 샘플이 충분치 않으면 패스
+        const maxVol = Math.max(...samples);
+        // 1.5초 동안 한 번도 0.015 이상 안 올라간 경우 = 마이크 무반응
+        if (maxVol < 0.015) {
+          setErrorCode("mic_silent");
+          setError(
+            "마이크에서 소리가 들어오지 않아요. 다른 앱이 마이크를 사용 중이거나, 시스템 마이크 권한을 확인해 주세요."
+          );
+          try {
+            cancelledRef.current = true; // onstop 차단
+            mediaRecorderRef.current?.stop();
+          } catch {
+            /* noop */
+          }
+          cleanup();
+          setState("idle");
+        }
+      }, 1500);
 
       // 녹음 시간 타이머
       setDuration(0);
@@ -231,10 +383,24 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
           cleanup();
         }
       }, 1000);
-    } catch {
-      setError("마이크 권한을 허용해주세요");
+    } catch (err) {
+      // getUserMedia 실패 — 권한 거부 / NotFoundError 등
+      const name = (err as { name?: string })?.name;
+      if (name === "NotAllowedError" || name === "SecurityError") {
+        setErrorCode("mic_denied");
+        setError("마이크 권한을 허용해 주세요. 브라우저 주소창 좌측 자물쇠 아이콘에서 변경할 수 있어요.");
+      } else if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+        setErrorCode("mic_unavailable");
+        setError("마이크 디바이스를 찾을 수 없어요. 시스템 설정에서 마이크 연결을 확인해 주세요.");
+      } else if (name === "NotReadableError" || name === "TrackStartError") {
+        setErrorCode("mic_taken");
+        setError("마이크가 다른 앱에 의해 사용 중이에요. 해당 앱을 종료하고 다시 시도해 주세요.");
+      } else {
+        setErrorCode("mic_unavailable");
+        setError("마이크를 사용할 수 없어요. 디바이스 연결을 확인해 주세요.");
+      }
     }
-  }, [maxDuration, timeWarningAt, updateVolume]);
+  }, [maxDuration, timeWarningAt, updateVolume, validateOnStop]);
 
   // 녹음 중지
   const stopRecording = useCallback(() => {
@@ -260,6 +426,20 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
       clearInterval(durationTimerRef.current);
       durationTimerRef.current = null;
     }
+    if (selfCheckTimerRef.current) {
+      clearTimeout(selfCheckTimerRef.current);
+      selfCheckTimerRef.current = null;
+    }
+    // 트랙 이벤트 리스너 해제
+    if (trackRef.current && trackMuteHandlerRef.current) {
+      trackRef.current.removeEventListener("mute", trackMuteHandlerRef.current);
+    }
+    if (trackRef.current && trackEndedHandlerRef.current) {
+      trackRef.current.removeEventListener("ended", trackEndedHandlerRef.current);
+    }
+    trackRef.current = null;
+    trackMuteHandlerRef.current = null;
+    trackEndedHandlerRef.current = null;
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     audioCtxRef.current?.close();
@@ -282,6 +462,9 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
     setWarning("none");
     setAudioBlob(null);
     setError(null);
+    setErrorCode(null);
+    setAvgVolume(0);
+    volumeSamplesRef.current = [];
   }, [state, cleanup]);
 
   // 언마운트 시 정리
@@ -322,5 +505,7 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
     stopRecording,
     reset,
     error,
+    errorCode,
+    avgVolume,
   };
 }

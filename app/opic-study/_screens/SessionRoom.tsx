@@ -371,11 +371,18 @@ export function SessionRoom(props: SessionRoomProps) {
     ReturnType<typeof createBrowserClient>["channel"]
   > | null>(null);
 
+  // 결함 6 대응 — supabase 클라이언트를 useMemo로 안정화 (effect 매 실행마다 새 인스턴스 X)
+  const broadcastSupabase = useMemo(
+    () =>
+      createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      ),
+    []
+  );
+
   useEffect(() => {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = broadcastSupabase;
     const channel = supabase.channel(`opic-study-audio:${props.sessionId}`);
     broadcastChannelRef.current = channel;
 
@@ -409,7 +416,7 @@ export function SessionRoom(props: SessionRoomProps) {
       supabase.removeChannel(channel);
       broadcastChannelRef.current = null;
     };
-  }, [props.sessionId]);
+  }, [props.sessionId, broadcastSupabase]);
 
   // 질문 변경 시 청취자 음성도 정리
   useEffect(() => {

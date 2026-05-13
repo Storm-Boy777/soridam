@@ -20,15 +20,17 @@
  * - completed → LiveStep7 (종료)
  */
 
-import { useEffect, useState, useTransition, useCallback, useMemo, useContext } from "react";
+import { useEffect, useState, useTransition, useCallback, useMemo, useContext, useRef } from "react";
 import {
   Globe,
   Building2,
   AlertCircle,
   Loader2,
   X,
+  Mic,
 } from "lucide-react";
 import { SessionFrameContext } from "../_components/session-frame-context";
+import { MicTestModal } from "../_components/MicTestModal";
 import { ImmersiveHeader } from "@/components/layout/immersive-header";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -168,12 +170,37 @@ export function OpicStudySessionClient({
   const [combos, setCombos] = useState<ComboForStudy[] | null>(null);
   const [contentLoading, setContentLoading] = useState(false);
 
+  // 마이크 자가 진단 상태
+  const [micTestModalOpen, setMicTestModalOpen] = useState(false);
+  const [incomingMicTest, setIncomingMicTest] = useState<{
+    fromUserId: string;
+    fromName: string;
+    audioUrl: string;
+    ts: number;
+  } | null>(null);
+  const [micTestResponses, setMicTestResponses] = useState<
+    Array<{ fromUserId: string; fromName: string; result: "ok" | "fail" }>
+  >([]);
+  const [micStatusMap, setMicStatusMap] = useState<
+    Record<string, "untested" | "ok" | "failed">
+  >({});
+
   const supabase = useMemo(
     () =>
       createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       ),
+    []
+  );
+
+  // 결함 3 대응 — 탭별 고유 ID (presence key 충돌 방지)
+  // 같은 사용자가 PC + 모바일 동시 접속 시 양쪽 다 살아남도록
+  const tabId = useMemo(
+    () =>
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2),
     []
   );
 
@@ -213,7 +240,7 @@ export function OpicStudySessionClient({
   // Realtime 구독 — answers INSERT/UPDATE + 초기 로드
   // ============================================================
   useEffect(() => {
-    // 초기 로드
+    // 초기 로드 — 결함 5 대응: 비동기 fetch 중 들어온 INSERT 이벤트 우선
     void (async () => {
       const { data } = await supabase
         .from("opic_study_answers")
@@ -224,7 +251,8 @@ export function OpicStudySessionClient({
         for (const a of data as unknown as OpicStudyAnswer[]) {
           map[`${a.user_id}_${a.question_idx}`] = a;
         }
-        setAnswers(map);
+        // 통째 덮어쓰지 않고 머지 — 그 사이 실시간으로 들어온 INSERT 보호
+        setAnswers((prev) => ({ ...map, ...prev }));
       }
     })();
 
@@ -285,27 +313,79 @@ export function OpicStudySessionClient({
       }
     };
 
+    // 결함 1 대응 — leave 이벤트 3초 debounce
+    // 모바일 백그라운드 전환 / Wi-Fi 짧은 끊김으로 인한 leave→join 깜빡임 흡수
+    const pendingLeaveTimers = new Map<string, ReturnType<typeof setTimeout>>();
+    const cancelPendingLeave = (userId: string) => {
+      const timer = pendingLeaveTimers.get(userId);
+      if (timer) {
+        clearTimeout(timer);
+        pendingLeaveTimers.delete(userId);
+      }
+    };
+    const clearAllPendingLeaves = () => {
+      for (const timer of pendingLeaveTimers.values()) clearTimeout(timer);
+      pendingLeaveTimers.clear();
+    };
+
+    // 결함 3 대응 — presence key가 "userId:tabId" 형식이므로 userId만 추출
+    const extractUserIds = (state: Record<string, unknown>): Set<string> => {
+      const ids = new Set<string>();
+      for (const key of Object.keys(state)) {
+        const userId = key.split(":")[0];
+        if (userId) ids.add(userId);
+      }
+      return ids;
+    };
+
+    const presenceKey = `${currentUserId}:${tabId}`;
     const ch = supabase.channel(`opic-study-presence:${sessionId}`, {
-      config: { presence: { key: currentUserId } },
+      config: { presence: { key: presenceKey } },
     });
 
     ch.on("presence", { event: "sync" }, () => {
       const state = ch.presenceState();
-      setOnlineUserIds(new Set(Object.keys(state)));
+      const userIds = extractUserIds(state);
+
+      // 결함 2 대응 — reconnect 직후 빈 sync 또는 본인 미포함 sync는 transient empty로 간주
+      // (서버 측에서 state 재구성 중일 때 일시적으로 들어옴)
+      if (userIds.size === 0 || !userIds.has(currentUserId)) return;
+
+      // 재등장한 사용자의 보류 중인 leave 캔슬
+      for (const userId of userIds) cancelPendingLeave(userId);
+      setOnlineUserIds(userIds);
     })
       .on("presence", { event: "join" }, ({ key }) => {
+        const userId = (key as string).split(":")[0];
+        if (!userId) return;
+        cancelPendingLeave(userId);
         setOnlineUserIds((prev) => {
+          if (prev.has(userId)) return prev;
           const next = new Set(prev);
-          next.add(key);
+          next.add(userId);
           return next;
         });
       })
       .on("presence", { event: "leave" }, ({ key }) => {
-        setOnlineUserIds((prev) => {
-          const next = new Set(prev);
-          next.delete(key);
-          return next;
-        });
+        const userId = (key as string).split(":")[0];
+        if (!userId) return;
+        // 이미 보류 중이면 갱신 (마지막 leave 기준 3초)
+        cancelPendingLeave(userId);
+        const timer = setTimeout(() => {
+          // 동일 사용자의 다른 탭이 살아있는지 확인 후 제거
+          const currentState = ch.presenceState();
+          const aliveUserIds = extractUserIds(currentState);
+          if (!aliveUserIds.has(userId)) {
+            setOnlineUserIds((prev) => {
+              if (!prev.has(userId)) return prev;
+              const next = new Set(prev);
+              next.delete(userId);
+              return next;
+            });
+          }
+          pendingLeaveTimers.delete(userId);
+        }, 3000);
+        pendingLeaveTimers.set(userId, timer);
       })
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
@@ -313,7 +393,7 @@ export function OpicStudySessionClient({
           setConnectionState("connected");
           await ch.track({
             user_id: currentUserId,
-            display_name: me?.name ?? "멤버",
+            tab_id: tabId,
             joined_at: new Date().toISOString(),
           });
         } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
@@ -321,15 +401,179 @@ export function OpicStudySessionClient({
           scheduleError();
         }
         // CLOSED는 무시 — Supabase 자동 재연결 흐름의 정상 단계
-        // (즉시 "reconnecting" 표시하면 카테고리 변경 등에서 깜빡임 발생)
       });
 
     return () => {
       clearError();
+      clearAllPendingLeaves();
       void ch.untrack().catch(() => undefined);
       supabase.removeChannel(ch);
     };
-  }, [sessionId, currentUserId, supabase, me?.name]);
+    // 결함 7 대응 — me?.name 제거 (서버에서 1회 전달되는 값이지만 미래 갱신 시 재구독 방지)
+    // tabId/presenceKey는 useMemo로 안정화되어 있어 영향 없음
+  }, [sessionId, currentUserId, tabId, supabase]);
+
+  // ============================================================
+  // 마이크 자가 진단 broadcast 채널
+  // ============================================================
+  const micTestBroadcastRef = useRef<ReturnType<typeof supabase.channel> | null>(
+    null
+  );
+
+  useEffect(() => {
+    const ch = supabase.channel(`opic-study-mic-test:${sessionId}`);
+    micTestBroadcastRef.current = ch;
+
+    ch.on(
+      "broadcast",
+      { event: "request" },
+      ({ payload }) => {
+        const p = payload as {
+          from_user_id: string;
+          audio_url: string;
+          ts: number;
+        };
+        // 본인은 무시
+        if (p.from_user_id === currentUserId) return;
+        const fromMember = memberByUserId[p.from_user_id];
+        setIncomingMicTest({
+          fromUserId: p.from_user_id,
+          fromName: fromMember?.name ?? "멤버",
+          audioUrl: p.audio_url,
+          ts: p.ts,
+        });
+      }
+    )
+      .on(
+        "broadcast",
+        { event: "response" },
+        ({ payload }) => {
+          const p = payload as {
+            from_user_id: string;
+            to_user_id: string;
+            result: "ok" | "fail";
+          };
+          // 본인 마이크 테스트에 대한 응답만 수신
+          if (p.to_user_id !== currentUserId) return;
+          const fromMember = memberByUserId[p.from_user_id];
+          setMicTestResponses((prev) => {
+            // 같은 응답자 중복 방지
+            if (prev.some((r) => r.fromUserId === p.from_user_id)) return prev;
+            return [
+              ...prev,
+              {
+                fromUserId: p.from_user_id,
+                fromName: fromMember?.name ?? "멤버",
+                result: p.result,
+              },
+            ];
+          });
+        }
+      )
+      .on(
+        "broadcast",
+        { event: "status" },
+        ({ payload }) => {
+          const p = payload as {
+            user_id: string;
+            status: "untested" | "ok" | "failed";
+          };
+          setMicStatusMap((prev) => ({ ...prev, [p.user_id]: p.status }));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ch);
+      micTestBroadcastRef.current = null;
+    };
+  }, [sessionId, currentUserId, supabase, memberByUserId]);
+
+  // 본인 마이크 통과 시 다른 멤버에게 status broadcast
+  const broadcastMicStatus = useCallback(
+    (status: "untested" | "ok" | "failed") => {
+      micTestBroadcastRef.current?.send({
+        type: "broadcast",
+        event: "status",
+        payload: { user_id: currentUserId, status },
+      });
+      setMicStatusMap((prev) => ({ ...prev, [currentUserId]: status }));
+    },
+    [currentUserId]
+  );
+
+  // 마이크 webm 업로드 → signed URL
+  const uploadMicTestBlob = useCallback(
+    async (blob: Blob): Promise<string> => {
+      const ts = Date.now();
+      const path = `mic-test/${sessionId}/${currentUserId}-${ts}.webm`;
+      const { error: uploadError } = await supabase.storage
+        .from("opic-study-recordings")
+        .upload(path, blob, {
+          contentType: "audio/webm",
+          upsert: true,
+        });
+      if (uploadError) {
+        throw new Error(uploadError.message);
+      }
+      const { data: signedData, error: signError } = await supabase.storage
+        .from("opic-study-recordings")
+        .createSignedUrl(path, 600); // 10분 유효
+      if (signError || !signedData?.signedUrl) {
+        throw new Error(signError?.message ?? "signed URL 생성 실패");
+      }
+      return signedData.signedUrl;
+    },
+    [sessionId, currentUserId, supabase]
+  );
+
+  // broadcast 마이크 테스트 요청 (audio_url 전송)
+  const broadcastMicTestRequest = useCallback(
+    (audioUrl: string) => {
+      micTestBroadcastRef.current?.send({
+        type: "broadcast",
+        event: "request",
+        payload: {
+          from_user_id: currentUserId,
+          audio_url: audioUrl,
+          ts: Date.now(),
+        },
+      });
+      // 본인 응답 누적 리셋
+      setMicTestResponses([]);
+    },
+    [currentUserId]
+  );
+
+  // 청취자 응답 전송
+  const submitMicTestResponse = useCallback(
+    (result: "ok" | "fail") => {
+      if (!incomingMicTest) return;
+      micTestBroadcastRef.current?.send({
+        type: "broadcast",
+        event: "response",
+        payload: {
+          from_user_id: currentUserId,
+          to_user_id: incomingMicTest.fromUserId,
+          result,
+        },
+      });
+    },
+    [currentUserId, incomingMicTest]
+  );
+
+  const handleOpenMicTest = useCallback(() => {
+    setMicTestResponses([]);
+    setMicTestModalOpen(true);
+  }, []);
+
+  const handleCloseMicTest = useCallback(() => {
+    setMicTestModalOpen(false);
+  }, []);
+
+  const handleMicTestPassed = useCallback(() => {
+    broadcastMicStatus("ok");
+  }, [broadcastMicStatus]);
 
   // ============================================================
   // 자동 가이드 생성 트리거
@@ -433,6 +677,22 @@ export function OpicStudySessionClient({
   //   - feedback_share/discussion step은 사용 X (Step66 4명 비교 폐기)
   // ============================================================
   const idx = session.current_question_idx;
+
+  // 결함 4 대응 — SessionRoom에 전달되는 members 배열을 안정화
+  // (매 렌더마다 새 배열 생성 시 SessionRoom 내부 useMemo/useEffect 재실행 + 깜빡임)
+  const sessionRoomMembers = useMemo(
+    () =>
+      members.map((m) => ({
+        key: m.key,
+        name: m.name,
+        userId: m.userId,
+        initial: m.initial,
+        isMe: m.userId === currentUserId,
+        isOnline:
+          m.userId === currentUserId ? true : onlineUserIds.has(m.userId),
+      })),
+    [members, currentUserId, onlineUserIds]
+  );
 
   // ============================================================
   // 종료 시 라우팅
@@ -849,6 +1109,42 @@ export function OpicStudySessionClient({
         }
         rightContent={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* 마이크 테스트 버튼 — 모든 step에서 노출 */}
+            {!isSessionCompleted && (
+              <button
+                onClick={handleOpenMicTest}
+                aria-label="마이크 테스트"
+                title="실제 답변과 동일하게 녹음 → 다른 멤버가 듣고 확인"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "5px 9px",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color:
+                    micStatusMap[currentUserId] === "ok"
+                      ? "#4a8e60"
+                      : "var(--foreground-secondary, #6B6B7B)",
+                  background:
+                    micStatusMap[currentUserId] === "ok"
+                      ? "rgba(74, 142, 96, 0.10)"
+                      : "var(--surface-secondary, #F3F2EF)",
+                  border: `1px solid ${
+                    micStatusMap[currentUserId] === "ok"
+                      ? "rgba(74, 142, 96, 0.3)"
+                      : "var(--border, #E8E6E1)"
+                  }`,
+                  borderRadius: 8,
+                  cursor: "pointer",
+                }}
+              >
+                <Mic size={12} strokeWidth={1.8} aria-hidden="true" />
+                <span className="hidden sm:inline">
+                  {micStatusMap[currentUserId] === "ok" ? "마이크 ✓" : "마이크 테스트"}
+                </span>
+              </button>
+            )}
             <span
               aria-label={`오늘 모임 방식: ${session.online_mode ? "온라인" : "오프라인"}`}
               style={{
@@ -913,6 +1209,29 @@ export function OpicStudySessionClient({
         onConfirm={() => confirmDialog?.onConfirm()}
         onCancel={() => setConfirmDialog(null)}
       />
+
+      {/* 본인 마이크 테스트 모달 */}
+      <MicTestModal
+        mode="tester"
+        open={micTestModalOpen}
+        onClose={handleCloseMicTest}
+        uploadBlob={uploadMicTestBlob}
+        broadcastRequest={broadcastMicTestRequest}
+        responses={micTestResponses}
+        onPassed={handleMicTestPassed}
+      />
+
+      {/* 다른 멤버 마이크 듣기 모달 (broadcast 수신 시 자동 표시) */}
+      {incomingMicTest && (
+        <MicTestModal
+          mode="listener"
+          open={!!incomingMicTest}
+          onClose={() => setIncomingMicTest(null)}
+          testerName={incomingMicTest.fromName}
+          audioUrl={incomingMicTest.audioUrl}
+          onSubmitResponse={submitMicTestResponse}
+        />
+      )}
     </SessionFrameContext.Provider>
   );
 
@@ -1020,16 +1339,7 @@ export function OpicStudySessionClient({
                 : "")
             }
             questionShortKor={currentQuestion?.question_short ?? null}
-            members={members.map((m) => ({
-              key: m.key,
-              name: m.name,
-              userId: m.userId,
-              initial: m.initial,
-              isMe: m.userId === currentUserId,
-              isOnline: m.userId === currentUserId
-                ? true
-                : onlineUserIds.has(m.userId),
-            }))}
+            members={sessionRoomMembers}
             currentSpeakerUserId={speaker}
             myAnswer={myAnswer ?? null}
             currentSpeakerAnswer={speakerAnswer}
