@@ -1,0 +1,39 @@
+// AI 코치 — Step 1: 유형 선택 페이지
+// 11개 유형 카드 (자기소개 + 본문 10유형)
+// MVP: 묘사 유형만 활성, 나머지는 disabled
+
+import { Suspense } from "react";
+import { getTypeCards } from "@/lib/actions/coaching";
+import { CoachingContent } from "@/components/coaching/coaching-content";
+
+export const metadata = {
+  title: "AI 코치 | 소리담",
+  description: "강지완 일타강사 페르소나로 1:1 코칭",
+};
+
+async function CoachingLoader() {
+  const result = await getTypeCards();
+  return <CoachingContent initialTypeCards={result.data ?? []} initialError={result.error} />;
+}
+
+export default function CoachingPage() {
+  return (
+    <div className="pb-8 pt-1 sm:pt-2 lg:pt-0">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl font-bold text-foreground sm:text-2xl">AI 코치</h1>
+        <p className="mt-0.5 text-sm text-foreground-secondary sm:mt-1 sm:text-base">
+          답변 → 강사 톤 1:1 코칭 → 습관 교정. 어떤 유형부터 시작할지 선택하세요.
+        </p>
+      </div>
+      <Suspense
+        fallback={
+          <div className="flex justify-center py-12">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
+          </div>
+        }
+      >
+        <CoachingLoader />
+      </Suspense>
+    </div>
+  );
+}

@@ -79,7 +79,7 @@ export function calculateCost(params: {
 // ============================================================
 export interface UsageLogParams {
   user_id: string;
-  session_type: "mock_exam" | "script" | "tutoring" | "shadowing";
+  session_type: "mock_exam" | "script" | "tutoring" | "shadowing" | "coaching" | "opic_study";
   session_id?: string;
   feature: string;
   service: "openai_chat" | "openai_whisper" | "gemini_tts" | "azure_speech";

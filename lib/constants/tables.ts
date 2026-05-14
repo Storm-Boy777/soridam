@@ -60,6 +60,12 @@ export const T = {
   lecture_access: "lecture_access",
   // 기출 보관함 권한 (065_exam_archive_access.sql)
   exam_archive_access: "exam_archive_access",
+  // AI 코치 모듈 (068_coaching_module.sql)
+  coaching_sessions: "coaching_sessions",
+  coaching_attempts: "coaching_attempts",
+  coaching_topic_mastery: "coaching_topic_mastery",
+  coaching_type_mastery: "coaching_type_mastery",
+  coaching_persona_settings: "coaching_persona_settings",
 } as const;
 
 // RPC 함수명 상수
