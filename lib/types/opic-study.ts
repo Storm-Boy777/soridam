@@ -190,6 +190,14 @@ export interface FeedbackResult {
     enhance: string;      // 본인 답변에 보강할 것
   };
 
+  // 답변 등급 추정 (단일 답변 기준 — IL/IM1/IM2/IM3/IH/AL)
+  // 정확한 OPIc 등급은 15문항 전체로 결정되므로 "이 답변 한 건 기준"의 추정치
+  estimated_level?: {
+    level: "IL" | "IM1" | "IM2" | "IM3" | "IH" | "AL";
+    basis: string[];        // 평가 근거 (2~3개 bullet)
+    next_level_tip: string; // 다음 등급으로 가는 핵심 한 가지
+  };
+
   // 메타
   target_grade: string;
   generated_at: string;

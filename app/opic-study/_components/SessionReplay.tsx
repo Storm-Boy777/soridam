@@ -413,6 +413,11 @@ export function CoachNoteInline({ feedback }: { feedback: FeedbackResult }) {
     >
       <SectionHeader icon={<Bot size={14} />} title="코치노트" />
 
+      {/* 답변 등급 추정 — 단일 답변 1건 기준 (정확한 등급은 모의고사로) */}
+      {feedback.estimated_level && (
+        <EstimatedLevelCard level={feedback.estimated_level} />
+      )}
+
       {/* 한 줄 요약 */}
       {feedback.summary && (
         <div
@@ -571,6 +576,181 @@ export function CoachNoteInline({ feedback }: { feedback: FeedbackResult }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ─── 답변 등급 추정 카드 ─── */
+
+const LEVEL_META: Record<
+  "IL" | "IM1" | "IM2" | "IM3" | "IH" | "AL",
+  { label: string; color: string; bg: string; border: string }
+> = {
+  AL: {
+    label: "Advanced Low",
+    color: "#2d7a3d",
+    bg: "rgba(45, 122, 61, 0.10)",
+    border: "rgba(45, 122, 61, 0.30)",
+  },
+  IH: {
+    label: "Intermediate High",
+    color: "#4a8e60",
+    bg: "rgba(74, 142, 96, 0.10)",
+    border: "rgba(74, 142, 96, 0.30)",
+  },
+  IM3: {
+    label: "Intermediate Mid 3",
+    color: "var(--bp-tc, #c96442)",
+    bg: "rgba(201, 100, 66, 0.10)",
+    border: "rgba(201, 100, 66, 0.30)",
+  },
+  IM2: {
+    label: "Intermediate Mid 2",
+    color: "var(--bp-tip, #a48121)",
+    bg: "rgba(164, 129, 33, 0.10)",
+    border: "rgba(164, 129, 33, 0.30)",
+  },
+  IM1: {
+    label: "Intermediate Mid 1",
+    color: "#b58634",
+    bg: "rgba(181, 134, 52, 0.10)",
+    border: "rgba(181, 134, 52, 0.30)",
+  },
+  IL: {
+    label: "Intermediate Low",
+    color: "rgb(185, 28, 28)",
+    bg: "rgba(220, 38, 38, 0.08)",
+    border: "rgba(220, 38, 38, 0.25)",
+  },
+};
+
+function EstimatedLevelCard({
+  level,
+}: {
+  level: NonNullable<FeedbackResult["estimated_level"]>;
+}) {
+  const meta = LEVEL_META[level.level];
+  return (
+    <div
+      style={{
+        background: meta.bg,
+        border: `1px solid ${meta.border}`,
+        borderRadius: 10,
+        padding: "12px 14px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+        <p
+          style={{
+            margin: 0,
+            fontSize: 10,
+            fontWeight: 800,
+            letterSpacing: 0.5,
+            color: "var(--bp-ink-3)",
+            textTransform: "uppercase",
+          }}
+        >
+          🎯 이 답변 수준
+        </p>
+        <span
+          style={{
+            fontSize: 9,
+            color: "var(--bp-ink-4, #a0a0af)",
+            fontStyle: "italic",
+          }}
+        >
+          참고용 · 1답변 기준
+        </span>
+      </div>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+        <span
+          style={{
+            fontSize: 24,
+            fontWeight: 850,
+            color: meta.color,
+            letterSpacing: 0.5,
+            lineHeight: 1,
+          }}
+        >
+          {level.level}
+        </span>
+        <span style={{ fontSize: 11, color: "var(--bp-ink-3)", fontWeight: 600 }}>
+          {meta.label}
+        </span>
+      </div>
+      {level.basis.length > 0 && (
+        <div>
+          <p
+            style={{
+              margin: "0 0 4px",
+              fontSize: 10,
+              fontWeight: 800,
+              color: "var(--bp-ink-3)",
+              letterSpacing: 0.4,
+            }}
+          >
+            📝 평가 근거
+          </p>
+          <ul
+            style={{
+              margin: 0,
+              paddingLeft: 16,
+              fontSize: 12,
+              color: "var(--bp-ink-2)",
+              lineHeight: 1.55,
+            }}
+          >
+            {level.basis.map((b, i) => (
+              <li key={i}>{b}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {level.next_level_tip && (
+        <div
+          style={{
+            background: "rgba(255, 255, 255, 0.5)",
+            borderRadius: 6,
+            padding: "8px 10px",
+            borderLeft: `3px solid ${meta.color}`,
+          }}
+        >
+          <p
+            style={{
+              margin: "0 0 2px",
+              fontSize: 10,
+              fontWeight: 800,
+              color: meta.color,
+              letterSpacing: 0.4,
+            }}
+          >
+            💡 다음 등급으로 가려면
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: 12,
+              color: "var(--bp-ink)",
+              lineHeight: 1.55,
+            }}
+          >
+            {level.next_level_tip}
+          </p>
+        </div>
+      )}
+      <p
+        style={{
+          margin: 0,
+          fontSize: 10,
+          color: "var(--bp-ink-4, #a0a0af)",
+          lineHeight: 1.5,
+        }}
+      >
+        ⓘ 정확한 OPIc 등급은 모의고사 15문항 전체로 결정됩니다.
+      </p>
     </div>
   );
 }

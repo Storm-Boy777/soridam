@@ -53,6 +53,11 @@ interface FeedbackOutput {
   pronunciation_patterns?: string[];
   discussion_hooks: string[];
   next_speaker_tip: { take: string; enhance: string };
+  estimated_level?: {
+    level: "IL" | "IM1" | "IM2" | "IM3" | "IH" | "AL";
+    basis: string[];
+    next_level_tip: string;
+  };
 }
 
 interface ApproachItem {
@@ -500,6 +505,26 @@ Deno.serve(async (req: Request) => {
       : [];
     parsed.next_speaker_tip = parsed.next_speaker_tip || { take: "", enhance: "" };
 
+    // 등급 추정 — GPT가 빠뜨리면 undefined로 두기 (UI에서 조건부 노출)
+    const ALLOWED_LEVELS = ["IL", "IM1", "IM2", "IM3", "IH", "AL"];
+    if (
+      parsed.estimated_level &&
+      typeof parsed.estimated_level === "object" &&
+      ALLOWED_LEVELS.includes(parsed.estimated_level.level)
+    ) {
+      parsed.estimated_level = {
+        level: parsed.estimated_level.level,
+        basis: Array.isArray(parsed.estimated_level.basis)
+          ? parsed.estimated_level.basis.filter((b: unknown) => typeof b === "string" && b)
+          : [],
+        next_level_tip: typeof parsed.estimated_level.next_level_tip === "string"
+          ? parsed.estimated_level.next_level_tip
+          : "",
+      };
+    } else {
+      parsed.estimated_level = undefined;
+    }
+
     const gptMs = Date.now() - gptStart;
     const usage = openaiData.usage || {};
     const tokensIn = usage.prompt_tokens || 0;
@@ -529,6 +554,8 @@ Deno.serve(async (req: Request) => {
       pronunciation_patterns: parsed.pronunciation_patterns,
       discussion_hooks: parsed.discussion_hooks,
       next_speaker_tip: parsed.next_speaker_tip,
+      // 답변 등급 추정 (단일 답변 기준 — IL~AL, 정확한 등급은 모의고사로)
+      estimated_level: parsed.estimated_level,
       // 메타
       target_grade: answererTargetGrade,
       generated_at: new Date().toISOString(),
