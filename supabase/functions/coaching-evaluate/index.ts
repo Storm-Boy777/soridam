@@ -7,16 +7,16 @@
  *   3. coaching-preprocess 호출 → cleaned_transcript + stt_fix_log
  *   4. 이전 회차 진척 비교 데이터 로드
  *   5. 프롬프트 조립 (페르소나 + 공통 + 유형 모듈) — DB의 ai_prompt_templates 4개 row 조합
- *   6. GPT-4.1 호출 (response_format: json_object) → evaluation + coaching_markdown
+ *   6. GPT-4.1 호출 (response_format: json_object) → evaluation + coaching_json
  *   7. coaching_attempts UPDATE
  *   8. session.last_grade / last_issue_count 갱신
  *   9. 비용 로그
  *
- * 호출: submitAttempt SA → fire-and-forget
+ * 호출: submitAttempt SA → fire-and-forget (서비스 롤 키 필수)
  * 입력: { attempt_id }
  *
  * 출력 형식 (학생에게 노출되는 것):
- *   - coaching_markdown (강사 톤, 점수/등급/강의번호/약점코드 노출 X)
+ *   - coaching_json (구조화 코칭, 강사 톤, 점수/등급/강의번호/약점코드 노출 X)
  *
  * 내부 데이터 (DB 저장, UI 노출 안 함):
  *   - evaluation jsonb (점수, 흠 코드 등)
@@ -55,6 +55,35 @@ interface PreprocessOutput {
   preserved_errors: string[];
 }
 
+// 구조화 코칭 출력 (coaching_json) — 학습 룸 전용 카드 UI로 렌더링
+interface CoachingIssue {
+  title: string;
+  severity: "high" | "medium" | "low";
+  quote?: string;
+  explanation: string;
+  fix_example?: string;
+  note?: string;
+}
+
+interface CoachingProgressRow {
+  label: string;
+  prev: string;
+  current: string;
+  signal?: "improved" | "big" | "new";
+}
+
+interface CoachingOutput {
+  intro: string;
+  progress_table?: CoachingProgressRow[];
+  issues: CoachingIssue[];
+  model_answer: {
+    text: string;
+    changes: string[];
+  };
+  action_items: string[];
+  closing?: string;
+}
+
 interface EvalOutput {
   evaluation: {
     estimated_grade: string;
@@ -78,7 +107,7 @@ interface EvalOutput {
       filler_delta?: string;
     };
   };
-  coaching_markdown: string;
+  coaching: CoachingOutput;
   word_count: number;
   filler_count: number;
   filler_ratio: number;
@@ -150,7 +179,7 @@ async function whisperTranscribe(audioBlob: Blob): Promise<{ text: string; durat
 
 async function downloadAudio(supabase: SupabaseClient, audio_url: string): Promise<Blob> {
   // audio_url이 storage path 또는 full URL인지 확인
-  // coaching-recordings 버킷의 path 형식: {user_id}/{session_id}/{attempt_id}.webm
+  // coaching-recordings 버킷의 path 형식: {user_id}/{session_id}/{timestamp}.webm
   let bucket = "coaching-recordings";
   let path = audio_url;
 
@@ -194,7 +223,16 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  // 서비스 롤 키로만 호출 허용 (anon 키 등 외부 직접 호출 차단 → 비용 남용 방지)
+  if (req.headers.get("Authorization") !== `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`) {
+    return new Response(
+      JSON.stringify({ error: "unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
   const startedAt = Date.now();
+  let attemptId: string | null = null;
 
   try {
     const body = (await req.json()) as { attempt_id: string };
@@ -204,6 +242,7 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    attemptId = body.attempt_id;
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -414,6 +453,11 @@ Deno.serve(async (req) => {
       throw new Error("GPT 응답 파싱 실패");
     }
 
+    if (!result.coaching || !Array.isArray(result.coaching.issues) || !result.coaching.model_answer) {
+      console.error("[coaching-evaluate] coaching 구조 누락:", JSON.stringify(result.coaching)?.slice(0, 500));
+      throw new Error("GPT 응답에 coaching 구조가 없음");
+    }
+
     // 10. attempt 갱신
     const updatePayload = {
       raw_transcript: rawTranscript,
@@ -424,7 +468,8 @@ Deno.serve(async (req) => {
       filler_count: result.filler_count ?? filler_count,
       filler_ratio: result.filler_ratio ?? filler_ratio,
       evaluation: result.evaluation,
-      coaching_markdown: result.coaching_markdown,
+      coaching_json: result.coaching,
+      coaching_markdown: null,
       status: "done",
       model: modulePrompt.model ?? "gpt-4.1",
       tokens_used: gptJson.usage?.total_tokens ?? null,
@@ -471,6 +516,23 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("[coaching-evaluate] 예외:", err);
+    // 처리 중(pending/preprocessing/evaluating) 상태로 멈춘 attempt를 failed로 마킹
+    // → 학습 룸의 무한 폴링 방지 (이미 done인 경우는 .in 필터로 보호)
+    if (attemptId) {
+      try {
+        const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        await sb
+          .from("coaching_attempts")
+          .update({
+            status: "failed",
+            error_message: (err instanceof Error ? err.message : "평가 실패").slice(0, 500),
+          })
+          .eq("id", attemptId)
+          .in("status", ["pending", "preprocessing", "evaluating"]);
+      } catch (e) {
+        console.error("[coaching-evaluate] failed 마킹 실패:", e);
+      }
+    }
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : "평가 실패" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -553,6 +615,8 @@ function buildUserPrompt(params: {
 
   lines.push("# 출력 형식 (JSON, 엄격히 준수)");
   lines.push("");
+  lines.push("`coaching`은 자유 markdown이 아니라 **구조화 객체**다. 각 필드를 분리해서 채운다.");
+  lines.push("");
   lines.push("```json");
   lines.push(`{
   "evaluation": {
@@ -563,36 +627,58 @@ function buildUserPrompt(params: {
     ],
     "강점": ["Overall 마무리 사용", "...."],
     "skeleton_완성도": {
-      "topic_sentence": true,
-      "transition": false,
-      "supporting_1": true,
-      "supporting_2": false,
-      "supporting_3": false,
-      "concluding": true,
-      "ending": true,
-      "score_percent": 57
+      "topic_sentence": true, "transition": false,
+      "supporting_1": true, "supporting_2": false, "supporting_3": false,
+      "concluding": true, "ending": true, "score_percent": 57
     },
     "전회차_대비_진척": {
-      "prev_attempt_number": 1,
-      "흠_count_delta": -3,
-      "skeleton_delta": "3/7 → 6/7",
-      "filler_delta": "9 → 0"
+      "prev_attempt_number": 1, "흠_count_delta": -3,
+      "skeleton_delta": "3/7 → 6/7", "filler_delta": "9 → 0"
     }
   },
-  "coaching_markdown": "강사 톤 1:1 코칭 markdown 전체. 강의번호/점수/약점코드 노출 금지. 본인 transcript 부분 인용. 마이크로 사이클 형태. 통합 답변 + 학습자 액션 포함.",
+  "coaching": {
+    "intro": "네, 수고하셨습니다 Jay님. (회차에 맞는 짧은 인사 + 격려 1~2문장. 한국어)",
+    "progress_table": [
+      { "label": "Supporting 표지", "prev": "2/7", "current": "6/7", "signal": "big" }
+    ],
+    "issues": [
+      {
+        "title": "Supporting 표지 — Skeleton 구조 미흡",
+        "severity": "high",
+        "quote": "학생 본문에서 그대로 인용한 영어 표현",
+        "explanation": "원리 설명 (한국어, 2~4문장). 왜 흠인지 + 어떻게 고치는지.",
+        "fix_example": "정정·시범 영어 표현 (따라하기용, 없으면 생략)",
+        "note": "일반화 — '다음에도 또 …' 같은 미래 대비 한 문장 (없으면 생략)"
+      }
+    ],
+    "model_answer": {
+      "text": "학생 소재를 살린 IH~AL 수준 통합 답변 (영어 전체).",
+      "changes": ["Supporting 표지 3개 명확히 박음", "experience lost way → got lost 정정", "..."]
+    },
+    "action_items": ["Supporting 표지 3개 박기", "반복 어휘 줄이기", "분사구문 1개 넣기"],
+    "closing": "외우지 마세요. 본인 말로 풀어내세요. 위 통합 답변은 참고용이에요."
+  },
   "word_count": 132,
   "filler_count": 8,
   "filler_ratio": 0.061
 }`);
   lines.push("```");
   lines.push("");
-  lines.push("**중요 원칙 재확인**:");
-  lines.push("- coaching_markdown에 강의 번호(04강/10강 등) 절대 노출 금지");
-  lines.push("- coaching_markdown에 점수/등급 숫자(IM3 55점 등) 절대 노출 금지 — 자연어로만");
-  lines.push("- coaching_markdown에 약점 코드(WP_*) 절대 노출 금지");
-  lines.push("- 본인 transcript 부분 인용 (백틱 인라인 코드) 적극 활용");
-  lines.push("- \"외우지 마세요\" 원칙 유지");
-  lines.push("- 회차 ≥ 2면 진척 비교 표 markdown 상단에");
+  lines.push("**필드 작성 규칙**:");
+  lines.push("- `intro`: 인사 + 회차 맥락에 맞는 격려. 짧게. (점수/등급 숫자 X)");
+  lines.push("- `progress_table`: **회차 ≥ 2일 때만** 포함. 1회차면 필드 생략 또는 빈 배열.");
+  lines.push("- `issues`: 우선순위 순으로 정렬 (무너진 답변 → 구조 → 문법 → 어휘 → 분사구문 → filler).");
+  lines.push("  - 1~2회차: 5~8개 / 3~4회차: 3~5개 / 5회차+: 1~3개");
+  lines.push("  - `severity`: 단락 구조·답변 붕괴 = high, 문법·어색한 표현 = medium, 어휘 반복·filler·분사구문 도전 = low");
+  lines.push("  - `quote`는 학생 본문 영어 표현 그대로. `explanation`/`note`는 한국어. `fix_example`은 영어.");
+  lines.push("- `model_answer.text`: 학생 소재 그대로 살린 모범 답변. `changes`는 원답변 대비 바뀐 점.");
+  lines.push("- `action_items`: 다음 회차에 의식할 항목. 체크박스 기호(✅) 붙이지 말 것 — UI가 붙임.");
+  lines.push("");
+  lines.push("**절대 금지** (모든 텍스트 필드 공통):");
+  lines.push("- 강의 번호(04강/10강 등) 노출 금지");
+  lines.push("- 점수/등급 숫자(IM3 55점, 60/100 등) 노출 금지 — 등급은 자연어로만, 가급적 언급 자제");
+  lines.push("- 약점 코드(WP_*) 노출 금지");
+  lines.push("- markdown 헤딩(#)·표·리스트 기호를 필드 값 안에 넣지 말 것 — 순수 텍스트만. UI가 디자인함.");
 
   return lines.join("\n");
 }

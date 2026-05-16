@@ -95,4 +95,6 @@ export const RPC = {
   get_user_usage_summary: "get_user_usage_summary",
   increment_completed_prescriptions: "increment_completed_prescriptions",
   increment_training_count: "increment_training_count",
+  // AI 코치 모듈 (071_coaching_attempt_rpc.sql)
+  coaching_claim_attempt_number: "coaching_claim_attempt_number",
 } as const;

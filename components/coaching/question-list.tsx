@@ -19,7 +19,7 @@ export function QuestionList({ payload }: Props) {
   const [pendingId, setPendingId] = useState<string | null>(null);
   const router = useRouter();
 
-  const surveyMark = payload.survey_type === "공통형" ? "🌪️ 돌발" : "✅ 선택형";
+  const isCommon = payload.survey_type === "공통형";
 
   function handlePick(item: QuestionListItem) {
     setError(null);
@@ -42,8 +42,9 @@ export function QuestionList({ payload }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 text-xs text-foreground-muted">
-        <span>{surveyMark}</span>
-        <span>·</span>
+        <span className="rounded-full bg-foreground-muted/10 px-2 py-0.5 font-medium text-foreground-secondary">
+          {isCommon ? "돌발" : "선택형"}
+        </span>
         <span>{payload.questions.length}개 질문</span>
       </div>
 
@@ -102,17 +103,16 @@ export function QuestionList({ payload }: Props) {
 
               {q.question_korean && (
                 <p className="text-sm font-medium leading-relaxed text-foreground">
-                  🇰🇷 {q.question_korean}
+                  {q.question_korean}
                 </p>
               )}
               <p className="text-xs leading-relaxed text-foreground-secondary">
-                🇺🇸 {q.question_english}
+                {q.question_english}
               </p>
 
               {progress?.last_attempt_at && (
                 <div className="text-xs text-foreground-muted">
                   최근 시도: {new Date(progress.last_attempt_at).toLocaleDateString("ko-KR")}
-                  {progress.last_grade && <span className="ml-2">· {progress.last_grade}</span>}
                 </div>
               )}
 

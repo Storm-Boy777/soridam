@@ -140,6 +140,7 @@ export interface CoachingAttempt {
   long_pause_count: number | null;
   evaluation: AttemptEvaluation | null;
   coaching_markdown: string | null;
+  coaching_json: CoachingOutput | null;
   status: CoachingAttemptStatus;
   error_message: string | null;
   model: string | null;
@@ -217,6 +218,40 @@ export interface ProgressDelta {
   filler_delta?: string; // "9 → 0" 같은 표기
 }
 
+// ── 구조화 코칭 출력 (coaching_json) ──
+// 자유 markdown 대신 섹션 단위 구조화 — 학습 룸에서 전용 카드 UI로 렌더링
+
+// 개선점 1건 (강사가 짚는 한 영역)
+export interface CoachingIssue {
+  title: string; // "Supporting 표지 — Skeleton 구조 미흡"
+  severity: 'high' | 'medium' | 'low'; // 중요도 (정렬/뱃지용)
+  quote?: string; // 학생 본문 인용 (영어 원문)
+  explanation: string; // 원리 설명 (한국어)
+  fix_example?: string; // 시범 표현 (영어 — 따라하기용)
+  note?: string; // 일반화 / "다음에도 또…" (한국어)
+}
+
+// 진척 비교 표 1행 (회차 ≥ 2)
+export interface CoachingProgressRow {
+  label: string; // "Supporting 표지" / "Filler 횟수" 등
+  prev: string; // "2/7"
+  current: string; // "6/7"
+  signal?: 'improved' | 'big' | 'new'; // ⭐ / ⭐⭐ / NEW
+}
+
+// 한 회차 코칭 출력 전체
+export interface CoachingOutput {
+  intro: string; // 인사 + 회차에 맞는 짧은 격려 (한국어)
+  progress_table?: CoachingProgressRow[]; // 회차 ≥ 2 진척 비교
+  issues: CoachingIssue[]; // 짚는 개선점 (우선순위 순)
+  model_answer: {
+    text: string; // 통합 답변 — 본인 소재 살린 모범 답변 (영어)
+    changes: string[]; // 원답변 대비 변경점 (한국어)
+  };
+  action_items: string[]; // 다음 회차 체크리스트 (한국어)
+  closing?: string; // "외우지 마세요…" 등 마무리 (한국어)
+}
+
 // ── UI 카드 / 응답 인터페이스 ──
 
 // Step 1: 유형 카드
@@ -254,6 +289,7 @@ export interface TopicsByType {
 // 한 토픽 안의 질문 리스트 아이템 (Step 2.5: 질문 선택 화면)
 export interface QuestionListItem {
   question_id: string;
+  question_type: QuestionType;
   question_korean: string | null;
   question_english: string;
   question_short: string | null;
@@ -273,6 +309,11 @@ export interface QuestionListByTopic {
   topic: string;
   survey_type: SurveyType;
   questions: QuestionListItem[];
+}
+
+// 주제별 탭 — 카테고리/토픽 기준 질문 (유형 섞임)
+export interface CoachingCategoryQuestion extends QuestionListItem {
+  is_active_type: boolean; // 현재 학습 가능한 유형인지 (MVP: 묘사만)
 }
 
 // 세션 시작/재진입 응답
@@ -312,7 +353,8 @@ export interface AttemptDisplay {
   input_mode: InputMode;
   cleaned_transcript: string | null;
   stt_fix_log: SttFixLog[] | null;
-  coaching_markdown: string | null;
+  coaching_markdown: string | null; // 구버전 회차 폴백
+  coaching_json: CoachingOutput | null; // 신규 구조화 출력
   word_count: number | null;
   audio_duration: number | null;
   audio_url: string | null;
@@ -337,6 +379,15 @@ export interface SessionDetail {
     audio_url: string | null;
   };
   attempts: AttemptDisplay[];
+}
+
+// 이어하기 배너용 — 진행 중(active) 세션 요약
+export interface ResumableSession {
+  session_id: string;
+  question_type: QuestionType;
+  topic: string;
+  attempt_count: number;
+  last_attempt_at: string | null;
 }
 
 // ── ActionResult 표준 ──

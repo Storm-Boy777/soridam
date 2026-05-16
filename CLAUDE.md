@@ -116,6 +116,7 @@ docs/
 | "UI 컴포넌트 규칙은?" | `docs/디자인시스템.md` |
 | "성능 최적화 패턴은?" | `docs/가이드_Next.js+Supabase_페이지전환_성능최적화.md` |
 | "오픽 스터디 설계는?" | `docs/설계/오픽스터디.md` (1450줄, 6단계 + 보강) |
+| "AI 코치 설계는?" | `소리담_AI코치_PRD.md` (바탕화면, v2.1 — 구현 반영) |
 
 ### 핵심 개념
 
@@ -330,7 +331,9 @@ soridam/                     # Git 루트 = Next.js 루트 (표준 구조)
 │       ├── mock-test-consult/index.ts     # Stage B-2 (GPT-4.1 소견/방향/WP 생성) → report 체인
 │       ├── mock-test-report/index.ts      # Stage C (평가엔진 + overview/growth GPT) → DB 저장
 │       ├── admin-trigger-eval/index.ts    # 관리자용 평가 수동 트리거 (fire-and-forget)
-│       └── (tutoring EF — 삭제됨, 새 설계 기반 재생성 예정)
+│       ├── (tutoring EF — 삭제됨, 새 설계 기반 재생성 예정)
+│       ├── coaching-preprocess/index.ts   # AI 코치 — STT 트랜스크립트 정제 (gpt-4.1-mini)
+│       └── coaching-evaluate/index.ts     # AI 코치 — Whisper STT + 평가 + 강사 톤 코칭 (gpt-4.1)
 ├── app/                     # App Router 페이지
 │   ├── providers.tsx        # QueryClientProvider 래퍼
 │   ├── (admin)/             # 관리자 라우트 그룹 (사이드바 + 역할 검증)
@@ -379,7 +382,7 @@ soridam/                     # Git 루트 = Next.js 루트 (표준 구조)
 │   │   ├── admin-sidebar.tsx, admin-stat-card.tsx, admin-data-table.tsx
 │   │   ├── admin-import-content.tsx, credit-adjust-modal.tsx
 │   │   ├── prompt-editor.tsx, eval-pipeline-view.tsx, audit-log-detail.tsx
-│   └── shadowing/           # 쉐도잉 훈련 모듈 UI (9개 컴포넌트)
+│   ├── shadowing/           # 쉐도잉 훈련 모듈 UI (9개 컴포넌트)
 │       ├── shadowing-content.tsx      # 메인 래퍼 + 키보드 단축키
 │       ├── shadowing-player.tsx       # 오디오 플레이어 + 문장 하이라이트
 │       ├── shadowing-recorder.tsx     # MediaRecorder 녹음
@@ -390,11 +393,18 @@ soridam/                     # Git 루트 = Next.js 루트 (표준 구조)
 │       ├── step-speak.tsx             # Step 4: 실전 녹음 + AI 평가
 │       ├── evaluation-result.tsx      # 평가 결과 표시
 │       └── evaluation-history.tsx     # 평가 이력
+│   └── coaching/            # AI 코치 모듈 UI (5개 컴포넌트)
+│       ├── coaching-content.tsx        # 메인 2탭 (유형별/주제별)
+│       ├── category-browser.tsx        # 주제별 탭 (카테고리→주제→질문)
+│       ├── topic-selector.tsx          # 유형별 탭 토픽 선택 (선택형/공통형)
+│       ├── question-list.tsx           # 토픽 내 질문 리스트
+│       └── learn-room.tsx              # 학습 룸 (음성 녹음 + 코칭 결과)
 ├── lib/
 │   ├── actions/reviews.ts     # Server Actions (12개)
 │   ├── actions/scripts.ts     # Server Actions (16개)
 │   ├── actions/mock-exam.ts   # Server Actions (10개: 세션CRUD, 이력)
 │   ├── actions/mock-exam-result.ts # Server Actions (6개: 4탭 데이터, 평가/리포트 트리거)
+│   ├── actions/coaching.ts    # Server Actions (10개: AI 코치 — 유형/토픽/질문/세션/시도/졸업)
 │   ├── (actions/tutoring — 삭제됨, 새 설계 기반 재생성 예정)
 │   ├── actions/admin-reviews.ts  # 관리자 기출 입력 (requireAdmin 적용)
 │   ├── actions/admin/stats.ts    # 관리자 대시보드 통계 (2함수)
@@ -409,7 +419,7 @@ soridam/                     # Git 루트 = Next.js 루트 (표준 구조)
 │   ├── queries/master-questions.ts
 │   ├── react-query.ts        # QueryClient 팩토리 (서버/브라우저 싱글턴)
 │   ├── stores/shadowing.ts    # Zustand 쉐도잉 상태 (persist)
-│   ├── types/{reviews,scripts,mock-exam,mock-exam-result,tutoring,admin}.ts  # 타입 정의
+│   ├── types/{reviews,scripts,mock-exam,mock-exam-result,tutoring,coaching,admin}.ts  # 타입 정의
 │   ├── mock-data/mock-exam-result.ts           # 결과 고정 데이터 + 타입 (FulfillmentStatus 등)
 │   ├── mock-data/mock-exam-result-questions.ts # 문항별 평가 타입 (QuestionEvalV2Real, WeakPointV2)
 │   ├── mock-exam-result/diagnosis-transformer.ts # 체크박스 → 진단표 변환기
@@ -518,6 +528,10 @@ AZURE_SPEECH_REGION=koreacentral
   - `["mock-active-session"]` — 활성 세션 확인 (5분)
   - `["mock-exam-history"]` — 모의고사 이력 (5분)
   - `["mock-exam-session-detail", sessionId]` — 모의고사 세션 전체 결과 (10분, 결과탭)
+  - `["coaching-type-cards"]` — AI 코치 유형 카드 + 진척 (1분, initialData)
+  - `["coaching-cat-topics", category]` — AI 코치 주제별 탭 토픽 (Infinity)
+  - `["coaching-cat-questions", category, topic]` — AI 코치 주제별 탭 질문 + 진척 (staleTime 0)
+  - `["coaching-session-detail", sessionId]` — AI 코치 학습 세션 상세 (평가 진행 시 5초 폴링)
 
 1. **코드 수정** - 필요한 변경사항 구현
 2. **사용자가 요청한 경우에만**:
@@ -626,14 +640,19 @@ origin: https://Storm-Boy777@github.com/Storm-Boy777/soridam.git
 | 05-06 | **콤보 둘러보기 페이지 ✅** | /opic-study/explore — 카테고리 → 토픽 → 콤보 → 상세 풀 가이드 4단계 드릴다운. URL 쿼리스트링 동기화. SA 3개 신규 (getQuestionTypeGuides, getComboBySig, getOrGenerateComboCache). 빠른 이동에 카드 추가. Step5 + 둘러보기 캐시 공유 |
 | 05-06 | **둘러보기 풀 개선 ✅** | (1) 기출별 탭 추가 (시험 1회씩 페이지네이션, 자기소개 + 4콤보 풀뷰), (2) 시험후기 빈도 분석 BM 적용 — 카테고리 분리 + 두 단계 분모(헤더: 전체 시험 / 카드: 카테고리 점유율), (3) EF v3.1 — 한글 카테고리 매핑 + 다수결 토픽 + 클라이언트 명시값 우선 (PROMPT_VERSION 1→2), (4) QuestionAudioRow 컴포넌트 — 영어 원문 박스 우상단 통합 ▶ 버튼 (옵션 A), (5) 반응형 페이지네이션 (PC 10그룹 / 모바일 5그룹), (6) fromExam referrer 추적 — 기출에서 콤보 가이드 점프 후 한 번에 복귀, (7) 마이그레이션 059 콤보 토픽 정정 (자유시간+지형 혼재 → 지형 통일) |
 
+| 05-14 | **AI 코치 설계 ✅** | AI 코치 모듈 PRD v2 (바탕화면 `소리담_AI코치_PRD.md`). Dogfooding(개발자 본인=1차 사용자) + 마이크로 사이클(한 답변 5~8회 짚기) + 이중 사이클(토픽·유형 마스터) + 트랜스크립트 기반 평가(발음/억양 제외) + 점진 확장(묘사 유형 우선) |
+| 05-15 | **AI 코치 모듈 구현 ✅** | 마이그레이션 `068_coaching_module.sql`(5테이블 + `coaching-recordings` 버킷 + RLS) + EF 2개(`coaching-preprocess` gpt-4.1-mini / `coaching-evaluate` gpt-4.1) + SA 10개 + UI(메인 2탭 유형별/주제별 + 토픽·질문 선택 + 학습룸 음성녹음). 졸업 판정은 SA `markTopicMastered`. 주제별 탭 진행상태 매칭, 이모지 → Lucide 아이콘 정리, 메인 카피 "1:1 밀착 코칭". MVP는 묘사 유형만 활성 |
+| 05-16 | **AI 코치 학습 룸 재설계 ✅** | (1) 코칭 출력 자유 markdown → **구조화 JSON**(`coaching_json`) 전환 — 마이그레이션 069 컬럼 추가 + EF `coaching-evaluate` 출력 스키마 변경(intro/progress_table/issues[]/model_answer/action_items/closing) + 프롬프트 v3 오버라이드(마이그레이션 070). (2) 학습 룸 레이아웃 **Option A 재설계** — 압축 sticky 질문 헤더 + slim 진행 바 + "지금 학습 중" 포커스 카드(최신 코칭 + 다음 답변 입력 묶음) + 지난 회차 아코디언. (3) 코칭 결과 전용 카드 UI(개선점 카드 severity 뱃지/인용/시범/노트, 통합 답변 박스, 체크리스트). 구버전 회차는 markdown 폴백 |
+| 05-16 | **AI 코치 코드 리뷰 보강 ✅** | (1) `coaching-evaluate` 에러 시 attempt가 처리 중 상태로 정지 → **무한 폴링 버그 수정**(바깥 catch에서 `failed` 마킹). (2) EF 2개 **서비스 롤 키 검증** 추가(`--no-verify-jwt` 환경에서 외부 직접 호출·비용 남용 차단). (3) `submitAttempt` 회차 번호 **원자적 발급 RPC**(마이그레이션 071 `coaching_claim_attempt_number`) — 동시 제출 레이스 제거. (4) `markTopicMastered` 졸업 가드(평가 완료 답변 필수·중복 졸업 차단) + 유형 마스터 `total_attempts` 누적 집계. (5) 학습 룸 폴링 타임아웃(2분 안내·3분 중단). (6) dead code 제거(`getAttempt`/`getPersonaSetting`) + 중복 쿼리 정리 |
+
 <!-- 이후 새 이력은 이 테이블에 행 추가 + memory/개발이력.md에 상세 기록 -->
 
 ## 🔮 현재 상태 & 다음 단계
 
 > **⚠️ 새 세션 시작 시 필수**: `docs/오픽스터디_세션인계.md` 먼저 읽기. 직전 세션 컨텍스트 풀로 정리됨 (현재 상태/해결한 이슈/미해결/테스트 시나리오/트러블슈팅).
 
-**현재**: Phase 1~5 ✅ + **Phase 6 오픽 스터디 가이드 v3 (콤보 캐시 + 풀 가이드) + 콤보 둘러보기 페이지 완료** ✅ (코드 100% 완료, 사용자 검증 진행 중)
-**다음 작업**: 사용자 검증 계속 + 발견 이슈 수정 + 미니 시뮬레이션 테스트 (마이크 + 멤버 2명 풀 플로우)
+**현재**: Phase 1~5 ✅ + Phase 6 오픽 스터디 ✅ (검증 중) + **Phase 7 AI 코치 모듈 MVP 구현 완료** ✅ (묘사 유형 활성, 프롬프트 검증 진행 중)
+**다음 작업**: AI 코치 묘사 유형 프롬프트 튜닝 (Dogfooding 검증 사이클) + 오픽 스터디 사용자 검증 계속
 
 **⚠️ Claude는 프리뷰 검증 X** (사용자가 직접 브라우저로 진행). 코드 작성/수정만.
 
@@ -731,6 +750,24 @@ Stage C: mock-test-report (평가엔진 7-Step + overview/growth GPT)
 | 진입 조건 | ✅ | 모의고사 3회 이상, 최근 최대 5회, 재진입 시 새 3회 |
 | 다음 | ⏳ | EF 배포 + 실데이터 테스트 + 프롬프트 조정 |
 
+### AI 코치 모듈 (Phase 7 — MVP 구현 완료)
+> **PRD**: `C:/Users/js777/Desktop/소리담_AI코치_PRD.md` (v2.1, 구현 반영)
+
+학습자가 답변하면 AI가 트랜스크립트 기반 1:1 코칭으로 말하기 습관을 반복 교정하는 모듈. 개발자 본인이 1차 사용자(Dogfooding).
+
+| 항목 | 상태 | 비고 |
+|------|------|------|
+| DB 스키마 | ✅ | `068_coaching_module.sql` — 5테이블 + `coaching-recordings` 버킷 + RLS |
+| 타입 정의 | ✅ | `lib/types/coaching.ts` |
+| EF 2개 | ✅ | `coaching-preprocess`(gpt-4.1-mini, STT 정제) / `coaching-evaluate`(gpt-4.1, Whisper+평가+코칭) |
+| SA 10개 | ✅ | `lib/actions/coaching.ts` |
+| UI | ✅ | 메인 2탭(유형별/주제별) + 토픽·질문 선택 + 학습룸(음성 녹음 + 텍스트 백업) |
+| 졸업 판정 | ✅ | SA `markTopicMastered` (PRD의 mastery-check EF 대신 SA로 통합) |
+| 활성 범위 | 🔄 | MVP는 **묘사 유형만** 활성(`ACTIVE_QUESTION_TYPES`). 나머지 9유형 "준비 중" |
+| 다음 | ⏳ | 묘사 프롬프트 튜닝(Dogfooding 검증 사이클) → 검증 완료 후 다음 유형 확장 |
+
+**라우트**: `/coaching`(메인 2탭) → `/coaching/topic/[type]`(토픽) → `/coaching/topic/[type]/[topic]`(질문 리스트) → `/coaching/learn/[sessionId]`(학습룸)
+
 ### 소리담 프로젝트 구축 (하루오픽 코드 기반)
 
 | # | 작업 | 상태 |
@@ -745,7 +782,7 @@ Stage C: mock-test-report (평가엔진 7-Step + overview/growth GPT)
 
 ### 네비게이션 구조 (확정)
 ```
-대시보드 | 시험후기 | 스크립트 | 모의고사 | 튜터링
+대시보드 | 시험후기 | 스크립트 | 모의고사 | 튜터링 | AI 코치
 ```
 
 > **오픽 스터디** (`/opic-study`)는 별도 페이지 — 멤버 전용으로 직접 진입. 일반 네비게이션에는 미노출 (또는 멤버에게만 표시).
@@ -759,9 +796,10 @@ Stage C: mock-test-report (평가엔진 7-Step + overview/growth GPT)
 - **스크립트** (/scripts): 스크립트 생성 | 내 스크립트 | 쉐도잉 훈련
 - **모의고사** (/mock-exam): 응시 | 결과 | 나의 이력
 - **튜터링** (/tutoring): 진단 | 훈련 | 나의 튜터링
+- **AI 코치** (/coaching): 유형별 | 주제별
 - **오픽 스터디** (/opic-study): 별도 디자인 시스템(.bp-scope) — 홈 / lobby / session(Step 1~7) / my / history
 
-### DB 현황 (41개 테이블 — 오픽 스터디 6개 추가 ✅)
+### DB 현황 (46개 테이블 — AI 코치 5개 추가 ✅)
 
 > **오픽 스터디 가이드 v3 추가 2테이블** (마이그레이션 056/058):
 > - `question_type_guides` — 10 row 한글 유형 가이드 마스터 (description/routine/comparison/past_*/rp_*/adv_*)
@@ -779,6 +817,20 @@ Stage C: mock-test-report (평가엔진 7-Step + overview/growth GPT)
 > **오픽 스터디 EF** (배포 완료):
 > - `opic-study-guide` — 일타강사 가이드 생성 (CO-STAR + GPT-4.1)
 > - `opic-study-feedback` — 답변 코칭 (Whisper + Azure + GPT-4.1)
+>
+> **AI 코치 신규 5테이블** (마이그레이션 `068_coaching_module.sql`):
+> - `coaching_sessions` — 학습 세션 (유형 × 토픽, status: active/mastered/abandoned)
+> - `coaching_attempts` — 회차별 시도 (raw/cleaned transcript + evaluation jsonb + coaching_markdown)
+> - `coaching_topic_mastery` — 토픽 졸업 추적 (final_issue_count)
+> - `coaching_type_mastery` — 유형 마스터(체화) 추적 (topics_mastered text[])
+> - `coaching_persona_settings` — 사용자별 코칭 페르소나 (MVP: stoic_coach 고정)
+>
+> **AI 코치 Storage 버킷** (068 적용):
+> - `coaching-recordings` — 답변 음성 (private, 본인만 접근)
+>
+> **AI 코치 EF** (배포 완료):
+> - `coaching-preprocess` — STT 트랜스크립트 정제 (gpt-4.1-mini)
+> - `coaching-evaluate` — Whisper STT + 트랜스크립트 평가 + 강사 톤 코칭 생성 (gpt-4.1)
 
 - **questions**: 471행 (D-1 전면 교체 — 13컬럼, 새 ID 체계. 원본: `docs/질문 DB/questions_db.xlsx`)
 - **profiles**: 사용자 프로필 (Supabase Auth 연동)
@@ -903,5 +955,5 @@ PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/1
 > 의사결정 기록은 `docs/의사결정.md` 참조
 
 ---
-*최종 업데이트: 2026-05-06*
-*상태: Phase 1~5 ✅ + **Phase 6 오픽 스터디 풀 통합 + 둘러보기 풀 개선 (콤보별/기출별 + 빈도 BM + 음성 듣기 + 반응형 페이지네이션 + referrer 추적) 완료** ✅ → 미니 시뮬레이션 테스트*
+*최종 업데이트: 2026-05-15*
+*상태: Phase 1~6 ✅ + **Phase 7 AI 코치 모듈 MVP 구현 완료** ✅ (묘사 유형 활성 — 프롬프트 Dogfooding 검증 중)*
