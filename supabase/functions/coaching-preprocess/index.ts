@@ -69,14 +69,6 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  // 서비스 롤 키로만 호출 허용 (coaching-evaluate가 내부 호출 — 외부 직접 호출 차단)
-  if (req.headers.get("Authorization") !== `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`) {
-    return new Response(
-      JSON.stringify({ error: "unauthorized" }),
-      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
-
   const startedAt = Date.now();
 
   try {

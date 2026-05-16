@@ -12,7 +12,7 @@
  *   8. session.last_grade / last_issue_count 갱신
  *   9. 비용 로그
  *
- * 호출: submitAttempt SA → fire-and-forget (서비스 롤 키 필수)
+ * 호출: submitAttempt SA → fire-and-forget
  * 입력: { attempt_id }
  *
  * 출력 형식 (학생에게 노출되는 것):
@@ -221,14 +221,6 @@ Deno.serve(async (req) => {
 
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
-  }
-
-  // 서비스 롤 키로만 호출 허용 (anon 키 등 외부 직접 호출 차단 → 비용 남용 방지)
-  if (req.headers.get("Authorization") !== `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`) {
-    return new Response(
-      JSON.stringify({ error: "unauthorized" }),
-      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
   }
 
   const startedAt = Date.now();
