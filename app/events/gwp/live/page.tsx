@@ -366,6 +366,16 @@ function Slideshow({ cheers }: { cheers: Cheer[] }) {
             </FadeLayer>
           ))}
 
+          {/* 행사 안내 — 카드 좌상단 (우상단 BGM과 같은 수평선 + 같은 톤) */}
+          <div className="absolute left-5 top-5 z-30 flex flex-col items-start rounded-2xl border border-white/10 bg-black/40 px-5 py-2 shadow-xl shadow-black/30 backdrop-blur-xl">
+            <h2 className="font-serif text-sm leading-tight tracking-tight text-white sm:text-base 2xl:text-lg">
+              Together Challenge
+            </h2>
+            <p className="mt-0.5 text-[11px] leading-tight text-white/65 sm:text-xs 2xl:text-sm">
+              공정처럼ㆍ4/27~5/20
+            </p>
+          </div>
+
           {/* 하단 글씨 오버레이 — cross-fade (사진과 동기화) */}
           {layers.map((layer, i) => (
             <FadeLayer key={`fg-${i}`} visible={i === front}>
@@ -570,6 +580,9 @@ function BgmPlayer() {
   const analyserRef = useRef<AnalyserNode | null>(null)
   const rafRef = useRef<number>(0)
   const barsRef = useRef<(HTMLDivElement | null)[]>([])
+  // peak 마커 — 막대보다 더 천천히 떨어지는 잔상 효과
+  const peakBarsRef = useRef<(HTMLDivElement | null)[]>([])
+  const peaksRef = useRef<number[]>(Array(BGM_BAR_COUNT).fill(28))
   // 막대별 현재 높이(%) — peak hold + 감쇄(decay)에 필요
   const heightsRef = useRef<number[]>(Array(BGM_BAR_COUNT).fill(28))
   const [playing, setPlaying] = useState(false)
@@ -645,8 +658,12 @@ function BgmPlayer() {
   useEffect(() => {
     if (!playing) {
       heightsRef.current = Array(BGM_BAR_COUNT).fill(28)
+      peaksRef.current = Array(BGM_BAR_COUNT).fill(28)
       barsRef.current.forEach((bar) => {
         if (bar) bar.style.height = '28%'
+      })
+      peakBarsRef.current.forEach((bar) => {
+        if (bar) bar.style.bottom = '28%'
       })
       return
     }
@@ -680,12 +697,19 @@ function BgmPlayer() {
         const leftIdx = half - i
         const rightIdx = half + i
 
-        // Peak hold + decay — 빠르게 솟구치고 천천히 떨어진다
+        // 막대 본체 — 빠르게 솟구치고 적당히 떨어진다 (decay 0.86)
         const prevL = heightsRef.current[leftIdx]
         const nextL = target > prevL ? target : prevL * 0.86 + 28 * 0.14
         heightsRef.current[leftIdx] = nextL
         const barL = barsRef.current[leftIdx]
         if (barL) barL.style.height = `${nextL}%`
+
+        // peak 마커 — 본체보다 더 천천히 떨어지는 잔상 (decay 0.96)
+        const peakPrevL = peaksRef.current[leftIdx]
+        const peakNextL = target > peakPrevL ? target : peakPrevL * 0.96 + 28 * 0.04
+        peaksRef.current[leftIdx] = peakNextL
+        const peakBarL = peakBarsRef.current[leftIdx]
+        if (peakBarL) peakBarL.style.bottom = `${peakNextL}%`
 
         if (leftIdx !== rightIdx) {
           const prevR = heightsRef.current[rightIdx]
@@ -697,6 +721,12 @@ function BgmPlayer() {
           heightsRef.current[rightIdx] = nextR
           const barR = barsRef.current[rightIdx]
           if (barR) barR.style.height = `${nextR}%`
+
+          const peakPrevR = peaksRef.current[rightIdx]
+          const peakNextR = targetR > peakPrevR ? targetR : peakPrevR * 0.96 + 28 * 0.04
+          peaksRef.current[rightIdx] = peakNextR
+          const peakBarR = peakBarsRef.current[rightIdx]
+          if (peakBarR) peakBarR.style.bottom = `${peakNextR}%`
         }
       }
 
@@ -728,14 +758,24 @@ function BgmPlayer() {
       </button>
       <div className="flex h-5 items-end gap-[2px]">
         {Array.from({ length: BGM_BAR_COUNT }).map((_, i) => (
-          <div
-            key={i}
-            ref={(el) => {
-              barsRef.current[i] = el
-            }}
-            className="w-[2px] rounded-full bg-gradient-to-t from-amber-300 to-rose-400"
-            style={{ height: '28%', transition: 'height 90ms cubic-bezier(0.2, 0.8, 0.2, 1)' }}
-          />
+          <div key={i} className="relative h-full w-[2px]">
+            {/* 막대 본체 — 빠르게 솟구치고 떨어짐 */}
+            <div
+              ref={(el) => {
+                barsRef.current[i] = el
+              }}
+              className="absolute bottom-0 left-0 right-0 rounded-full bg-gradient-to-t from-amber-300 to-rose-400"
+              style={{ height: '28%', transition: 'height 90ms cubic-bezier(0.2, 0.8, 0.2, 1)' }}
+            />
+            {/* peak 마커 — 본체보다 더 천천히 떨어지는 잔상 */}
+            <div
+              ref={(el) => {
+                peakBarsRef.current[i] = el
+              }}
+              className="absolute left-0 right-0 h-[1.5px] rounded-full bg-white/90"
+              style={{ bottom: '28%', transition: 'bottom 110ms linear' }}
+            />
+          </div>
         ))}
       </div>
     </div>
