@@ -21,6 +21,11 @@ const PRELOAD_TIMEOUT_MS = 20000
 // 127장을 한꺼번에 받으면 대역폭이 쪼개져 큰 사진(5~8MB)이 타임아웃에 걸린다 → 동시 수 제한
 const PRELOAD_CONCURRENCY = 6
 
+// BGM — 115MB라 git 대신 Supabase Storage(gwp-assets 버킷)에서 스트리밍
+const BGM_URL =
+  'https://fkkdbnebsaecjpqhhdvl.supabase.co/storage/v1/object/public/gwp-assets/bgm.mp3'
+const BGM_BAR_COUNT = 7
+
 type Cheer = {
   author_name: string
   author_part: string | null
@@ -237,10 +242,12 @@ function Slideshow({ cheers }: { cheers: Cheer[] }) {
       ))}
 
       {paused && (
-        <div className="absolute right-6 top-6 rounded-full bg-black/55 px-3 py-1 text-xs tracking-wide text-white/70">
+        <div className="absolute left-6 top-6 rounded-full bg-black/55 px-3 py-1 text-xs tracking-wide text-white/70">
           일시정지
         </div>
       )}
+
+      <BgmPlayer />
 
       <style jsx global>{`
         @keyframes gwpKenburns {
@@ -366,5 +373,141 @@ function AuthorLine({ cheer }: { cheer: Cheer }) {
         </div>
       )}
     </>
+  )
+}
+
+function BgmPlayer() {
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const ctxRef = useRef<AudioContext | null>(null)
+  const analyserRef = useRef<AnalyserNode | null>(null)
+  const rafRef = useRef<number>(0)
+  const barsRef = useRef<(HTMLDivElement | null)[]>([])
+  const [playing, setPlaying] = useState(false)
+
+  // Web Audio 그래프 — 한 번만 구성 (createMediaElementSource는 엘리먼트당 1회만 허용)
+  function ensureGraph() {
+    if (ctxRef.current || !audioRef.current) return
+    const Ctx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+    const ctx = new Ctx()
+    const source = ctx.createMediaElementSource(audioRef.current)
+    const analyser = ctx.createAnalyser()
+    analyser.fftSize = 128
+    source.connect(analyser)
+    analyser.connect(ctx.destination)
+    ctxRef.current = ctx
+    analyserRef.current = analyser
+  }
+
+  function play() {
+    const audio = audioRef.current
+    if (!audio) return
+    audio.volume = 0.55
+    ensureGraph()
+    void ctxRef.current?.resume()
+    audio.play().catch(() => {})
+  }
+
+  function toggle() {
+    const audio = audioRef.current
+    if (!audio) return
+    if (audio.paused) play()
+    else audio.pause()
+  }
+
+  // 마운트 시 자동재생 시도 (브라우저 정책상 대개 차단됨)
+  useEffect(() => {
+    play()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // 자동재생이 막혔으면 첫 사용자 입력(클릭·키)에 재생 시작
+  useEffect(() => {
+    if (playing) return
+    const onInteract = () => play()
+    window.addEventListener('pointerdown', onInteract)
+    window.addEventListener('keydown', onInteract)
+    return () => {
+      window.removeEventListener('pointerdown', onInteract)
+      window.removeEventListener('keydown', onInteract)
+    }
+  }, [playing])
+
+  // 오디오 재생/정지 상태를 UI에 반영
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    const onPlay = () => setPlaying(true)
+    const onPause = () => setPlaying(false)
+    audio.addEventListener('play', onPlay)
+    audio.addEventListener('pause', onPause)
+    return () => {
+      audio.removeEventListener('play', onPlay)
+      audio.removeEventListener('pause', onPause)
+    }
+  }, [])
+
+  // 실시간 음파 — 실제 음악 주파수를 분석해 막대 높이로
+  useEffect(() => {
+    if (!playing) {
+      barsRef.current.forEach((bar) => {
+        if (bar) bar.style.height = '22%'
+      })
+      return
+    }
+    const analyser = analyserRef.current
+    if (!analyser) return
+    const data = new Uint8Array(analyser.frequencyBinCount)
+    const step = Math.floor(data.length / BGM_BAR_COUNT) || 1
+    function tick() {
+      const an = analyserRef.current
+      if (!an) return
+      an.getByteFrequencyData(data)
+      for (let i = 0; i < BGM_BAR_COUNT; i++) {
+        let sum = 0
+        for (let j = 0; j < step; j++) sum += data[i * step + j]
+        const avg = sum / step
+        const bar = barsRef.current[i]
+        if (bar) bar.style.height = `${22 + (avg / 255) * 78}%`
+      }
+      rafRef.current = requestAnimationFrame(tick)
+    }
+    tick()
+    return () => cancelAnimationFrame(rafRef.current)
+  }, [playing])
+
+  return (
+    <div className="absolute right-6 top-6 flex items-center gap-3 rounded-full bg-black/45 px-4 py-2.5 backdrop-blur-md">
+      <audio ref={audioRef} src={BGM_URL} loop crossOrigin="anonymous" preload="auto" />
+      <button
+        onClick={toggle}
+        aria-label={playing ? '음악 일시정지' : '음악 재생'}
+        className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25"
+      >
+        {playing ? (
+          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6" y="5" width="4" height="14" rx="1" />
+            <rect x="14" y="5" width="4" height="14" rx="1" />
+          </svg>
+        ) : (
+          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        )}
+      </button>
+      <div className="flex h-5 items-end gap-[3px]">
+        {Array.from({ length: BGM_BAR_COUNT }).map((_, i) => (
+          <div
+            key={i}
+            ref={(el) => {
+              barsRef.current[i] = el
+            }}
+            className="w-[3px] rounded-full bg-white/75"
+            style={{ height: '22%', transition: 'height 90ms linear' }}
+          />
+        ))}
+      </div>
+    </div>
   )
 }
