@@ -33,7 +33,7 @@ const appNav: NavItem[] = [
   { label: "스크립트", href: "/scripts" },
   { label: "모의고사", href: "/mock-exam" },
   { label: "튜터링", href: "/tutoring", adminOnly: true },
-  { label: "AI 코치", href: "/coaching", adminOnly: true },
+  { label: "스피킹 코치", href: "/coaching", adminOnly: true },
   { label: "오픽 스터디", href: "/opic-study" },
   { label: "강의", href: "/lectures", lectureAccessOnly: true },
   { label: "스터디", href: "/study-group", studyPanelOnly: true },

@@ -101,14 +101,14 @@ export function QuestionList({ payload }: Props) {
                 )}
               </div>
 
+              <p className="text-sm font-medium leading-relaxed text-foreground">
+                {q.question_english}
+              </p>
               {q.question_korean && (
-                <p className="text-sm font-medium leading-relaxed text-foreground">
+                <p className="text-xs leading-relaxed text-foreground-muted">
                   {q.question_korean}
                 </p>
               )}
-              <p className="text-xs leading-relaxed text-foreground-secondary">
-                {q.question_english}
-              </p>
 
               {progress?.last_attempt_at && (
                 <div className="text-xs text-foreground-muted">

@@ -3,10 +3,9 @@
 // 토픽 선택 — 선택형 / 공통형 그룹핑
 // 유형별 탭(TypeBrowser) 내부에 임베드 — 클릭 시 콜백으로 상위에 알림 (네비게이션 X)
 
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { TOPIC_ICONS } from "@/components/reviews/submit/topic-pagination";
-import { Folder, Search, ListChecks, Shuffle, CheckCircle2, Loader2 } from "lucide-react";
+import { Folder, ListChecks, Shuffle, CheckCircle2, Loader2, TrendingUp } from "lucide-react";
 import { getTopicsByType } from "@/lib/actions/coaching";
 import type { QuestionType, TopicCard } from "@/lib/types/coaching";
 
@@ -17,8 +16,6 @@ interface Props {
 }
 
 export function TopicSelector({ type, selectedTopic, onPickTopic }: Props) {
-  const [search, setSearch] = useState("");
-
   const { data, isLoading } = useQuery({
     queryKey: ["coaching-topics-by-type", type],
     queryFn: async () => {
@@ -37,23 +34,18 @@ export function TopicSelector({ type, selectedTopic, onPickTopic }: Props) {
     );
   }
 
-  const filterFn = (t: TopicCard) =>
-    !search.trim() || t.topic.toLowerCase().includes(search.toLowerCase());
-  const selective = (data?.selective ?? []).filter(filterFn);
-  const common = (data?.common ?? []).filter(filterFn);
+  const selective = data?.selective ?? [];
+  const common = data?.common ?? [];
 
   return (
     <div className="space-y-5">
-      {/* 검색 */}
-      <div className="relative">
-        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="주제 검색"
-          className="w-full rounded-full border border-border bg-surface py-2 pl-10 pr-4 text-sm text-foreground placeholder:text-foreground-muted focus:border-primary-400 focus:outline-none"
-        />
+      {/* 빈도순 안내 */}
+      <div className="flex items-start gap-2 rounded-xl bg-primary-50 px-3 py-2.5 text-xs leading-relaxed text-primary-700">
+        <TrendingUp className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>
+          주제는 <strong className="font-semibold">기출 빈도순</strong>으로 정렬돼 있어요. 자주
+          나오는 위쪽 주제부터 학습하는 걸 추천해요.
+        </span>
       </div>
 
       {/* 선택형 */}
@@ -101,7 +93,7 @@ function TopicGrid({
             key={t.topic}
             type="button"
             onClick={() => onPick(t.topic)}
-            className={`flex flex-col items-start gap-1.5 rounded-xl border p-3 text-left transition ${
+            className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition ${
               active
                 ? "border-primary-400 bg-primary-50 ring-1 ring-primary-200"
                 : mastered

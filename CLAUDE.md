@@ -820,7 +820,7 @@ Stage C: mock-test-report (평가엔진 7-Step + overview/growth GPT)
 >
 > **AI 코치 신규 5테이블** (마이그레이션 `068_coaching_module.sql`):
 > - `coaching_sessions` — 학습 세션 (유형 × 토픽, status: active/mastered/abandoned)
-> - `coaching_attempts` — 회차별 시도 (raw/cleaned transcript + evaluation jsonb + coaching_markdown)
+> - `coaching_attempts` — 회차별 시도 (raw/cleaned transcript + evaluation jsonb + coaching_json 구조화 코칭)
 > - `coaching_topic_mastery` — 토픽 졸업 추적 (final_issue_count)
 > - `coaching_type_mastery` — 유형 마스터(체화) 추적 (topics_mastered text[])
 > - `coaching_persona_settings` — 사용자별 코칭 페르소나 (MVP: stoic_coach 고정)

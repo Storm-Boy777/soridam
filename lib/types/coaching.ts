@@ -1,4 +1,4 @@
-// AI 코치 모듈 타입 정의
+// 스피킹 코치 모듈 타입 정의
 // PRD v2: C:/Users/js777/Desktop/소리담_AI코치_PRD.md
 // 마이그레이션: 068_coaching_module.sql
 
@@ -118,6 +118,7 @@ export interface CoachingSession {
   attempt_count: number;
   last_grade: string | null;
   last_issue_count: number | null;
+  target_level: string | null;  // v5 — 'IL'|'IM1'|'IM2'|'IM3'|'IH'|'AL' (마이그레이션 074)
   started_at: string;
   last_attempt_at: string | null;
   mastered_at: string | null;
@@ -139,7 +140,6 @@ export interface CoachingAttempt {
   filler_ratio: number | null;
   long_pause_count: number | null;
   evaluation: AttemptEvaluation | null;
-  coaching_markdown: string | null;
   coaching_json: CoachingOutput | null;
   status: CoachingAttemptStatus;
   error_message: string | null;
@@ -239,6 +239,13 @@ export interface CoachingProgressRow {
   signal?: 'improved' | 'big' | 'new'; // ⭐ / ⭐⭐ / NEW
 }
 
+// 졸업 판정 — AI가 졸업 신호(흠 개수·구조·분사구문·어휘·filler)를 종합 판단
+// 화면(ProgressStrip)은 이 값만 보고 졸업 안내를 표시한다 (단일 판정 소스)
+export interface CoachingGraduation {
+  ready: boolean; // 졸업 가능 여부
+  reason: string; // 판단 근거 — 사용자 안내 문구 (한국어)
+}
+
 // 한 회차 코칭 출력 전체
 export interface CoachingOutput {
   intro: string; // 인사 + 회차에 맞는 짧은 격려 (한국어)
@@ -250,6 +257,7 @@ export interface CoachingOutput {
   };
   action_items: string[]; // 다음 회차 체크리스트 (한국어)
   closing?: string; // "외우지 마세요…" 등 마무리 (한국어)
+  graduation: CoachingGraduation; // 졸업 판정 (v4)
 }
 
 // ── UI 카드 / 응답 인터페이스 ──
@@ -345,7 +353,7 @@ export interface MarkMasteredResult {
 
 // ── 평가 결과 표시용 (학생 화면) ──
 
-// 학생에게 보여주는 시도 결과 (evaluation 일부 + coaching_markdown)
+// 학생에게 보여주는 시도 결과 (evaluation 일부 + coaching_json)
 export interface AttemptDisplay {
   id: string;
   attempt_number: number;
@@ -353,8 +361,7 @@ export interface AttemptDisplay {
   input_mode: InputMode;
   cleaned_transcript: string | null;
   stt_fix_log: SttFixLog[] | null;
-  coaching_markdown: string | null; // 구버전 회차 폴백
-  coaching_json: CoachingOutput | null; // 신규 구조화 출력
+  coaching_json: CoachingOutput | null; // 구조화 코칭 출력
   word_count: number | null;
   audio_duration: number | null;
   audio_url: string | null;

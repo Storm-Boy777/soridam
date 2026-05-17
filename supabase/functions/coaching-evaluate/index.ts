@@ -1,5 +1,5 @@
 /**
- * coaching-evaluate — AI 코치 메인 평가 + 코칭 EF
+ * coaching-evaluate — 스피킹 코치 메인 평가 + 코칭 EF
  *
  * 역할:
  *   1. attempt 행 조회 (raw_transcript or audio_url)
@@ -72,6 +72,11 @@ interface CoachingProgressRow {
   signal?: "improved" | "big" | "new";
 }
 
+interface CoachingGraduation {
+  ready: boolean;
+  reason: string;
+}
+
 interface CoachingOutput {
   intro: string;
   progress_table?: CoachingProgressRow[];
@@ -82,6 +87,7 @@ interface CoachingOutput {
   };
   action_items: string[];
   closing?: string;
+  graduation?: CoachingGraduation;
 }
 
 interface EvalOutput {
@@ -238,10 +244,10 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // 1. attempt + session + question 조회
+    // 1. attempt + session + question 조회 (v5 — 4축 매칭용 컬럼 추가)
     const { data: attempt, error: aErr } = await supabase
       .from("coaching_attempts")
-      .select("*, coaching_sessions!inner(*, questions(id, question_korean, question_english))")
+      .select("*, coaching_sessions!inner(*, questions(id, question_korean, question_english, survey_type, category, topic, question_type_eng))")
       .eq("id", body.attempt_id)
       .single();
 
@@ -348,50 +354,54 @@ Deno.serve(async (req) => {
     // 5. 이전 회차 정보 (진척 비교용)
     const prevAttempt = await getPreviousAttempt(supabase, session.id, attempt.attempt_number);
 
-    // 6. 페르소나 설정 조회
-    const { data: personaSetting } = await supabase
-      .from("coaching_persona_settings")
-      .select("persona_code")
-      .eq("user_id", session.user_id)
-      .maybeSingle();
-    const personaCode = personaSetting?.persona_code ?? "stoic_coach";
+    // 6. target_level 결정 (v5 — session.target_level → profile.target_grade → 'IH')
+    let targetLevel: string = session.target_level ?? "";
+    if (!targetLevel) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("target_grade")
+        .eq("id", session.user_id)
+        .maybeSingle();
+      targetLevel = profile?.target_grade ?? "IH";
+    }
 
-    // 7. 프롬프트 조립 (4개 row fetch)
-    const moduleTemplateId = `coaching_module_${session.question_type}`;
-    const { data: prompts, error: pErr } = await supabase
+    // 7. 4축 매칭 → spec_id 결정 (v5 — §5.0.2)
+    const specId = resolveSpecId({
+      survey_type: question.survey_type ?? null,
+      category: question.category ?? null,
+      topic: question.topic ?? session.topic ?? "",
+      question_type_eng: question.question_type_eng ?? session.question_type,
+    });
+
+    // 8. coaching_specs 두 row 조회 (등급별 공통 base + 유형별 차별 — v5 §5.0.3)
+    const specPair = await fetchSpecPair(supabase, specId, targetLevel);
+    if (!specPair) {
+      throw new Error(`spec 조회 실패: common × ${targetLevel} 시드 누락 (마이그레이션 078 미적용?)`);
+    }
+    // 유형 spec이 있으면 그것을 기준 spec, 없으면 common을 단독으로
+    const spec = specPair.type ?? specPair.common;
+    const commonSpec = specPair.common;
+
+    // 9. coaching_system_v1 프롬프트 fetch (v5 — 단일 row, §5.3)
+    const { data: systemRow, error: sysErr } = await supabase
       .from("ai_prompt_templates")
-      .select("template_id, system_prompt, model, temperature, max_tokens")
-      .in("template_id", [
-        `coaching_persona_${personaCode}`,
-        "coaching_common_library",
-        moduleTemplateId,
-      ])
-      .eq("is_active", true);
+      .select("system_prompt, model, temperature, max_tokens")
+      .eq("template_id", "coaching_system_v1")
+      .eq("is_active", true)
+      .single();
 
-    if (pErr || !prompts || prompts.length === 0) {
-      throw new Error(`프롬프트 로드 실패: ${pErr?.message ?? "no prompts"}`);
+    if (sysErr || !systemRow) {
+      throw new Error(`coaching_system_v1 로드 실패: ${sysErr?.message ?? "no row"}`);
     }
 
-    const promptMap = new Map(prompts.map((p: { template_id: string; system_prompt: string; model: string; temperature: number; max_tokens: number }) => [p.template_id, p]));
-    const personaPrompt = promptMap.get(`coaching_persona_${personaCode}`);
-    const commonPrompt = promptMap.get("coaching_common_library");
-    const modulePrompt = promptMap.get(moduleTemplateId);
+    // 10. System prompt = coaching_system_v1 본문 + spec.tone_adjustment 미세조정
+    const systemPrompt = `${systemRow.system_prompt}\n\n---\n\n## TONE ADJUSTMENT (이번 세션 한정 — spec.${spec.guide_id})\n${spec.tone_adjustment}`;
 
-    if (!commonPrompt) throw new Error("coaching_common_library 프롬프트 없음");
-    if (!modulePrompt) throw new Error(`${moduleTemplateId} 프롬프트 없음 (해당 유형 미구현)`);
-
-    // 페르소나는 공통과 동일하면 한 번만 (중복 회피)
-    const systemPromptParts: string[] = [];
-    if (personaPrompt && personaPrompt.system_prompt !== commonPrompt.system_prompt) {
-      systemPromptParts.push(personaPrompt.system_prompt);
-    }
-    systemPromptParts.push(commonPrompt.system_prompt);
-    systemPromptParts.push(modulePrompt.system_prompt);
-
-    const systemPrompt = systemPromptParts.join("\n\n---\n\n");
-
-    // 8. User 프롬프트 (구체 답변 + 이전 진척)
-    const userPrompt = buildUserPrompt({
+    // 11. User prompt 조립 (v5 — §5.4, common base + 유형별 spec 두 데이터 주입)
+    const userPrompt = assembleUserPrompt({
+      spec,
+      commonSpec,
+      targetLevel,
       questionKorean: question.question_korean ?? "",
       questionEnglish: question.question_english ?? "",
       cleanedTranscript: preprocessed.cleaned_transcript,
@@ -406,7 +416,7 @@ Deno.serve(async (req) => {
       prevAttempt: prevAttempt,
     });
 
-    // 9. GPT 호출
+    // 12. GPT 호출 (Pass 1 단일 — model_answer 포함, Pass 2 분리는 MVP 이후)
     const gptResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -414,13 +424,13 @@ Deno.serve(async (req) => {
         Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: modulePrompt.model ?? "gpt-4.1",
+        model: systemRow.model ?? "gpt-4.1",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: modulePrompt.temperature ?? 0.4,
-        max_tokens: modulePrompt.max_tokens ?? 6000,
+        temperature: systemRow.temperature ?? 0.7,
+        max_tokens: systemRow.max_tokens ?? 4000,
         response_format: { type: "json_object" },
       }),
     });
@@ -445,7 +455,13 @@ Deno.serve(async (req) => {
       throw new Error("GPT 응답 파싱 실패");
     }
 
-    if (!result.coaching || !Array.isArray(result.coaching.issues) || !result.coaching.model_answer) {
+    if (
+      !result.coaching ||
+      !Array.isArray(result.coaching.issues) ||
+      !result.coaching.model_answer ||
+      !result.coaching.graduation ||
+      typeof result.coaching.graduation.ready !== "boolean"
+    ) {
       console.error("[coaching-evaluate] coaching 구조 누락:", JSON.stringify(result.coaching)?.slice(0, 500));
       throw new Error("GPT 응답에 coaching 구조가 없음");
     }
@@ -461,9 +477,8 @@ Deno.serve(async (req) => {
       filler_ratio: result.filler_ratio ?? filler_ratio,
       evaluation: result.evaluation,
       coaching_json: result.coaching,
-      coaching_markdown: null,
       status: "done",
-      model: modulePrompt.model ?? "gpt-4.1",
+      model: systemRow.model ?? "gpt-4.1",
       tokens_used: gptJson.usage?.total_tokens ?? null,
       completed_at: new Date().toISOString(),
     };
@@ -491,7 +506,7 @@ Deno.serve(async (req) => {
         session_id: session.id,
         feature: "evaluate_coaching",
         service: "openai_chat",
-        model: modulePrompt.model ?? "gpt-4.1",
+        model: systemRow.model ?? "gpt-4.1",
         ef_name: "coaching-evaluate",
         tokens_in: usage.prompt_tokens,
         tokens_out: usage.completion_tokens,
@@ -533,10 +548,108 @@ Deno.serve(async (req) => {
 });
 
 // ============================================================
-// User 프롬프트 빌더
+// v5 — 4축 매칭 + spec 조회 + User Prompt 조립
+// 설계: docs/설계/스피킹코치_재설계.md §5.0 ~ §5.4
 // ============================================================
 
-function buildUserPrompt(params: {
+// 돌발 4 그룹 13 토픽 (description × 공통형 × 일반)
+const RANDOM_TOPICS_13 = [
+  "은행", "호텔", "음식점", "교통",        // 시사
+  "재활용", "지형", "날씨",                 // 환경
+  "산업", "기술",                            // 산업·기술
+  "모임", "휴일", "자유시간",               // 개인
+];
+const CURRENT_AFFAIRS = ["은행", "호텔", "음식점", "교통"];
+const ENVIRONMENT     = ["재활용", "지형", "날씨"];
+const INDUSTRY_TECH   = ["산업", "기술"];
+const PERSONAL        = ["모임", "휴일", "자유시간"];
+
+// §5.0.2 — 4축 매칭 → spec_id
+function resolveSpecId(q: {
+  survey_type: string | null;
+  category: string | null;
+  topic: string;
+  question_type_eng: string;
+}): string {
+  if (q.question_type_eng === "self_intro") {
+    throw new Error("self_intro is not a coaching target (v5 사용자 확정)");
+  }
+
+  const isRandomDescription =
+    q.survey_type === "공통형" &&
+    q.category === "일반" &&
+    q.question_type_eng === "description" &&
+    RANDOM_TOPICS_13.includes(q.topic);
+
+  if (isRandomDescription) {
+    if (CURRENT_AFFAIRS.includes(q.topic)) return "description_random_current_affairs";
+    if (ENVIRONMENT.includes(q.topic))     return "description_random_environment";
+    if (INDUSTRY_TECH.includes(q.topic))   return "description_random_industry_tech";
+    if (PERSONAL.includes(q.topic))        return "description_random_personal";
+  }
+
+  return q.question_type_eng;
+}
+
+// §5.0.3 — coaching_specs 조회 (등급별 공통 base + 유형별 차별 — 두 row 합성)
+interface CoachingSpec {
+  guide_id: string;
+  question_type: string;
+  target_grade: string;
+  evaluation_criteria: string;
+  coaching_focus: string;
+  model_answer_spec: string;
+  model_answer_min_words: number;
+  graduation_thresholds: Record<string, unknown>;
+  issue_count_per_attempt: Record<string, unknown>;
+  example_model_answer: string | null;
+  tone_adjustment: string;
+}
+
+interface SpecPair {
+  common: CoachingSpec;  // 등급별 공통 base (SSOT)
+  type: CoachingSpec | null;  // 유형별 차별 (없으면 common만 단독 사용)
+}
+
+async function fetchSpecPair(
+  supabase: SupabaseClient,
+  specId: string,
+  targetLevel: string,
+): Promise<SpecPair | null> {
+  // 항상 common 같은 등급 fetch (등급별 공통 코칭 헌법 SSOT)
+  const { data: common } = await supabase
+    .from("coaching_specs")
+    .select("*")
+    .eq("question_type", "common")
+    .eq("target_grade", targetLevel)
+    .maybeSingle();
+
+  if (!common) {
+    // common 시드가 없으면 작동 불가 — 마이그레이션 078 미적용 상황
+    return null;
+  }
+
+  // 유형별 spec (있으면 common 위에 차별 요소로 합성)
+  // specId가 "common"이면 (폴백 모드) type 조회 skip
+  let typeSpec: CoachingSpec | null = null;
+  if (specId !== "common") {
+    const { data: t } = await supabase
+      .from("coaching_specs")
+      .select("*")
+      .eq("question_type", specId)
+      .eq("target_grade", targetLevel)
+      .maybeSingle();
+    typeSpec = t as CoachingSpec | null;
+  }
+
+  return { common: common as CoachingSpec, type: typeSpec };
+}
+
+// §5.4 — User Prompt 6 섹션 조립 (common base + 유형 spec 두 데이터 주입)
+function assembleUserPrompt(params: {
+  spec: CoachingSpec;
+  commonSpec: CoachingSpec;
+  targetLevel: string;
   questionKorean: string;
   questionEnglish: string;
   cleanedTranscript: string;
@@ -550,38 +663,122 @@ function buildUserPrompt(params: {
   audioDurationSec: number;
   prevAttempt: { attempt_number: number; evaluation: EvalOutput["evaluation"] | null; filler_count: number | null } | null;
 }): string {
+  const { spec, commonSpec, targetLevel, attemptNumber, prevAttempt, sttFixLog } = params;
   const lines: string[] = [];
+  const hasTypeSpec = spec.guide_id !== commonSpec.guide_id;
 
-  lines.push("# 학습 컨텍스트");
+  // ⓪ LEVEL GATE — 학생 목표 등급 + 2-Layer spec 주입 (common base + 유형 차별)
+  lines.push(`## ⓪ LEVEL GATE — 학생 목표 등급: ${targetLevel}`);
+  lines.push("");
+  lines.push(`⛔ 학생 목표는 **${targetLevel}**. 코칭·model_answer·졸업 판정 모두 이 등급 기준.`);
+  lines.push(`⛔ 적용 spec: **${commonSpec.guide_id}** (등급별 공통 base) ${hasTypeSpec ? `+ **${spec.guide_id}** (유형별 차별)` : "(유형 spec 없음 — common 단독)"}`);
+  lines.push("");
+
+  // ━━━ Layer A — 등급별 공통 코칭 헌법 (common spec) ━━━
+  lines.push(`### A. 등급별 공통 코칭 헌법 — \`${commonSpec.guide_id}\` (SSOT)`);
+  lines.push("");
+  lines.push("**A.1 공통 평가 기준 (common.evaluation_criteria)**");
+  lines.push(commonSpec.evaluation_criteria);
+  lines.push("");
+  lines.push("**A.2 공통 코칭 우선순위 (common.coaching_focus)**");
+  lines.push(commonSpec.coaching_focus);
+  lines.push("");
+  lines.push("**A.3 공통 model_answer 톤 (common.model_answer_spec)**");
+  lines.push(commonSpec.model_answer_spec);
+  lines.push(`- 공통 최소 단어수: ${commonSpec.model_answer_min_words}`);
+  lines.push("");
+  lines.push("**A.4 공통 톤 (common.tone_adjustment)**");
+  lines.push(commonSpec.tone_adjustment);
+  lines.push("");
+
+  // ━━━ Layer B — 유형별 차별 (type spec, 있을 때만) ━━━
+  if (hasTypeSpec) {
+    lines.push(`### B. 유형별 차별 — \`${spec.guide_id}\` (위 A를 base로 + 아래 차별)`);
+    lines.push("");
+    lines.push("**B.1 유형별 평가 기준 (type.evaluation_criteria)**");
+    lines.push(spec.evaluation_criteria);
+    lines.push("");
+    lines.push("**B.2 유형별 코칭 우선순위 (type.coaching_focus)**");
+    lines.push(spec.coaching_focus);
+    lines.push("");
+    lines.push("**B.3 유형별 model_answer 톤 (type.model_answer_spec)**");
+    lines.push(spec.model_answer_spec);
+    lines.push(`- 유형별 최소 단어수: ${spec.model_answer_min_words} (이 값을 따를 것)`);
+    lines.push("");
+    lines.push("**B.4 유형별 톤 조정 (type.tone_adjustment)**");
+    lines.push(spec.tone_adjustment);
+    lines.push("");
+    if (spec.example_model_answer) {
+      lines.push(`**B.5 유형별 완성 모범 (참조 — ${spec.target_grade} × ${spec.question_type})**`);
+      lines.push("```");
+      lines.push(spec.example_model_answer);
+      lines.push("```");
+      lines.push("");
+    }
+  }
+
+  // ━━━ 공통 임계치 (둘 다 같은 등급이므로 type 우선, fallback common) ━━━
+  lines.push("### C. 졸업 임계치 (graduation_thresholds)");
+  lines.push("```json");
+  lines.push(JSON.stringify(spec.graduation_thresholds, null, 2));
+  lines.push("```");
+  lines.push("");
+  lines.push("### D. 회차별 짚는 개수 가이드 (issue_count_per_attempt)");
+  lines.push("```json");
+  lines.push(JSON.stringify(spec.issue_count_per_attempt, null, 2));
+  lines.push("```");
+  lines.push(`현재 회차: ${attemptNumber}. 위 표에서 해당 구간 범위 내로 짚을 것.`);
+  lines.push("");
+
+  lines.push("---");
+  lines.push("");
+  lines.push("**SPEC 적용 원칙**:");
+  lines.push("1. Layer A(common)는 모든 유형 코칭의 SSOT. 짚는 순서·강도·톤의 기본.");
+  if (hasTypeSpec) {
+    lines.push(`2. Layer B(${spec.question_type})는 A 위에 얹는 유형 차별 요소. 두 spec이 충돌하면 B 우선.`);
+  } else {
+    lines.push("2. 유형 spec 없음 — A의 공통 코칭 그대로 적용.");
+  }
+  lines.push("3. issues 개수·짚는 우선순위·model_answer 톤은 위 spec 데이터 준수.");
+  lines.push("");
+  lines.push("---");
+  lines.push("");
+
+  // ① 학습 컨텍스트
+  lines.push("## ① 학습 컨텍스트");
   lines.push("");
   lines.push(`- 유형: ${params.questionType} (${params.surveyType ?? "—"})`);
   lines.push(`- 토픽: ${params.topic}`);
-  lines.push(`- 회차: ${params.attemptNumber}회차`);
+  lines.push(`- 회차: ${attemptNumber}회차`);
   lines.push("");
 
-  lines.push("# 질문");
+  // ② 질문
+  lines.push("## ② 질문");
   lines.push("");
   lines.push(`**🇰🇷** ${params.questionKorean}`);
   lines.push(`**🇺🇸** ${params.questionEnglish}`);
   lines.push("");
 
-  lines.push("# 학생 답변 (전처리 완료 — STT 오타 정정 및 구두점 복원)");
+  // ③ 학생 답변 (cleaned_transcript)
+  lines.push("## ③ 학생 답변 (cleaned_transcript)");
   lines.push("");
   lines.push("```");
   lines.push(params.cleanedTranscript);
   lines.push("```");
   lines.push("");
 
-  if (params.sttFixLog.length > 0) {
-    lines.push("## ⚠️ STT 정정 사항 (학생 흠으로 잡지 말 것)");
+  // ④ STT 정정 사항 (학생 흠으로 잡지 말 것)
+  if (sttFixLog.length > 0) {
+    lines.push("## ④ STT 정정 사항 (학생 흠으로 잡지 말 것)");
     lines.push("");
-    params.sttFixLog.forEach((fix) => {
+    sttFixLog.forEach((fix) => {
       lines.push(`- \`${fix.original}\` → \`${fix.fixed}\` (${fix.reason}, ${fix.confidence})`);
     });
     lines.push("");
   }
 
-  lines.push("# 사전 측정 통계");
+  // ⑤ 사전 측정 통계
+  lines.push("## ⑤ 사전 측정 통계");
   lines.push("");
   lines.push(`- 단어 수: ${params.wordCount}`);
   lines.push(`- Filler 수: ${params.fillerCount} (${(params.wordCount > 0 ? (params.fillerCount / params.wordCount) * 100 : 0).toFixed(1)}%)`);
@@ -590,53 +787,54 @@ function buildUserPrompt(params: {
   }
   lines.push("");
 
-  if (params.prevAttempt) {
-    lines.push(`# 이전 회차 (${params.prevAttempt.attempt_number}회차) 진척 비교 데이터`);
+  // ⑥ 이전 회차 데이터 (회차 ≥ 2)
+  if (prevAttempt) {
+    lines.push(`## ⑥ 이전 회차 (${prevAttempt.attempt_number}회차) 진척 데이터`);
     lines.push("");
-    if (params.prevAttempt.evaluation) {
-      lines.push(`- 이전 흠 개수: ${params.prevAttempt.evaluation.흠_총_개수}`);
-      lines.push(`- 이전 추정 등급: ${params.prevAttempt.evaluation.estimated_grade}`);
+    if (prevAttempt.evaluation) {
+      lines.push(`- 이전 흠 개수: ${prevAttempt.evaluation.흠_총_개수}`);
+      lines.push(`- 이전 추정 등급: ${prevAttempt.evaluation.estimated_grade}`);
     }
-    if (params.prevAttempt.filler_count !== null) {
-      lines.push(`- 이전 filler 횟수: ${params.prevAttempt.filler_count}`);
+    if (prevAttempt.filler_count !== null) {
+      lines.push(`- 이전 filler 횟수: ${prevAttempt.filler_count}`);
     }
     lines.push("");
-    lines.push("→ 이번 회차 평가 시 진척 비교 표 포함 (코칭 markdown 상단)");
+    lines.push("→ 이번 회차 평가 시 `coaching.progress_table`에 비교 행 포함 의무.");
     lines.push("");
   }
 
-  lines.push("# 출력 형식 (JSON, 엄격히 준수)");
+  lines.push("---");
   lines.push("");
-  lines.push("`coaching`은 자유 markdown이 아니라 **구조화 객체**다. 각 필드를 분리해서 채운다.");
+
+  // ⑦ EVALUATE & COACH — 출력 JSON 형식
+  lines.push("## ⑦ EVALUATE & COACH");
+  lines.push("");
+  lines.push("위 spec과 컨텍스트로 평가·코칭을 수행하고, **아래 JSON 형식만** 반환할 것.");
   lines.push("");
   lines.push("```json");
   lines.push(`{
   "evaluation": {
-    "estimated_grade": "IM3 또는 IH-IM3 경계 같은 자연어 (점수 X)",
-    "흠_총_개수": 6,
+    "estimated_grade": "자연어 (예: IH 진입 후보 / IM3 상단). 점수 숫자 X.",
+    "흠_총_개수": 0,
     "흠_상세": [
-      { "영역": "단락 구조", "상태": "Supporting 표지 3개 중 1개만 박힘", "학생_본문_인용": "..." }
+      { "영역": "Skeleton 구조 / 어휘 폭 / Cohesive devices / 분사구문 등", "상태": "구체 설명", "학생_본문_인용": "..." }
     ],
-    "강점": ["Overall 마무리 사용", "...."],
+    "강점": ["...", "..."],
     "skeleton_완성도": {
       "topic_sentence": true, "transition": false,
       "supporting_1": true, "supporting_2": false, "supporting_3": false,
       "concluding": true, "ending": true, "score_percent": 57
-    },
-    "전회차_대비_진척": {
-      "prev_attempt_number": 1, "흠_count_delta": -3,
-      "skeleton_delta": "3/7 → 6/7", "filler_delta": "9 → 0"
     }
   },
   "coaching": {
-    "intro": "네, 수고하셨습니다 Jay님. (회차에 맞는 짧은 인사 + 격려 1~2문장. 한국어)",
+    "intro": "짧은 인사 + 회차 격려 (한국어, 2~3문장, 점수·등급 숫자 X)",
     "progress_table": [
-      { "label": "Supporting 표지", "prev": "2/7", "current": "6/7", "signal": "big" }
+      { "label": "Skeleton 슬롯", "prev": "3/6", "current": "6/6", "signal": "big" }
     ],
     "issues": [
       {
-        "title": "Supporting 표지 — Skeleton 구조 미흡",
-        "severity": "high",
+        "title": "한국어 짧은 제목",
+        "severity": "high|medium|low",
         "quote": "학생 본문에서 그대로 인용한 영어 표현",
         "explanation": "원리 설명 (한국어, 2~4문장). 왜 흠인지 + 어떻게 고치는지.",
         "fix_example": "정정·시범 영어 표현 (따라하기용, 없으면 생략)",
@@ -644,33 +842,35 @@ function buildUserPrompt(params: {
       }
     ],
     "model_answer": {
-      "text": "학생 소재를 살린 IH~AL 수준 통합 답변 (영어 전체).",
-      "changes": ["Supporting 표지 3개 명확히 박음", "experience lost way → got lost 정정", "..."]
+      "text": "학생 소재 살린 ${targetLevel} 수준 영어 통합 답변 (전체).",
+      "changes": ["원답변 대비 어떤 점을 어떻게 바꿨는지 한국어 짧은 문장 (최소 1개)"]
     },
-    "action_items": ["Supporting 표지 3개 박기", "반복 어휘 줄이기", "분사구문 1개 넣기"],
-    "closing": "외우지 마세요. 본인 말로 풀어내세요. 위 통합 답변은 참고용이에요."
+    "action_items": ["다음 회차에 의식할 항목 (한국어, 짧게, 체크박스 기호 X)"],
+    "closing": "마무리 격려 (한국어, 1~2문장. intro와 일관된 톤)",
+    "graduation": {
+      "ready": false,
+      "reason": "판단 근거 1~2문장 (한국어, 학생 안내 톤). intro/closing의 졸업 언급과 일치시킬 것."
+    }
   },
-  "word_count": 132,
-  "filler_count": 8,
-  "filler_ratio": 0.061
+  "word_count": 0,
+  "filler_count": 0,
+  "filler_ratio": 0.0
 }`);
   lines.push("```");
   lines.push("");
-  lines.push("**필드 작성 규칙**:");
-  lines.push("- `intro`: 인사 + 회차 맥락에 맞는 격려. 짧게. (점수/등급 숫자 X)");
-  lines.push("- `progress_table`: **회차 ≥ 2일 때만** 포함. 1회차면 필드 생략 또는 빈 배열.");
-  lines.push("- `issues`: 우선순위 순으로 정렬 (무너진 답변 → 구조 → 문법 → 어휘 → 분사구문 → filler).");
-  lines.push("  - 1~2회차: 5~8개 / 3~4회차: 3~5개 / 5회차+: 1~3개");
-  lines.push("  - `severity`: 단락 구조·답변 붕괴 = high, 문법·어색한 표현 = medium, 어휘 반복·filler·분사구문 도전 = low");
-  lines.push("  - `quote`는 학생 본문 영어 표현 그대로. `explanation`/`note`는 한국어. `fix_example`은 영어.");
-  lines.push("- `model_answer.text`: 학생 소재 그대로 살린 모범 답변. `changes`는 원답변 대비 바뀐 점.");
-  lines.push("- `action_items`: 다음 회차에 의식할 항목. 체크박스 기호(✅) 붙이지 말 것 — UI가 붙임.");
+  lines.push("### 필드 작성 규칙");
+  lines.push(`- \`issues\` 개수: ⓪ LEVEL GATE의 \`issue_count_per_attempt\`에서 회차 ${attemptNumber}에 해당하는 구간 범위 내.`);
+  lines.push("- `issues` 우선순위: ⓪ LEVEL GATE의 `coaching_focus` 1번부터.");
+  lines.push("- `progress_table`: 회차 ≥ 2일 때만 포함. 1회차면 빈 배열 또는 생략.");
+  lines.push("- `quote`/`fix_example`/`model_answer.text`: 영어.");
+  lines.push("- `intro`/`explanation`/`note`/`closing`/`action_items`/`graduation.reason`: 한국어.");
+  lines.push(`- \`model_answer.text\`: 학생 소재(가족·직장·취미 등) 그대로 살림. ${targetLevel} 수준에 맞는 길이·어휘. 최소 ${spec.model_answer_min_words} 단어.`);
+  lines.push("- `graduation.ready`: ⓪ LEVEL GATE의 `graduation_thresholds` 기준으로 판정. `reason`은 intro/closing 졸업 언급과 모순 X.");
   lines.push("");
-  lines.push("**절대 금지** (모든 텍스트 필드 공통):");
-  lines.push("- 강의 번호(04강/10강 등) 노출 금지");
-  lines.push("- 점수/등급 숫자(IM3 55점, 60/100 등) 노출 금지 — 등급은 자연어로만, 가급적 언급 자제");
-  lines.push("- 약점 코드(WP_*) 노출 금지");
-  lines.push("- markdown 헤딩(#)·표·리스트 기호를 필드 값 안에 넣지 말 것 — 순수 텍스트만. UI가 디자인함.");
+  lines.push("### 절대 금지");
+  lines.push("- 강의 번호 / 점수 숫자 / 약점 코드 / 강사 본명·예명 / 외부 교재명 노출 X.");
+  lines.push("- 필드 값에 markdown 헤딩(#)·표·리스트 기호 X (UI가 디자인).");
+  lines.push(`- LEVEL GATE 위반 X (${targetLevel} 등급 천장 초과 model_answer 생성 X).`);
 
   return lines.join("\n");
 }

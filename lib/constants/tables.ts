@@ -60,7 +60,7 @@ export const T = {
   lecture_access: "lecture_access",
   // 기출 보관함 권한 (065_exam_archive_access.sql)
   exam_archive_access: "exam_archive_access",
-  // AI 코치 모듈 (068_coaching_module.sql)
+  // 스피킹 코치 모듈 (068_coaching_module.sql)
   coaching_sessions: "coaching_sessions",
   coaching_attempts: "coaching_attempts",
   coaching_topic_mastery: "coaching_topic_mastery",
@@ -95,6 +95,6 @@ export const RPC = {
   get_user_usage_summary: "get_user_usage_summary",
   increment_completed_prescriptions: "increment_completed_prescriptions",
   increment_training_count: "increment_training_count",
-  // AI 코치 모듈 (071_coaching_attempt_rpc.sql)
+  // 스피킹 코치 모듈 (071_coaching_attempt_rpc.sql)
   coaching_claim_attempt_number: "coaching_claim_attempt_number",
 } as const;

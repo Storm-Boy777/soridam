@@ -3,7 +3,7 @@
 // 탭 2 "주제별" — 스크립트 생성 방식
 // 카테고리(일반/롤플레이/어드밴스) → 주제 → 질문 (한 페이지 누적 펼침)
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import {
@@ -17,6 +17,8 @@ import {
   RotateCcw,
   Sparkles,
   Volume2,
+  ListChecks,
+  Shuffle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { getTopicsByCategory } from "@/lib/queries/master-questions";
@@ -37,11 +39,28 @@ interface TopicRow {
   topic: string;
   count: number;
   frequency: number;
+  survey_type: string | null;
 }
 
 export function CategoryBrowser() {
   const [category, setCategory] = useState<Category | null>(null);
   const [topic, setTopic] = useState<string | null>(null);
+
+  // 다음 단계 영역이 펼쳐지면 자동으로 위로 스크롤 (선택 직후 인지 향상)
+  const topicSectionRef = useRef<HTMLElement>(null);
+  const questionSectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (category) {
+      topicSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [category]);
+
+  useEffect(() => {
+    if (topic) {
+      questionSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [topic]);
 
   return (
     <div className="space-y-5">
@@ -79,7 +98,10 @@ export function CategoryBrowser() {
 
       {/* ② 주제 선택 */}
       {category && (
-        <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+        <section
+          ref={topicSectionRef}
+          className="scroll-mt-24 rounded-2xl border border-border bg-surface p-5 sm:p-6"
+        >
           <div className="mb-3 text-sm font-semibold text-foreground-secondary">
             ② 주제 선택 — {category}
           </div>
@@ -93,7 +115,10 @@ export function CategoryBrowser() {
 
       {/* ③ 질문 선택 */}
       {category && topic && (
-        <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+        <section
+          ref={questionSectionRef}
+          className="scroll-mt-24 rounded-2xl border border-border bg-surface p-5 sm:p-6"
+        >
           <div className="mb-3 text-sm font-semibold text-foreground-secondary">
             ③ 질문 선택 — {topic}
           </div>
@@ -133,9 +158,60 @@ function TopicGrid({
     return <p className="py-3 text-sm text-foreground-muted">주제가 없습니다</p>;
   }
 
+  // 선택형 / 공통형 그룹핑 (빈도순은 getTopicsByCategory에서 이미 정렬됨)
+  const selective = topics.filter((t: TopicRow) => t.survey_type === "선택형");
+  const common = topics.filter((t: TopicRow) => t.survey_type === "공통형");
+
+  return (
+    <div className="space-y-5">
+      {/* 빈도순 안내 */}
+      <div className="flex items-start gap-2 rounded-xl bg-primary-50 px-3 py-2.5 text-xs leading-relaxed text-primary-700">
+        <TrendingUp className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>
+          주제는 <strong className="font-semibold">기출 빈도순</strong>으로 정렬돼 있어요. 자주
+          나오는 위쪽 주제부터 학습하는 걸 추천해요.
+        </span>
+      </div>
+
+      {/* 선택형 */}
+      {selective.length > 0 && (
+        <section>
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground-secondary">
+            <ListChecks className="h-4 w-4 text-foreground-muted" />
+            <span>선택형 ({selective.length}) — 백그라운드 서베이</span>
+          </div>
+          <TopicCards topics={selective} selectedTopic={selectedTopic} onSelect={onSelect} />
+        </section>
+      )}
+
+      {/* 공통형 (돌발) */}
+      {common.length > 0 && (
+        <section>
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground-secondary">
+            <Shuffle className="h-4 w-4 text-foreground-muted" />
+            <span>공통형 ({common.length}) — 돌발</span>
+          </div>
+          <TopicCards topics={common} selectedTopic={selectedTopic} onSelect={onSelect} />
+        </section>
+      )}
+    </div>
+  );
+}
+
+// ── 주제 카드 그리드 ──
+
+function TopicCards({
+  topics,
+  selectedTopic,
+  onSelect,
+}: {
+  topics: TopicRow[];
+  selectedTopic: string | null;
+  onSelect: (topic: string) => void;
+}) {
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-      {topics.map((t: TopicRow) => {
+      {topics.map((t) => {
         const Icon = TOPIC_ICONS[t.topic] ?? Folder;
         const active = selectedTopic === t.topic;
         return (
@@ -143,7 +219,7 @@ function TopicGrid({
             key={t.topic}
             type="button"
             onClick={() => onSelect(t.topic)}
-            className={`flex flex-col items-start gap-1.5 rounded-xl border p-3 text-left transition ${
+            className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition ${
               active
                 ? "border-primary-400 bg-primary-50"
                 : "border-border bg-surface hover:border-primary-300 hover:bg-surface-hover"

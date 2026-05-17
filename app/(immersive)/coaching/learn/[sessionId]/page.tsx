@@ -1,4 +1,4 @@
-// AI 코치 — 학습 룸 (마이크로 사이클)
+// 스피킹 코치 — 학습 룸 (마이크로 사이클)
 
 import { redirect } from "next/navigation";
 import { getSessionDetail } from "@/lib/actions/coaching";
@@ -11,7 +11,7 @@ interface Props {
 }
 
 export const metadata = {
-  title: "AI 코치 — 학습 룸",
+  title: "스피킹 코치 — 학습 룸",
 };
 
 export default async function CoachingLearnPage({ params }: Props) {
@@ -36,7 +36,7 @@ export default async function CoachingLearnPage({ params }: Props) {
         backHref={`/coaching?type=${s.question_type}`}
       />
 
-      <main className="mx-auto max-w-3xl px-4 py-5 sm:py-6">
+      <main className="mx-auto max-w-5xl px-4 py-5 sm:py-6">
         <LearnRoom initialDetail={detail.data} />
       </main>
     </div>

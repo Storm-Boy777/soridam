@@ -2,7 +2,7 @@
 
 // 유형별 탭 — 유형 → 토픽 → 질문 (한 페이지 누적 펼침, 주제별 탭과 동일 패턴)
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Image as ImageIcon,
@@ -71,6 +71,28 @@ export function TypeBrowser({ cards, preType, preTopic }: Props) {
 
   const selectedCard = bodyTypes.find((c) => c.question_type === selectedType);
 
+  // 다음 단계 영역이 펼쳐지면 자동으로 위로 스크롤 (선택 직후 인지 향상)
+  const topicSectionRef = useRef<HTMLElement>(null);
+  const questionSectionRef = useRef<HTMLElement>(null);
+  const skipInitialScroll = useRef(true);
+
+  useEffect(() => {
+    if (skipInitialScroll.current) return;
+    if (selectedType) {
+      topicSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [selectedType]);
+
+  useEffect(() => {
+    if (skipInitialScroll.current) {
+      skipInitialScroll.current = false;
+      return;
+    }
+    if (selectedTopic) {
+      questionSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [selectedTopic]);
+
   return (
     <div className="space-y-5">
       {/* ① 유형 선택 */}
@@ -95,7 +117,10 @@ export function TypeBrowser({ cards, preType, preTopic }: Props) {
 
       {/* ② 주제 선택 */}
       {selectedType && selectedCard && (
-        <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+        <section
+          ref={topicSectionRef}
+          className="scroll-mt-24 rounded-2xl border border-border bg-surface p-5 sm:p-6"
+        >
           <div className="mb-3 text-sm font-semibold text-foreground-secondary">
             ② 주제 선택 — {selectedCard.label}
           </div>
@@ -109,7 +134,10 @@ export function TypeBrowser({ cards, preType, preTopic }: Props) {
 
       {/* ③ 질문 선택 */}
       {selectedType && selectedTopic && (
-        <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+        <section
+          ref={questionSectionRef}
+          className="scroll-mt-24 rounded-2xl border border-border bg-surface p-5 sm:p-6"
+        >
           <div className="mb-3 text-sm font-semibold text-foreground-secondary">
             ③ 질문 선택 — {selectedTopic}
           </div>

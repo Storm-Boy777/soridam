@@ -60,7 +60,7 @@ export async function getTopicsByCategory(category: "일반" | "롤플레이" | 
   const [topicResult, freqResult] = await Promise.all([
     supabase
       .from(T.questions)
-      .select("topic")
+      .select("topic, survey_type")
       .eq("category", category)
       .neq("topic", "자기소개"),
     supabase
@@ -71,10 +71,14 @@ export async function getTopicsByCategory(category: "일반" | "롤플레이" | 
 
   if (topicResult.error) return [];
 
-  // 유니크 주제 + 각 주제별 질문 수
+  // 유니크 주제 + 각 주제별 질문 수 + survey_type (선택형/공통형)
   const topicCounts = new Map<string, number>();
+  const topicSurveyType = new Map<string, string | null>();
   for (const row of topicResult.data) {
     topicCounts.set(row.topic, (topicCounts.get(row.topic) || 0) + 1);
+    if (!topicSurveyType.has(row.topic)) {
+      topicSurveyType.set(row.topic, row.survey_type ?? null);
+    }
   }
 
   // 주제별 출제 빈도 (해당 카테고리만)
@@ -84,7 +88,12 @@ export async function getTopicsByCategory(category: "일반" | "롤플레이" | 
   }
 
   return Array.from(topicCounts.entries())
-    .map(([topic, count]) => ({ topic, count, frequency: freqCounts.get(topic) || 0 }))
+    .map(([topic, count]) => ({
+      topic,
+      count,
+      frequency: freqCounts.get(topic) || 0,
+      survey_type: topicSurveyType.get(topic) ?? null,
+    }))
     .sort((a, b) => b.frequency - a.frequency || a.topic.localeCompare(b.topic, "ko"));
 }
 

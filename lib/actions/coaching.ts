@@ -1,6 +1,6 @@
 "use server";
 
-// AI 코치 모듈 — 사용자용 Server Actions
+// 스피킹 코치 모듈 — 사용자용 Server Actions
 // PRD v2: C:/Users/js777/Desktop/소리담_AI코치_PRD.md
 // 마이그레이션: 068_coaching_module.sql
 
@@ -33,6 +33,7 @@ import {
   QUESTION_TYPE_DESCRIPTIONS,
 } from "@/lib/types/coaching";
 import { QUESTION_TYPE_ORDER } from "@/lib/types/reviews";
+import { ESTIMATED_COST_CENTS } from "@/lib/constants/estimated-costs";
 
 // 같은 유형의 토픽 N개 졸업 시 유형 마스터
 const TYPE_MASTERY_REQUIRED_TOPICS = 5;
@@ -48,6 +49,34 @@ async function requireUser() {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("로그인이 필요합니다");
   return { supabase, userId: user.id };
+}
+
+// ============================================================
+// 크레딧 잔액 확인 — 스피킹 코치 1회 답변 평가 비용 기준
+// ============================================================
+
+export async function checkCoachingCredit(): Promise<
+  ActionResult<{ hasCredit: boolean; balanceCents: number; estimatedCostCents: number }>
+> {
+  try {
+    const { supabase, userId } = await requireUser();
+    const { data: balance } = await supabase
+      .from(T.polar_balances)
+      .select("balance_cents")
+      .eq("user_id", userId)
+      .single();
+    const balanceCents = balance?.balance_cents ?? 0;
+    const estimatedCostCents = ESTIMATED_COST_CENTS.coaching;
+    return {
+      data: {
+        hasCredit: balanceCents >= estimatedCostCents,
+        balanceCents,
+        estimatedCostCents,
+      },
+    };
+  } catch (err) {
+    return { error: (err as Error).message };
+  }
 }
 
 // ============================================================
@@ -160,8 +189,8 @@ export async function getTopicsByType(
       }
     );
 
-    // 사용자별 진척 (해당 유형의 토픽 마스터/진행 중 세션)
-    const [{ data: mastery }, { data: activeSessions }] = await Promise.all([
+    // 사용자별 진척 + 토픽별 출제 빈도 (시험후기 콤보 SSOT)
+    const [{ data: mastery }, { data: activeSessions }, { data: combos }] = await Promise.all([
       supabase
         .from(T.coaching_topic_mastery)
         .select("topic")
@@ -173,7 +202,15 @@ export async function getTopicsByType(
         .eq("user_id", userId)
         .eq("question_type", question_type)
         .eq("status", "active"),
+      supabase.from(T.submission_combos).select("topic"),
     ]);
+
+    // 토픽별 출제 빈도 집계
+    const freqCounts = new Map<string, number>();
+    (combos ?? []).forEach((c: { topic: string | null }) => {
+      if (!c.topic) return;
+      freqCounts.set(c.topic, (freqCounts.get(c.topic) || 0) + 1);
+    });
 
     const masteredTopics = new Set((mastery ?? []).map((r: { topic: string }) => r.topic));
     const activeByTopic = new Map<string, { id: string; attempt_count: number }>();
@@ -203,9 +240,12 @@ export async function getTopicsByType(
       else if (info.survey_type === "공통형") common.push(card);
     }
 
-    // 가나다순 정렬
-    selective.sort((a, b) => a.topic.localeCompare(b.topic, "ko"));
-    common.sort((a, b) => a.topic.localeCompare(b.topic, "ko"));
+    // 출제 빈도순 정렬 (동률이면 가나다순)
+    const byFrequency = (a: TopicCard, b: TopicCard) =>
+      (freqCounts.get(b.topic) || 0) - (freqCounts.get(a.topic) || 0) ||
+      a.topic.localeCompare(b.topic, "ko");
+    selective.sort(byFrequency);
+    common.sort(byFrequency);
 
     return { data: { selective, common } };
   } catch (err) {
@@ -449,6 +489,14 @@ export async function startOrResumeSession(input: {
       attemptCount = existing.attempt_count;
       isResumed = true;
     } else {
+      // v5 — 세션 생성 시 profile.target_grade를 target_level에 캐시
+      // EF가 등급별 spec 조회 시 우선 사용. 학생이 즉석 변경 가능(향후).
+      const { data: profile } = await supabase
+        .from(T.profiles)
+        .select("target_grade")
+        .eq("id", userId)
+        .maybeSingle();
+
       const { data: inserted, error: insErr } = await supabase
         .from(T.coaching_sessions)
         .insert({
@@ -457,6 +505,7 @@ export async function startOrResumeSession(input: {
           topic: input.topic,
           question_id: input.question_id,
           survey_type: question.survey_type ?? null,
+          target_level: profile?.target_grade ?? "IH",
           status: "active",
           attempt_count: 0,
         })
@@ -607,7 +656,7 @@ export async function getSessionDetail(
         .from(T.coaching_attempts)
         .select(
           `id, attempt_number, status, input_mode,
-           cleaned_transcript, stt_fix_log, coaching_markdown, coaching_json,
+           cleaned_transcript, stt_fix_log, coaching_json,
            word_count, filler_count, audio_duration, audio_url,
            evaluation, created_at, completed_at`
         )
@@ -625,7 +674,6 @@ export async function getSessionDetail(
         input_mode: InputMode;
         cleaned_transcript: string | null;
         stt_fix_log: CoachingAttempt["stt_fix_log"];
-        coaching_markdown: string | null;
         coaching_json: CoachingAttempt["coaching_json"];
         word_count: number | null;
         filler_count: number | null;
@@ -665,7 +713,6 @@ export async function getSessionDetail(
           input_mode: a.input_mode,
           cleaned_transcript: a.cleaned_transcript,
           stt_fix_log: a.stt_fix_log,
-          coaching_markdown: a.coaching_markdown,
           coaching_json: a.coaching_json,
           word_count: a.word_count,
           audio_duration: a.audio_duration,

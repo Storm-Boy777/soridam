@@ -22,4 +22,6 @@ export const ESTIMATED_COST_CENTS = {
   mock_exam: 30,
   /** 튜터링: 진단(2회 GPT) + 드릴 생성 + 평가 */
   tutoring: 10,
+  /** 스피킹 코치: 1회 답변 — Whisper STT + 트랜스크립트 정제(mini) + 평가/코칭(GPT-4.1) */
+  coaching: 3,
 } as const;

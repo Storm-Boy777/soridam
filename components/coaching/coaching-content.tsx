@@ -1,6 +1,6 @@
 "use client";
 
-// AI 코치 메인 — 모의고사형 허브
+// 스피킹 코치 메인 — 모의고사형 허브
 //   이어하기 배너 + 학습 진행 과정 안내 + 2탭(유형별/주제별)
 
 import { useState } from "react";
@@ -24,9 +24,9 @@ interface Props {
 
 // 학습 진행 과정 4단계
 const PROCESS_STEPS = [
-  { n: 1, title: "유형·주제 선택", desc: "묘사부터, 익숙한 주제로" },
+  { n: 1, title: "유형·주제 선택", desc: "실제 기출문제를 선택" },
   { n: 2, title: "답변 녹음", desc: "질문에 내 목소리로 답변" },
-  { n: 3, title: "1:1 밀착 코칭", desc: "AI가 개선점을 짚고 시범" },
+  { n: 3, title: "1:1 밀착 코칭", desc: "코치가 개선점을 짚고 시범" },
   { n: 4, title: "반복 교정 → 졸업", desc: "개선점이 줄면 토픽 졸업" },
 ];
 
