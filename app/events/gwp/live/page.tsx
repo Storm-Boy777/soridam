@@ -466,7 +466,7 @@ function SnsCenterSlot({ cheer }: { cheer: Cheer }) {
     )
   }
   return (
-    <div className="absolute inset-0 flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#1c1632] via-[#0d0a1a] to-[#241a14] px-[6vh] pb-[28vh] pt-[6vh]">
+    <div className="absolute inset-0 flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#1c1632] via-[#0d0a1a] to-[#241a14] px-[6vh] pb-[14vh] pt-[14vh]">
       <div className="pointer-events-none absolute -left-32 top-1/4 h-80 w-80 rounded-full bg-amber-500/15 blur-3xl" />
       <div className="pointer-events-none absolute -right-24 bottom-1/4 h-80 w-80 rounded-full bg-rose-500/15 blur-3xl" />
       <p
