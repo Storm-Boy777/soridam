@@ -86,6 +86,42 @@ export async function requireLectureAccess() {
   return user;
 }
 
+// ── hasCoachingAccess(): AI 코치 접근 권한 (네비게이션 노출 판단용) ──
+// 관리자 또는 coaching_access 보유자면 true. 비로그인은 false.
+// Dogfooding/베타 단계 사용자 통제용. (079_coaching_access.sql)
+export const hasCoachingAccess = cache(async () => {
+  const user = await getUser();
+  if (!user) return false;
+  if (user.app_metadata?.role === "admin") return true;
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from("coaching_access")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  return !!data;
+});
+
+// ── requireCoachingAccess(): 코칭 페이지 진입 게이트 ──
+// 비로그인 → /login, 권한 없음 → /. 관리자는 자동 통과.
+export async function requireCoachingAccess() {
+  const user = await getUser();
+  if (!user) {
+    redirect("/login");
+  }
+  if (user.app_metadata?.role === "admin") return user;
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from("coaching_access")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!data) {
+    redirect("/");
+  }
+  return user;
+}
+
 // ── hasExamArchiveAccess(): 기출 보관함 접근 권한 ──
 // 다음 중 하나 만족 시 true:
 //   1) 관리자

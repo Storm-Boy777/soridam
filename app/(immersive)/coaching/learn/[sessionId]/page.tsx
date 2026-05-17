@@ -1,6 +1,8 @@
 // 스피킹 코치 — 학습 룸 (마이크로 사이클)
+// 권한: requireCoachingAccess (admin OR coaching_access) — 079_coaching_access.sql
 
 import { redirect } from "next/navigation";
+import { requireCoachingAccess } from "@/lib/auth";
 import { getSessionDetail } from "@/lib/actions/coaching";
 import { QUESTION_TYPE_LABELS } from "@/lib/types/coaching";
 import { LearnRoom } from "@/components/coaching/learn-room";
@@ -15,6 +17,7 @@ export const metadata = {
 };
 
 export default async function CoachingLearnPage({ params }: Props) {
+  await requireCoachingAccess();
   const { sessionId } = await params;
   if (!sessionId) redirect("/coaching");
 

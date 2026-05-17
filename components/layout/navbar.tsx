@@ -20,6 +20,7 @@ type NavItem = {
   adminOnly?: boolean;
   lectureAccessOnly?: boolean;
   studyPanelOnly?: boolean;
+  coachingAccessOnly?: boolean;
 };
 
 const publicNav: NavItem[] = [
@@ -33,7 +34,7 @@ const appNav: NavItem[] = [
   { label: "스크립트", href: "/scripts" },
   { label: "모의고사", href: "/mock-exam" },
   { label: "튜터링", href: "/tutoring", adminOnly: true },
-  { label: "스피킹 코치", href: "/coaching", adminOnly: true },
+  { label: "스피킹 코치", href: "/coaching", coachingAccessOnly: true },
   { label: "오픽 스터디", href: "/opic-study" },
   { label: "강의", href: "/lectures", lectureAccessOnly: true },
   { label: "스터디", href: "/study-group", studyPanelOnly: true },
@@ -52,6 +53,7 @@ export interface NavbarServerAuth {
   isAdmin: boolean;
   hasLectureAccess?: boolean;
   hasStudyPanelAccess?: boolean;
+  hasCoachingAccess?: boolean;
 }
 
 export function Navbar({ serverAuth }: { serverAuth?: NavbarServerAuth } = {}) {
@@ -61,6 +63,7 @@ export function Navbar({ serverAuth }: { serverAuth?: NavbarServerAuth } = {}) {
   const [isAdmin, setIsAdmin] = useState(serverAuth?.isAdmin ?? false);
   const hasLectureAccess = serverAuth?.hasLectureAccess ?? false;
   const hasStudyPanelAccess = serverAuth?.hasStudyPanelAccess ?? false;
+  const hasCoachingAccess = serverAuth?.hasCoachingAccess ?? false;
 
   const handleLogoClick = useCallback((e: React.MouseEvent) => {
     if (pathname === "/") {
@@ -112,6 +115,7 @@ export function Navbar({ serverAuth }: { serverAuth?: NavbarServerAuth } = {}) {
           if (item.adminOnly && !isAdmin) return false;
           if (item.lectureAccessOnly && !isAdmin && !hasLectureAccess) return false;
           if (item.studyPanelOnly && !isAdmin && !hasStudyPanelAccess) return false;
+          if (item.coachingAccessOnly && !isAdmin && !hasCoachingAccess) return false;
           return true;
         });
         return isAdmin ? [...filtered, ...adminOnlyNav] : filtered;

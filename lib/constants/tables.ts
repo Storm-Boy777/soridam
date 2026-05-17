@@ -60,12 +60,14 @@ export const T = {
   lecture_access: "lecture_access",
   // 기출 보관함 권한 (065_exam_archive_access.sql)
   exam_archive_access: "exam_archive_access",
-  // 스피킹 코치 모듈 (068_coaching_module.sql)
+  // 스피킹 코치 모듈 (068_coaching_module.sql + 074 v5 재설계)
   coaching_sessions: "coaching_sessions",
   coaching_attempts: "coaching_attempts",
   coaching_topic_mastery: "coaching_topic_mastery",
   coaching_type_mastery: "coaching_type_mastery",
-  coaching_persona_settings: "coaching_persona_settings",
+  coaching_specs: "coaching_specs",
+  // AI 코치 접근 권한 (079_coaching_access.sql)
+  coaching_access: "coaching_access",
 } as const;
 
 // RPC 함수명 상수

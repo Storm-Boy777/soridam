@@ -1,8 +1,10 @@
 // 스피킹 코치 — 메인 허브
 // 이어하기 배너 + 학습 진행 과정 안내 + 2탭(유형별/주제별)
 // MVP: 묘사 유형만 활성, 나머지는 disabled
+// 권한: requireCoachingAccess (admin OR coaching_access) — 079_coaching_access.sql
 
 import { Suspense } from "react";
+import { requireCoachingAccess } from "@/lib/auth";
 import { getTypeCards, getResumableSessions } from "@/lib/actions/coaching";
 import { CoachingContent } from "@/components/coaching/coaching-content";
 
@@ -12,6 +14,7 @@ export const metadata = {
 };
 
 async function CoachingLoader() {
+  await requireCoachingAccess();
   const [cardsResult, resumableResult] = await Promise.all([
     getTypeCards(),
     getResumableSessions(),

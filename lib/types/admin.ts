@@ -153,6 +153,29 @@ export interface LectureUserSearchResult {
   has_lecture_access: boolean;
 }
 
+// ── AI 코치 권한 관리 (079_coaching_access.sql) ──
+
+export interface CoachingAccessUser {
+  user_id: string;
+  email: string;
+  display_name: string | null;
+  granted_at: string;
+  granted_by_email: string | null;
+  note: string | null;
+}
+
+export interface CoachingAccessStats {
+  active: number;
+}
+
+export interface CoachingUserSearchResult {
+  user_id: string;
+  email: string;
+  display_name: string | null;
+  current_plan: string;
+  has_coaching_access: boolean;
+}
+
 // ── 기출 보관함 권한 관리 ──
 
 export interface ExamArchiveAccessUser {
