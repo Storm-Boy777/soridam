@@ -815,30 +815,127 @@ function IssueCard({ index, issue }: { index: number; issue: CoachingIssue }) {
 }
 
 // 통합 답변 (모범)
+// 변경 사항 카테고리 자동 감지 (휴리스틱 — change 텍스트 키워드 매칭)
+type ChangeCategory =
+  | "vocab"
+  | "grammar"
+  | "participial"
+  | "phrasing"
+  | "closing"
+  | "marker"
+  | "structure"
+  | "default";
+
+function categorizeChange(text: string): ChangeCategory {
+  const t = text.toLowerCase();
+  // 우선순위 순서대로 매칭 (구체적 → 일반적)
+  if (/분사|-ing|watching |having |sitting |listening |depending |participial/i.test(text)) return "participial";
+  if (/agreement|일치|주어|is→are|단수|복수|-s 누락|3인칭/i.test(text)) return "grammar";
+  if (/마무리|closing|that['']s about|that['']s pretty much|that['']s all/i.test(text)) return "closing";
+  if (/skeleton|단락|transition|구조|6 슬롯/i.test(text)) return "structure";
+  if (/speaking of|to talk about|when it comes to|위치별|표지|q2|q5|q8/i.test(t)) return "marker";
+  if (/격상|→|대체|변경|어휘 폭|repetitive|반복.*?(?:줄|바꿔|다양)/i.test(text)) return "vocab";
+  if (/어색|자연스러|feel|all of|불가산|pieces of|consist of|consisting/i.test(text)) return "phrasing";
+  return "default";
+}
+
+const CATEGORY_META: Record<ChangeCategory, { label: string; cls: string; dot: string }> = {
+  vocab:       { label: "어휘 격상", cls: "bg-primary-50 text-primary-700 ring-primary-200",  dot: "bg-primary-500" },
+  grammar:     { label: "문법",      cls: "bg-emerald-50 text-emerald-700 ring-emerald-200", dot: "bg-emerald-500" },
+  participial: { label: "분사구문",  cls: "bg-violet-50 text-violet-700 ring-violet-200",    dot: "bg-violet-500" },
+  phrasing:    { label: "표현 다듬기", cls: "bg-amber-50 text-amber-700 ring-amber-200",     dot: "bg-amber-500" },
+  closing:     { label: "마무리",    cls: "bg-sky-50 text-sky-700 ring-sky-200",             dot: "bg-sky-500" },
+  marker:      { label: "위치 표지", cls: "bg-indigo-50 text-indigo-700 ring-indigo-200",    dot: "bg-indigo-500" },
+  structure:   { label: "구조",      cls: "bg-slate-100 text-slate-700 ring-slate-200",      dot: "bg-slate-500" },
+  default:     { label: "변경",      cls: "bg-surface-secondary text-foreground-secondary ring-border", dot: "bg-foreground-muted" },
+};
+
 function ModelAnswer({ modelAnswer }: { modelAnswer: CoachingOutput["model_answer"] }) {
+  // changes 카테고리 분류 + 동일 카테고리 묶기 (UI 시각 그루핑)
+  const changesByCategory = (modelAnswer.changes ?? []).reduce<Record<ChangeCategory, string[]>>(
+    (acc, change) => {
+      const cat = categorizeChange(change);
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(change);
+      return acc;
+    },
+    {} as Record<ChangeCategory, string[]>
+  );
+  const orderedCats: ChangeCategory[] = [
+    "vocab", "grammar", "participial", "phrasing", "closing", "marker", "structure", "default",
+  ];
+  const presentCats = orderedCats.filter((c) => changesByCategory[c]?.length > 0);
+
   return (
     <div className="overflow-hidden rounded-xl border border-primary-200 bg-primary-50/40">
+      {/* 헤더 */}
       <div className="flex items-center gap-1.5 bg-primary-100/60 px-3.5 py-2">
         <Sparkles className="h-3.5 w-3.5 text-primary-600" />
-        <span className="text-xs font-bold text-primary-700">통합 답변 — 본인 소재로 다시 쓴 모범</span>
+        <span className="text-xs font-bold text-primary-700">
+          통합 답변 — 본인 소재로 다시 쓴 모범
+        </span>
       </div>
+
+      {/* 모범 본문 */}
       <div className="px-3.5 py-3">
         <p className="whitespace-pre-wrap text-sm leading-7 text-foreground">
           {modelAnswer.text}
         </p>
-        {modelAnswer.changes && modelAnswer.changes.length > 0 && (
-          <div className="mt-3 border-t border-primary-200 pt-2.5">
-            <span className="text-[10px] font-bold uppercase tracking-wide text-primary-600">
-              무엇이 바뀌었나
-            </span>
-            <ul className="mt-1.5 space-y-1">
-              {modelAnswer.changes.map((c, i) => (
-                <li key={i} className="flex gap-1.5 text-xs leading-relaxed text-foreground-secondary">
-                  <ArrowRight className="mt-0.5 h-3 w-3 shrink-0 text-primary-500" />
-                  {c}
-                </li>
-              ))}
-            </ul>
+
+        {/* 변경 사항 — 카테고리 그루핑 + 뱃지 시각화 */}
+        {presentCats.length > 0 && (
+          <div className="mt-3 border-t border-primary-200 pt-3">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wide text-primary-600">
+                무엇이 바뀌었나
+              </span>
+              {/* 카테고리 칩 요약 (한눈에 어떤 종류의 격상이 일어났는지) */}
+              <div className="flex flex-wrap gap-1">
+                {presentCats.map((cat) => {
+                  const meta = CATEGORY_META[cat];
+                  const count = changesByCategory[cat].length;
+                  return (
+                    <span
+                      key={cat}
+                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ring-inset ${meta.cls}`}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
+                      {meta.label}
+                      {count > 1 && <span className="opacity-70">×{count}</span>}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 변경 디테일 — 카테고리별 묶음 */}
+            <div className="space-y-2">
+              {presentCats.map((cat) => {
+                const meta = CATEGORY_META[cat];
+                const items = changesByCategory[cat];
+                return (
+                  <div key={cat} className="rounded-lg bg-white/60 p-2.5 ring-1 ring-inset ring-primary-100">
+                    <div className="mb-1 flex items-center gap-1.5">
+                      <span className={`h-2 w-2 rounded-full ${meta.dot}`} />
+                      <span className={`text-[11px] font-bold ${meta.cls.split(" ")[1]}`}>
+                        {meta.label}
+                      </span>
+                    </div>
+                    <ul className="space-y-1">
+                      {items.map((c, i) => (
+                        <li
+                          key={i}
+                          className="flex gap-1.5 text-xs leading-relaxed text-foreground"
+                        >
+                          <ArrowRight className="mt-0.5 h-3 w-3 shrink-0 text-primary-400" />
+                          <span>{c}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

@@ -60,7 +60,7 @@ const menuGroups: MenuGroup[] = [
       { label: "스터디 모임", href: "/admin/study-group", icon: Coffee },
       { label: "오픽 스터디", href: "/admin/study-groups", icon: UsersRound },
       { label: "강의 권한", href: "/admin/lectures", icon: GraduationCap },
-      { label: "AI 코치 권한", href: "/admin/coaching-access", icon: Sparkles },
+      { label: "스피킹 코치", href: "/admin/coaching-access", icon: Sparkles },
     ],
   },
   {

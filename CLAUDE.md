@@ -644,15 +644,20 @@ origin: https://Storm-Boy777@github.com/Storm-Boy777/soridam.git
 | 05-15 | **AI 코치 모듈 구현 ✅** | 마이그레이션 `068_coaching_module.sql`(5테이블 + `coaching-recordings` 버킷 + RLS) + EF 2개(`coaching-preprocess` gpt-4.1-mini / `coaching-evaluate` gpt-4.1) + SA 10개 + UI(메인 2탭 유형별/주제별 + 토픽·질문 선택 + 학습룸 음성녹음). 졸업 판정은 SA `markTopicMastered`. 주제별 탭 진행상태 매칭, 이모지 → Lucide 아이콘 정리, 메인 카피 "1:1 밀착 코칭". MVP는 묘사 유형만 활성 |
 | 05-16 | **AI 코치 학습 룸 재설계 ✅** | (1) 코칭 출력 자유 markdown → **구조화 JSON**(`coaching_json`) 전환 — 마이그레이션 069 컬럼 추가 + EF `coaching-evaluate` 출력 스키마 변경(intro/progress_table/issues[]/model_answer/action_items/closing) + 프롬프트 v3 오버라이드(마이그레이션 070). (2) 학습 룸 레이아웃 **Option A 재설계** — 압축 sticky 질문 헤더 + slim 진행 바 + "지금 학습 중" 포커스 카드(최신 코칭 + 다음 답변 입력 묶음) + 지난 회차 아코디언. (3) 코칭 결과 전용 카드 UI(개선점 카드 severity 뱃지/인용/시범/노트, 통합 답변 박스, 체크리스트). 구버전 회차는 markdown 폴백 |
 | 05-16 | **AI 코치 코드 리뷰 보강 ✅** | (1) `coaching-evaluate` 에러 시 attempt가 처리 중 상태로 정지 → **무한 폴링 버그 수정**(바깥 catch에서 `failed` 마킹). (2) `submitAttempt` 회차 번호 **원자적 발급 RPC**(마이그레이션 071 `coaching_claim_attempt_number`) — 동시 제출 레이스 제거. (3) `markTopicMastered` 졸업 가드(평가 완료 답변 필수·중복 졸업 차단) + 유형 마스터 `total_attempts` 누적 집계. (4) 학습 룸 폴링 타임아웃(2분 안내·3분 중단). (5) dead code 제거(`getAttempt`/`getPersonaSetting`) + 중복 쿼리 정리. ※ EF 호출자 인증은 시도했으나 `--no-verify-jwt` + 서비스 롤 키 포맷 드리프트로 정상 호출까지 차단됨 → 되돌림. EF 11개 공통 사안이라 공유 시크릿으로 일괄 처리할 별도 과제로 분리 |
+| 05-17 | **AI 코치 v5 백지 재설계 ✅** | 자료 #1~#17 일타강사 강의 통합. 기존 `coaching_*` 프롬프트 모두 폐기. **Common SSOT 2-layer spec** 구조(등급별 공통 헌법 common × 6 + 유형별 차별 type × 6). 마이그 074(테이블·시스템 프롬프트)/075(description 6 row)/076(시스템 강화)/077(description_IH 강사 etalon 재정렬)/078(common 6 row SSOT)/080(분사구문 의무 짚기 강화). EF 백지 재작성(`resolveSpecId` 4축 매칭 + 돌발 4 그룹 분기 / `fetchSpecPair` 2-layer 합성 / `assembleUserPrompt` 6 섹션). SA `startOrResumeSession` target_level 자동 캐시. UI: `SessionMetaStrip`(목표 등급 sticky 카드) + `ModelAnswer` 시각화(changes 카테고리 자동 감지 7종 — 어휘/문법/분사구문/표현/마무리/위치표지/구조). **Dogfooding 검증 — 자료 #1 강사 etalon 92/100 충실 재현**(음악 IH 답변 3회). 학생 답변 정확 인용·짚는 순서 etalon 1~3순위·강사식 단어 단위 짚기·페르소나 톤 모두 정합 |
+| 05-17 | **AI 코치 접근 권한 시스템 ✅** | 스피킹 코치 v5 Dogfooding 베타 사용자 통제. 마이그 079 `coaching_access` 테이블 + RLS (lecture_access 패턴). `lib/auth.ts` `hasCoachingAccess()` + `requireCoachingAccess()` 헬퍼. 관리자 페이지 `/admin/coaching-access` (사용자 검색·부여·회수·일괄 회수, 감사 로그). 페이지 진입 차단(`/coaching` + `/coaching/learn/*`), 네비바 노출 조건(`coachingAccessOnly`), 사이드바 메뉴 "스피킹 코치" 추가. 초기 부여: `soridamhub@gmail.com` |
 
 <!-- 이후 새 이력은 이 테이블에 행 추가 + memory/개발이력.md에 상세 기록 -->
 
 ## 🔮 현재 상태 & 다음 단계
 
-> **⚠️ 새 세션 시작 시 필수**: `docs/오픽스터디_세션인계.md` 먼저 읽기. 직전 세션 컨텍스트 풀로 정리됨 (현재 상태/해결한 이슈/미해결/테스트 시나리오/트러블슈팅).
+> **⚠️ 새 세션 시작 시 필수**: 스피킹 코치 작업 이어가면 [`docs/스피킹코치_세션인계.md`](docs/스피킹코치_세션인계.md) 먼저 읽기 (v5 작업 풀 컨텍스트). 오픽 스터디 작업이면 `docs/오픽스터디_세션인계.md` 참조.
 
-**현재**: Phase 1~5 ✅ + Phase 6 오픽 스터디 ✅ (검증 중) + **Phase 7 AI 코치 모듈 MVP 구현 완료** ✅ (묘사 유형 활성, 프롬프트 검증 진행 중)
-**다음 작업**: AI 코치 묘사 유형 프롬프트 튜닝 (Dogfooding 검증 사이클) + 오픽 스터디 사용자 검증 계속
+**현재**: Phase 1~6 ✅ + **Phase 7 AI 코치 v5 백지 재설계 — 묘사 유형 MVP 작동 검증 완료 (92/100)** ✅ + 권한 시스템 ✅
+**다음 작업** (스피킹 코치):
+  1. 마이그 080 분사구문 강화 + UI ModelAnswer 시각화 검증
+  2. 묘사 외 13 유형 spec 작성 — description_random 4 그룹(자료 #11~#14) → rp(자료 #2/#6/#7) → past 3종(자료 #8/#9/#10) → adv(자료 #15~#17) → routine/comparison(DB 합성)
+  3. 현재 12/90 row → 90/90 row 완성 목표
 
 **⚠️ Claude는 프리뷰 검증 X** (사용자가 직접 브라우저로 진행). 코드 작성/수정만.
 
