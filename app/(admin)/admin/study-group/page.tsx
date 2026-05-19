@@ -71,8 +71,18 @@ export default function AdminStudyGroupPage() {
    패널 멤버 관리 (Talklish 화면 표시용 6명)
    ══════════════════════════════════════════ */
 
-const DEFAULT_COLORS = ["#C9522D", "#3F5A4A", "#7A5A8C", "#B58634", "#4A6B8C", "#8C5A4A"];
-const SAMPLE_EMOJIS = ["🦊", "🐺", "🦉", "🐻", "🐧", "🦝", "🦁", "🐯", "🐮", "🐷"];
+const DEFAULT_COLORS = [
+  "#C9522D", "#3F5A4A", "#7A5A8C", "#B58634", "#4A6B8C",
+  "#8C5A4A", "#5C7A3F", "#3F6E7A", "#A0506B", "#6B5A8C",
+  "#8C7A3F", "#7A3F6E", "#3F8C5A", "#6B3F8C", "#8C3F4A",
+  "#3F4A8C", "#5A8C3F", "#8C3F7A", "#3F8C7A", "#7A8C3F",
+];
+const SAMPLE_EMOJIS = [
+  "🦊", "🐺", "🦉", "🐻", "🐧",
+  "🦝", "🦁", "🐯", "🐮", "🐷",
+  "🐨", "🐼", "🐰", "🦌", "🦓",
+  "🐹", "🦔", "🦘", "🦦", "🐵",
+];
 
 function PanelMembersAdmin() {
   const qc = useQueryClient();
@@ -104,6 +114,7 @@ function PanelMembersAdmin() {
       <div className="flex items-center justify-between">
         <p className="text-sm text-foreground-secondary">총 {items.length}명</p>
         <button
+          type="button"
           onClick={() => { setIsNew(true); setEditing({} as PanelMemberWithProfile); }}
           className="flex items-center gap-1.5 rounded-lg bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600 transition-colors"
         >
@@ -134,11 +145,11 @@ function PanelMembersAdmin() {
               <p className="text-[10px] text-foreground-muted">게스트</p>
             )}
             <div className="flex items-center gap-1">
-              <button onClick={() => handleToggle(item)} className="p-1 text-foreground-muted hover:text-foreground transition-colors" title={item.is_active ? "비활성화" : "활성화"}>
+              <button type="button" onClick={() => handleToggle(item)} className="p-1 text-foreground-muted hover:text-foreground transition-colors" title={item.is_active ? "비활성화" : "활성화"} aria-label={item.is_active ? "비활성화" : "활성화"}>
                 {item.is_active ? <ToggleRight size={16} className="text-green-600" /> : <ToggleLeft size={16} />}
               </button>
-              <button onClick={() => { setIsNew(false); setEditing(item); }} className="p-1 text-foreground-muted hover:text-primary-600 transition-colors"><Pencil size={12} /></button>
-              <button onClick={() => handleDelete(item.id)} className="p-1 text-foreground-muted hover:text-red-600 transition-colors"><Trash2 size={12} /></button>
+              <button type="button" onClick={() => { setIsNew(false); setEditing(item); }} className="p-1 text-foreground-muted hover:text-primary-600 transition-colors" title="수정" aria-label="수정"><Pencil size={12} /></button>
+              <button type="button" onClick={() => handleDelete(item.id)} className="p-1 text-foreground-muted hover:text-red-600 transition-colors" title="삭제" aria-label="삭제"><Trash2 size={12} /></button>
             </div>
           </div>
         ))}
@@ -216,27 +227,88 @@ function PanelMemberFormModal({
           )}
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           <Field label="이름" value={name} onChange={setName} placeholder="예: 지수, John" />
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="이모지" value={emoji} onChange={setEmoji} placeholder="🦊" />
-            <div>
-              <label className="mb-1 block text-xs font-medium text-foreground-secondary">컬러</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  title="컬러 선택"
-                  aria-label="컬러 선택"
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                  className="h-9 w-9 cursor-pointer rounded border border-border"
-                />
-                <input
-                  aria-label="컬러 HEX 값"
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                  className="flex-1 rounded-lg border border-border bg-surface px-2 py-2 font-mono text-xs uppercase text-foreground focus:border-primary-500 focus:outline-none"
-                />
+
+          {/* 이모지 선택 — Picker 그리드 + 커스텀 입력 */}
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-foreground-secondary">
+              아이콘 <span className="text-foreground-muted">(클릭으로 선택)</span>
+            </label>
+            <div className="grid grid-cols-10 gap-1.5 rounded-xl border border-border bg-surface-secondary/30 p-2">
+              {SAMPLE_EMOJIS.map((e) => {
+                const selected = emoji === e;
+                return (
+                  <button
+                    key={e}
+                    type="button"
+                    onClick={() => setEmoji(e)}
+                    aria-label={`아이콘 ${e}`}
+                    aria-pressed={selected ? "true" : "false"}
+                    title={`아이콘 ${e}`}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-xl transition-all hover:bg-primary-50"
+                    style={{
+                      background: selected ? `${color}25` : "transparent",
+                      border: selected ? `2px solid ${color}` : "2px solid transparent",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {e}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 커스텀 이모지 입력 (선택 사항) */}
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-[10px] text-foreground-muted shrink-0">직접 입력:</span>
+              <input
+                value={emoji}
+                onChange={(e) => setEmoji(e.target.value)}
+                placeholder="🦄"
+                aria-label="이모지 직접 입력"
+                className="flex-1 rounded-lg border border-border bg-surface px-2 py-1 text-sm text-center focus:border-primary-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* 컬러 선택 */}
+          <div>
+            <label htmlFor="member-color-picker" className="mb-1 block text-xs font-medium text-foreground-secondary">컬러</label>
+            <div className="flex items-center gap-2">
+              <input
+                id="member-color-picker"
+                type="color"
+                title="컬러 선택"
+                aria-label="컬러 선택"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                className="h-9 w-9 cursor-pointer rounded border border-border"
+              />
+              <input
+                aria-label="컬러 HEX 값"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                className="flex-1 rounded-lg border border-border bg-surface px-2 py-2 font-mono text-xs uppercase text-foreground focus:border-primary-500 focus:outline-none"
+              />
+
+              {/* 컬러 프리셋 — DEFAULT_COLORS 첫 10개를 빠른 선택 칩으로 */}
+              <div className="hidden flex-wrap gap-1 sm:flex">
+                {DEFAULT_COLORS.slice(0, 10).map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setColor(c)}
+                    aria-label={`컬러 ${c}`}
+                    title={c}
+                    className="h-6 w-6 rounded-full border-2 transition-all hover:scale-110"
+                    style={{
+                      background: c,
+                      borderColor: color.toLowerCase() === c.toLowerCase() ? "var(--foreground)" : "transparent",
+                      cursor: "pointer",
+                    }}
+                  />
+                ))}
               </div>
             </div>
           </div>
@@ -291,7 +363,7 @@ function PodcastsAdmin() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <p className="text-sm text-foreground-secondary">총 {items.length}개</p>
-        <button onClick={() => { setIsNew(true); setEditing({} as PodcastRow); }} className="flex items-center gap-1.5 rounded-lg bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600 transition-colors">
+        <button type="button" onClick={() => { setIsNew(true); setEditing({} as PodcastRow); }} className="flex items-center gap-1.5 rounded-lg bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600 transition-colors">
           <Plus size={14} /> 추가
         </button>
       </div>
@@ -305,11 +377,11 @@ function PodcastsAdmin() {
               <p className="text-xs text-foreground-muted">{item.source} · {item.duration} · {item.difficulty} · {item.topic}</p>
             </div>
             <div className="flex items-center gap-1 shrink-0 ml-2">
-              <button onClick={() => handleToggle(item)} className="p-1.5 text-foreground-muted hover:text-foreground transition-colors" title={item.is_active ? "비활성화" : "활성화"}>
+              <button type="button" onClick={() => handleToggle(item)} className="p-1.5 text-foreground-muted hover:text-foreground transition-colors" title={item.is_active ? "비활성화" : "활성화"} aria-label={item.is_active ? "비활성화" : "활성화"}>
                 {item.is_active ? <ToggleRight size={18} className="text-green-600" /> : <ToggleLeft size={18} />}
               </button>
-              <button onClick={() => { setIsNew(false); setEditing(item); }} className="p-1.5 text-foreground-muted hover:text-primary-600 transition-colors"><Pencil size={14} /></button>
-              <button onClick={() => handleDelete(item.id)} className="p-1.5 text-foreground-muted hover:text-red-600 transition-colors"><Trash2 size={14} /></button>
+              <button type="button" onClick={() => { setIsNew(false); setEditing(item); }} className="p-1.5 text-foreground-muted hover:text-primary-600 transition-colors" title="수정" aria-label="수정"><Pencil size={14} /></button>
+              <button type="button" onClick={() => handleDelete(item.id)} className="p-1.5 text-foreground-muted hover:text-red-600 transition-colors" title="삭제" aria-label="삭제"><Trash2 size={14} /></button>
             </div>
           </div>
         ))}
@@ -502,6 +574,7 @@ function PodcastFormModal({ initial, onClose, onSaved }: { initial: PodcastRow |
                   className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-foreground-muted focus:border-primary-500 focus:outline-none"
                 />
                 <button
+                  type="button"
                   onClick={handleFetchMeta}
                   disabled={fetchingMeta || !url.trim()}
                   className="flex items-center gap-1 rounded-lg bg-foreground px-3 py-2 text-xs font-medium text-white hover:bg-foreground/90 disabled:opacity-50 transition-colors"
@@ -519,6 +592,7 @@ function PodcastFormModal({ initial, onClose, onSaved }: { initial: PodcastRow |
             </div>
 
             <button
+              type="button"
               onClick={handleAIGenerate}
               disabled={generating || !url.trim()}
               className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-600 disabled:opacity-50 transition-colors"
@@ -549,8 +623,8 @@ function PodcastFormModal({ initial, onClose, onSaved }: { initial: PodcastRow |
           <div className="grid grid-cols-3 gap-3">
             <Field label="시간" value={duration} onChange={setDuration} placeholder="18 min" />
             <div>
-              <label className="mb-1 block text-xs font-medium text-foreground-secondary">난이도</label>
-              <select value={difficulty} onChange={(e) => setDifficulty(e.target.value as "beginner" | "intermediate" | "advanced")} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm">
+              <label htmlFor="podcast-difficulty" className="mb-1 block text-xs font-medium text-foreground-secondary">난이도</label>
+              <select id="podcast-difficulty" aria-label="난이도" value={difficulty} onChange={(e) => setDifficulty(e.target.value as "beginner" | "intermediate" | "advanced")} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm">
                 <option value="beginner">초급</option>
                 <option value="intermediate">중급</option>
                 <option value="advanced">고급</option>
@@ -568,8 +642,8 @@ function PodcastFormModal({ initial, onClose, onSaved }: { initial: PodcastRow |
           <TextareaField label="토론 질문 (JSON)" value={discussionQuestions} onChange={setDiscussionQuestions} rows={4} />
         </div>
         <div className="mt-6 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground-secondary hover:bg-surface-secondary transition-colors">취소</button>
-          <button onClick={handleSave} disabled={saving || !title} className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 disabled:opacity-50 transition-colors">{saving ? "저장 중..." : "저장"}</button>
+          <button type="button" onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground-secondary hover:bg-surface-secondary transition-colors">취소</button>
+          <button type="button" onClick={handleSave} disabled={saving || !title} className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 disabled:opacity-50 transition-colors">{saving ? "저장 중..." : "저장"}</button>
         </div>
       </div>
     </div>
@@ -611,7 +685,7 @@ function FreetalkAdmin() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <p className="text-sm text-foreground-secondary">총 {items.length}개</p>
-        <button onClick={() => { setIsNew(true); setEditing({} as FreetalkRow); }} className="flex items-center gap-1.5 rounded-lg bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600 transition-colors">
+        <button type="button" onClick={() => { setIsNew(true); setEditing({} as FreetalkRow); }} className="flex items-center gap-1.5 rounded-lg bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600 transition-colors">
           <Plus size={14} /> 추가
         </button>
       </div>
@@ -624,11 +698,11 @@ function FreetalkAdmin() {
               <p className="text-xs text-foreground-muted">{item.category} · {item.korean}</p>
             </div>
             <div className="flex items-center gap-1 shrink-0 ml-2">
-              <button onClick={() => handleToggle(item)} className="p-1.5 text-foreground-muted hover:text-foreground transition-colors">
+              <button type="button" onClick={() => handleToggle(item)} className="p-1.5 text-foreground-muted hover:text-foreground transition-colors" title={item.is_active ? "비활성화" : "활성화"} aria-label={item.is_active ? "비활성화" : "활성화"}>
                 {item.is_active ? <ToggleRight size={18} className="text-green-600" /> : <ToggleLeft size={18} />}
               </button>
-              <button onClick={() => { setIsNew(false); setEditing(item); }} className="p-1.5 text-foreground-muted hover:text-primary-600 transition-colors"><Pencil size={14} /></button>
-              <button onClick={() => handleDelete(item.id)} className="p-1.5 text-foreground-muted hover:text-red-600 transition-colors"><Trash2 size={14} /></button>
+              <button type="button" onClick={() => { setIsNew(false); setEditing(item); }} className="p-1.5 text-foreground-muted hover:text-primary-600 transition-colors" title="수정" aria-label="수정"><Pencil size={14} /></button>
+              <button type="button" onClick={() => handleDelete(item.id)} className="p-1.5 text-foreground-muted hover:text-red-600 transition-colors" title="삭제" aria-label="삭제"><Trash2 size={14} /></button>
             </div>
           </div>
         ))}
@@ -669,15 +743,15 @@ function FreetalkFormModal({ initial, onClose, onSaved }: { initial: FreetalkRow
           <Field label="한국어 번역" value={korean} onChange={setKorean} />
           <Field label="후속 질문 (영어)" value={followUp} onChange={setFollowUp} />
           <div>
-            <label className="mb-1 block text-xs font-medium text-foreground-secondary">카테고리</label>
-            <select value={category} onChange={(e) => setCategory(e.target.value as FreeTalkCategory)} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm">
+            <label htmlFor="freetalk-category" className="mb-1 block text-xs font-medium text-foreground-secondary">카테고리</label>
+            <select id="freetalk-category" aria-label="카테고리" value={category} onChange={(e) => setCategory(e.target.value as FreeTalkCategory)} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm">
               {CATEGORY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
         </div>
         <div className="mt-6 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground-secondary hover:bg-surface-secondary transition-colors">취소</button>
-          <button onClick={handleSave} disabled={saving || !english} className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 disabled:opacity-50 transition-colors">{saving ? "저장 중..." : "저장"}</button>
+          <button type="button" onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground-secondary hover:bg-surface-secondary transition-colors">취소</button>
+          <button type="button" onClick={handleSave} disabled={saving || !english} className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 disabled:opacity-50 transition-colors">{saving ? "저장 중..." : "저장"}</button>
         </div>
       </div>
     </div>
@@ -731,7 +805,7 @@ function GameCardsAdmin({ gameType }: { gameType: GameCardGameType }) {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <p className="text-sm text-foreground-secondary">{GAME_LABELS[gameType]} — 총 {items.length}개</p>
-        <button onClick={() => { setIsNew(true); setEditing({} as GameCardRow); }} className="flex items-center gap-1.5 rounded-lg bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600 transition-colors">
+        <button type="button" onClick={() => { setIsNew(true); setEditing({} as GameCardRow); }} className="flex items-center gap-1.5 rounded-lg bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600 transition-colors">
           <Plus size={14} /> 추가
         </button>
       </div>
@@ -741,11 +815,11 @@ function GameCardsAdmin({ gameType }: { gameType: GameCardGameType }) {
           <div key={item.id} className={`flex items-center justify-between rounded-lg border p-3 ${item.is_active ? "border-border bg-surface" : "border-border/50 bg-surface-secondary/50 opacity-60"}`}>
             <p className="text-sm font-medium text-foreground truncate flex-1">{cardSummary(item)}</p>
             <div className="flex items-center gap-1 shrink-0 ml-2">
-              <button onClick={() => handleToggle(item)} className="p-1.5 text-foreground-muted hover:text-foreground transition-colors">
+              <button type="button" onClick={() => handleToggle(item)} className="p-1.5 text-foreground-muted hover:text-foreground transition-colors" title={item.is_active ? "비활성화" : "활성화"} aria-label={item.is_active ? "비활성화" : "활성화"}>
                 {item.is_active ? <ToggleRight size={18} className="text-green-600" /> : <ToggleLeft size={18} />}
               </button>
-              <button onClick={() => { setIsNew(false); setEditing(item); }} className="p-1.5 text-foreground-muted hover:text-primary-600 transition-colors"><Pencil size={14} /></button>
-              <button onClick={() => handleDelete(item.id)} className="p-1.5 text-foreground-muted hover:text-red-600 transition-colors"><Trash2 size={14} /></button>
+              <button type="button" onClick={() => { setIsNew(false); setEditing(item); }} className="p-1.5 text-foreground-muted hover:text-primary-600 transition-colors" title="수정" aria-label="수정"><Pencil size={14} /></button>
+              <button type="button" onClick={() => handleDelete(item.id)} className="p-1.5 text-foreground-muted hover:text-red-600 transition-colors" title="삭제" aria-label="삭제"><Trash2 size={14} /></button>
             </div>
           </div>
         ))}
@@ -791,8 +865,8 @@ function GameCardFormModal({ gameType, initial, onClose, onSaved }: { gameType: 
           <TextareaField label="데이터 (JSON)" value={dataJson} onChange={setDataJson} rows={8} />
         </div>
         <div className="mt-6 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground-secondary hover:bg-surface-secondary transition-colors">취소</button>
-          <button onClick={handleSave} disabled={saving} className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 disabled:opacity-50 transition-colors">{saving ? "저장 중..." : "저장"}</button>
+          <button type="button" onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground-secondary hover:bg-surface-secondary transition-colors">취소</button>
+          <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 disabled:opacity-50 transition-colors">{saving ? "저장 중..." : "저장"}</button>
         </div>
       </div>
     </div>
@@ -807,19 +881,19 @@ function Loading() {
 
 function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
-    <div>
-      <label className="mb-1 block text-xs font-medium text-foreground-secondary">{label}</label>
-      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-foreground-muted focus:border-primary-500 focus:outline-none" />
-    </div>
+    <label className="block">
+      <span className="mb-1 block text-xs font-medium text-foreground-secondary">{label}</span>
+      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} aria-label={label} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-foreground-muted focus:border-primary-500 focus:outline-none" />
+    </label>
   );
 }
 
 function TextareaField({ label, value, onChange, rows = 4 }: { label: string; value: string; onChange: (v: string) => void; rows?: number }) {
   return (
-    <div>
-      <label className="mb-1 block text-xs font-medium text-foreground-secondary">{label}</label>
-      <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={rows} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-mono text-foreground placeholder:text-foreground-muted focus:border-primary-500 focus:outline-none" />
-    </div>
+    <label className="block">
+      <span className="mb-1 block text-xs font-medium text-foreground-secondary">{label}</span>
+      <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={rows} aria-label={label} placeholder={label} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-mono text-foreground placeholder:text-foreground-muted focus:border-primary-500 focus:outline-none" />
+    </label>
   );
 }
 

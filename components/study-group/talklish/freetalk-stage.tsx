@@ -70,10 +70,14 @@ interface Props {
   onToggleAttendance: (memberId: string) => void;
 }
 
+type FridayPhase = "intro" | "games" | "closing";
+
 export function FreetalkStage({ absentIds, onToggleAttendance }: Props) {
+  const [phase, setPhase] = useState<FridayPhase>("intro");
   const [game, setGame] = useState<GameKey>("spinner");
   const [activeSpeaker, setActiveSpeaker] = useState(0);
   const [spinning, setSpinning] = useState(false);
+  const [sessionCompleted, setSessionCompleted] = useState(false);
 
   const { data: topics = [] } = useQuery({
     queryKey: ["study-freetalk"],
@@ -108,6 +112,28 @@ export function FreetalkStage({ absentIds, onToggleAttendance }: Props) {
   }, [members, presentMembers, spinning]);
 
   const def = GAMES.find((g) => g.key === game)!;
+  const presentCount = presentMembers.length;
+  const totalCount = members.length;
+
+  // ─── Intro / Closing phase는 별도 화면 ───
+  if (phase === "intro") {
+    return (
+      <FridayIntro
+        presentCount={presentCount}
+        totalCount={totalCount}
+        onStart={() => setPhase("games")}
+      />
+    );
+  }
+  if (phase === "closing") {
+    return (
+      <FridayClosing
+        completed={sessionCompleted}
+        onComplete={setSessionCompleted}
+        onBackToGames={() => setPhase("games")}
+      />
+    );
+  }
 
   return (
     <div
@@ -119,6 +145,20 @@ export function FreetalkStage({ absentIds, onToggleAttendance }: Props) {
         fontFamily: TLK_FONT.ko,
       }}
     >
+      {/* ─── Phase 트래커 (좌측 상단 사이드바 위) ─── */}
+      <div
+        className="absolute right-6 top-3 z-10 flex items-center gap-2 rounded-full px-3 py-1.5"
+        style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
+      >
+        <button
+          type="button"
+          onClick={() => setPhase("closing")}
+          className="rounded-full px-3 py-1 text-[10px] font-bold tracking-widest transition-opacity hover:opacity-80"
+          style={{ background: TLK.ink, color: "#fff", border: 0, fontFamily: TLK_FONT.sans, cursor: "pointer" }}
+        >
+          마무리 →
+        </button>
+      </div>
       {/* ─── 좌: 게임 메뉴 ─── */}
       <aside
         className="flex flex-col gap-5 overflow-y-auto px-6 py-6"
@@ -768,6 +808,219 @@ function GameTimer({ presets }: { presets: number[] }) {
           <RotateCcw size={11} />
         </button>
       </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Friday · Intro / Closing
+   ───────────────────────────────────────────── */
+
+function FridayIntro({
+  presentCount,
+  totalCount,
+  onStart,
+}: {
+  presentCount: number;
+  totalCount: number;
+  onStart: () => void;
+}) {
+  return (
+    <div
+      className="flex h-full flex-col items-center justify-center gap-6 px-8"
+      style={{ background: TLK.bg, color: TLK.ink, fontFamily: TLK_FONT.ko }}
+    >
+      <p
+        style={{
+          fontFamily: TLK_FONT.sans,
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: 2.5,
+          color: TLK.inkFaint,
+          textTransform: "uppercase",
+        }}
+      >
+        Friday · Free Talk Studio
+      </p>
+      <h1
+        style={{
+          fontFamily: TLK_FONT.serif,
+          fontStyle: "italic",
+          fontSize: 64,
+          fontWeight: 500,
+          color: TLK.ink,
+          lineHeight: 1.1,
+          letterSpacing: -1.5,
+          textAlign: "center",
+          maxWidth: 900,
+        }}
+      >
+        오늘은 가볍게,<br />말로 푸는 60분.
+      </h1>
+      <p
+        style={{
+          fontFamily: TLK_FONT.ko,
+          fontSize: 16,
+          color: TLK.inkDim,
+          lineHeight: 1.6,
+          maxWidth: 720,
+          textAlign: "center",
+        }}
+      >
+        토픽 스피너로 자유 발화, 워드 체인·Two Truths·핫시트·이어쓰기 4가지 게임 중에서 골라가며 회로를 풉니다. 점수도 평가도 없어요. 그냥 입을 자주 여는 시간.
+      </p>
+      <div
+        className="flex items-center gap-3 rounded-full px-5 py-3"
+        style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
+      >
+        <span style={{ fontSize: 14, fontFamily: TLK_FONT.sans, fontWeight: 600, color: TLK.ink }}>
+          출석 <strong style={{ color: TLK.accent2 }}>{presentCount}</strong> / {totalCount}
+        </span>
+      </div>
+      <button
+        type="button"
+        onClick={onStart}
+        className="mt-2 inline-flex items-center gap-2 rounded-full px-7 py-3 shadow-lg transition-all hover:-translate-y-0.5"
+        style={{
+          background: TLK.accent,
+          color: "#fff",
+          border: 0,
+          fontFamily: TLK_FONT.sans,
+          fontSize: 13,
+          fontWeight: 700,
+          letterSpacing: 1.5,
+          cursor: "pointer",
+        }}
+      >
+        시작하기
+        <PlayIcon size={14} />
+      </button>
+      <p
+        style={{
+          fontFamily: TLK_FONT.sans,
+          fontSize: 11,
+          color: TLK.inkFaint,
+          letterSpacing: 1.5,
+          marginTop: 4,
+        }}
+      >
+        진행 중 우상단 "마무리 →" 버튼으로 클로징 화면으로 이동
+      </p>
+    </div>
+  );
+}
+
+function FridayClosing({
+  completed,
+  onComplete,
+  onBackToGames,
+}: {
+  completed: boolean;
+  onComplete: (c: boolean) => void;
+  onBackToGames: () => void;
+}) {
+  return (
+    <div
+      className="mx-auto flex h-full max-w-4xl flex-col items-center justify-center gap-7 px-8 py-8"
+      style={{ background: TLK.bg, color: TLK.ink, fontFamily: TLK_FONT.ko }}
+    >
+      <h1
+        style={{
+          fontFamily: TLK_FONT.serif,
+          fontStyle: "italic",
+          fontSize: 60,
+          fontWeight: 500,
+          color: TLK.ink,
+          lineHeight: 1,
+          letterSpacing: -1.5,
+          textAlign: "center",
+        }}
+      >
+        See you,<br />next Friday.
+      </h1>
+      <p
+        style={{
+          fontFamily: TLK_FONT.ko,
+          fontSize: 16,
+          color: TLK.inkDim,
+          lineHeight: 1.6,
+          maxWidth: 600,
+          textAlign: "center",
+        }}
+      >
+        오늘 가장 재미있었던 표현 1개씩 마음에 담아가요. 다음 주에 또 만나요 👋
+      </p>
+
+      {!completed ? (
+        <div className="flex flex-col items-center gap-3">
+          <button
+            type="button"
+            onClick={() => onComplete(true)}
+            className="inline-flex items-center gap-2 rounded-full px-7 py-3 shadow-lg transition-all hover:-translate-y-0.5"
+            style={{
+              background: TLK.accent,
+              color: "#fff",
+              border: 0,
+              fontFamily: TLK_FONT.sans,
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: 1.5,
+              cursor: "pointer",
+            }}
+          >
+            세션 완료
+          </button>
+          <button
+            type="button"
+            onClick={onBackToGames}
+            className="text-[11px] underline transition-opacity hover:opacity-70"
+            style={{
+              background: "transparent",
+              border: 0,
+              color: TLK.inkFaint,
+              fontFamily: TLK_FONT.sans,
+              cursor: "pointer",
+              letterSpacing: 0.5,
+            }}
+          >
+            ← 게임으로 돌아가기 (한 판 더!)
+          </button>
+        </div>
+      ) : (
+        <div
+          className="inline-block rounded-2xl px-7 py-5 text-center"
+          style={{ background: `${TLK.accent2}14`, border: `2px solid ${TLK.accent2}55` }}
+        >
+          <p
+            style={{
+              fontFamily: TLK_FONT.serif,
+              fontStyle: "italic",
+              fontSize: 22,
+              color: TLK.accent2,
+              fontWeight: 500,
+            }}
+          >
+            완료되었습니다 ✓
+          </p>
+          <button
+            type="button"
+            onClick={() => onComplete(false)}
+            className="mt-2 underline transition-opacity hover:opacity-70"
+            style={{
+              background: "transparent",
+              border: 0,
+              color: TLK.inkFaint,
+              fontFamily: TLK_FONT.sans,
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: 0.5,
+              cursor: "pointer",
+            }}
+          >
+            완료 취소
+          </button>
+        </div>
+      )}
     </div>
   );
 }

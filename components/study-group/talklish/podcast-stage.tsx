@@ -11,6 +11,7 @@ import {
   Volume2, Mic,
   ChevronLeft, ChevronRight, ChevronDown,
   Play, Eye, EyeOff,
+  Users, Target, Clock, CheckCircle, Sparkles, Undo2,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchPodcasts, fetchPanelMembers } from "@/lib/actions/study-group";
@@ -69,22 +70,41 @@ function normalizeEpisode(raw: PodcastRow): PodcastRow {
   };
 }
 
-/* ─── 5단계 정의 ────────────────────────────── */
+/* ─── 8단계 정의 (레거시 Talklish 흐름 확장) ─────
+ *
+ * Opening → 1차 청취 → 내용 공유 → 어휘·표현 → 역할극 → 토론 → 랩업 → Closing
+ *
+ * 60분 분배:
+ *   0:  Opening      0–2분    (세션 정보 + 출석 — 큰 모니터용)
+ *   1:  1차 청취      2–12분   (영상 듣기, 가라오케)
+ *   2:  내용 공유    12–22분   (룰렛 + 들은 내용 나누기)
+ *   3:  어휘·표현    22–37분   (플래시 카드)
+ *   4:  역할극        37–47분   (짝 대화 — 표현 활용)
+ *   5:  토론          47–55분   (AI 토론 질문)
+ *   6:  랩업          55–58분   (오늘의 키프세이크)
+ *   7:  Closing      58–60분   (마무리 + 세션 완료)
+ */
 
 const FLOW = [
-  { id: 0, label: "1차 청취",       desc: "전체 분위기 파악, 모르는 단어 메모", range: "0–10"  },
-  { id: 1, label: "내용 공유",       desc: "들은 내용 자유롭게 공유",            range: "10–20" },
-  { id: 2, label: "어휘·표현 학습",  desc: "주요 표현 복기 + 다시 듣기",         range: "20–35" },
-  { id: 3, label: "토론",            desc: "AI가 만든 질문으로 토론",            range: "35–55" },
-  { id: 4, label: "랩업",            desc: "오늘 가져갈 표현 1개씩",             range: "55–60" },
+  { id: 0, label: "Opening",         desc: "세션 정보 + 출석 확인",              range: "0–2"   },
+  { id: 1, label: "1차 청취",        desc: "전체 분위기 파악, 모르는 단어 메모", range: "2–12"  },
+  { id: 2, label: "내용 공유",       desc: "들은 내용 자유롭게 공유",            range: "12–22" },
+  { id: 3, label: "어휘·표현 학습",  desc: "주요 표현 복기 + 다시 듣기",         range: "22–37" },
+  { id: 4, label: "역할극",          desc: "짝과 함께 오늘 표현 활용",           range: "37–47" },
+  { id: 5, label: "토론",            desc: "AI가 만든 질문으로 토론",            range: "47–55" },
+  { id: 6, label: "랩업",            desc: "오늘 가져갈 표현 1개씩",             range: "55–58" },
+  { id: 7, label: "Closing",         desc: "마무리 + 세션 완료",                 range: "58–60" },
 ] as const;
 
 function phaseFromElapsed(s: number): number {
-  if (s < 10 * 60) return 0;
-  if (s < 20 * 60) return 1;
-  if (s < 35 * 60) return 2;
-  if (s < 55 * 60) return 3;
-  return 4;
+  if (s < 2 * 60) return 0;
+  if (s < 12 * 60) return 1;
+  if (s < 22 * 60) return 2;
+  if (s < 37 * 60) return 3;
+  if (s < 47 * 60) return 4;
+  if (s < 55 * 60) return 5;
+  if (s < 58 * 60) return 6;
+  return 7;
 }
 
 /* ─── 메인 ─────────────────────────────────── */
@@ -121,6 +141,7 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
   const [showExKo, setShowExKo] = useState(false);
   const [activeQ, setActiveQ] = useState(0);
   const [keepsake, setKeepsake] = useState("");
+  const [sessionCompleted, setSessionCompleted] = useState(false);
 
   const rawEpisode = episodes.find((e) => e.id === selectedId) ?? episodes[0] ?? null;
   const episode = useMemo(
@@ -312,8 +333,11 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
           style={{ animation: "tlk-fade .35s ease-out" }}
         >
           <div className="mx-auto h-full max-w-6xl px-6 py-6 sm:px-10 sm:py-10">
-            {phase === 0 && <ListenSlide episode={episode} />}
-            {phase === 1 && (
+            {phase === 0 && (
+              <OpeningSlide episode={episode} members={members} absentIds={absentIds} />
+            )}
+            {phase === 1 && <ListenSlide episode={episode} />}
+            {phase === 2 && (
               <ShareSlide
                 episode={episode}
                 members={members}
@@ -323,7 +347,7 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
                 onSpin={spin}
               />
             )}
-            {phase === 2 && (
+            {phase === 3 && (
               <VocabSlide
                 episode={episode}
                 idx={vocabIdx}
@@ -344,7 +368,10 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
                 onToggleExKo={() => setShowExKo((v) => !v)}
               />
             )}
-            {phase === 3 && (
+            {phase === 4 && (
+              <RoleplaySlide episode={episode} members={members} absentIds={absentIds} />
+            )}
+            {phase === 5 && (
               <DiscussSlide
                 episode={episode}
                 activeQ={activeQ}
@@ -356,8 +383,16 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
                 onSpin={spin}
               />
             )}
-            {phase === 4 && (
+            {phase === 6 && (
               <WrapupSlide episode={episode} keepsake={keepsake} onChangeKeepsake={setKeepsake} />
+            )}
+            {phase === 7 && (
+              <ClosingSlide
+                episode={episode}
+                completed={sessionCompleted}
+                onComplete={setSessionCompleted}
+                keepsake={keepsake}
+              />
             )}
           </div>
         </div>
@@ -1689,6 +1724,768 @@ function WrapupSlide({
           돌아가면서 한 표현씩 짧게 공유해 주세요
         </p>
       </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   슬라이드 0 · Opening (세션 정보 + 출석)
+   ───────────────────────────────────────────── */
+
+function OpeningSlide({
+  episode,
+  members,
+  absentIds,
+}: {
+  episode: PodcastRow;
+  members: PanelMember[];
+  absentIds: Set<string>;
+}) {
+  const present = members.filter((m) => !absentIds.has(m.id));
+  const today = new Date();
+  const dateLabel = today.toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  });
+
+  // 학습 목표 — episode.description을 첫 줄/문장 분리해서 항목화 (없으면 기본 4개)
+  const fallbackObjectives = [
+    "오늘의 영상 핵심을 영어로 다시 말해보기",
+    "주요 표현 7~12개 손에 익히기",
+    "짝과 함께 표현 한 번 이상 활용하기",
+    "토론 질문에 한 번씩 발화하기",
+  ];
+
+  return (
+    <div className="mx-auto flex h-full max-w-5xl flex-col justify-between py-8">
+      {/* 상단 — 큰 제목 */}
+      <div className="text-center">
+        <p
+          style={{
+            fontFamily: TLK_FONT.sans,
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: 2.5,
+            color: TLK.inkFaint,
+            textTransform: "uppercase",
+            marginBottom: 8,
+          }}
+        >
+          Today's Podcast Studio
+        </p>
+        <h1
+          style={{
+            fontFamily: TLK_FONT.serif,
+            fontStyle: "italic",
+            fontSize: 56,
+            fontWeight: 500,
+            color: TLK.ink,
+            lineHeight: 1.1,
+            letterSpacing: -1,
+            marginBottom: 8,
+          }}
+        >
+          {episode.title}
+        </h1>
+        <p style={{ fontFamily: TLK_FONT.sans, fontSize: 14, color: TLK.inkDim, letterSpacing: 0.5 }}>
+          {episode.source} · {episode.duration} · {episode.difficulty} · {episode.topic}
+        </p>
+      </div>
+
+      {/* 중앙 — 일정 + 출석 + 학습 목표 */}
+      <div className="grid gap-5 md:grid-cols-3">
+        {/* 일정 */}
+        <div
+          className="rounded-3xl p-7"
+          style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
+        >
+          <div className="mb-3 flex items-center gap-2">
+            <Clock size={18} style={{ color: TLK.accent }} />
+            <span
+              style={{
+                fontFamily: TLK_FONT.sans,
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: 1.5,
+                color: TLK.inkDim,
+                textTransform: "uppercase",
+              }}
+            >
+              일정
+            </span>
+          </div>
+          <p
+            style={{
+              fontFamily: TLK_FONT.serif,
+              fontStyle: "italic",
+              fontSize: 18,
+              color: TLK.ink,
+              lineHeight: 1.4,
+            }}
+          >
+            {dateLabel}
+          </p>
+          <p
+            style={{
+              fontFamily: TLK_FONT.sans,
+              fontSize: 12,
+              color: TLK.inkFaint,
+              marginTop: 6,
+            }}
+          >
+            60분 진행 · 매주 월요일
+          </p>
+        </div>
+
+        {/* 출석 */}
+        <div
+          className="rounded-3xl p-7"
+          style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
+        >
+          <div className="mb-3 flex items-center gap-2">
+            <Users size={18} style={{ color: TLK.accent2 }} />
+            <span
+              style={{
+                fontFamily: TLK_FONT.sans,
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: 1.5,
+                color: TLK.inkDim,
+                textTransform: "uppercase",
+              }}
+            >
+              출석
+            </span>
+          </div>
+          <p
+            style={{
+              fontFamily: TLK_FONT.serif,
+              fontStyle: "italic",
+              fontSize: 32,
+              color: TLK.ink,
+              lineHeight: 1,
+            }}
+          >
+            <strong style={{ color: TLK.accent2 }}>{present.length}</strong>
+            <span style={{ color: TLK.inkFaint, fontSize: 22 }}> / {members.length}</span>
+          </p>
+          <p
+            style={{
+              fontFamily: TLK_FONT.sans,
+              fontSize: 11,
+              color: TLK.inkFaint,
+              marginTop: 6,
+              letterSpacing: 0.5,
+            }}
+          >
+            결석 {members.length - present.length}명 · 푸터에서 토글
+          </p>
+        </div>
+
+        {/* 학습 목표 */}
+        <div
+          className="rounded-3xl p-7"
+          style={{
+            background: `${TLK.accent}0d`,
+            border: `1px solid ${TLK.accent}44`,
+          }}
+        >
+          <div className="mb-3 flex items-center gap-2">
+            <Target size={18} style={{ color: TLK.accent }} />
+            <span
+              style={{
+                fontFamily: TLK_FONT.sans,
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: 1.5,
+                color: TLK.accent,
+                textTransform: "uppercase",
+              }}
+            >
+              오늘의 목표
+            </span>
+          </div>
+          <ul className="space-y-1.5">
+            {fallbackObjectives.slice(0, 4).map((o, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-2"
+                style={{ fontFamily: TLK_FONT.ko, fontSize: 12.5, color: TLK.ink, lineHeight: 1.55 }}
+              >
+                <span
+                  style={{
+                    fontFamily: TLK_FONT.mono,
+                    fontSize: 11,
+                    color: TLK.accent,
+                    fontWeight: 700,
+                  }}
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <span>{o}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* 하단 — 시작 안내 */}
+      <div className="text-center">
+        <p
+          className="animate-pulse"
+          style={{
+            fontFamily: TLK_FONT.serif,
+            fontStyle: "italic",
+            fontSize: 22,
+            color: TLK.inkDim,
+          }}
+        >
+          준비되시면 다음 단계로 →
+        </p>
+        <p
+          style={{
+            marginTop: 8,
+            fontSize: 11,
+            color: TLK.inkFaint,
+            fontFamily: TLK_FONT.sans,
+            letterSpacing: 1.5,
+          }}
+        >
+          단축키 → 또는 SPACE
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   슬라이드 4 · 역할극 (짝 대화)
+   ───────────────────────────────────────────── */
+
+function RoleplaySlide({
+  episode,
+  members,
+  absentIds,
+}: {
+  episode: PodcastRow;
+  members: PanelMember[];
+  absentIds: Set<string>;
+}) {
+  const [scenarioIdx, setScenarioIdx] = useState(0);
+  const [showHints, setShowHints] = useState(true);
+
+  // 시나리오 — 자료의 표현/주제에서 자동 생성 (최대 3개)
+  const scenarios = useMemo(() => {
+    const picks = episode.todays_picks;
+    const topic = episode.topic || "오늘의 주제";
+
+    const base = [
+      {
+        title: "Real-Talk",
+        prompt: `방금 들은 영상의 ${topic}에 대해 짝과 영어로 1분간 이야기해보세요.`,
+        roleA: "관심 있는 사람 — 질문을 던지는 쪽",
+        roleB: "경험자 — 자기 경험을 풀어내는 쪽",
+        useExpressions: picks.slice(0, 3),
+      },
+      {
+        title: "Disagree Politely",
+        prompt: "토론 질문 중 하나를 골라 짝과 의견이 살짝 다른 척 영어로 주고받으세요.",
+        roleA: "동의하는 쪽 — 이유 3개",
+        roleB: "동의 안 하는 쪽 — 다른 관점 제시",
+        useExpressions: picks.slice(0, 3),
+      },
+      {
+        title: "Quick Pitch",
+        prompt: `친구에게 ${topic} 주제로 1분 안에 핵심을 영어로 설명해보세요. (짝이 영어로 질문 던짐)`,
+        roleA: "설명하는 쪽 — 핵심 3개",
+        roleB: "궁금한 쪽 — 후속 질문 2개",
+        useExpressions: picks.slice(0, 3),
+      },
+    ];
+    return base;
+  }, [episode.todays_picks, episode.topic]);
+
+  const present = members.filter((m) => !absentIds.has(m.id));
+  // 짝 매칭 — 출석자 짝 만들기 (홀수면 마지막 한 명은 옵서버)
+  const pairs = useMemo(() => {
+    const out: Array<{ a: PanelMember; b: PanelMember | null }> = [];
+    for (let i = 0; i < present.length; i += 2) {
+      out.push({ a: present[i], b: present[i + 1] ?? null });
+    }
+    return out;
+  }, [present]);
+
+  const scenario = scenarios[scenarioIdx];
+
+  return (
+    <div className="flex h-full flex-col gap-5">
+      {/* 헤더 — 시나리오 진행 + Hints 토글 */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <p
+            style={{
+              fontFamily: TLK_FONT.sans,
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: 1.5,
+              color: TLK.inkFaint,
+              textTransform: "uppercase",
+            }}
+          >
+            Scenario {scenarioIdx + 1} / {scenarios.length}
+          </p>
+          <div className="flex gap-1.5">
+            {scenarios.map((_, n) => {
+              const active = n === scenarioIdx;
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setScenarioIdx(n)}
+                  aria-label={`시나리오 ${n + 1}로 이동`}
+                  style={{
+                    width: active ? 24 : 6,
+                    height: 6,
+                    borderRadius: 999,
+                    background: active ? TLK.accent : n < scenarioIdx ? TLK.inkFaint : TLK.rule,
+                    border: 0,
+                    cursor: "pointer",
+                    transition: "all .25s",
+                  }}
+                />
+              );
+            })}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowHints((v) => !v)}
+          className="flex items-center gap-1.5 rounded-full px-3 py-1"
+          style={{
+            background: TLK.bg2,
+            border: `1px solid ${TLK.rule}`,
+            color: TLK.inkDim,
+            fontFamily: TLK_FONT.sans,
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: 1,
+            cursor: "pointer",
+          }}
+        >
+          {showHints ? <EyeOff size={11} /> : <Eye size={11} />}
+          {showHints ? "표현 숨기기" : "표현 보기"}
+        </button>
+      </div>
+
+      {/* 본문 — 시나리오 카드 */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div
+          className="mx-auto max-w-5xl rounded-3xl px-10 py-10"
+          style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
+        >
+          {/* 시나리오 타이틀 + 프롬프트 */}
+          <h2
+            style={{
+              fontFamily: TLK_FONT.serif,
+              fontStyle: "italic",
+              fontSize: 42,
+              fontWeight: 500,
+              color: TLK.ink,
+              lineHeight: 1.15,
+              letterSpacing: -0.5,
+              textAlign: "center",
+            }}
+          >
+            {scenario.title}
+          </h2>
+          <p
+            style={{
+              fontFamily: TLK_FONT.ko,
+              fontSize: 16,
+              color: TLK.inkDim,
+              lineHeight: 1.6,
+              marginTop: 12,
+              textAlign: "center",
+              maxWidth: 640,
+              marginInline: "auto",
+            }}
+          >
+            {scenario.prompt}
+          </p>
+
+          {/* 역할 A / B */}
+          <div className="mt-7 grid gap-4 md:grid-cols-2">
+            <RoleCard label="Role A" color={TLK.accent} text={scenario.roleA} />
+            <RoleCard label="Role B" color={TLK.accent2} text={scenario.roleB} />
+          </div>
+
+          {/* 활용 표현 */}
+          {showHints && scenario.useExpressions.length > 0 && (
+            <div
+              className="mt-6 rounded-xl px-5 py-4"
+              style={{ background: TLK.bg2, border: `1px solid ${TLK.rule}` }}
+            >
+              <div className="mb-2 flex items-center gap-1.5">
+                <Mic size={13} style={{ color: TLK.accent }} />
+                <span
+                  style={{
+                    fontFamily: TLK_FONT.sans,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: 1.5,
+                    color: TLK.accent,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  오늘의 표현 활용하기
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {scenario.useExpressions.map((s, n) => (
+                  <span
+                    key={n}
+                    className="rounded-lg px-3 py-1.5"
+                    style={{
+                      background: TLK.paper,
+                      color: TLK.ink,
+                      fontFamily: TLK_FONT.serif,
+                      fontStyle: "italic",
+                      fontSize: 14,
+                      border: `1px solid ${TLK.rule}`,
+                    }}
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 짝 매칭 — 출석자만 */}
+        {pairs.length > 0 && (
+          <div className="mx-auto mt-5 max-w-5xl">
+            <p
+              style={{
+                fontFamily: TLK_FONT.sans,
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: 2,
+                color: TLK.inkFaint,
+                textTransform: "uppercase",
+                marginBottom: 8,
+              }}
+            >
+              오늘의 짝 — Pairs
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {pairs.map((p, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 rounded-xl px-4 py-3"
+                  style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className="flex h-9 w-9 items-center justify-center rounded-full text-lg"
+                      style={{ background: `${p.a.color}22`, border: `2px solid ${p.a.color}` }}
+                    >
+                      {p.a.emoji}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: TLK_FONT.sans,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: TLK.ink,
+                      }}
+                    >
+                      {p.a.name}
+                    </span>
+                  </div>
+                  <span style={{ color: TLK.inkFaint, fontFamily: TLK_FONT.serif, fontStyle: "italic" }}>×</span>
+                  {p.b ? (
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-lg"
+                        style={{ background: `${p.b.color}22`, border: `2px solid ${p.b.color}` }}
+                      >
+                        {p.b.emoji}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: TLK_FONT.sans,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: TLK.ink,
+                        }}
+                      >
+                        {p.b.name}
+                      </span>
+                    </div>
+                  ) : (
+                    <span
+                      style={{
+                        fontFamily: TLK_FONT.sans,
+                        fontSize: 11,
+                        color: TLK.inkFaint,
+                        fontStyle: "italic",
+                      }}
+                    >
+                      옵서버 (다음 짝과 합류)
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RoleCard({ label, color, text }: { label: string; color: string; text: string }) {
+  return (
+    <div
+      className="rounded-2xl px-6 py-5"
+      style={{ background: TLK.paperHi, border: `2px solid ${color}33` }}
+    >
+      <div
+        className="mb-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1"
+        style={{ background: `${color}1a`, color }}
+      >
+        <Users size={12} />
+        <span
+          style={{
+            fontFamily: TLK_FONT.sans,
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: 1.5,
+            textTransform: "uppercase",
+          }}
+        >
+          {label}
+        </span>
+      </div>
+      <p
+        style={{
+          fontFamily: TLK_FONT.ko,
+          fontSize: 15,
+          color: TLK.ink,
+          lineHeight: 1.5,
+        }}
+      >
+        {text}
+      </p>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   슬라이드 7 · Closing (마무리 + 세션 완료)
+   ───────────────────────────────────────────── */
+
+function ClosingSlide({
+  episode,
+  completed,
+  onComplete,
+  keepsake,
+}: {
+  episode: PodcastRow;
+  completed: boolean;
+  onComplete: (c: boolean) => void;
+  keepsake: string;
+}) {
+  return (
+    <div className="mx-auto flex h-full max-w-4xl flex-col items-center justify-center gap-7 py-8">
+      {/* 상단 — Sparkles + 워드마크 */}
+      <div className="text-center">
+        <div
+          className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full"
+          style={{ background: `${TLK.accent}14`, border: `1px solid ${TLK.accent}44` }}
+        >
+          <Sparkles size={32} style={{ color: TLK.accent }} />
+        </div>
+        <h1
+          style={{
+            fontFamily: TLK_FONT.serif,
+            fontStyle: "italic",
+            fontSize: 64,
+            fontWeight: 500,
+            color: TLK.ink,
+            lineHeight: 1,
+            letterSpacing: -1.5,
+          }}
+        >
+          Thank you.
+        </h1>
+        <p
+          style={{
+            fontFamily: TLK_FONT.ko,
+            fontSize: 18,
+            color: TLK.inkDim,
+            marginTop: 10,
+            lineHeight: 1.5,
+          }}
+        >
+          오늘도 한 회차 굴리셨네요. 다음 주 월요일에 또 만나요.
+        </p>
+      </div>
+
+      {/* 오늘의 에피소드 회상 */}
+      <div
+        className="w-full max-w-2xl rounded-2xl px-7 py-5 text-center"
+        style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
+      >
+        <p
+          style={{
+            fontFamily: TLK_FONT.sans,
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: 2,
+            color: TLK.inkFaint,
+            textTransform: "uppercase",
+          }}
+        >
+          오늘의 스터디
+        </p>
+        <p
+          style={{
+            fontFamily: TLK_FONT.serif,
+            fontStyle: "italic",
+            fontSize: 22,
+            color: TLK.ink,
+            marginTop: 6,
+            lineHeight: 1.3,
+          }}
+        >
+          {episode.title}
+        </p>
+        {keepsake && (
+          <div
+            className="mt-4 rounded-xl px-4 py-3"
+            style={{ background: TLK.bg2, border: `1px solid ${TLK.rule}` }}
+          >
+            <p
+              style={{
+                fontFamily: TLK_FONT.sans,
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: 1.5,
+                color: TLK.accent,
+                textTransform: "uppercase",
+                marginBottom: 4,
+              }}
+            >
+              Today's Keepsake
+            </p>
+            <p
+              style={{
+                fontFamily: TLK_FONT.serif,
+                fontStyle: "italic",
+                fontSize: 16,
+                color: TLK.ink,
+                lineHeight: 1.5,
+              }}
+            >
+              “{keepsake}”
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* 세션 완료 버튼 */}
+      <div className="text-center">
+        {!completed ? (
+          <>
+            <p
+              style={{
+                fontFamily: TLK_FONT.ko,
+                fontSize: 14,
+                color: TLK.inkDim,
+                marginBottom: 12,
+              }}
+            >
+              이번 세션을 완료로 표시할까요?
+            </p>
+            <button
+              type="button"
+              onClick={() => onComplete(true)}
+              className="inline-flex items-center gap-2 rounded-full px-7 py-3 shadow-lg transition-all hover:-translate-y-0.5"
+              style={{
+                background: TLK.accent,
+                color: "#fff",
+                border: 0,
+                fontFamily: TLK_FONT.sans,
+                fontSize: 13,
+                fontWeight: 700,
+                letterSpacing: 1.5,
+                cursor: "pointer",
+              }}
+            >
+              <CheckCircle size={16} />
+              세션 완료
+            </button>
+          </>
+        ) : (
+          <div
+            className="inline-block rounded-2xl px-7 py-5"
+            style={{
+              background: `${TLK.accent2}14`,
+              border: `2px solid ${TLK.accent2}55`,
+            }}
+          >
+            <div className="mb-2 flex items-center justify-center gap-2">
+              <CheckCircle size={22} style={{ color: TLK.accent2 }} />
+              <p
+                style={{
+                  fontFamily: TLK_FONT.serif,
+                  fontStyle: "italic",
+                  fontSize: 22,
+                  color: TLK.accent2,
+                  fontWeight: 500,
+                }}
+              >
+                완료되었습니다
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onComplete(false)}
+              className="inline-flex items-center gap-1 transition-opacity hover:opacity-70"
+              style={{
+                background: "transparent",
+                border: 0,
+                color: TLK.inkFaint,
+                fontFamily: TLK_FONT.sans,
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: 0.5,
+                cursor: "pointer",
+                textDecoration: "underline",
+              }}
+            >
+              <Undo2 size={11} />
+              완료 취소
+            </button>
+          </div>
+        )}
+      </div>
+
+      <p
+        style={{
+          marginTop: 8,
+          fontFamily: TLK_FONT.serif,
+          fontStyle: "italic",
+          fontSize: 13,
+          color: TLK.inkFaint,
+        }}
+      >
+        See you next time 👋
+      </p>
     </div>
   );
 }

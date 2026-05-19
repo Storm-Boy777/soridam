@@ -2,20 +2,23 @@
 
 // Talklish · Editorial Studio 매스트헤드
 // 워드마크 + VOL + 요일 탭 + 큰 세리프 타이머 + PAUSE
+//
+// 요일 탭은 라우트 기반 (월/수/금 페이지로 이동). 진입 페이지(/study-group)로 돌아가는
+// "스튜디오" 워드마크 링크 포함.
 
+import Link from "next/link";
 import { TLK, TLK_FONT } from "./tokens";
 
 export type DayKey = "mon" | "wed" | "fri";
 
-const DAYS: { key: DayKey; label: string; sub: string }[] = [
-  { key: "mon", label: "월요일", sub: "Podcast" },
-  { key: "wed", label: "수요일", sub: "OPIc" },
-  { key: "fri", label: "금요일", sub: "Free Talk" },
+const DAYS: { key: DayKey; label: string; sub: string; route: string }[] = [
+  { key: "mon", label: "월요일", sub: "Podcast",   route: "/study-group/monday" },
+  { key: "wed", label: "수요일", sub: "OPIc",      route: "/study-group/wednesday" },
+  { key: "fri", label: "금요일", sub: "Free Talk", route: "/study-group/friday" },
 ];
 
 interface MastheadProps {
   day: DayKey;
-  onDayChange: (day: DayKey) => void;
   elapsed: number;            // 초
   running: boolean;
   onToggleRunning: () => void;
@@ -31,7 +34,6 @@ function pad(n: number) {
 
 export function Masthead({
   day,
-  onDayChange,
   elapsed,
   running,
   onToggleRunning,
@@ -53,8 +55,12 @@ export function Masthead({
         color: TLK.ink,
       }}
     >
-      {/* 워드마크 */}
-      <div>
+      {/* 워드마크 — 클릭 시 진입 페이지 복귀 */}
+      <Link
+        href="/study-group"
+        title="요일 선택으로 돌아가기"
+        style={{ textDecoration: "none", color: "inherit" }}
+      >
         <div
           style={{
             fontFamily: TLK_FONT.serif,
@@ -80,7 +86,7 @@ export function Masthead({
         >
           오프라인 영어 스터디 · No. {sessionNo}
         </div>
-      </div>
+      </Link>
 
       <div className="hidden h-11 w-px sm:block" style={{ background: TLK.rule }} />
 
@@ -111,14 +117,14 @@ export function Masthead({
 
       <div className="hidden flex-1 sm:block" />
 
-      {/* 요일 탭 */}
+      {/* 요일 탭 — 라우트 기반 (active = 현재 day) */}
       <div className="flex items-end" style={{ marginBottom: -19 }}>
         {DAYS.map((d) => {
           const active = day === d.key;
           return (
-            <button
+            <Link
               key={d.key}
-              onClick={() => onDayChange(d.key)}
+              href={d.route}
               className="cursor-pointer transition-all"
               style={{
                 background: "transparent",
@@ -132,6 +138,7 @@ export function Masthead({
                 fontFamily: TLK_FONT.sans,
                 fontWeight: 600,
                 textAlign: "center",
+                textDecoration: "none",
               }}
             >
               <div style={{ fontSize: 14, marginBottom: 2 }}>{d.label}</div>
@@ -146,7 +153,7 @@ export function Masthead({
               >
                 {d.sub}
               </div>
-            </button>
+            </Link>
           );
         })}
       </div>
