@@ -27,7 +27,13 @@ import {
   UsersRound,
 } from "lucide-react";
 
-type MenuItem = { label: string; href: string; icon: React.ComponentType<{ size?: number }> };
+type MenuItem = {
+  label: string;
+  href: string;
+  icon: React.ComponentType<{ size?: number }>;
+  /** true면 hasStudyAdminAccess 보유자(관리자 자동 통과)에게만 노출 — lectures 패턴 (090) */
+  studyAdminOnly?: boolean;
+};
 type MenuGroup = { label?: string; items: MenuItem[] };
 
 const menuGroups: MenuGroup[] = [
@@ -57,9 +63,10 @@ const menuGroups: MenuGroup[] = [
       { label: "모의고사", href: "/admin/mock-exam", icon: GraduationCap },
       { label: "스크립트", href: "/admin/scripts", icon: FileCode },
       { label: "튜터링", href: "/admin/tutoring", icon: Stethoscope },
-      { label: "스터디 모임", href: "/admin/study-group", icon: Coffee },
+      { label: "스터디 모임", href: "/admin/study-group", icon: Coffee, studyAdminOnly: true },
       { label: "오픽 스터디", href: "/admin/study-groups", icon: UsersRound },
       { label: "강의 권한", href: "/admin/lectures", icon: GraduationCap },
+      { label: "스터디 권한", href: "/admin/study-admin-access", icon: Coffee },
       { label: "스피킹 코치", href: "/admin/coaching-access", icon: Sparkles },
     ],
   },
@@ -88,7 +95,12 @@ const menuGroups: MenuGroup[] = [
   },
 ];
 
-export function AdminSidebar() {
+interface AdminSidebarProps {
+  /** layout.tsx에서 hasStudyAdminAccess() 결과를 server-side로 내려줌 (lectures 패턴) */
+  hasStudyAdminAccess?: boolean;
+}
+
+export function AdminSidebar({ hasStudyAdminAccess = false }: AdminSidebarProps) {
   const pathname = usePathname();
 
   // 미답변 1:1 문의 건수
@@ -126,6 +138,8 @@ export function AdminSidebar() {
 
             {/* 메뉴 항목 */}
             {group.items.map((item) => {
+              // 권한 게이트 (lectures 패턴) — studyAdminOnly면 권한 보유자만
+              if (item.studyAdminOnly && !hasStudyAdminAccess) return null;
               const isActive =
                 item.href === "/admin"
                   ? pathname === "/admin"

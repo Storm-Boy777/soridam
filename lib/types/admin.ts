@@ -153,6 +153,29 @@ export interface LectureUserSearchResult {
   has_lecture_access: boolean;
 }
 
+// ── 스터디 모임 관리자 권한 (090_study_admin_access.sql) ──
+
+export interface StudyAdminAccessUser {
+  user_id: string;
+  email: string;
+  display_name: string | null;
+  granted_at: string;
+  granted_by_email: string | null;
+  note: string | null;
+}
+
+export interface StudyAdminAccessStats {
+  active: number;
+}
+
+export interface StudyAdminUserSearchResult {
+  user_id: string;
+  email: string;
+  display_name: string | null;
+  current_plan: string;
+  has_study_admin_access: boolean;
+}
+
 // ── AI 코치 권한 관리 (079_coaching_access.sql) ──
 
 export interface CoachingAccessUser {

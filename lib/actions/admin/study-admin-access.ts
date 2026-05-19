@@ -1,32 +1,32 @@
 "use server";
 
-// 강의 권한 관리 Server Actions
+// 스터디 모임 관리자 권한 Server Actions (lectures 패턴 복제 — 090 마이그)
 
 import { requireAdmin } from "@/lib/auth";
 import { RPC, T } from "@/lib/constants/tables";
 import type {
-  LectureAccessStats,
-  LectureAccessUser,
-  LectureUserSearchResult,
+  StudyAdminAccessStats,
+  StudyAdminAccessUser,
+  StudyAdminUserSearchResult,
 } from "@/lib/types/admin";
 
 // ── 통계 ──
 
-export async function getLectureAccessStats(): Promise<LectureAccessStats> {
+export async function getStudyAdminAccessStats(): Promise<StudyAdminAccessStats> {
   const { supabase } = await requireAdmin();
   const { count } = await supabase
-    .from(T.lecture_access)
+    .from(T.study_admin_access)
     .select("*", { count: "exact", head: true });
   return { active: count ?? 0 };
 }
 
 // ── 권한 보유자 목록 ──
 
-export async function getLectureAccessUsers(): Promise<LectureAccessUser[]> {
+export async function getStudyAdminAccessUsers(): Promise<StudyAdminAccessUser[]> {
   const { supabase } = await requireAdmin();
 
   const { data: rows, error } = await supabase
-    .from(T.lecture_access)
+    .from(T.study_admin_access)
     .select("user_id, granted_by, granted_at, note")
     .order("granted_at", { ascending: false });
 
@@ -70,9 +70,9 @@ export async function getLectureAccessUsers(): Promise<LectureAccessUser[]> {
 // 그 외 → 닉네임 정확 매치 우선, 부분 매치는 최대 10명
 // 반환: users 배열 (UI에서 0/1/N 분기)
 
-export async function searchUserForLecture(
+export async function searchUserForStudyAdmin(
   query: string
-): Promise<{ users: LectureUserSearchResult[]; error?: string }> {
+): Promise<{ users: StudyAdminUserSearchResult[]; error?: string }> {
   const q = query.trim();
   if (!q) return { users: [], error: "이메일 또는 닉네임을 입력해주세요" };
 
@@ -93,7 +93,6 @@ export async function searchUserForLecture(
       .maybeSingle();
     if (data) rows = [data];
   } else {
-    // 닉네임 정확 매치 우선
     const { data: exact } = await supabase
       .from(T.profiles)
       .select("id, email, display_name")
@@ -102,7 +101,6 @@ export async function searchUserForLecture(
     if (exact && exact.length > 0) {
       rows = exact;
     } else {
-      // 부분 매치 (최대 10명)
       const { data: partial } = await supabase
         .from(T.profiles)
         .select("id, email, display_name")
@@ -122,10 +120,9 @@ export async function searchUserForLecture(
     };
   }
 
-  // 권한 보유 여부 일괄 조회
   const userIds = rows.map((r) => r.id);
   const { data: accesses } = await supabase
-    .from(T.lecture_access)
+    .from(T.study_admin_access)
     .select("user_id")
     .in("user_id", userIds);
   const accessSet = new Set((accesses ?? []).map((a) => a.user_id as string));
@@ -136,21 +133,20 @@ export async function searchUserForLecture(
       email: r.email || "",
       display_name: r.display_name,
       current_plan: "",
-      has_lecture_access: accessSet.has(r.id),
+      has_study_admin_access: accessSet.has(r.id),
     })),
   };
 }
 
 // ── 권한 부여 ──
 
-export async function grantLectureAccess(params: {
+export async function grantStudyAdminAccess(params: {
   userId: string;
   note?: string;
 }) {
   const { supabase, userId: adminId, userEmail } = await requireAdmin();
 
-  // upsert: 재부여 시 note + granted_by + granted_at 갱신
-  const { error } = await supabase.from(T.lecture_access).upsert(
+  const { error } = await supabase.from(T.study_admin_access).upsert(
     {
       user_id: params.userId,
       granted_by: adminId,
@@ -164,11 +160,10 @@ export async function grantLectureAccess(params: {
     return { success: false, error: `권한 부여 실패: ${error.message}` };
   }
 
-  // 감사 로그
   await supabase.from(T.admin_audit_log).insert({
     admin_id: adminId,
     admin_email: userEmail,
-    action: "lecture_access_grant",
+    action: "study_admin_access_grant",
     target_type: "user",
     target_id: params.userId,
     details: { note: params.note ?? null },
@@ -179,11 +174,11 @@ export async function grantLectureAccess(params: {
 
 // ── 권한 회수 (단건) ──
 
-export async function revokeLectureAccess(targetUserId: string) {
+export async function revokeStudyAdminAccess(targetUserId: string) {
   const { supabase, userId: adminId, userEmail } = await requireAdmin();
 
   const { error } = await supabase
-    .from(T.lecture_access)
+    .from(T.study_admin_access)
     .delete()
     .eq("user_id", targetUserId);
 
@@ -191,11 +186,10 @@ export async function revokeLectureAccess(targetUserId: string) {
     return { success: false, error: `권한 회수 실패: ${error.message}` };
   }
 
-  // 감사 로그
   await supabase.from(T.admin_audit_log).insert({
     admin_id: adminId,
     admin_email: userEmail,
-    action: "lecture_access_revoke",
+    action: "study_admin_access_revoke",
     target_type: "user",
     target_id: targetUserId,
     details: {},
@@ -206,7 +200,7 @@ export async function revokeLectureAccess(targetUserId: string) {
 
 // ── 권한 회수 (일괄) ──
 
-export async function bulkRevokeLectureAccess(targetUserIds: string[]) {
+export async function bulkRevokeStudyAdminAccess(targetUserIds: string[]) {
   if (targetUserIds.length === 0) {
     return { revoked: 0, failed: 0 };
   }
@@ -214,19 +208,18 @@ export async function bulkRevokeLectureAccess(targetUserIds: string[]) {
   const { supabase, userId: adminId, userEmail } = await requireAdmin();
 
   const { error, count } = await supabase
-    .from(T.lecture_access)
+    .from(T.study_admin_access)
     .delete({ count: "exact" })
     .in("user_id", targetUserIds);
 
   const revoked = error ? 0 : count ?? 0;
   const failed = error ? targetUserIds.length : 0;
 
-  // 감사 로그 (일괄)
   if (revoked > 0) {
     await supabase.from(T.admin_audit_log).insert({
       admin_id: adminId,
       admin_email: userEmail,
-      action: "lecture_access_bulk_revoke",
+      action: "study_admin_access_bulk_revoke",
       target_type: "user",
       target_id: null,
       details: { user_ids: targetUserIds, revoked, failed },

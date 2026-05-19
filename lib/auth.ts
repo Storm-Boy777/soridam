@@ -152,6 +152,41 @@ export const hasExamArchiveAccess = cache(async () => {
   return false;
 });
 
+// ── hasStudyAdminAccess(): 관리자 사이드바 "스터디 모임" 메뉴 + /admin/study-group 진입 판단 ──
+// lectures 패턴 — 관리자 OR study_admin_access 명시 부여자만 true.
+// (참고: study_panel_members는 Talklish 화면 표시용 데이터라 권한 판정과 분리)
+export const hasStudyAdminAccess = cache(async () => {
+  const user = await getUser();
+  if (!user) return false;
+  if (user.app_metadata?.role === "admin") return true;
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from("study_admin_access")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  return !!data;
+});
+
+// ── requireStudyAdminAccess(): /admin/study-group 페이지 진입 게이트 ──
+export async function requireStudyAdminAccess() {
+  const user = await getUser();
+  if (!user) {
+    redirect("/login");
+  }
+  if (user.app_metadata?.role === "admin") return user;
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from("study_admin_access")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!data) {
+    redirect("/admin");
+  }
+  return user;
+}
+
 // ── hasStudyPanelAccess(): 네비 노출 판단용 (조용한 boolean) ──
 // 관리자 또는 study_panel_members에 등록된 사용자면 true.
 export const hasStudyPanelAccess = cache(async () => {

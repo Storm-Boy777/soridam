@@ -1,73 +1,64 @@
 "use client";
 
-// 관리자 — AI 코치 권한 관리 페이지
+// 관리자 — 스터디 모임 관리 권한 페이지
 // 이메일로 사용자 검색 → 권한 부여/회수 → 보유자 목록
+// (lectures 패턴 복제, 라벨·SA만 교체)
 
 import { useState, useTransition } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { GraduationCap, Search, UserCheck, ShieldOff, ShieldCheck } from "lucide-react";
+import { Coffee, Search, UserCheck, ShieldOff, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import {
-  getCoachingAccessStats,
-  getCoachingAccessUsers,
-  searchUserForCoaching,
-  grantCoachingAccess,
-  revokeCoachingAccess,
-  bulkRevokeCoachingAccess,
-} from "@/lib/actions/admin/coaching-access";
+  getStudyAdminAccessStats,
+  getStudyAdminAccessUsers,
+  searchUserForStudyAdmin,
+  grantStudyAdminAccess,
+  revokeStudyAdminAccess,
+  bulkRevokeStudyAdminAccess,
+} from "@/lib/actions/admin/study-admin-access";
 import type {
-  CoachingAccessStats,
-  CoachingAccessUser,
-  CoachingUserSearchResult,
+  StudyAdminAccessStats,
+  StudyAdminAccessUser,
+  StudyAdminUserSearchResult,
 } from "@/lib/types/admin";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 type ConfirmState =
-  | { kind: "grant"; user: CoachingUserSearchResult }
-  | { kind: "revoke"; user: CoachingAccessUser }
+  | { kind: "grant"; user: StudyAdminUserSearchResult }
+  | { kind: "revoke"; user: StudyAdminAccessUser }
   | { kind: "bulk-revoke"; ids: string[]; emails: string }
   | null;
 
-export default function AdminCoachingAccessPage() {
+export default function AdminStudyAdminAccessPage() {
   const queryClient = useQueryClient();
 
-  // 검색 상태
   const [searchEmail, setSearchEmail] = useState("");
-  const [searchResults, setSearchResults] = useState<CoachingUserSearchResult[]>([]);
-  const [selectedUser, setSelectedUser] = useState<CoachingUserSearchResult | null>(null);
+  const [searchResults, setSearchResults] = useState<StudyAdminUserSearchResult[]>([]);
+  const [selectedUser, setSelectedUser] = useState<StudyAdminUserSearchResult | null>(null);
   const [searchError, setSearchError] = useState("");
   const [isSearching, startSearch] = useTransition();
-
-  // 부여 폼 상태
   const [note, setNote] = useState("");
-
-  // 체크박스 선택 상태
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-  // 확인 다이얼로그 상태
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
 
-  // 통계
-  const { data: stats } = useQuery<CoachingAccessStats>({
-    queryKey: ["admin-coaching-access-stats"],
-    queryFn: getCoachingAccessStats,
+  const { data: stats } = useQuery<StudyAdminAccessStats>({
+    queryKey: ["admin-study-admin-access-stats"],
+    queryFn: getStudyAdminAccessStats,
     staleTime: 10_000,
   });
 
-  // 권한 보유자 목록
-  const { data: users = [], isLoading } = useQuery<CoachingAccessUser[]>({
-    queryKey: ["admin-coaching-access-users"],
-    queryFn: getCoachingAccessUsers,
+  const { data: users = [], isLoading } = useQuery<StudyAdminAccessUser[]>({
+    queryKey: ["admin-study-admin-access-users"],
+    queryFn: getStudyAdminAccessUsers,
     staleTime: 10_000,
   });
 
-  // 부여
   const grantMutation = useMutation({
-    mutationFn: grantCoachingAccess,
+    mutationFn: grantStudyAdminAccess,
     onSuccess: (result) => {
       if (result.success) {
-        queryClient.invalidateQueries({ queryKey: ["admin-coaching-access-stats"] });
-        queryClient.invalidateQueries({ queryKey: ["admin-coaching-access-users"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-study-admin-access-stats"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-study-admin-access-users"] });
         setSelectedUser(null);
         setSearchResults([]);
         setSearchEmail("");
@@ -85,13 +76,12 @@ export default function AdminCoachingAccessPage() {
     },
   });
 
-  // 단건 회수
   const revokeMutation = useMutation({
-    mutationFn: (userId: string) => revokeCoachingAccess(userId),
+    mutationFn: (userId: string) => revokeStudyAdminAccess(userId),
     onSuccess: (result) => {
       if (result.success) {
-        queryClient.invalidateQueries({ queryKey: ["admin-coaching-access-stats"] });
-        queryClient.invalidateQueries({ queryKey: ["admin-coaching-access-users"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-study-admin-access-stats"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-study-admin-access-users"] });
         setSelectedIds(new Set());
         setConfirmState(null);
         toast.success("권한이 회수되었습니다");
@@ -106,12 +96,11 @@ export default function AdminCoachingAccessPage() {
     },
   });
 
-  // 일괄 회수
   const bulkRevokeMutation = useMutation({
-    mutationFn: (userIds: string[]) => bulkRevokeCoachingAccess(userIds),
+    mutationFn: (userIds: string[]) => bulkRevokeStudyAdminAccess(userIds),
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["admin-coaching-access-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-coaching-access-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-study-admin-access-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-study-admin-access-users"] });
       setSelectedIds(new Set());
       setConfirmState(null);
       if (result.failed > 0) {
@@ -128,8 +117,6 @@ export default function AdminCoachingAccessPage() {
 
   const isMutating = revokeMutation.isPending || bulkRevokeMutation.isPending;
 
-  /* ── 체크박스 ── */
-
   const allIds = users.map((u) => u.user_id);
   const isAllSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
   const isIndeterminate = selectedIds.size > 0 && !isAllSelected;
@@ -145,14 +132,12 @@ export default function AdminCoachingAccessPage() {
     });
   };
 
-  /* ── 검색 ── */
-
   const handleSearch = () => {
     setSearchError("");
     setSearchResults([]);
     setSelectedUser(null);
     startSearch(async () => {
-      const res = await searchUserForCoaching(searchEmail);
+      const res = await searchUserForStudyAdmin(searchEmail);
       if (res.error) {
         setSearchError(res.error);
       } else {
@@ -164,20 +149,14 @@ export default function AdminCoachingAccessPage() {
     });
   };
 
-  /* ── 부여 ── */
-
   const handleGrant = () => {
     if (!selectedUser) return;
     setConfirmState({ kind: "grant", user: selectedUser });
   };
 
-  /* ── 단건 회수 ── */
-
-  const handleRevoke = (user: CoachingAccessUser) => {
+  const handleRevoke = (user: StudyAdminAccessUser) => {
     setConfirmState({ kind: "revoke", user });
   };
-
-  /* ── 일괄 회수 ── */
 
   const handleBulkRevoke = () => {
     const ids = Array.from(selectedIds);
@@ -187,8 +166,6 @@ export default function AdminCoachingAccessPage() {
       .join(", ");
     setConfirmState({ kind: "bulk-revoke", ids, emails });
   };
-
-  /* ── 다이얼로그 확인 ── */
 
   const handleConfirm = () => {
     if (!confirmState) return;
@@ -215,23 +192,26 @@ export default function AdminCoachingAccessPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold text-foreground">AI 코치 권한 관리</h1>
+      <div>
+        <h1 className="text-xl font-bold text-foreground">스터디 모임 관리 권한</h1>
+        <p className="mt-1 text-sm text-foreground-secondary">
+          이 권한이 있는 사용자에게만 사이드바 "스터디 모임" 메뉴 + /admin/study-group 페이지가 노출됩니다.
+          관리자는 자동 통과합니다.
+        </p>
+      </div>
 
-      {/* 통계 카드 */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
-          icon={GraduationCap}
+          icon={Coffee}
           label="권한 보유자"
           value={stats?.active ?? 0}
           color="text-primary-500"
         />
       </div>
 
-      {/* 부여 섹션 */}
       <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-5 space-y-5">
         <h2 className="font-semibold text-foreground">권한 부여</h2>
 
-        {/* 이메일 또는 닉네임 검색 */}
         <div>
           <label className="block text-sm font-medium text-foreground-secondary mb-1.5">
             사용자 이메일 또는 닉네임
@@ -284,12 +264,12 @@ export default function AdminCoachingAccessPage() {
                   </div>
                   <span
                     className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                      u.has_coaching_access
+                      u.has_study_admin_access
                         ? "bg-primary-50 text-primary-600"
                         : "bg-surface-secondary text-foreground-muted"
                     }`}
                   >
-                    {u.has_coaching_access ? "권한 보유" : "권한 없음"}
+                    {u.has_study_admin_access ? "권한 보유" : "권한 없음"}
                   </span>
                 </button>
               ))}
@@ -297,7 +277,6 @@ export default function AdminCoachingAccessPage() {
           </div>
         )}
 
-        {/* 선택된 사용자 + 부여 폼 */}
         {selectedUser && (
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface-secondary p-4 space-y-4">
             <div className="flex items-center justify-between gap-3">
@@ -313,12 +292,12 @@ export default function AdminCoachingAccessPage() {
                     </span>
                     <span
                       className={`shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-full ${
-                        selectedUser.has_coaching_access
+                        selectedUser.has_study_admin_access
                           ? "bg-primary-50 text-primary-600"
                           : "bg-surface text-foreground-muted"
                       }`}
                     >
-                      {selectedUser.has_coaching_access ? "권한 보유" : "권한 없음"}
+                      {selectedUser.has_study_admin_access ? "권한 보유" : "권한 없음"}
                     </span>
                   </div>
                 </div>
@@ -355,7 +334,7 @@ export default function AdminCoachingAccessPage() {
             >
               {grantMutation.isPending
                 ? "처리 중…"
-                : selectedUser.has_coaching_access
+                : selectedUser.has_study_admin_access
                   ? "메모 갱신 (재부여)"
                   : "권한 부여"}
             </button>
@@ -363,7 +342,6 @@ export default function AdminCoachingAccessPage() {
         )}
       </div>
 
-      {/* 권한 보유자 목록 */}
       <div>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-semibold text-foreground">
@@ -377,6 +355,7 @@ export default function AdminCoachingAccessPage() {
 
           {selectedIds.size > 0 && (
             <button
+              type="button"
               onClick={handleBulkRevoke}
               disabled={isMutating}
               className="flex items-center gap-1.5 rounded-[var(--radius-md)] bg-accent-500 px-4 py-2 text-sm font-semibold text-white hover:bg-accent-600 disabled:opacity-50"
@@ -396,6 +375,7 @@ export default function AdminCoachingAccessPage() {
                 <th className="w-10 px-4 py-3">
                   <input
                     type="checkbox"
+                    aria-label="전체 선택"
                     checked={isAllSelected}
                     ref={(el) => {
                       if (el) el.indeterminate = isIndeterminate;
@@ -405,42 +385,24 @@ export default function AdminCoachingAccessPage() {
                     className="h-4 w-4 cursor-pointer rounded border-border accent-primary-500"
                   />
                 </th>
-                <th className="px-4 py-3 text-left font-medium text-foreground-secondary">
-                  이메일
-                </th>
-                <th className="px-4 py-3 text-left font-medium text-foreground-secondary">
-                  이름
-                </th>
-                <th className="px-4 py-3 text-left font-medium text-foreground-secondary">
-                  부여자
-                </th>
-                <th className="px-4 py-3 text-left font-medium text-foreground-secondary">
-                  부여일
-                </th>
-                <th className="px-4 py-3 text-left font-medium text-foreground-secondary">
-                  메모
-                </th>
-                <th className="px-4 py-3 text-left font-medium text-foreground-secondary">
-                  액션
-                </th>
+                <th className="px-4 py-3 text-left font-medium text-foreground-secondary">이메일</th>
+                <th className="px-4 py-3 text-left font-medium text-foreground-secondary">이름</th>
+                <th className="px-4 py-3 text-left font-medium text-foreground-secondary">부여자</th>
+                <th className="px-4 py-3 text-left font-medium text-foreground-secondary">부여일</th>
+                <th className="px-4 py-3 text-left font-medium text-foreground-secondary">메모</th>
+                <th className="px-4 py-3 text-left font-medium text-foreground-secondary">액션</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td
-                    colSpan={7}
-                    className="px-4 py-8 text-center text-foreground-muted"
-                  >
+                  <td colSpan={7} className="px-4 py-8 text-center text-foreground-muted">
                     로딩 중…
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={7}
-                    className="px-4 py-8 text-center text-foreground-muted"
-                  >
+                  <td colSpan={7} className="px-4 py-8 text-center text-foreground-muted">
                     권한 보유자가 없습니다
                   </td>
                 </tr>
@@ -481,6 +443,7 @@ export default function AdminCoachingAccessPage() {
                       </td>
                       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <button
+                          type="button"
                           onClick={() => handleRevoke(u)}
                           disabled={isMutating}
                           className="rounded-md border border-border px-3 py-1 text-xs font-medium text-foreground-secondary hover:bg-surface-secondary hover:text-accent-500 disabled:opacity-50"
@@ -500,6 +463,7 @@ export default function AdminCoachingAccessPage() {
           <p className="mt-2 text-xs text-foreground-secondary">
             {selectedIds.size}명 선택됨 —
             <button
+              type="button"
               onClick={() => setSelectedIds(new Set())}
               className="ml-1 text-primary-500 hover:underline"
             >
@@ -509,7 +473,6 @@ export default function AdminCoachingAccessPage() {
         )}
       </div>
 
-      {/* 확인 다이얼로그 */}
       <ConfirmDialog
         open={!!confirmState}
         onConfirm={handleConfirm}
@@ -519,11 +482,11 @@ export default function AdminCoachingAccessPage() {
         icon={confirmState?.kind === "grant" ? ShieldCheck : ShieldOff}
         title={
           confirmState?.kind === "grant"
-            ? confirmState.user.has_coaching_access
-              ? "AI 코치 권한을 재부여하시겠습니까?"
-              : "AI 코치 권한을 부여하시겠습니까?"
+            ? confirmState.user.has_study_admin_access
+              ? "스터디 모임 관리 권한을 재부여하시겠습니까?"
+              : "스터디 모임 관리 권한을 부여하시겠습니까?"
             : confirmState?.kind === "revoke"
-              ? "AI 코치 권한을 회수하시겠습니까?"
+              ? "스터디 모임 관리 권한을 회수하시겠습니까?"
               : confirmState?.kind === "bulk-revoke"
                 ? `선택한 ${confirmState.ids.length}명의 권한을 회수하시겠습니까?`
                 : ""
@@ -539,7 +502,7 @@ export default function AdminCoachingAccessPage() {
         }
         confirmLabel={
           confirmState?.kind === "grant"
-            ? confirmState.user.has_coaching_access
+            ? confirmState.user.has_study_admin_access
               ? "재부여"
               : "부여"
             : "회수"
@@ -548,8 +511,6 @@ export default function AdminCoachingAccessPage() {
     </div>
   );
 }
-
-/* ── 통계 카드 ── */
 
 function StatCard({
   icon: Icon,

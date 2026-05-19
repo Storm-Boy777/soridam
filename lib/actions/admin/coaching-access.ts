@@ -65,44 +65,76 @@ export async function getCoachingAccessUsers(): Promise<CoachingAccessUser[]> {
   });
 }
 
-// ── 이메일 검색 (부여 전 확인용) ──
+// ── 이메일 또는 닉네임 검색 (부여 전 확인용) ──
+// @ 포함 → 이메일 정확 매치 (단일 결과)
+// 그 외 → 닉네임 정확 매치 우선, 부분 매치는 최대 10명
+// 반환: users 배열 (UI에서 0/1/N 분기)
 
 export async function searchUserForCoaching(
-  email: string
-): Promise<{ user: CoachingUserSearchResult | null; error?: string }> {
-  if (!email.trim()) return { user: null, error: "이메일을 입력해주세요" };
+  query: string
+): Promise<{ users: CoachingUserSearchResult[]; error?: string }> {
+  const q = query.trim();
+  if (!q) return { users: [], error: "이메일 또는 닉네임을 입력해주세요" };
 
   const { supabase } = await requireAdmin();
 
-  const { data, error } = await supabase.rpc(RPC.find_user_by_email, {
-    p_email: email.trim().toLowerCase(),
-  });
-
-  if (error) return { user: null, error: "검색 중 오류가 발생했습니다" };
-  if (!data || data.length === 0)
-    return { user: null, error: "해당 이메일로 가입된 사용자가 없습니다" };
-
-  const found = data[0] as {
-    user_id: string;
-    email: string;
+  type ProfileRow = {
+    id: string;
+    email: string | null;
     display_name: string | null;
-    current_plan: string;
   };
+  let rows: ProfileRow[] = [];
 
-  const { data: access } = await supabase
+  if (q.includes("@")) {
+    const { data } = await supabase
+      .from(T.profiles)
+      .select("id, email, display_name")
+      .eq("email", q.toLowerCase())
+      .maybeSingle();
+    if (data) rows = [data];
+  } else {
+    const { data: exact } = await supabase
+      .from(T.profiles)
+      .select("id, email, display_name")
+      .eq("display_name", q)
+      .limit(10);
+    if (exact && exact.length > 0) {
+      rows = exact;
+    } else {
+      const { data: partial } = await supabase
+        .from(T.profiles)
+        .select("id, email, display_name")
+        .ilike("display_name", `%${q}%`)
+        .order("display_name", { ascending: true })
+        .limit(10);
+      rows = partial ?? [];
+    }
+  }
+
+  if (rows.length === 0) {
+    return {
+      users: [],
+      error: q.includes("@")
+        ? "해당 이메일로 가입된 사용자가 없습니다"
+        : "해당 닉네임의 사용자를 찾을 수 없습니다",
+    };
+  }
+
+  const userIds = rows.map((r) => r.id);
+  const { data: accesses } = await supabase
     .from(T.coaching_access)
     .select("user_id")
-    .eq("user_id", found.user_id)
-    .maybeSingle();
+    .in("user_id", userIds);
+  const accessSet = new Set((accesses ?? []).map((a) => a.user_id as string));
 
   return {
-    user: {
-      user_id: found.user_id,
-      email: found.email,
-      display_name: found.display_name,
-      current_plan: found.current_plan,
-      has_coaching_access: !!access,
-    },
+    users: rows.map((r) => ({
+      user_id: r.id,
+      email: r.email || "",
+      display_name: r.display_name,
+      current_plan: "",
+      has_coaching_access: accessSet.has(r.id),
+    })),
   };
 }
 

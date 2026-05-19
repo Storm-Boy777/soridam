@@ -33,7 +33,8 @@ export default function AdminLecturesPage() {
 
   // 검색 상태
   const [searchEmail, setSearchEmail] = useState("");
-  const [searchResult, setSearchResult] = useState<LectureUserSearchResult | null>(null);
+  const [searchResults, setSearchResults] = useState<LectureUserSearchResult[]>([]);
+  const [selectedUser, setSelectedUser] = useState<LectureUserSearchResult | null>(null);
   const [searchError, setSearchError] = useState("");
   const [isSearching, startSearch] = useTransition();
 
@@ -67,7 +68,8 @@ export default function AdminLecturesPage() {
       if (result.success) {
         queryClient.invalidateQueries({ queryKey: ["admin-lecture-access-stats"] });
         queryClient.invalidateQueries({ queryKey: ["admin-lecture-access-users"] });
-        setSearchResult(null);
+        setSelectedUser(null);
+        setSearchResults([]);
         setSearchEmail("");
         setNote("");
         setConfirmState(null);
@@ -147,13 +149,18 @@ export default function AdminLecturesPage() {
 
   const handleSearch = () => {
     setSearchError("");
-    setSearchResult(null);
+    setSearchResults([]);
+    setSelectedUser(null);
     startSearch(async () => {
       const res = await searchUserForLecture(searchEmail);
       if (res.error) {
         setSearchError(res.error);
       } else {
-        setSearchResult(res.user);
+        setSearchResults(res.users);
+        // 단일 결과는 자동 선택, 다중이면 사용자 선택 대기
+        if (res.users.length === 1) {
+          setSelectedUser(res.users[0]);
+        }
       }
     });
   };
@@ -161,8 +168,8 @@ export default function AdminLecturesPage() {
   /* ── 부여 ── */
 
   const handleGrant = () => {
-    if (!searchResult) return;
-    setConfirmState({ kind: "grant", user: searchResult });
+    if (!selectedUser) return;
+    setConfirmState({ kind: "grant", user: selectedUser });
   };
 
   /* ── 단건 회수 ── */
@@ -225,21 +232,22 @@ export default function AdminLecturesPage() {
       <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-5 space-y-5">
         <h2 className="font-semibold text-foreground">권한 부여</h2>
 
-        {/* 이메일 검색 */}
+        {/* 이메일 또는 닉네임 검색 */}
         <div>
           <label className="block text-sm font-medium text-foreground-secondary mb-1.5">
-            사용자 이메일
+            사용자 이메일 또는 닉네임
           </label>
           <div className="flex gap-2">
             <input
-              type="email"
+              type="text"
               value={searchEmail}
               onChange={(e) => setSearchEmail(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              placeholder="user@example.com"
+              placeholder="user@example.com 또는 닉네임"
               className="flex-1 rounded-[var(--radius-md)] border border-border bg-white px-3 py-2 text-sm text-foreground placeholder:text-foreground-muted focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
             <button
+              type="button"
               onClick={handleSearch}
               disabled={isSearching || !searchEmail.trim()}
               className="flex items-center gap-1.5 rounded-[var(--radius-md)] bg-foreground px-4 py-2 text-sm font-medium text-white hover:bg-foreground/90 disabled:opacity-50"
@@ -253,32 +261,78 @@ export default function AdminLecturesPage() {
           )}
         </div>
 
-        {/* 검색 결과 + 부여 폼 */}
-        {searchResult && (
-          <div className="rounded-[var(--radius-lg)] border border-border bg-surface-secondary p-4 space-y-4">
-            <div className="flex items-center gap-3">
-              <UserCheck size={18} className="text-primary-500 shrink-0" />
-              <div>
-                <p className="text-sm font-semibold text-foreground">
-                  {searchResult.email}
-                </p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  {searchResult.display_name && (
-                    <span className="text-xs text-foreground-secondary">
-                      {searchResult.display_name}
-                    </span>
-                  )}
+        {/* 다중 매치 — 사용자 선택 리스트 */}
+        {searchResults.length > 1 && !selectedUser && (
+          <div className="rounded-[var(--radius-lg)] border border-border bg-surface-secondary p-3">
+            <p className="mb-2 text-xs font-medium text-foreground-secondary">
+              {searchResults.length}명 매치 — 선택해 주세요
+            </p>
+            <div className="space-y-1 max-h-72 overflow-y-auto">
+              {searchResults.map((u) => (
+                <button
+                  key={u.user_id}
+                  type="button"
+                  onClick={() => setSelectedUser(u)}
+                  className="flex w-full items-center justify-between gap-3 rounded-md border border-transparent bg-surface px-3 py-2 text-left hover:border-primary-500 hover:bg-primary-50/40 transition-colors"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {u.display_name ?? "(닉네임 없음)"}
+                    </p>
+                    <p className="truncate text-xs text-foreground-secondary">
+                      {u.email}
+                    </p>
+                  </div>
                   <span
-                    className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
-                      searchResult.has_lecture_access
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                      u.has_lecture_access
                         ? "bg-primary-50 text-primary-600"
-                        : "bg-surface text-foreground-muted"
+                        : "bg-surface-secondary text-foreground-muted"
                     }`}
                   >
-                    {searchResult.has_lecture_access ? "권한 보유" : "권한 없음"}
+                    {u.has_lecture_access ? "권한 보유" : "권한 없음"}
                   </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 선택된 사용자 + 부여 폼 */}
+        {selectedUser && (
+          <div className="rounded-[var(--radius-lg)] border border-border bg-surface-secondary p-4 space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <UserCheck size={18} className="text-primary-500 shrink-0" />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-foreground">
+                    {selectedUser.display_name ?? selectedUser.email}
+                  </p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="truncate text-xs text-foreground-secondary">
+                      {selectedUser.email}
+                    </span>
+                    <span
+                      className={`shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-full ${
+                        selectedUser.has_lecture_access
+                          ? "bg-primary-50 text-primary-600"
+                          : "bg-surface text-foreground-muted"
+                      }`}
+                    >
+                      {selectedUser.has_lecture_access ? "권한 보유" : "권한 없음"}
+                    </span>
+                  </div>
                 </div>
               </div>
+              {searchResults.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedUser(null)}
+                  className="shrink-0 text-xs text-foreground-muted hover:text-foreground underline"
+                >
+                  목록으로
+                </button>
+              )}
             </div>
 
             <div>
@@ -295,13 +349,14 @@ export default function AdminLecturesPage() {
             </div>
 
             <button
+              type="button"
               onClick={handleGrant}
               disabled={grantMutation.isPending}
               className="w-full rounded-[var(--radius-md)] bg-primary-500 py-2.5 text-sm font-semibold text-white hover:bg-primary-600 disabled:opacity-50"
             >
               {grantMutation.isPending
                 ? "처리 중…"
-                : searchResult.has_lecture_access
+                : selectedUser.has_lecture_access
                   ? "메모 갱신 (재부여)"
                   : "권한 부여"}
             </button>
@@ -406,6 +461,7 @@ export default function AdminLecturesPage() {
                       <td className="w-10 px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
+                          aria-label={`${u.email} 선택`}
                           checked={isSelected}
                           onChange={() => toggleOne(u.user_id)}
                           className="h-4 w-4 cursor-pointer rounded border-border accent-primary-500"

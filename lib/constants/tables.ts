@@ -48,6 +48,7 @@ export const T = {
   study_freetalk: "study_freetalk",
   study_game_cards: "study_game_cards",
   study_panel_members: "study_panel_members",
+  study_admin_access: "study_admin_access",
   talklish_completed_combos: "talklish_completed_combos",
   // 오픽 스터디 모듈 (047_opic_study.sql)
   study_groups: "study_groups",
