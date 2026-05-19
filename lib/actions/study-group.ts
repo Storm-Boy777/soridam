@@ -44,7 +44,15 @@ export interface TalklishCombo {
   example_achieved_level: string | null;
 }
 
-/** 카테고리·토픽으로 실제 출제 콤보 조회 (시험후기 SSOT) */
+/** 카테고리·토픽으로 실제 출제 콤보 조회 (submission_combos SSOT)
+ *
+ * 핵심: submission_combos는 콤보 단위로 한 행씩 저장되어 있음.
+ * 한 콤보 = 한 행 = question_ids 배열 (일반·롤플 3문항, 어드 2문항).
+ *
+ * 1. submission_combos에서 (topic + combo_type) 필터로 콤보 행 직접 조회
+ * 2. 같은 question_ids 시그니처(정렬+조인)로 그루핑 → 빈도 계산
+ * 3. 콤보 내 질문 메타는 questions IN 단발 조회로 매핑
+ */
 export async function fetchTalklishCombos(input: {
   category: TalklishCategory;
   topic: string;
@@ -52,19 +60,10 @@ export async function fetchTalklishCombos(input: {
   const supabase = await createServerSupabaseClient();
   const comboTypeFilter = TALKLISH_COMBO_TYPES[input.category];
 
-  type RawRow = {
+  type ComboRow = {
     submission_id: number;
     combo_type: string;
-    question_number: number;
-    question_id: string;
-    questions: {
-      question_english: string;
-      question_korean: string | null;
-      question_short: string | null;
-      question_type_eng: string;
-      question_type_kor: string | null;
-      audio_url: string | null;
-    };
+    question_ids: string[];
     submissions: {
       status: string;
       exam_approved: string;
@@ -73,11 +72,11 @@ export async function fetchTalklishCombos(input: {
     };
   };
 
+  // 1. 콤보 행 직접 조회 (승인된 시험만)
   const { data: rawData, error } = await supabase
-    .from(T.submission_questions)
+    .from(T.submission_combos)
     .select(
-      "submission_id, combo_type, question_number, question_id, " +
-        "questions!inner(question_english, question_korean, question_short, question_type_eng, question_type_kor, audio_url), " +
+      "submission_id, combo_type, question_ids, " +
         "submissions!inner(status, exam_approved, exam_date, achieved_level)"
     )
     .eq("topic", input.topic)
@@ -86,87 +85,102 @@ export async function fetchTalklishCombos(input: {
     .eq("submissions.exam_approved", "approved");
 
   if (error || !rawData) return [];
-  const filtered = rawData as unknown as RawRow[];
+  const comboRows = rawData as unknown as ComboRow[];
+  const totalCombos = comboRows.length;
+  if (totalCombos === 0) return [];
 
-  // submission_id로 그루핑 → 콤보 단위
-  type RawCombo = {
-    submission_id: number;
-    qids: string[];
-    questions: TalklishComboQuestion[];
-    exam_date: string;
-    achieved_level: string | null;
+  // 2. 시그니처로 그루핑 → 빈도
+  type Group = {
+    sig: string;
+    representativeQids: string[];        // 출제 순서 유지
+    frequency: number;
+    exampleExamDate: string;
+    exampleAchievedLevel: string | null;
   };
+  const bySig = new Map<string, Group>();
 
-  const bySubmission = new Map<number, RawCombo>();
-  for (const r of filtered.sort((a, b) => a.question_number - b.question_number)) {
-    const sid = r.submission_id;
-    const existing = bySubmission.get(sid);
-    const item: TalklishComboQuestion = {
-      id: r.question_id,
-      question_type: r.questions.question_type_eng,
-      question_type_kor: r.questions.question_type_kor,
-      question_english: r.questions.question_english,
-      question_korean: r.questions.question_korean,
-      question_short: r.questions.question_short,
-      audio_url: r.questions.audio_url,
-      appearance_pct: 0,
-    };
+  for (const r of comboRows) {
+    const sig = buildComboSignature(r.question_ids);
+    const existing = bySig.get(sig);
     if (existing) {
-      existing.qids.push(r.question_id);
-      existing.questions.push(item);
+      existing.frequency += 1;
     } else {
-      bySubmission.set(sid, {
-        submission_id: sid,
-        qids: [r.question_id],
-        questions: [item],
-        exam_date: r.submissions.exam_date,
-        achieved_level: r.submissions.achieved_level,
+      bySig.set(sig, {
+        sig,
+        representativeQids: r.question_ids,
+        frequency: 1,
+        exampleExamDate: r.submissions.exam_date,
+        exampleAchievedLevel: r.submissions.achieved_level,
       });
     }
   }
 
-  const rawCombos = Array.from(bySubmission.values());
-  const totalCombos = rawCombos.length;
-  if (totalCombos === 0) return [];
-
-  // 시그니처로 그루핑 → 빈도
-  const bySig = new Map<string, RawCombo[]>();
-  for (const rc of rawCombos) {
-    const sig = buildComboSignature(rc.qids);
-    const list = bySig.get(sig) ?? [];
-    list.push(rc);
-    bySig.set(sig, list);
-  }
-
-  // 토픽 전체 질문별 등장률
+  // 3. 토픽 전체 질문별 등장률 계산
   const qidAppearance: Record<string, number> = {};
-  for (const rc of rawCombos) {
-    for (const qid of rc.qids) {
+  for (const r of comboRows) {
+    for (const qid of r.question_ids) {
       qidAppearance[qid] = (qidAppearance[qid] || 0) + 1;
     }
   }
 
-  // 결과 조립 — 빈도 내림차순 정렬
-  const combos: TalklishCombo[] = Array.from(bySig.entries())
-    .map(([sig, group]) => {
-      const representative = group[0];
-      const frequency = group.length;
-      const appearancePct = totalCombos > 0 ? Math.round((frequency / totalCombos) * 100) : 0;
+  // 4. 모든 question_id 수집 → questions 메타 단발 조회
+  const allQids = Array.from(
+    new Set(Array.from(bySig.values()).flatMap((g) => g.representativeQids))
+  );
+
+  type QRow = {
+    id: string;
+    question_english: string;
+    question_korean: string | null;
+    question_short: string | null;
+    question_type_eng: string;
+    question_type_kor: string | null;
+    audio_url: string | null;
+  };
+
+  const { data: qData } = await supabase
+    .from(T.questions)
+    .select("id, question_english, question_korean, question_short, question_type_eng, question_type_kor, audio_url")
+    .in("id", allQids);
+
+  const qMap = new Map<string, QRow>();
+  for (const q of (qData ?? []) as QRow[]) {
+    qMap.set(q.id, q);
+  }
+
+  // 5. 결과 조립 — 빈도 내림차순
+  const combos: TalklishCombo[] = Array.from(bySig.values())
+    .map((g) => {
+      const appearancePct = totalCombos > 0 ? Math.round((g.frequency / totalCombos) * 100) : 0;
+      const questions: TalklishComboQuestion[] = g.representativeQids
+        .map((qid) => {
+          const q = qMap.get(qid);
+          if (!q) return null;
+          return {
+            id: q.id,
+            question_type: q.question_type_eng,
+            question_type_kor: q.question_type_kor,
+            question_english: q.question_english,
+            question_korean: q.question_korean,
+            question_short: q.question_short,
+            audio_url: q.audio_url,
+            appearance_pct:
+              totalCombos > 0
+                ? Math.round(((qidAppearance[q.id] || 0) / totalCombos) * 100)
+                : 0,
+          };
+        })
+        .filter((q): q is TalklishComboQuestion => q !== null);
+
       return {
-        sig,
-        representative_qids: representative.qids,
-        frequency,
+        sig: g.sig,
+        representative_qids: g.representativeQids,
+        frequency: g.frequency,
         total_in_category: totalCombos,
         appearance_pct: appearancePct,
-        questions: representative.questions.map((q) => ({
-          ...q,
-          appearance_pct:
-            totalCombos > 0
-              ? Math.round(((qidAppearance[q.id] || 0) / totalCombos) * 100)
-              : 0,
-        })),
-        example_exam_date: representative.exam_date,
-        example_achieved_level: representative.achieved_level,
+        questions,
+        example_exam_date: g.exampleExamDate,
+        example_achieved_level: g.exampleAchievedLevel,
       };
     })
     .sort((a, b) => b.frequency - a.frequency);
