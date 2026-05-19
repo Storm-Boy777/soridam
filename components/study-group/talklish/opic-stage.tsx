@@ -21,6 +21,7 @@ import {
 import { createBrowserClient } from "@supabase/ssr";
 import { getQuestionsByTopic, getTopicsByCategory } from "@/lib/queries/master-questions";
 import { fetchPanelMembers } from "@/lib/actions/study-group";
+import type { PanelMember } from "@/lib/types/study-group";
 import { QUESTION_TYPE_LABELS } from "@/lib/types/reviews";
 import { useRecorder } from "@/lib/hooks/use-recorder";
 import { TLK, TLK_FONT } from "./tokens";
@@ -392,7 +393,7 @@ function IntroPhase({
   members,
   absentIds,
 }: {
-  members: { id: string; name: string; emoji: string; color: string }[];
+  members: PanelMember[];
   absentIds: Set<string>;
 }) {
   const present = members.filter((m) => !absentIds.has(m.id));
@@ -946,7 +947,7 @@ function RunPhase({
   setQIdx: (n: number) => void;
   subStep: SubStep;
   setSubStep: (s: SubStep) => void;
-  members: { id: string; name: string; emoji: string; color: string }[];
+  members: PanelMember[];
   absentIds: Set<string>;
   onToggleAttendance: (id: string) => void;
   activeSpeaker: number;
@@ -1997,7 +1998,7 @@ function RecapPhase({
 }: {
   combo: { id: string; question_english?: string | null }[];
   coachNotes: Record<string, string>;
-  members: { id: string; name: string; emoji: string; color: string }[];
+  members: PanelMember[];
   absentIds: Set<string>;
   memberRecaps: Record<string, string>;
   onChangeRecap: (mid: string, v: string) => void;
