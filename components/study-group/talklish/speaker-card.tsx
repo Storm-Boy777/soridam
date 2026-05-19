@@ -13,6 +13,8 @@ interface Props {
   members: PanelMember[];
   absentIds: Set<string>;
   activeSpeaker: number;        // members 인덱스
+  /** 한 번이라도 spin이 돌았는지 — false면 active 표시 안 함 (초기 미선택 상태) */
+  hasSpun?: boolean;
   spinning: boolean;
   onSpin: () => void;
   onToggleAttendance: (memberId: string) => void;
@@ -22,12 +24,13 @@ export function SpeakerCard({
   members,
   absentIds,
   activeSpeaker,
+  hasSpun = true,
   spinning,
   onSpin,
   onToggleAttendance,
 }: Props) {
   const presentCount = members.filter((m) => !absentIds.has(m.id)).length;
-  const active = members[activeSpeaker];
+  const active = hasSpun ? members[activeSpeaker] : undefined;
 
   return (
     <div
@@ -89,7 +92,7 @@ export function SpeakerCard({
           <div className="grid grid-cols-3 gap-2">
             {members.map((m, i) => {
               const absent = absentIds.has(m.id);
-              const isActive = i === activeSpeaker && !spinning && !absent;
+              const isActive = hasSpun && i === activeSpeaker && !spinning && !absent;
               return (
                 <button
                   key={m.id}

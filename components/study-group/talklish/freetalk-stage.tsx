@@ -9,6 +9,7 @@ import { Shuffle, Play as PlayIcon, RotateCcw } from "lucide-react";
 import { fetchFreetalkTopics, fetchGameCards, fetchPanelMembers } from "@/lib/actions/study-group";
 import type { FreetalkRow, GameCardRow, StoryStarter } from "@/lib/types/study-group";
 import { TLK, TLK_FONT } from "./tokens";
+import { useSpeakerRoulette } from "./use-speaker-roulette";
 import { SpeakerCard } from "./speaker-card";
 
 type GameKey = "spinner" | "chain" | "twolies" | "hotseat" | "story";
@@ -75,8 +76,7 @@ type FridayPhase = "intro" | "games" | "closing";
 export function FreetalkStage({ absentIds, onToggleAttendance }: Props) {
   const [phase, setPhase] = useState<FridayPhase>("intro");
   const [game, setGame] = useState<GameKey>("spinner");
-  const [activeSpeaker, setActiveSpeaker] = useState(0);
-  const [spinning, setSpinning] = useState(false);
+  // 룰렛 state는 useSpeakerRoulette 훅에서 관리
   const [sessionCompleted, setSessionCompleted] = useState(false);
 
   const { data: topics = [] } = useQuery({
@@ -100,16 +100,12 @@ export function FreetalkStage({ absentIds, onToggleAttendance }: Props) {
     [members, absentIds]
   );
 
-  const spin = useCallback(() => {
-    if (spinning || presentMembers.length === 0) return;
-    setSpinning(true);
-    setTimeout(() => {
-      const picked = presentMembers[Math.floor(Math.random() * presentMembers.length)];
-      const idx = members.findIndex((m) => m.id === picked.id);
-      setActiveSpeaker(idx >= 0 ? idx : 0);
-      setSpinning(false);
-    }, 1200);
-  }, [members, presentMembers, spinning]);
+  // 공통 발화자 룰렛 — 한 라운드 = 출석자 전원 한 번씩 (월·수·금 동일 동작)
+  const { activeSpeaker, hasSpun, spinning, spin } = useSpeakerRoulette({
+    members,
+    presentMembers,
+    spinDelayMs: 1200,
+  });
 
   const def = GAMES.find((g) => g.key === game)!;
   const presentCount = presentMembers.length;
@@ -357,6 +353,7 @@ export function FreetalkStage({ absentIds, onToggleAttendance }: Props) {
           members={members}
           absentIds={absentIds}
           activeSpeaker={activeSpeaker}
+          hasSpun={hasSpun}
           spinning={spinning}
           onSpin={spin}
           onToggleAttendance={onToggleAttendance}

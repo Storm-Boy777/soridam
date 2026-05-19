@@ -12,21 +12,30 @@
 // 진행자 시점 — 큰 모니터에 띄워놓고 ←/→로 단계 이동. R로 룰렛.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   ChevronLeft, ChevronRight, Play, Pause, ArrowRight,
   Sparkles, Users, CheckCircle, Undo2, NotebookPen, Mic, MicOff, MessagesSquare,
   Loader2, AlertCircle, Square,
+  Coffee, Clapperboard, Lightbulb,
 } from "lucide-react";
 import { createBrowserClient } from "@supabase/ssr";
 import { getTopicsByCategory } from "@/lib/queries/master-questions";
-import { fetchPanelMembers, fetchTalklishCombos } from "@/lib/actions/study-group";
+import {
+  fetchPanelMembers,
+  fetchTalklishCombos,
+  fetchTalklishCompletedSigs,
+  markTalklishComboCompleted,
+  unmarkTalklishComboCompleted,
+} from "@/lib/actions/study-group";
 import type { TalklishCombo, TalklishComboQuestion } from "@/lib/actions/study-group";
 import type { PanelMember } from "@/lib/types/study-group";
 import { QUESTION_TYPE_LABELS } from "@/lib/types/reviews";
 import { useRecorder } from "@/lib/hooks/use-recorder";
 import { TLK, TLK_FONT } from "./tokens";
 import { SpeakerCard } from "./speaker-card";
+import { useSpeakerRoulette } from "./use-speaker-roulette";
 
 // ── AI 코칭 결과 타입 (talklish-coach EF 응답) ──
 interface CoachingResult {
@@ -72,8 +81,7 @@ export function OpicStage({ absentIds, onToggleAttendance }: Props) {
   const [selectedSig, setSelectedSig] = useState<string | null>(null); // 선택된 콤보 시그니처
   const [qIdx, setQIdx] = useState(0);             // 콤보 내 질문 인덱스 (0~N-1)
   const [subStep, setSubStep] = useState<SubStep>("speaker");
-  const [activeSpeaker, setActiveSpeaker] = useState(0);
-  const [spinning, setSpinning] = useState(false);
+  // (룰렛 state는 useSpeakerRoulette 훅에서 관리)
   const [coachNotes, setCoachNotes] = useState<Record<string, string>>({}); // questionId → note (진행자 수동)
   const [coachResults, setCoachResults] = useState<Record<string, CoachingResult>>({}); // questionId → AI 결과
   const [memberRecaps, setMemberRecaps] = useState<Record<string, string>>({}); // memberId → recap
@@ -96,6 +104,14 @@ export function OpicStage({ absentIds, onToggleAttendance }: Props) {
     queryFn: fetchPanelMembers,
     staleTime: 5 * 60 * 1000,
   });
+  // 본인이 완료한 콤보 시그니처 Set — ComboPickerPhase 뱃지용
+  const queryClient = useQueryClient();
+  const { data: completedSigs = [] } = useQuery({
+    queryKey: ["talklish-completed-sigs"],
+    queryFn: fetchTalklishCompletedSigs,
+    staleTime: 60 * 1000,
+  });
+  const completedSigSet = useMemo(() => new Set(completedSigs), [completedSigs]);
 
   const selectedCombo = useMemo(
     () => combos.find((c) => c.sig === selectedSig) ?? null,
@@ -109,16 +125,12 @@ export function OpicStage({ absentIds, onToggleAttendance }: Props) {
     [members, absentIds],
   );
 
-  const spin = useCallback(() => {
-    if (spinning || presentMembers.length === 0) return;
-    setSpinning(true);
-    setTimeout(() => {
-      const picked = presentMembers[Math.floor(Math.random() * presentMembers.length)];
-      const idx = members.findIndex((m) => m.id === picked.id);
-      setActiveSpeaker(idx >= 0 ? idx : 0);
-      setSpinning(false);
-    }, 1100);
-  }, [spinning, presentMembers, members]);
+  // 공통 발화자 룰렛 — 한 라운드 = 출석자 전원 한 번씩 (월·수·금 동일 동작)
+  // hasSpun=false 일 때 speaker=undefined → 초기엔 아무도 안 뽑힌 상태
+  const { activeSpeaker, hasSpun, speaker, spinning, spin, roundProgress } = useSpeakerRoulette({
+    members,
+    presentMembers,
+  });
 
   const goPhase = useCallback((next: number) => {
     setPhase(Math.max(0, Math.min(FLOW.length - 1, next)));
@@ -219,6 +231,7 @@ export function OpicStage({ absentIds, onToggleAttendance }: Props) {
                 topic={topic}
                 combos={combos}
                 selectedSig={selectedSig}
+                completedSigSet={completedSigSet}
                 onCategoryChange={(c) => { setCategory(c); setTopic(null); setSelectedSig(null); setQIdx(0); }}
                 onTopicChange={(t) => { setTopic(t); setSelectedSig(null); setQIdx(0); }}
                 onSelectCombo={(sig) => { setSelectedSig(sig); setQIdx(0); }}
@@ -236,8 +249,11 @@ export function OpicStage({ absentIds, onToggleAttendance }: Props) {
                 absentIds={absentIds}
                 onToggleAttendance={onToggleAttendance}
                 activeSpeaker={activeSpeaker}
+                speaker={speaker}
+                hasSpun={hasSpun}
                 spinning={spinning}
                 onSpin={spin}
+                roundProgress={roundProgress}
                 coachNotes={coachNotes}
                 onChangeCoachNote={(qid, note) => setCoachNotes((p) => ({ ...p, [qid]: note }))}
                 coachResults={coachResults}
@@ -261,7 +277,41 @@ export function OpicStage({ absentIds, onToggleAttendance }: Props) {
               <ClosingPhase
                 combo={combo}
                 completed={sessionCompleted}
-                onComplete={setSessionCompleted}
+                alreadyCompleted={selectedSig ? completedSigSet.has(selectedSig) : false}
+                topic={topic}
+                category={category}
+                onComplete={async (c) => {
+                  if (!selectedSig || !topic) {
+                    toast.error("선택된 콤보 정보가 없어요");
+                    return;
+                  }
+                  // optimistic — UI 즉시 반영, 실패 시 롤백
+                  setSessionCompleted(c);
+                  const res = c
+                    ? await markTalklishComboCompleted({
+                        combo_sig: selectedSig,
+                        category,
+                        topic,
+                      })
+                    : await unmarkTalklishComboCompleted(selectedSig);
+
+                  if (!res.success) {
+                    setSessionCompleted(!c);
+                    toast.error(
+                      c
+                        ? `완료 표시 실패 — ${res.error ?? "다시 시도해 주세요"}`
+                        : `완료 취소 실패 — ${res.error ?? "다시 시도해 주세요"}`
+                    );
+                    return;
+                  }
+
+                  toast.success(
+                    c
+                      ? `'${topic}' 콤보 완료 표시했어요 ✓`
+                      : `'${topic}' 콤보 완료 취소했어요`
+                  );
+                  queryClient.invalidateQueries({ queryKey: ["talklish-completed-sigs"] });
+                }}
               />
             )}
           </div>
@@ -476,6 +526,13 @@ const CATEGORY_META: Record<Category, { questions: string; desc: string }> = {
   "어드밴스": { questions: "14~15번 문제", desc: "비교·변화·의견" },
 };
 
+// 카테고리 아이콘 매핑 — /opic-study Step2와 동일 (Coffee/Clapperboard/Lightbulb)
+const CATEGORY_ICON: Record<Category, React.ComponentType<{ size?: number; strokeWidth?: number; "aria-hidden"?: boolean }>> = {
+  "일반": Coffee,
+  "롤플레이": Clapperboard,
+  "어드밴스": Lightbulb,
+};
+
 interface TopicMeta {
   topic: string;
   count: number;
@@ -489,6 +546,7 @@ function ComboPickerPhase({
   topic,
   combos,
   selectedSig,
+  completedSigSet,
   onCategoryChange,
   onTopicChange,
   onSelectCombo,
@@ -499,6 +557,7 @@ function ComboPickerPhase({
   topic: string | null;
   combos: TalklishCombo[];
   selectedSig: string | null;
+  completedSigSet: Set<string>;
   onCategoryChange: (c: Category) => void;
   onTopicChange: (t: string) => void;
   onSelectCombo: (sig: string) => void;
@@ -574,19 +633,18 @@ function ComboPickerPhase({
                 </span>
               )}
 
-              {/* 아이콘 */}
+              {/* 아이콘 — /opic-study Step2와 동일 (Lucide) */}
               <div
                 className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl"
                 style={{
                   background: selected ? TLK.accent : TLK.bg2,
                   color: selected ? "#fff" : TLK.inkDim,
-                  fontFamily: TLK_FONT.serif,
-                  fontStyle: "italic",
-                  fontSize: 22,
-                  fontWeight: 600,
                 }}
               >
-                {c === "일반" ? "G" : c === "롤플레이" ? "R" : "A"}
+                {(() => {
+                  const Icon = CATEGORY_ICON[c];
+                  return <Icon size={22} strokeWidth={1.6} aria-hidden />;
+                })()}
               </div>
 
               {/* 이름 + 문제번호 */}
@@ -769,6 +827,7 @@ function ComboPickerPhase({
             <div className="space-y-2.5">
               {combos.map((c, ci) => {
                 const isSelected = selectedSig === c.sig;
+                const isCompleted = completedSigSet.has(c.sig);
                 return (
                   <button
                     key={c.sig}
@@ -776,13 +835,19 @@ function ComboPickerPhase({
                     onClick={() => onSelectCombo(c.sig)}
                     className="w-full rounded-2xl px-5 py-4 text-left transition-all hover:-translate-y-0.5"
                     style={{
-                      background: isSelected ? `${TLK.accent}0d` : TLK.paper,
-                      border: `1.5px solid ${isSelected ? TLK.accent : TLK.rule}`,
+                      background: isSelected
+                        ? `${TLK.accent}0d`
+                        : isCompleted
+                          ? `${TLK.accent2}08`
+                          : TLK.paper,
+                      border: `1.5px solid ${
+                        isSelected ? TLK.accent : isCompleted ? `${TLK.accent2}66` : TLK.rule
+                      }`,
                       boxShadow: isSelected ? `0 0 0 4px ${TLK.accent}14` : "none",
                       cursor: "pointer",
                     }}
                   >
-                    {/* 헤더 — 콤보 번호 + 빈도 + 등장률 */}
+                    {/* 헤더 — 콤보 번호 + 빈도 + 등장률 + 완료 뱃지 */}
                     <div className="mb-3 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span
@@ -813,14 +878,33 @@ function ComboPickerPhase({
                           ({c.total_in_category}개 중)
                         </span>
                       </div>
-                      {isSelected && (
-                        <span
-                          aria-hidden="true"
-                          style={{ color: TLK.accent, fontFamily: TLK_FONT.sans, fontSize: 14, fontWeight: 800 }}
-                        >
-                          ✓
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {isCompleted && (
+                          <span
+                            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5"
+                            style={{
+                              background: `${TLK.accent2}1f`,
+                              color: TLK.accent2,
+                              fontFamily: TLK_FONT.sans,
+                              fontSize: 10,
+                              fontWeight: 800,
+                              letterSpacing: 1,
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            <CheckCircle size={11} />
+                            완료
+                          </span>
+                        )}
+                        {isSelected && (
+                          <span
+                            aria-hidden="true"
+                            style={{ color: TLK.accent, fontFamily: TLK_FONT.sans, fontSize: 14, fontWeight: 800 }}
+                          >
+                            ✓
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* 콤보 안 질문 미리보기 */}
@@ -951,8 +1035,11 @@ function RunPhase({
   absentIds,
   onToggleAttendance,
   activeSpeaker,
+  speaker,
+  hasSpun,
   spinning,
   onSpin,
+  roundProgress,
   coachNotes,
   onChangeCoachNote,
   coachResults,
@@ -970,8 +1057,11 @@ function RunPhase({
   absentIds: Set<string>;
   onToggleAttendance: (id: string) => void;
   activeSpeaker: number;
+  speaker: PanelMember | undefined;
+  hasSpun: boolean;
   spinning: boolean;
   onSpin: () => void;
+  roundProgress: { picked: number; total: number };
   coachNotes: Record<string, string>;
   onChangeCoachNote: (qid: string, v: string) => void;
   coachResults: Record<string, CoachingResult>;
@@ -982,7 +1072,7 @@ function RunPhase({
 }) {
   const q = combo[qIdx];
   const isLast = qIdx === combo.length - 1;
-  const speaker = members[activeSpeaker];
+  // speaker는 훅에서 받은 값 — hasSpun=false 일 때 undefined (초기 미선택 상태)
   const subIdx = SUBS.findIndex((s) => s.key === subStep);
 
   const goNextSub = useCallback(() => {
@@ -1130,7 +1220,7 @@ function RunPhase({
         {/* Sub-step 본문 */}
         <div className="min-h-0 flex-1 overflow-y-auto">
           {subStep === "speaker" && (
-            <SpeakerPick speaker={speaker} spinning={spinning} />
+            <SpeakerPick speaker={speaker} spinning={spinning} roundProgress={roundProgress} />
           )}
           {subStep === "answer" && (
             <AnswerPanel
@@ -1191,6 +1281,7 @@ function RunPhase({
         members={members}
         absentIds={absentIds}
         activeSpeaker={activeSpeaker}
+        hasSpun={hasSpun}
         spinning={spinning}
         onSpin={onSpin}
         onToggleAttendance={onToggleAttendance}
@@ -1231,21 +1322,61 @@ function AudioRow({ url }: { url: string }) {
   );
 }
 
-function SpeakerPick({ speaker, spinning }: { speaker: { name: string; emoji: string; color: string } | undefined; spinning: boolean }) {
+function SpeakerPick({
+  speaker,
+  spinning,
+  roundProgress,
+}: {
+  speaker: { name: string; emoji: string; color: string } | undefined;
+  spinning: boolean;
+  roundProgress: { picked: number; total: number };
+}) {
+  const isRoundComplete = roundProgress.total > 0 && roundProgress.picked === roundProgress.total;
   return (
     <div className="flex h-full flex-col items-center justify-center gap-6">
-      <p
-        style={{
-          fontFamily: TLK_FONT.sans,
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: 2.5,
-          color: TLK.inkFaint,
-          textTransform: "uppercase",
-        }}
-      >
-        Who's up?
-      </p>
+      <div className="flex items-center gap-3">
+        <p
+          style={{
+            fontFamily: TLK_FONT.sans,
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: 2.5,
+            color: TLK.inkFaint,
+            textTransform: "uppercase",
+          }}
+        >
+          Who's up?
+        </p>
+        {roundProgress.total > 0 && (
+          <span
+            className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5"
+            style={{
+              background: isRoundComplete ? `${TLK.accent2}1f` : TLK.bg2,
+              border: `1px solid ${isRoundComplete ? `${TLK.accent2}55` : TLK.rule}`,
+              color: isRoundComplete ? TLK.accent2 : TLK.inkDim,
+              fontFamily: TLK_FONT.sans,
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: 1,
+              textTransform: "uppercase",
+            }}
+            title={
+              isRoundComplete
+                ? "모두 한 번씩 뽑혔어요 — 다음 PICK은 새 라운드를 시작합니다"
+                : "이번 라운드에서 같은 사람은 다시 뽑히지 않아요"
+            }
+          >
+            {isRoundComplete ? (
+              <>
+                <CheckCircle size={11} />
+                라운드 완료 ({roundProgress.total}/{roundProgress.total})
+              </>
+            ) : (
+              <>라운드 {roundProgress.picked}/{roundProgress.total}</>
+            )}
+          </span>
+        )}
+      </div>
       {speaker ? (
         <>
           <div
@@ -1273,7 +1404,7 @@ function SpeakerPick({ speaker, spinning }: { speaker: { name: string; emoji: st
             오른쪽 PICK NEXT(또는 R)로 다시 뽑을 수 있어요
           </p>
         </>
-      ) : (
+      ) : roundProgress.total === 0 ? (
         <p
           style={{
             fontFamily: TLK_FONT.serif,
@@ -1284,6 +1415,33 @@ function SpeakerPick({ speaker, spinning }: { speaker: { name: string; emoji: st
         >
           출석 멤버가 없어요
         </p>
+      ) : (
+        // 아직 한 번도 안 뽑힌 상태
+        <>
+          <div
+            className="flex h-32 w-32 items-center justify-center rounded-full"
+            style={{
+              background: TLK.bg2,
+              border: `4px dashed ${TLK.rule}`,
+            }}
+          >
+            <Users size={42} style={{ color: TLK.inkFaint }} />
+          </div>
+          <p
+            style={{
+              fontFamily: TLK_FONT.serif,
+              fontStyle: "italic",
+              fontSize: 24,
+              fontWeight: 500,
+              color: TLK.inkDim,
+            }}
+          >
+            아직 발화자가 정해지지 않았어요
+          </p>
+          <p style={{ fontFamily: TLK_FONT.sans, fontSize: 13, color: TLK.inkFaint, textAlign: "center", maxWidth: 360 }}>
+            오른쪽 <strong style={{ color: TLK.accent }}>PICK NEXT</strong> 버튼(또는 키보드 <strong>R</strong>)을 눌러 첫 발화자를 뽑아주세요.
+          </p>
+        </>
       )}
     </div>
   );
@@ -1397,6 +1555,34 @@ function AnswerPanel({
   const isProcessing = coachState.status === "uploading" || coachState.status === "coaching";
   const isDone = coachState.status === "done";
   const isFailed = coachState.status === "failed";
+
+  // 발화자 미선택 가드 — 룰렛 먼저 돌리도록 안내
+  if (!speaker) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-5 text-center">
+        <div
+          className="flex h-20 w-20 items-center justify-center rounded-full"
+          style={{ background: TLK.bg2, border: `3px dashed ${TLK.rule}` }}
+        >
+          <Users size={32} style={{ color: TLK.inkFaint }} />
+        </div>
+        <p
+          style={{
+            fontFamily: TLK_FONT.serif,
+            fontStyle: "italic",
+            fontSize: 22,
+            color: TLK.inkDim,
+            maxWidth: 480,
+          }}
+        >
+          먼저 <strong style={{ color: TLK.accent }}>발화자 룰렛</strong>에서 PICK NEXT를 눌러주세요.
+        </p>
+        <p style={{ fontFamily: TLK_FONT.sans, fontSize: 12, color: TLK.inkFaint }}>
+          상단 sub-step 탭 또는 우측 카드의 PICK NEXT 버튼 (단축키 R)
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-5 text-center">
@@ -2158,12 +2344,21 @@ function RecapPhase({
 function ClosingPhase({
   combo,
   completed,
+  alreadyCompleted,
+  topic,
+  category,
   onComplete,
 }: {
   combo: TalklishComboQuestion[];
   completed: boolean;
+  alreadyCompleted: boolean;
+  topic: string | null;
+  category: Category;
   onComplete: (c: boolean) => void;
 }) {
+  // 이번 세션 진입 시점에 이미 전역 완료 기록이 있으면 "이전에 함께 했던 콤보" 안내
+  const showHistoryNotice = alreadyCompleted && !completed;
+
   return (
     <div className="mx-auto flex h-full max-w-4xl flex-col items-center justify-center gap-7 py-8">
       <div className="text-center">
@@ -2198,6 +2393,46 @@ function ClosingPhase({
           오늘도 콤보 {combo.length}문항 무사히 풀어내셨네요. 다음 수요일에 또 만나요.
         </p>
       </div>
+
+      {/* 이전에 완료된 콤보 안내 */}
+      {showHistoryNotice && (
+        <div
+          className="flex items-start gap-3 rounded-2xl px-5 py-4"
+          style={{
+            background: `${TLK.accent2}10`,
+            border: `1px solid ${TLK.accent2}55`,
+            maxWidth: 560,
+          }}
+        >
+          <CheckCircle size={18} style={{ color: TLK.accent2, flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <p
+              style={{
+                fontFamily: TLK_FONT.sans,
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: 1.5,
+                color: TLK.accent2,
+                textTransform: "uppercase",
+                marginBottom: 4,
+              }}
+            >
+              이전에 함께 했던 콤보예요
+            </p>
+            <p
+              style={{
+                fontFamily: TLK_FONT.ko,
+                fontSize: 13,
+                color: TLK.inkDim,
+                lineHeight: 1.55,
+              }}
+            >
+              {topic ? `'${topic}' (${category})` : "이 콤보"}는 우리 스터디에서 한 번 이상 다뤘던 콤보입니다.
+              다시 한 번 짚어보는 것도 좋아요. "세션 완료"를 누르면 기록 시각만 갱신됩니다.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="text-center">
         {!completed ? (

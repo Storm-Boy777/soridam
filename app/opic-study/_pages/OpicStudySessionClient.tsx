@@ -861,14 +861,14 @@ export function OpicStudySessionClient({
     });
   }, [categoryStats]);
 
-  // Step3: TopicForStudy[] → mock 형식 (콤보 수 표시)
+  // Step3: TopicForStudy[] → mock 형식 (출제 빈도 표시 — 수요일 stage와 동일 SSOT)
   const step3Topics = useMemo(() => {
     if (!topics) return undefined;
     return topics.map((t) => ({
       key: t.topic,
       name: t.topic,
       meta:
-        t.combo_count > 0 ? `콤보 ${t.combo_count}개` : "콤보 없음",
+        t.submission_count > 0 ? `빈도 ${t.submission_count}회` : "출제 없음",
       recent: t.studied_count > 0,
     }));
   }, [topics]);

@@ -1080,7 +1080,14 @@ export async function getTopicsForStudy(input: { category: StudyCategory; groupI
   }
 }
 
-/** Step 4: 콤보 목록 (출제 빈도순) + 학습 이력 + 헤더 메타 */
+/** Step 4: 콤보 목록 (출제 빈도순) + 학습 이력 + 헤더 메타
+ *
+ * SSOT: submission_combos (한 행 = 한 콤보 = question_ids 배열).
+ *   - 일반: 1콤보 3문항 (general_1·_2·_3 각각)
+ *   - 롤플: 1콤보 3문항
+ *   - 어드: 1콤보 2문항
+ * 한 시험에 같은 카테고리의 콤보가 여러 행으로 들어있어도 각자 한 콤보로 카운트.
+ */
 export async function getCombosForStudy(input: {
   category: StudyCategory;
   topic: string;
@@ -1090,20 +1097,12 @@ export async function getCombosForStudy(input: {
     const { supabase, userId } = await requireUser();
     await requireGroupMember(supabase, input.groupId, userId);
 
-    // 1. 시험후기 raw 질문 데이터 (토픽+카테고리 필터)
-    type RawRow = {
+    const comboTypeFilter = CATEGORY_TO_COMBO_TYPES[input.category];
+
+    type ComboRow = {
       submission_id: number;
       combo_type: string;
-      question_number: number;
-      question_id: string;
-      questions: {
-        question_english: string;
-        question_korean: string | null;
-        question_short: string | null;
-        question_type_eng: string;
-        question_type_kor: string | null;
-        audio_url: string | null;
-      };
+      question_ids: string[];
       submissions: {
         status: string;
         exam_approved: string;
@@ -1112,15 +1111,11 @@ export async function getCombosForStudy(input: {
       };
     };
 
-    // 성능 최적화 — 카테고리 필터를 SQL에서 처리 (combo_type IN [...])
-    // 기존: 전체 row 다운로드 후 JS filter → general의 경우 1/3 양만 다운로드
-    const comboTypeFilter = CATEGORY_TO_COMBO_TYPES[input.category];
-
+    // 1. 콤보 행 직접 조회 (승인된 시험만)
     const { data: rawData, error } = await supabase
-      .from(T.submission_questions)
+      .from(T.submission_combos)
       .select(
-        "submission_id, combo_type, question_number, question_id, " +
-          "questions!inner(question_english, question_korean, question_short, question_type_eng, question_type_kor, audio_url), " +
+        "submission_id, combo_type, question_ids, " +
           "submissions!inner(status, exam_approved, exam_date, achieved_level)"
       )
       .eq("topic", input.topic)
@@ -1130,78 +1125,10 @@ export async function getCombosForStudy(input: {
 
     if (error) return { error: "콤보 조회 실패" };
 
-    const filtered = (rawData ?? []) as unknown as RawRow[];
+    const comboRows = (rawData ?? []) as unknown as ComboRow[];
+    const totalCombos = comboRows.length;
 
-    // 3. submission_id로 그루핑 → 콤보 객체
-    type RawCombo = {
-      submission_id: number;
-      qids: string[];                                          // 출제 순서
-      questions: Array<{
-        id: string;
-        question_type: string;
-        question_type_kor: string | null;
-        question_english: string;
-        question_korean: string | null;
-        question_short: string | null;
-        audio_url: string | null;
-      }>;
-      exam_date: string;
-      achieved_level: string | null;
-    };
-
-    const bySubmission = new Map<number, RawCombo>();
-    for (const r of filtered.sort((a, b) => a.question_number - b.question_number)) {
-      const sid = r.submission_id;
-      const existing = bySubmission.get(sid);
-      const item = {
-        id: r.question_id,
-        question_type: r.questions.question_type_eng,
-        question_type_kor: r.questions.question_type_kor,
-        question_english: r.questions.question_english,
-        question_korean: r.questions.question_korean,
-        question_short: r.questions.question_short,
-        audio_url: r.questions.audio_url,
-      };
-      if (existing) {
-        existing.qids.push(r.question_id);
-        existing.questions.push(item);
-      } else {
-        bySubmission.set(sid, {
-          submission_id: sid,
-          qids: [r.question_id],
-          questions: [item],
-          exam_date: r.submissions.exam_date,
-          achieved_level: r.submissions.achieved_level,
-        });
-      }
-    }
-
-    const rawCombos = Array.from(bySubmission.values());
-    const totalCombos = rawCombos.length;
-    if (totalCombos === 0) {
-      return {
-        data: { combos: [], topic_category_count: 0, total_submissions: 0 },
-      };
-    }
-
-    // 4. 시그니처(정렬)로 그루핑 → 빈도 계산
-    const bySig = new Map<string, RawCombo[]>();
-    for (const rc of rawCombos) {
-      const sig = buildComboSignature(rc.qids);
-      const list = bySig.get(sig) ?? [];
-      list.push(rc);
-      bySig.set(sig, list);
-    }
-
-    // 5. 토픽 전체 질문별 등장률 계산
-    const qidAppearance: Record<string, number> = {};
-    for (const rc of rawCombos) {
-      for (const qid of rc.qids) {
-        qidAppearance[qid] = (qidAppearance[qid] || 0) + 1;
-      }
-    }
-
-    // 6. 학습 이력 + 전체 승인 시험 수 (시험후기 빈도 분석과 동일 모수) 병렬 조회
+    // 헤더 메타 — 학습 이력 조회와 병렬
     const [{ data: groupSigs }, { data: userQs }, { count: totalSubsCount }] = await Promise.all([
       supabase
         .from(T.opic_study_sessions)
@@ -1225,35 +1152,125 @@ export async function getCombosForStudy(input: {
     const studiedQids = new Set((userQs || []).map((a) => a.question_id as string));
     const totalSubmissions = totalSubsCount ?? 0;
 
-    // 7. 결과 조립 — 카드 분모: 카테고리 한정 (totalCombos), 헤더 메타: 전체 승인 시험
-    const combos: ComboForStudy[] = Array.from(bySig.entries())
-      .map(([sig, group]) => {
-        const representative = group[0];
-        const frequency = group.length;
+    if (totalCombos === 0) {
+      return {
+        data: { combos: [], topic_category_count: 0, total_submissions: totalSubmissions },
+      };
+    }
+
+    // 2. 시그니처로 그루핑 → 빈도 + examples (최대 3개)
+    type Group = {
+      sig: string;
+      representativeQids: string[];
+      frequency: number;
+      examples: Array<{
+        submission_id: number;
+        exam_date: string;
+        achieved_level: string | null;
+      }>;
+    };
+    const bySig = new Map<string, Group>();
+
+    for (const r of comboRows) {
+      const sig = buildComboSignature(r.question_ids);
+      const existing = bySig.get(sig);
+      if (existing) {
+        existing.frequency += 1;
+        if (existing.examples.length < 3) {
+          existing.examples.push({
+            submission_id: r.submission_id,
+            exam_date: r.submissions.exam_date,
+            achieved_level: r.submissions.achieved_level,
+          });
+        }
+      } else {
+        bySig.set(sig, {
+          sig,
+          representativeQids: r.question_ids,
+          frequency: 1,
+          examples: [
+            {
+              submission_id: r.submission_id,
+              exam_date: r.submissions.exam_date,
+              achieved_level: r.submissions.achieved_level,
+            },
+          ],
+        });
+      }
+    }
+
+    // 3. 토픽 전체 질문별 등장률 계산
+    const qidAppearance: Record<string, number> = {};
+    for (const r of comboRows) {
+      for (const qid of r.question_ids) {
+        qidAppearance[qid] = (qidAppearance[qid] || 0) + 1;
+      }
+    }
+
+    // 4. 모든 question_id 메타 단발 조회
+    const allQids = Array.from(
+      new Set(Array.from(bySig.values()).flatMap((g) => g.representativeQids))
+    );
+
+    type QRow = {
+      id: string;
+      question_english: string;
+      question_korean: string | null;
+      question_short: string | null;
+      question_type_eng: string;
+      question_type_kor: string | null;
+      audio_url: string | null;
+    };
+
+    const { data: qData } = await supabase
+      .from(T.questions)
+      .select("id, question_english, question_korean, question_short, question_type_eng, question_type_kor, audio_url")
+      .in("id", allQids);
+
+    const qMap = new Map<string, QRow>();
+    for (const q of (qData ?? []) as QRow[]) {
+      qMap.set(q.id, q);
+    }
+
+    // 5. 결과 조립 — 빈도 내림차순
+    const combos: ComboForStudy[] = Array.from(bySig.values())
+      .map((g) => {
         const appearancePct =
-          totalCombos > 0 ? Math.round((frequency / totalCombos) * 100) : 0;
+          totalCombos > 0 ? Math.round((g.frequency / totalCombos) * 100) : 0;
+
+        const questions = g.representativeQids
+          .map((qid) => {
+            const q = qMap.get(qid);
+            if (!q) return null;
+            return {
+              id: q.id,
+              question_type: q.question_type_eng,
+              question_type_kor: q.question_type_kor,
+              question_english: q.question_english,
+              question_korean: q.question_korean,
+              question_short: q.question_short,
+              audio_url: q.audio_url,
+              appearance_pct:
+                totalCombos > 0
+                  ? Math.round(((qidAppearance[q.id] || 0) / totalCombos) * 100)
+                  : 0,
+              studied_by_user: studiedQids.has(q.id),
+            };
+          })
+          .filter((q): q is NonNullable<typeof q> => q !== null);
 
         return {
-          sig,
-          representative_qids: representative.qids,
-          frequency,
+          sig: g.sig,
+          representative_qids: g.representativeQids,
+          frequency: g.frequency,
           total_in_category: totalCombos,
           appearance_pct: appearancePct,
-          questions: representative.questions.map((q) => ({
-            ...q,
-            appearance_pct:
-              totalCombos > 0
-                ? Math.round(
-                    ((qidAppearance[q.id] || 0) / totalCombos) * 100
-                  )
-                : 0,
-            studied_by_user: studiedQids.has(q.id),
-          })),
-          studied_in_group: studiedSigs.has(sig),
-          examples: group.slice(0, 3).map((g) => ({
-            submission_id: g.submission_id,
-            exam_date: g.exam_date,
-            achieved_level: g.achieved_level as ComboForStudy["examples"] extends Array<{ achieved_level: infer L }> | undefined ? L : never,
+          questions,
+          studied_in_group: studiedSigs.has(g.sig),
+          examples: g.examples.map((e) => ({
+            submission_id: e.submission_id,
+            exam_date: e.exam_date,
+            achieved_level: e.achieved_level as ComboForStudy["examples"] extends Array<{ achieved_level: infer L }> | undefined ? L : never,
           })),
         } as ComboForStudy;
       })

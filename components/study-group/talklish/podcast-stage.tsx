@@ -17,6 +17,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchPodcasts, fetchPanelMembers } from "@/lib/actions/study-group";
 import type { PodcastRow, PanelMember, KeyExpression, DialogueLine } from "@/lib/types/study-group";
 import { TLK, TLK_FONT } from "./tokens";
+import { useSpeakerRoulette } from "./use-speaker-roulette";
 
 /* ─── 데이터 정규화 (구버전 자료 호환) ──────────── */
 
@@ -132,9 +133,7 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
   const [showMenu, setShowMenu] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
 
-  // sub-step states
-  const [activeSpeaker, setActiveSpeaker] = useState(0);
-  const [spinning, setSpinning] = useState(false);
+  // sub-step states (룰렛은 useSpeakerRoulette 훅에서 관리)
   const [vocabIdx, setVocabIdx] = useState(0);
   const [showVocabKo, setShowVocabKo] = useState(false);
   const [vocabExIdx, setVocabExIdx] = useState(0);
@@ -158,16 +157,12 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
     [members, absentIds]
   );
 
-  const spin = useCallback(() => {
-    if (spinning || presentMembers.length === 0) return;
-    setSpinning(true);
-    setTimeout(() => {
-      const picked = presentMembers[Math.floor(Math.random() * presentMembers.length)];
-      const idx = members.findIndex((m) => m.id === picked.id);
-      setActiveSpeaker(idx >= 0 ? idx : 0);
-      setSpinning(false);
-    }, 1100);
-  }, [spinning, presentMembers, members]);
+  // 공통 발화자 룰렛 — 한 라운드 = 출석자 전원 한 번씩 (월·수·금 동일 동작)
+  // hasSpun=false 일 때 speaker=undefined → 초기엔 아무도 안 뽑힌 상태
+  const { activeSpeaker, hasSpun, spinning, spin } = useSpeakerRoulette({
+    members,
+    presentMembers,
+  });
 
   const goPhase = useCallback((next: number) => {
     setPhaseOverride(Math.max(0, Math.min(FLOW.length - 1, next)));
@@ -343,6 +338,7 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
                 members={members}
                 absentIds={absentIds}
                 activeSpeaker={activeSpeaker}
+                hasSpun={hasSpun}
                 spinning={spinning}
                 onSpin={spin}
               />
@@ -379,6 +375,7 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
                 members={members}
                 absentIds={absentIds}
                 activeSpeaker={activeSpeaker}
+                hasSpun={hasSpun}
                 spinning={spinning}
                 onSpin={spin}
               />
@@ -918,6 +915,7 @@ function ShareSlide({
   members,
   absentIds,
   activeSpeaker,
+  hasSpun,
   spinning,
   onSpin,
 }: {
@@ -925,10 +923,11 @@ function ShareSlide({
   members: PanelMember[];
   absentIds: Set<string>;
   activeSpeaker: number;
+  hasSpun: boolean;
   spinning: boolean;
   onSpin: () => void;
 }) {
-  const speaker = members[activeSpeaker];
+  const speaker = hasSpun ? members[activeSpeaker] : undefined;
   const ytId = extractYouTubeId(episode.url);
   return (
     <div className="flex h-full flex-col items-center justify-center gap-7">
@@ -976,7 +975,7 @@ function ShareSlide({
               {spinning ? "고르는 중" : absentIds.has(speaker.id) ? "결석" : "What did you hear?"}
             </p>
           </>
-        ) : (
+        ) : members.length === 0 ? (
           <p
             style={{
               fontFamily: TLK_FONT.serif,
@@ -987,6 +986,29 @@ function ShareSlide({
           >
             패널 멤버를 등록해 주세요
           </p>
+        ) : (
+          <>
+            <div
+              className="flex h-32 w-32 items-center justify-center rounded-full"
+              style={{ background: TLK.bg2, border: `4px dashed ${TLK.rule}` }}
+            >
+              <span style={{ fontSize: 42, color: TLK.inkFaint }}>?</span>
+            </div>
+            <p
+              style={{
+                fontFamily: TLK_FONT.serif,
+                fontStyle: "italic",
+                fontSize: 22,
+                fontWeight: 500,
+                color: TLK.inkDim,
+              }}
+            >
+              아직 발화자가 정해지지 않았어요
+            </p>
+            <p style={{ fontFamily: TLK_FONT.sans, fontSize: 12, color: TLK.inkFaint, textAlign: "center" }}>
+              아래 PICK NEXT(R)로 첫 발화자를 뽑아주세요
+            </p>
+          </>
         )}
       </div>
 
@@ -1399,6 +1421,7 @@ function DiscussSlide({
   members,
   absentIds,
   activeSpeaker,
+  hasSpun,
   spinning,
   onSpin,
 }: {
@@ -1408,6 +1431,7 @@ function DiscussSlide({
   members: PanelMember[];
   absentIds: Set<string>;
   activeSpeaker: number;
+  hasSpun: boolean;
   spinning: boolean;
   onSpin: () => void;
 }) {
@@ -1429,7 +1453,7 @@ function DiscussSlide({
     );
   }
   const idx = Math.min(activeQ, qs.length - 1);
-  const speaker = members[activeSpeaker];
+  const speaker = hasSpun ? members[activeSpeaker] : undefined;
 
   return (
     <div className="flex h-full flex-col justify-center gap-7">
@@ -1488,7 +1512,7 @@ function DiscussSlide({
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1.5">
             {members.map((m, i) => {
-              const isActive = i === activeSpeaker && !spinning && !absentIds.has(m.id);
+              const isActive = hasSpun && i === activeSpeaker && !spinning && !absentIds.has(m.id);
               const absent = absentIds.has(m.id);
               return (
                 <div

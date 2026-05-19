@@ -188,6 +188,67 @@ export async function fetchTalklishCombos(input: {
   return combos;
 }
 
+// ─── Talklish 완료 콤보 학습 이력 (089 마이그레이션) ──────────────
+// 스터디 모임 단위 전역 1세트 — 누가 진행자든 같은 완료 목록을 본다.
+
+/** 전역 완료 콤보 시그니처 Set (수요일 OpicStage 뱃지용) */
+export async function fetchTalklishCompletedSigs(): Promise<string[]> {
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from(T.talklish_completed_combos)
+    .select("combo_sig");
+  return (data ?? []).map((r) => r.combo_sig as string);
+}
+
+/** 콤보 완료 표시 — ClosingPhase "세션 완료" 클릭 시 호출.
+ *  같은 시그니처가 있으면 completed_at + completed_by 갱신 (upsert). */
+export async function markTalklishComboCompleted(input: {
+  combo_sig: string;
+  category: string;
+  topic: string;
+}): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "로그인이 필요합니다" };
+
+  const { error } = await supabase
+    .from(T.talklish_completed_combos)
+    .upsert(
+      {
+        combo_sig: input.combo_sig,
+        category: input.category,
+        topic: input.topic,
+        completed_by: user.id,
+        completed_at: new Date().toISOString(),
+      },
+      { onConflict: "combo_sig" }
+    );
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+/** 완료 표시 취소 — Closing "완료 취소" 클릭 시 (전역 row 삭제) */
+export async function unmarkTalklishComboCompleted(
+  combo_sig: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "로그인이 필요합니다" };
+
+  const { error } = await supabase
+    .from(T.talklish_completed_combos)
+    .delete()
+    .eq("combo_sig", combo_sig);
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
 // ─────────────────────────────────────────────────────────────────
 
 // 팟캐스트 목록 (활성만, sort_order 순)
