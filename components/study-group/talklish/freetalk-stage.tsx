@@ -107,6 +107,27 @@ export function FreetalkStage({ absentIds, onToggleAttendance }: Props) {
     spinDelayMs: 1200,
   });
 
+  // 키보드 단축키 — ← → 단계 이동 / R 룰렛(games) / F 좌·우 패널 숨김
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const t = e.target;
+      if (t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        if (phase === "intro") setPhase("games");
+        else if (phase === "games") setPhase("closing");
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        if (phase === "closing") setPhase("games");
+        else if (phase === "games") setPhase("intro");
+      } else if (e.key === "r" || e.key === "R") {
+        if (phase === "games") { e.preventDefault(); spin(); }
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [phase, spin]);
+
   const def = GAMES.find((g) => g.key === game)!;
   const presentCount = presentMembers.length;
   const totalCount = members.length;
@@ -864,7 +885,7 @@ function FridayIntro({
           textAlign: "center",
         }}
       >
-        토픽 스피너로 자유 발화, 워드 체인·Two Truths·핫시트·이어쓰기 4가지 게임 중에서 골라가며 회로를 풉니다. 점수도 평가도 없어요. 그냥 입을 자주 여는 시간.
+        토픽 스피너로 자유 발화, 워드 체인·Two Truths·핫시트·이어쓰기 4가지 게임 중에서 골라가며 가볍게 즐겨봐요. 점수도 평가도 없어요. 그냥 입을 자주 여는 시간.
       </p>
       <div
         className="flex items-center gap-3 rounded-full px-5 py-3"

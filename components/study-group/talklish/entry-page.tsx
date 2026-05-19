@@ -4,10 +4,11 @@
 // 매스트헤드(축약) + 월/수/금 카드 3개. 오늘 요일 자동 강조.
 // 캐릭터 멤버 dot 줄로 그룹 정체성 노출.
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, Headphones, Mic, MessagesSquare, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Headphones, Mic, MessagesSquare, Check } from "lucide-react";
 import { fetchPanelMembers } from "@/lib/actions/study-group";
 import type { PanelMember } from "@/lib/types/study-group";
 import { TLK, TLK_FONT } from "./tokens";
@@ -51,20 +52,12 @@ const DAYS: DayDef[] = [
     weekday: 5,
     label: "금요일",
     sub: "Free Talk",
-    intro: "게임과 자유 토론으로 회로를 풀어줍니다",
-    blurb: "자유 토픽 카드와 4종 게임(타부·이거 vs 저거·찬반·이어말하기)을 섞어 즐겁게 영어 회로를 굴리는 60분.",
+    intro: "게임과 자유 토론으로 가볍게 풀어봐요",
+    blurb: "자유 토픽 카드와 4종 게임(타부·이거 vs 저거·찬반·이어말하기)을 섞어 부담 없이 영어를 즐기는 60분.",
     icon: MessagesSquare,
     picks: ["타부", "이거 vs 저거", "찬반 토론", "이어말하기", "Free Talk"],
   },
 ];
-
-function getInitialDay(): DayKey {
-  const d = new Date().getDay();
-  if (d === 1 || d === 2) return "mon";
-  if (d === 3 || d === 4) return "wed";
-  if (d === 5 || d === 6 || d === 0) return "fri";
-  return "mon";
-}
 
 function formatTodayLabel(): string {
   const now = new Date();
@@ -72,15 +65,24 @@ function formatTodayLabel(): string {
   return `${now.getMonth() + 1}월 ${now.getDate()}일 (${days[now.getDay()]})`;
 }
 
+const DAY_TO_PATH: Record<DayKey, string> = {
+  mon: "/study-group/monday",
+  wed: "/study-group/wednesday",
+  fri: "/study-group/friday",
+};
+
 export function TalklishEntryPage() {
-  const today = useMemo(() => getInitialDay(), []);
   const dateLabel = useMemo(() => formatTodayLabel(), []);
+  const router = useRouter();
+  const [selected, setSelected] = useState<DayKey | null>(null);
 
   const { data: members = [] } = useQuery({
     queryKey: ["study-panel-members"],
     queryFn: fetchPanelMembers,
     staleTime: 5 * 60 * 1000,
   });
+
+  const selectedDay = selected ? DAYS.find((d) => d.key === selected) ?? null : null;
 
   return (
     <div
@@ -201,7 +203,7 @@ export function TalklishEntryPage() {
                 letterSpacing: -0.5,
               }}
             >
-              오늘 어떤 무대에서<br />같이 노실래요?
+              오늘은 어떤 스터디로 시작을 해볼까요?
             </h1>
             <p
               style={{
@@ -212,15 +214,64 @@ export function TalklishEntryPage() {
                 marginTop: 12,
               }}
             >
-              매주 월·수·금 60분. 요일마다 색다른 흐름으로 회로를 굴립니다. 오늘 요일은 카드가 빛납니다.
+              매주 월·수·금 60분. 요일마다 색다른 방식으로 영어를 익혀봐요.
             </p>
           </div>
 
           {/* 요일 카드 그리드 */}
           <div className="grid gap-5 md:grid-cols-3">
             {DAYS.map((d) => (
-              <DayCard key={d.key} day={d} isToday={d.key === today} />
+              <DayCard
+                key={d.key}
+                day={d}
+                isSelected={d.key === selected}
+                onSelect={() => setSelected(d.key)}
+              />
             ))}
+          </div>
+
+          {/* 시작 버튼 — 선택한 요일로 진입 */}
+          <div className="mt-8 flex flex-col items-center gap-3">
+            <p
+              style={{
+                fontFamily: TLK_FONT.sans,
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: 2,
+                color: TLK.inkFaint,
+                textTransform: "uppercase",
+              }}
+            >
+              {selectedDay
+                ? `선택한 스터디 · ${selectedDay.label} · ${selectedDay.sub}`
+                : "위에서 요일을 골라주세요"}
+            </p>
+            <button
+              type="button"
+              disabled={!selected}
+              onClick={() => selected && router.push(DAY_TO_PATH[selected])}
+              className="group inline-flex items-center gap-3 rounded-full px-8 py-3.5 transition-all enabled:hover:-translate-y-0.5"
+              style={{
+                background: selected ? TLK.accent : TLK.bg2,
+                color: selected ? "#fff" : TLK.inkFaint,
+                fontFamily: TLK_FONT.sans,
+                fontSize: 14,
+                fontWeight: 700,
+                letterSpacing: 0.5,
+                boxShadow: selected ? `0 18px 36px -16px ${TLK.accent}88` : "none",
+                border: selected ? "none" : `1px solid ${TLK.rule}`,
+                cursor: selected ? "pointer" : "not-allowed",
+                opacity: selected ? 1 : 0.7,
+              }}
+            >
+              <span>시작하기</span>
+              <span
+                className="flex h-7 w-7 items-center justify-center rounded-full transition-transform group-hover:translate-x-0.5"
+                style={{ background: selected ? "rgba(255,255,255,0.2)" : TLK.rule }}
+              >
+                <ArrowRight size={14} />
+              </span>
+            </button>
           </div>
 
           {/* 안내 캡션 */}
@@ -258,37 +309,43 @@ export function TalklishEntryPage() {
 
 // ─── 카드 ──────────────────────────────────────
 
-function DayCard({ day, isToday }: { day: DayDef; isToday: boolean }) {
+function DayCard({
+  day,
+  isSelected,
+  onSelect,
+}: {
+  day: DayDef;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
   const Icon = day.icon;
+  const accent = isSelected;
   return (
-    <Link
-      href={`/study-group/${day.key === "mon" ? "monday" : day.key === "wed" ? "wednesday" : "friday"}`}
-      className="group relative flex flex-col overflow-hidden rounded-3xl transition-all hover:-translate-y-0.5"
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={isSelected ? "true" : "false"}
+      className="group relative flex flex-col overflow-hidden rounded-3xl text-left transition-all hover:-translate-y-0.5"
       style={{
-        background: isToday ? TLK.paperHi : TLK.paper,
-        border: `1px solid ${isToday ? TLK.accent : TLK.rule}`,
-        boxShadow: isToday ? `0 18px 40px -22px ${TLK.accent}55` : "0 4px 14px -8px rgba(31,27,22,0.10)",
-        textDecoration: "none",
+        background: accent ? TLK.paperHi : TLK.paper,
+        border: `1.5px solid ${accent ? TLK.accent : TLK.rule}`,
+        boxShadow: accent
+          ? `0 0 0 4px ${TLK.accent}1a, 0 18px 40px -22px ${TLK.accent}55`
+          : "0 4px 14px -8px rgba(31,27,22,0.10)",
         color: "inherit",
         minHeight: 360,
+        cursor: "pointer",
       }}
     >
-      {/* 오늘 뱃지 */}
-      {isToday && (
-        <div
-          className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full px-2.5 py-1"
-          style={{
-            background: TLK.accent,
-            color: "#fff",
-            fontFamily: TLK_FONT.sans,
-            fontSize: 10,
-            fontWeight: 800,
-            letterSpacing: 1.5,
-          }}
+      {/* 우상단 — 선택 체크 */}
+      {isSelected && (
+        <span
+          aria-hidden="true"
+          className="absolute right-4 top-4 flex h-6 w-6 items-center justify-center rounded-full"
+          style={{ background: TLK.accent, color: "#fff" }}
         >
-          <Sparkles size={11} />
-          TODAY
-        </div>
+          <Check size={13} strokeWidth={3} />
+        </span>
       )}
 
       {/* 상단 — 아이콘 + 요일 워드마크 */}
@@ -296,11 +353,11 @@ function DayCard({ day, isToday }: { day: DayDef; isToday: boolean }) {
         <div
           className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl"
           style={{
-            background: isToday ? `${TLK.accent}14` : TLK.bg2,
-            border: `1px solid ${isToday ? `${TLK.accent}44` : TLK.rule}`,
+            background: accent ? `${TLK.accent}14` : TLK.bg2,
+            border: `1px solid ${accent ? `${TLK.accent}44` : TLK.rule}`,
           }}
         >
-          <Icon size={22} style={{ color: isToday ? TLK.accent : TLK.inkDim }} />
+          <Icon size={22} style={{ color: accent ? TLK.accent : TLK.inkDim }} />
         </div>
         <p
           style={{
@@ -332,7 +389,7 @@ function DayCard({ day, isToday }: { day: DayDef; isToday: boolean }) {
           style={{
             fontFamily: TLK_FONT.ko,
             fontSize: 13,
-            color: isToday ? TLK.ink : TLK.inkDim,
+            color: accent ? TLK.ink : TLK.inkDim,
             lineHeight: 1.5,
             marginTop: 10,
           }}
@@ -345,7 +402,7 @@ function DayCard({ day, isToday }: { day: DayDef; isToday: boolean }) {
       <div
         className="mx-7 my-5 flex-1 rounded-xl px-5 py-4"
         style={{
-          background: isToday ? TLK.bg2 : TLK.paperHi,
+          background: accent ? TLK.bg2 : TLK.paperHi,
           border: `1px solid ${TLK.rule}`,
         }}
       >
@@ -367,7 +424,7 @@ function DayCard({ day, isToday }: { day: DayDef; isToday: boolean }) {
               key={p}
               className="rounded-full px-2 py-0.5"
               style={{
-                background: isToday ? "transparent" : TLK.bg2,
+                background: accent ? "transparent" : TLK.bg2,
                 border: `1px solid ${TLK.rule}`,
                 fontFamily: TLK_FONT.sans,
                 fontSize: 10,
@@ -382,7 +439,7 @@ function DayCard({ day, isToday }: { day: DayDef; isToday: boolean }) {
         </div>
       </div>
 
-      {/* 하단 — 진입 버튼 */}
+      {/* 하단 — 선택 상태 표시 */}
       <div className="flex items-center justify-between px-7 pb-7">
         <p
           style={{
@@ -390,23 +447,24 @@ function DayCard({ day, isToday }: { day: DayDef; isToday: boolean }) {
             fontSize: 10.5,
             fontWeight: 700,
             letterSpacing: 1.5,
-            color: TLK.inkFaint,
+            color: accent ? TLK.accent : TLK.inkFaint,
             textTransform: "uppercase",
           }}
         >
-          무대로 입장
+          {isSelected ? "선택됨" : "이 스터디 선택"}
         </p>
         <div
-          className="flex h-9 w-9 items-center justify-center rounded-full transition-all group-hover:translate-x-0.5"
+          className="flex h-9 w-9 items-center justify-center rounded-full transition-all"
           style={{
-            background: isToday ? TLK.accent : TLK.ink,
-            color: "#fff",
+            background: accent ? TLK.accent : TLK.bg2,
+            color: accent ? "#fff" : TLK.inkDim,
+            border: `1px solid ${accent ? TLK.accent : TLK.rule}`,
           }}
         >
-          <ArrowRight size={16} />
+          {isSelected ? <Check size={16} strokeWidth={3} /> : <ArrowRight size={16} />}
         </div>
       </div>
-    </Link>
+    </button>
   );
 }
 

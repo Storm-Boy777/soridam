@@ -38,6 +38,7 @@ export function DayShell({ day }: DayShellProps) {
   const [elapsed, setElapsed] = useState(0);
   const [running, setRunning] = useState(false);
   const [absentIds, setAbsentIds] = useState<Set<string>>(new Set());
+  const [focusMode, setFocusMode] = useState(false); // F 키 — 최상단 chrome(nav + Masthead) 숨김
 
   const toggleAttendance = (memberId: string) => {
     setAbsentIds((prev) => {
@@ -55,12 +56,27 @@ export function DayShell({ day }: DayShellProps) {
     return () => clearInterval(id);
   }, [running]);
 
+  // 키보드 단축키 — F: 최상단 chrome 토글 (영상·자료 몰입)
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const t = e.target;
+      if (t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
+      if (e.key === "f" || e.key === "F") {
+        e.preventDefault();
+        setFocusMode((v) => !v);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   return (
     <div
       className="flex h-dvh w-full flex-col overflow-hidden"
       style={{ background: TLK.bg, color: TLK.ink, fontFamily: TLK_FONT.ko }}
     >
-      {/* 좌상단 — 대시보드 + 진입 페이지 복귀 */}
+      {/* 좌상단 — 대시보드 + 진입 페이지 복귀 (F 키로 숨김) */}
+      {!focusMode && (
       <div
         className="flex items-center justify-between px-6 pt-3 sm:px-12"
         style={{ background: TLK.bg }}
@@ -80,7 +96,9 @@ export function DayShell({ day }: DayShellProps) {
           <ArrowLeft size={12} /> 요일 선택
         </Link>
       </div>
+      )}
 
+      {!focusMode && (
       <Masthead
         day={day}
         elapsed={elapsed}
@@ -89,6 +107,7 @@ export function DayShell({ day }: DayShellProps) {
         sessionNo={meta.sessionNo}
         dateLabel={meta.dateLabel}
       />
+      )}
 
       {/* Stage 본문 — day별 분기 */}
       <div className="min-h-0 flex-1">
@@ -106,6 +125,27 @@ export function DayShell({ day }: DayShellProps) {
           <FreetalkStage absentIds={absentIds} onToggleAttendance={toggleAttendance} />
         )}
       </div>
+
+      {/* focus 모드 복귀 버튼 — F 키 누른 동안만 우상단에 떠 있음 */}
+      {focusMode && (
+        <button
+          type="button"
+          onClick={() => setFocusMode(false)}
+          className="fixed right-4 top-4 z-50 rounded-full px-4 py-2 shadow-lg"
+          style={{
+            background: TLK.ink,
+            color: TLK.bg,
+            border: 0,
+            fontSize: 11,
+            fontFamily: TLK_FONT.sans,
+            fontWeight: 700,
+            letterSpacing: 1.5,
+            cursor: "pointer",
+          }}
+        >
+          F · 헤더 보이기
+        </button>
+      )}
     </div>
   );
 }

@@ -131,7 +131,6 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [phaseOverride, setPhaseOverride] = useState<number | null>(null);
   const [showMenu, setShowMenu] = useState(false);
-  const [focusMode, setFocusMode] = useState(false);
 
   // sub-step states (룰렛은 useSpeakerRoulette 훅에서 관리)
   const [vocabIdx, setVocabIdx] = useState(0);
@@ -176,7 +175,6 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
       if (e.key === "ArrowRight") { e.preventDefault(); goPhase(phase + 1); }
       else if (e.key === "ArrowLeft") { e.preventDefault(); goPhase(phase - 1); }
       else if (e.key === "r" || e.key === "R") { if (phase === 1 || phase === 3) { e.preventDefault(); spin(); } }
-      else if (e.key === "f" || e.key === "F") { e.preventDefault(); setFocusMode((v) => !v); }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -206,7 +204,6 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
       style={{ background: TLK.bg, color: TLK.ink, fontFamily: TLK_FONT.ko }}
     >
       {/* ── 헤더: 자료 제목 + 5도트 + 자료 셀렉터 ── */}
-      {!focusMode && (
         <header
           className="flex shrink-0 items-center gap-4 border-b px-6 py-3.5 sm:px-10"
           style={{ borderColor: TLK.rule, background: TLK.bg }}
@@ -318,7 +315,6 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
             </div>
           )}
         </header>
-      )}
 
       {/* ── 본문: phase별 슬라이드 ── */}
       <main className="relative flex-1 overflow-hidden">
@@ -396,7 +392,6 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
       </main>
 
       {/* ── 푸터: 멤버 + 단계 라벨 + 이전/다음 ── */}
-      {!focusMode && (
         <footer
           className="flex shrink-0 items-center gap-4 border-t px-6 py-3 sm:px-10"
           style={{ borderColor: TLK.rule, background: TLK.bg }}
@@ -506,28 +501,6 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
             </button>
           </div>
         </footer>
-      )}
-
-      {/* focus 모드 토글 (focusMode일 때만 표시) */}
-      {focusMode && (
-        <button
-          type="button"
-          onClick={() => setFocusMode(false)}
-          className="fixed bottom-4 right-4 z-50 rounded-full px-4 py-2 shadow-lg"
-          style={{
-            background: TLK.ink,
-            color: TLK.bg,
-            border: 0,
-            fontSize: 11,
-            fontFamily: TLK_FONT.sans,
-            fontWeight: 700,
-            letterSpacing: 1.5,
-            cursor: "pointer",
-          }}
-        >
-          F · 헤더 보이기
-        </button>
-      )}
 
       <style>{`
         @keyframes tlk-fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
@@ -2355,7 +2328,7 @@ function ClosingSlide({
             lineHeight: 1.5,
           }}
         >
-          오늘도 한 회차 굴리셨네요. 다음 주 월요일에 또 만나요.
+          오늘도 한 회차 무사히 마치셨네요. 다음 주 월요일에 또 만나요.
         </p>
       </div>
 
