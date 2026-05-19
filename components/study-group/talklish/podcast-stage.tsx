@@ -174,7 +174,7 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
       if (t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
       if (e.key === "ArrowRight") { e.preventDefault(); goPhase(phase + 1); }
       else if (e.key === "ArrowLeft") { e.preventDefault(); goPhase(phase - 1); }
-      else if (e.key === "r" || e.key === "R") { if (phase === 1 || phase === 3) { e.preventDefault(); spin(); } }
+      else if (e.key === "r" || e.key === "R") { if (phase === 2 || phase === 5) { e.preventDefault(); spin(); } }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
