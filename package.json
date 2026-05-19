@@ -6,7 +6,8 @@
     "dev": "node -e \"try{require('fs').unlinkSync('.next/dev/lock')}catch{}\" && next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "record:gwp": "node scripts/record-gwp-live.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

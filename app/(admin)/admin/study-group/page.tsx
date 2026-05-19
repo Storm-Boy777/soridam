@@ -2,15 +2,15 @@
 
 import { useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Headphones, MessageCircle, Ban, ArrowLeftRight, Scale, Link, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Users, Search, UserCheck, Sparkles, Loader2, Youtube, FileText } from "lucide-react";
+import { Headphones, MessageCircle, Ban, ArrowLeftRight, Scale, Link, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Users, Search, Sparkles, Loader2, Youtube } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import {
   getAdminPodcasts, createPodcast, updatePodcast, deletePodcast,
   getAdminFreetalk, createFreetalk, updateFreetalk, deleteFreetalk,
   getAdminGameCards, createGameCard, updateGameCard, deleteGameCard,
-  getAdminPanelMembers, searchUserForPanel, createPanelMember, updatePanelMember, deletePanelMember,
+  getAdminPanelMembers, createPanelMember, updatePanelMember, deletePanelMember,
 } from "@/lib/actions/admin/study-group";
-import type { PodcastRow, FreetalkRow, GameCardRow, GameCardGameType, TabooCard, WouldYouRatherCard, DebateTopic, StoryStarter, FreeTalkCategory, PanelMember, PanelMemberWithProfile, PanelUserSearchResult } from "@/lib/types/study-group";
+import type { PodcastRow, FreetalkRow, GameCardRow, GameCardGameType, TabooCard, WouldYouRatherCard, DebateTopic, StoryStarter, FreeTalkCategory, PanelMember, PanelMemberWithProfile } from "@/lib/types/study-group";
 
 /* ── 탭 정의 ── */
 
@@ -96,8 +96,9 @@ function PanelMembersAdmin() {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-primary-100 bg-primary-50/30 p-3 text-xs text-primary-700">
-        스터디 화면(큰 모니터) 좌·우 사이드에 표시되는 패널 멤버입니다.
-        등록된 사용자에게만 <strong>네비게이션 “스터디” 메뉴</strong>가 노출되고 페이지 접근이 허용돼요.
+        스터디 화면(큰 모니터)에 표시되는 패널 멤버입니다.
+        이름만 입력하면 등록되며, 소리담 미가입자(게스트)도 자유롭게 추가할 수 있어요.
+        이모지·컬러는 자동 배정됩니다.
       </div>
 
       <div className="flex items-center justify-between">
@@ -130,7 +131,7 @@ function PanelMembersAdmin() {
                 {item.email}
               </p>
             ) : (
-              <p className="text-[10px] text-amber-600">미연결</p>
+              <p className="text-[10px] text-foreground-muted">게스트</p>
             )}
             <div className="flex items-center gap-1">
               <button onClick={() => handleToggle(item)} className="p-1 text-foreground-muted hover:text-foreground transition-colors" title={item.is_active ? "비활성화" : "활성화"}>
@@ -166,62 +167,24 @@ function PanelMemberFormModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const isEditing = !!initial?.id;
   const fallbackColor = DEFAULT_COLORS[existingCount % DEFAULT_COLORS.length];
   const fallbackEmoji = SAMPLE_EMOJIS[existingCount % SAMPLE_EMOJIS.length];
-
-  // 신규 등록 시에만 사용자 검색 단계
-  const isEditing = !!initial?.id;
-  const [searchEmail, setSearchEmail] = useState("");
-  const [searchError, setSearchError] = useState("");
-  const [searching, setSearching] = useState(false);
-  const [picked, setPicked] = useState<PanelUserSearchResult | null>(
-    isEditing && initial?.user_id
-      ? {
-          user_id: initial.user_id,
-          email: initial.email ?? "",
-          display_name: initial.display_name,
-          is_already_member: true,
-        }
-      : null
-  );
 
   const [name, setName] = useState(initial?.name ?? "");
   const [emoji, setEmoji] = useState(initial?.emoji ?? fallbackEmoji);
   const [color, setColor] = useState(initial?.color ?? fallbackColor);
-  const [sortOrder, setSortOrder] = useState(initial?.sort_order ?? existingCount);
   const [saving, setSaving] = useState(false);
 
-  const handleSearch = async () => {
-    setSearchError("");
-    setSearching(true);
-    const res = await searchUserForPanel(searchEmail);
-    setSearching(false);
-    if (res.error || !res.user) {
-      setSearchError(res.error ?? "조회 실패");
-      return;
-    }
-    if (res.user.is_already_member) {
-      setSearchError("이미 등록된 멤버입니다");
-      return;
-    }
-    setPicked(res.user);
-    // 자동 채움
-    setName(res.user.display_name || res.user.email.split("@")[0] || "");
-  };
-
   const handleSave = async () => {
-    if (!isEditing && !picked) {
-      alert("사용자를 검색해서 선택해 주세요");
-      return;
-    }
     if (!name.trim()) { alert("이름을 입력하세요"); return; }
     setSaving(true);
     const payload = {
-      user_id: picked?.user_id ?? initial?.user_id ?? null,
+      user_id: initial?.user_id ?? null, // 새 멤버는 항상 게스트(NULL)
       name: name.trim(),
       emoji,
       color,
-      sort_order: sortOrder,
+      sort_order: initial?.sort_order ?? existingCount,
       is_active: initial?.is_active ?? true,
     };
     const result = initial?.id
@@ -234,110 +197,68 @@ function PanelMemberFormModal({
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 pt-20 overflow-y-auto">
       <div className="w-full max-w-md rounded-xl bg-surface p-6 shadow-xl">
-        <h3 className="mb-4 text-lg font-bold text-foreground">{isEditing ? "멤버 수정" : "멤버 추가"}</h3>
+        <h3 className="mb-1 text-lg font-bold text-foreground">{isEditing ? "멤버 수정" : "멤버 추가"}</h3>
+        <p className="mb-5 text-xs text-foreground-secondary">
+          이름만 입력하면 등록됩니다. 이모지·컬러는 자동 배정되며 필요하면 직접 바꿀 수 있어요.
+        </p>
 
-        {/* 신규 등록 — 검색 단계 */}
-        {!isEditing && !picked && (
-          <div className="space-y-3">
-            <p className="text-xs text-foreground-secondary">
-              이메일로 소리담 사용자를 검색해 멤버로 등록합니다.
-            </p>
-            <div className="flex gap-2">
-              <input
-                type="email"
-                value={searchEmail}
-                onChange={(e) => setSearchEmail(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                placeholder="user@example.com"
-                className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-foreground-muted focus:border-primary-500 focus:outline-none"
-              />
-              <button
-                onClick={handleSearch}
-                disabled={searching || !searchEmail.trim()}
-                className="flex items-center gap-1 rounded-lg bg-foreground px-3 py-2 text-sm font-medium text-white hover:bg-foreground/90 disabled:opacity-50 transition-colors"
-              >
-                <Search size={14} />
-                {searching ? "검색…" : "검색"}
-              </button>
-            </div>
-            {searchError && <p className="text-xs text-accent-500">{searchError}</p>}
-            <div className="flex justify-end pt-3">
-              <button onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground-secondary hover:bg-surface-secondary transition-colors">
-                취소
-              </button>
-            </div>
+        {/* 미리보기 카드 */}
+        <div className="mb-5 flex flex-col items-center gap-2 rounded-xl border border-border bg-surface-secondary/40 p-4">
+          <div
+            className="flex h-16 w-16 items-center justify-center rounded-full text-3xl"
+            style={{ background: `${color}20`, border: `2px solid ${color}` }}
+          >
+            {emoji}
           </div>
-        )}
+          <p className="text-sm font-semibold text-foreground">{name || "이름"}</p>
+          {initial?.email && (
+            <p className="text-[11px] text-foreground-muted">{initial.email}</p>
+          )}
+        </div>
 
-        {/* 검색 성공 또는 수정 모드 — 폼 */}
-        {(picked || isEditing) && (
-          <>
-            <div
-              className="mb-5 flex flex-col items-center gap-2 rounded-xl border border-border bg-surface-secondary/40 p-4"
-            >
-              <div
-                className="flex h-16 w-16 items-center justify-center rounded-full text-3xl"
-                style={{ background: `${color}20`, border: `2px solid ${color}` }}
-              >
-                {emoji}
-              </div>
-              <p className="text-sm font-semibold text-foreground">{name || "이름"}</p>
-              {(picked?.email ?? initial?.email) && (
-                <p className="flex items-center gap-1 text-[11px] text-foreground-muted">
-                  <UserCheck size={11} className="text-primary-500" />
-                  {picked?.email ?? initial?.email}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              <Field label="별명 (display_name 자동, 수정 가능)" value={name} onChange={setName} placeholder="지수" />
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="이모지" value={emoji} onChange={setEmoji} placeholder="🦊" />
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-foreground-secondary">컬러</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={color}
-                      onChange={(e) => setColor(e.target.value)}
-                      className="h-9 w-9 cursor-pointer rounded border border-border"
-                    />
-                    <input
-                      value={color}
-                      onChange={(e) => setColor(e.target.value)}
-                      className="flex-1 rounded-lg border border-border bg-surface px-2 py-2 font-mono text-xs uppercase text-foreground focus:border-primary-500 focus:outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-foreground-secondary">정렬 순서 (작을수록 앞)</label>
+        <div className="space-y-3">
+          <Field label="이름" value={name} onChange={setName} placeholder="예: 지수, John" />
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="이모지" value={emoji} onChange={setEmoji} placeholder="🦊" />
+            <div>
+              <label className="mb-1 block text-xs font-medium text-foreground-secondary">컬러</label>
+              <div className="flex items-center gap-2">
                 <input
-                  type="number"
-                  value={sortOrder}
-                  onChange={(e) => setSortOrder(Number(e.target.value))}
-                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary-500 focus:outline-none"
+                  type="color"
+                  title="컬러 선택"
+                  aria-label="컬러 선택"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  className="h-9 w-9 cursor-pointer rounded border border-border"
+                />
+                <input
+                  aria-label="컬러 HEX 값"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  className="flex-1 rounded-lg border border-border bg-surface px-2 py-2 font-mono text-xs uppercase text-foreground focus:border-primary-500 focus:outline-none"
                 />
               </div>
             </div>
+          </div>
+        </div>
 
-            <div className="mt-6 flex justify-end gap-2">
-              {!isEditing && (
-                <button
-                  onClick={() => { setPicked(null); setSearchEmail(""); }}
-                  className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground-secondary hover:bg-surface-secondary transition-colors"
-                >
-                  다시 검색
-                </button>
-              )}
-              <button onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground-secondary hover:bg-surface-secondary transition-colors">취소</button>
-              <button onClick={handleSave} disabled={saving || !name.trim()} className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 disabled:opacity-50 transition-colors">
-                {saving ? "저장 중..." : "저장"}
-              </button>
-            </div>
-          </>
-        )}
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground-secondary hover:bg-surface-secondary transition-colors"
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving || !name.trim()}
+            className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 disabled:opacity-50 transition-colors"
+          >
+            {saving ? "저장 중..." : "저장"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -417,13 +338,28 @@ function PodcastFormModal({ initial, onClose, onSaved }: { initial: PodcastRow |
   const [topic, setTopic] = useState(initial?.topic ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [warmupQuestion, setWarmupQuestion] = useState(initial?.warmup_question ?? "");
-  const [keyExpressions, setKeyExpressions] = useState(JSON.stringify(initial?.key_expressions ?? [], null, 2));
-  const [comprehensionQuestions, setComprehensionQuestions] = useState(JSON.stringify(initial?.comprehension_questions ?? [], null, 2));
-  const [discussionQuestions, setDiscussionQuestions] = useState(JSON.stringify(initial?.discussion_questions ?? [], null, 2));
+  const [listeningMission, setListeningMission] = useState(initial?.listening_mission ?? "");
+  const [dialogueSegment, setDialogueSegment] = useState(
+    JSON.stringify(initial?.dialogue_segment ?? null, null, 2)
+  );
+  const [dialogueLines, setDialogueLines] = useState<unknown[]>(
+    initial?.dialogue_lines ?? []
+  );
+  const [keyExpressions, setKeyExpressions] = useState(
+    JSON.stringify(initial?.key_expressions ?? [], null, 2)
+  );
+  const [comprehensionQuestions, setComprehensionQuestions] = useState(
+    JSON.stringify(initial?.comprehension_questions ?? [], null, 2)
+  );
+  const [discussionQuestions, setDiscussionQuestions] = useState(
+    JSON.stringify(initial?.discussion_questions ?? [], null, 2)
+  );
+  const [todaysPicks, setTodaysPicks] = useState(
+    JSON.stringify(initial?.todays_picks ?? [], null, 2)
+  );
   const [saving, setSaving] = useState(false);
 
   // 자동화 영역 상태
-  const [scriptText, setScriptText] = useState("");
   const [fetchingMeta, setFetchingMeta] = useState(false);
   const [metaError, setMetaError] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -445,19 +381,19 @@ function PodcastFormModal({ initial, onClose, onSaved }: { initial: PodcastRow |
       const data = await r.json();
       if (data.title && !title) setTitle(data.title);
       if (data.author_name && !source) setSource(data.author_name);
-    } catch (e) {
+    } catch {
       setMetaError("메타 정보 가져오기 실패");
     } finally {
       setFetchingMeta(false);
     }
   };
 
-  /** AI로 컨텐츠 자동 생성 */
+  /** AI로 자료 자동 생성 — YouTube URL만 있으면 자막은 Supadata가 자동 추출 */
   const handleAIGenerate = async () => {
     setGenError("");
     setGenNotice("");
-    if (!scriptText.trim() || scriptText.trim().length < 50) {
-      setGenError("영문 스크립트를 50자 이상 입력해주세요");
+    if (!url.trim()) {
+      setGenError("YouTube URL을 입력해주세요");
       return;
     }
     setGenerating(true);
@@ -465,7 +401,7 @@ function PodcastFormModal({ initial, onClose, onSaved }: { initial: PodcastRow |
       const supabase = createClient();
       const { data, error } = await supabase.functions.invoke("study-podcast-generate", {
         body: {
-          scriptText: scriptText.trim(),
+          youtubeUrl: url.trim(),
           youtubeTitle: title || undefined,
           channelName: source || undefined,
           currentDifficulty: difficulty || undefined,
@@ -479,26 +415,37 @@ function PodcastFormModal({ initial, onClose, onSaved }: { initial: PodcastRow |
       const r = data.data as {
         description: string;
         warmup_question: string;
-        key_expressions: { english: string; korean: string; example: string }[];
+        listening_mission: string;
+        dialogue_segment: { start_sec: number; end_sec: number } | null;
+        dialogue_lines: { start_ms: number; end_ms: number; text: string }[];
+        key_expressions: unknown[];
         comprehension_questions: string[];
         discussion_questions: string[];
+        todays_picks: string[];
         difficulty: "beginner" | "intermediate" | "advanced";
         topic: string;
       };
       setDescription(r.description);
       setWarmupQuestion(r.warmup_question);
+      setListeningMission(r.listening_mission);
+      setDialogueSegment(JSON.stringify(r.dialogue_segment, null, 2));
+      setDialogueLines(r.dialogue_lines ?? []);
       setKeyExpressions(JSON.stringify(r.key_expressions, null, 2));
       setComprehensionQuestions(JSON.stringify(r.comprehension_questions, null, 2));
       setDiscussionQuestions(JSON.stringify(r.discussion_questions, null, 2));
+      setTodaysPicks(JSON.stringify(r.todays_picks, null, 2));
       if (!topic && r.topic) setTopic(r.topic);
       if (r.difficulty) setDifficulty(r.difficulty);
       const tokens = data.meta?.tokens?.total_tokens;
+      const segs = data.meta?.transcript_segments;
+      const lineCount = r.dialogue_lines?.length ?? 0;
       setGenNotice(
-        `✓ AI 생성 완료${tokens ? ` (${tokens} 토큰, ${Math.round((data.meta?.elapsed_ms ?? 0) / 100) / 10}s)` : ""}`
+        `✓ AI 생성 완료${segs ? ` · 자막 ${segs}줄` : ""}${
+          lineCount ? ` · 가라오케 라인 ${lineCount}` : ""
+        }${tokens ? ` · ${tokens} 토큰` : ""}`
       );
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "AI 호출 중 오류";
-      setGenError(msg);
+      setGenError(e instanceof Error ? e.message : "AI 호출 중 오류");
     } finally {
       setGenerating(false);
     }
@@ -510,9 +457,13 @@ function PodcastFormModal({ initial, onClose, onSaved }: { initial: PodcastRow |
       const payload = {
         title, source, url, duration, difficulty: difficulty as PodcastRow["difficulty"], topic, description,
         warmup_question: warmupQuestion,
+        listening_mission: listeningMission,
+        dialogue_segment: JSON.parse(dialogueSegment),
+        dialogue_lines: dialogueLines as PodcastRow["dialogue_lines"],
         key_expressions: JSON.parse(keyExpressions),
         comprehension_questions: JSON.parse(comprehensionQuestions),
         discussion_questions: JSON.parse(discussionQuestions),
+        todays_picks: JSON.parse(todaysPicks),
         sort_order: initial?.sort_order ?? 0,
         is_active: initial?.is_active ?? true,
       };
@@ -521,7 +472,7 @@ function PodcastFormModal({ initial, onClose, onSaved }: { initial: PodcastRow |
         : await createPodcast(payload);
       if (!result.success) { alert(result.error); return; }
       onSaved();
-    } catch (e) { alert("JSON 형식 오류를 확인해주세요."); } finally { setSaving(false); }
+    } catch { alert("JSON 형식 오류를 확인해주세요."); } finally { setSaving(false); }
   };
 
   return (
@@ -534,8 +485,8 @@ function PodcastFormModal({ initial, onClose, onSaved }: { initial: PodcastRow |
           <div className="mb-5 rounded-xl border-2 border-dashed border-primary-200 bg-primary-50/30 p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Sparkles size={16} className="text-primary-500" />
-              <p className="text-sm font-semibold text-primary-700">자동 채움</p>
-              <span className="text-[10px] text-primary-600">YouTube + 영문 스크립트만 있으면 됩니다</span>
+              <p className="text-sm font-semibold text-primary-700">자동 생성</p>
+              <span className="text-[10px] text-primary-600">YouTube URL만 있으면 됩니다 — 자막은 자동 추출</span>
             </div>
 
             {/* YouTube URL + oEmbed */}
@@ -567,35 +518,18 @@ function PodcastFormModal({ initial, onClose, onSaved }: { initial: PodcastRow |
               )}
             </div>
 
-            {/* 영문 스크립트 */}
-            <div>
-              <label className="mb-1 flex items-center gap-1 text-xs font-medium text-foreground-secondary">
-                <FileText size={12} /> 영문 스크립트 (kongram 등에서 복사)
-              </label>
-              <textarea
-                value={scriptText}
-                onChange={(e) => setScriptText(e.target.value)}
-                rows={6}
-                placeholder="Welcome back to the Mel Robbins Podcast..."
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-mono text-foreground placeholder:text-foreground-muted focus:border-primary-500 focus:outline-none"
-              />
-              <p className="mt-1 text-[10px] text-foreground-muted">
-                {scriptText.length}자 (50자 이상 권장 · 16000자까지 사용)
-              </p>
-            </div>
-
             <button
               onClick={handleAIGenerate}
-              disabled={generating || scriptText.trim().length < 50}
+              disabled={generating || !url.trim()}
               className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-600 disabled:opacity-50 transition-colors"
             >
               {generating ? (
                 <>
-                  <Loader2 size={14} className="animate-spin" /> GPT가 컨텐츠 생성 중… (10~20초)
+                  <Loader2 size={14} className="animate-spin" /> 자막 추출 + GPT 생성 중… (10~30초)
                 </>
               ) : (
                 <>
-                  <Sparkles size={14} /> AI로 컨텐츠 자동 생성
+                  <Sparkles size={14} /> AI로 자료 자동 생성
                 </>
               )}
             </button>
@@ -609,11 +543,11 @@ function PodcastFormModal({ initial, onClose, onSaved }: { initial: PodcastRow |
         <div className="space-y-3">
           <Field label="제목" value={title} onChange={setTitle} />
           <div className="grid grid-cols-2 gap-3">
-            <Field label="소스 (채널명)" value={source} onChange={setSource} placeholder="BBC 6 Minute English" />
+            <Field label="소스 (채널명)" value={source} onChange={setSource} placeholder="EnglishPod" />
             <Field label="URL" value={url} onChange={setUrl} />
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <Field label="시간" value={duration} onChange={setDuration} placeholder="6 min" />
+            <Field label="시간" value={duration} onChange={setDuration} placeholder="18 min" />
             <div>
               <label className="mb-1 block text-xs font-medium text-foreground-secondary">난이도</label>
               <select value={difficulty} onChange={(e) => setDifficulty(e.target.value as "beginner" | "intermediate" | "advanced")} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm">
@@ -622,11 +556,14 @@ function PodcastFormModal({ initial, onClose, onSaved }: { initial: PodcastRow |
                 <option value="advanced">고급</option>
               </select>
             </div>
-            <Field label="토픽" value={topic} onChange={setTopic} placeholder="집/주거" />
+            <Field label="토픽" value={topic} onChange={setTopic} placeholder="여행" />
           </div>
           <Field label="설명" value={description} onChange={setDescription} />
           <Field label="워밍업 질문" value={warmupQuestion} onChange={setWarmupQuestion} />
-          <TextareaField label="핵심 표현 (JSON)" value={keyExpressions} onChange={setKeyExpressions} rows={6} />
+          <Field label="1차 청취 미션" value={listeningMission} onChange={setListeningMission} />
+          <TextareaField label="대화 1차 구간 (JSON · { start_sec, end_sec })" value={dialogueSegment} onChange={setDialogueSegment} rows={3} />
+          <TextareaField label="어휘 훈련 카드 (JSON)" value={keyExpressions} onChange={setKeyExpressions} rows={10} />
+          <TextareaField label="오늘의 표현 후보 (JSON)" value={todaysPicks} onChange={setTodaysPicks} rows={3} />
           <TextareaField label="이해도 질문 (JSON)" value={comprehensionQuestions} onChange={setComprehensionQuestions} rows={4} />
           <TextareaField label="토론 질문 (JSON)" value={discussionQuestions} onChange={setDiscussionQuestions} rows={4} />
         </div>

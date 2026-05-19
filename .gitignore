@@ -157,3 +157,14 @@ temp/
 designs/images/
 .claude/
 _backup/
+/recordings/
+
+# Local-only experiment / dump files (커밋 금지)
+/local-questions-rows.json
+/temp_*
+/docs/temp_*
+/docs/질문 DB/*.pdf
+/docs/질문 DB/temp_pages/
+
+# Editor / AI assistant configs
+/.kiro/

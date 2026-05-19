@@ -382,6 +382,13 @@ Deno.serve(async (req) => {
     const spec = specPair.type ?? specPair.common;
     const commonSpec = specPair.common;
 
+    // 8.5. Layer 3 — topic_skeleton fetch (description_random_* 분기 시에만, 마이그 082)
+    // 학생 토픽이 13 화이트리스트(은행/호텔/식당/교통/재활용/지형/날씨/산업/기술/모임/휴일/자유시간) 매칭 시 row 존재
+    let topicSkeleton: TopicSkeleton | null = null;
+    if (specId.startsWith("description_random_")) {
+      topicSkeleton = await fetchTopicSkeleton(supabase, question.topic ?? session.topic ?? "");
+    }
+
     // 9. coaching_system_v1 프롬프트 fetch (v5 — 단일 row, §5.3)
     const { data: systemRow, error: sysErr } = await supabase
       .from("ai_prompt_templates")
@@ -397,10 +404,11 @@ Deno.serve(async (req) => {
     // 10. System prompt = coaching_system_v1 본문 + spec.tone_adjustment 미세조정
     const systemPrompt = `${systemRow.system_prompt}\n\n---\n\n## TONE ADJUSTMENT (이번 세션 한정 — spec.${spec.guide_id})\n${spec.tone_adjustment}`;
 
-    // 11. User prompt 조립 (v5 — §5.4, common base + 유형별 spec 두 데이터 주입)
+    // 11. User prompt 조립 (v5 — §5.4, common base + 유형 spec + topic_skeleton 3-layer 합성)
     const userPrompt = assembleUserPrompt({
       spec,
       commonSpec,
+      topicSkeleton,
       targetLevel,
       questionKorean: question.question_korean ?? "",
       questionEnglish: question.question_english ?? "",
@@ -552,17 +560,28 @@ Deno.serve(async (req) => {
 // 설계: docs/설계/스피킹코치_재설계.md §5.0 ~ §5.4
 // ============================================================
 
-// 돌발 4 그룹 13 토픽 (description × 공통형 × 일반)
-const RANDOM_TOPICS_13 = [
-  "은행", "호텔", "음식점", "교통",        // 시사
-  "재활용", "지형", "날씨",                 // 환경
-  "산업", "기술",                            // 산업·기술
-  "모임", "휴일", "자유시간",               // 개인
+// 돌발 4 그룹 — 강사 자료 #11~#14 직접 명시 13 토픽 + DB 실 토픽 16 확장 = 총 28 토픽
+// 추가 16 토픽은 그룹 본질에 매핑 (시사=공공·생활 서비스 / 환경=자연·시간 /
+// 산업기술=기기·회사 / 개인=일상·관계). 학생 토픽이 강사 직접 모범 13에 없으면
+// topic_skeleton(082)은 null이지만 그룹 spec(081)은 적용됨 — 그룹 격상 카드 코칭 가능.
+const CURRENT_AFFAIRS = [
+  "은행", "호텔", "음식점", "교통",                            // 강사 명시
+  "미용실", "병원", "치과", "약국", "약속", "예약",            // 확장 (공공·생활 서비스)
 ];
-const CURRENT_AFFAIRS = ["은행", "호텔", "음식점", "교통"];
-const ENVIRONMENT     = ["재활용", "지형", "날씨"];
-const INDUSTRY_TECH   = ["산업", "기술"];
-const PERSONAL        = ["모임", "휴일", "자유시간"];
+const ENVIRONMENT = [
+  "재활용", "지형", "날씨",                                    // 강사 명시
+];
+const INDUSTRY_TECH = [
+  "산업", "기술",                                              // 강사 명시
+  "전화기", "가전제품", "인터넷", "선호회사",                  // 확장 (기기·회사)
+];
+const PERSONAL = [
+  "모임", "휴일", "자유시간",                                  // 강사 명시
+  "가족/친구", "음식", "패션", "건강", "가구", "직장",         // 확장 (일상·관계·직장)
+];
+const RANDOM_TOPICS_ALL = [
+  ...CURRENT_AFFAIRS, ...ENVIRONMENT, ...INDUSTRY_TECH, ...PERSONAL,
+];
 
 // §5.0.2 — 4축 매칭 → spec_id
 function resolveSpecId(q: {
@@ -579,7 +598,7 @@ function resolveSpecId(q: {
     q.survey_type === "공통형" &&
     q.category === "일반" &&
     q.question_type_eng === "description" &&
-    RANDOM_TOPICS_13.includes(q.topic);
+    RANDOM_TOPICS_ALL.includes(q.topic);
 
   if (isRandomDescription) {
     if (CURRENT_AFFAIRS.includes(q.topic)) return "description_random_current_affairs";
@@ -645,10 +664,36 @@ async function fetchSpecPair(
   return { common: common as CoachingSpec, type: typeSpec };
 }
 
-// §5.4 — User Prompt 6 섹션 조립 (common base + 유형 spec 두 데이터 주입)
+// §5.0.4 — coaching_topic_skeletons fetch (Layer 3 — 토픽 단위 만능 표현 SSOT, 마이그 082)
+// description_random_{group} 분기 시에만 호출. 토픽이 13 화이트리스트에 있으면 row 존재.
+interface TopicSkeleton {
+  topic: string;
+  question_type: string;
+  group_id: string;
+  skeleton_slots: Record<string, unknown>;
+  full_etalon: string;
+  upgrade_cards: Record<string, unknown>;
+  source_lecture: string;
+}
+
+async function fetchTopicSkeleton(
+  supabase: SupabaseClient,
+  topic: string,
+): Promise<TopicSkeleton | null> {
+  const { data } = await supabase
+    .from("coaching_topic_skeletons")
+    .select("topic, question_type, group_id, skeleton_slots, full_etalon, upgrade_cards, source_lecture")
+    .eq("topic", topic)
+    .eq("question_type", "description_random")
+    .maybeSingle();
+  return (data as TopicSkeleton | null) ?? null;
+}
+
+// §5.4 — User Prompt 7 섹션 조립 (common base + 유형 spec + topic_skeleton 3-layer 합성)
 function assembleUserPrompt(params: {
   spec: CoachingSpec;
   commonSpec: CoachingSpec;
+  topicSkeleton: TopicSkeleton | null;
   targetLevel: string;
   questionKorean: string;
   questionEnglish: string;
@@ -663,9 +708,10 @@ function assembleUserPrompt(params: {
   audioDurationSec: number;
   prevAttempt: { attempt_number: number; evaluation: EvalOutput["evaluation"] | null; filler_count: number | null } | null;
 }): string {
-  const { spec, commonSpec, targetLevel, attemptNumber, prevAttempt, sttFixLog } = params;
+  const { spec, commonSpec, topicSkeleton, targetLevel, attemptNumber, prevAttempt, sttFixLog } = params;
   const lines: string[] = [];
   const hasTypeSpec = spec.guide_id !== commonSpec.guide_id;
+  const hasTopicSkeleton = !!topicSkeleton;
 
   // ⓪ LEVEL GATE — 학생 목표 등급 + 2-Layer spec 주입 (common base + 유형 차별)
   lines.push(`## ⓪ LEVEL GATE — 학생 목표 등급: ${targetLevel}`);
@@ -715,6 +761,37 @@ function assembleUserPrompt(params: {
       lines.push("```");
       lines.push("");
     }
+  }
+
+  // ━━━ Layer C — 토픽 단위 만능 표현 카탈로그 (topic_skeleton, 돌발 description_random_* 분기 시) ━━━
+  if (hasTopicSkeleton && topicSkeleton) {
+    lines.push(`### B-Topic. 토픽별 만능 표현 카탈로그 — \`${topicSkeleton.topic}\` (Layer 3 SSOT)`);
+    lines.push("");
+    lines.push(`> 출처: ${topicSkeleton.source_lecture}`);
+    lines.push(`> 그룹: ${topicSkeleton.group_id}`);
+    lines.push("");
+    lines.push("**B-Topic.1 학생 토픽 전용 만능 표현 풀 (skeleton_slots)**");
+    lines.push("```json");
+    lines.push(JSON.stringify(topicSkeleton.skeleton_slots, null, 2));
+    lines.push("```");
+    lines.push("");
+    lines.push("**B-Topic.2 강사 풀 모범 원문 (full_etalon — IH 출발 → AL 격상 매트릭스)**");
+    lines.push("```");
+    lines.push(topicSkeleton.full_etalon);
+    lines.push("```");
+    lines.push("");
+    lines.push("**B-Topic.3 토픽 특화 격상 카드 (upgrade_cards)**");
+    lines.push("```json");
+    lines.push(JSON.stringify(topicSkeleton.upgrade_cards, null, 2));
+    lines.push("```");
+    lines.push("");
+    lines.push("★ **model_answer 생성 원칙 (자료 #21 강사 1:1 코칭 etalon)**:");
+    lines.push("1. **학생 답변 골격 그대로 유지** — 학생이 사용한 자기 소재/구조 보존.");
+    lines.push("2. **위 skeleton_slots의 핵심 슬롯 표현을 학생 답변에 직접 카피해서 박아 넣음** (변형 X — 강사 자료 #21 명시: '학생 답변에 격상 표현 한두 개만 박아 넣으면 AL 등급으로 격상').");
+    lines.push("3. **upgrade_cards의 REQUIRED 표시 카드(예: debate_closing_card_REQUIRED / quantification_REQUIRED / domain_keywords_REQUIRED)는 model_answer에 반드시 인용**. 변형/요약 X.");
+    lines.push("4. 등급 무관 토픽 풀 모범이므로 학생 목표 등급에 따라 채택 강도 조정 (IL/IM은 2~3 슬롯, IH는 6~7 슬롯, AL은 풀 슬롯 + 토론/정량화 카드).");
+    lines.push("5. 학생이 이미 사용한 표현은 issues에 짚지 X (학생 답변 정밀 확인 — STUDENT TEXT VERIFICATION).");
+    lines.push("");
   }
 
   // ━━━ 공통 임계치 (둘 다 같은 등급이므로 type 우선, fallback common) ━━━

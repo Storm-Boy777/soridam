@@ -2,9 +2,26 @@
 
 // 팟캐스트 에피소드
 export interface KeyExpression {
-  english: string;
-  korean: string;
-  example: string;
+  expression: string;                       // 표현 (콜로케이션·구동사·관용구)
+  meaning_ko: string;                       // 한국어 뜻 + 뉘앙스
+  meaning_en: string;                       // 영영 정의
+  examples: { en: string; ko: string }[];   // 예문 2~3개 + 번역
+  similar_expressions: string[];            // 유사 표현
+  speaking_prompt: string;                  // "이 표현으로 말해보기" 프롬프트
+  level: "core" | "stretch";                // core=필수 / stretch=도전
+}
+
+// 대화 1차 구간 — 영상에서 대화 부분만 재생 (초 단위)
+export interface DialogueSegment {
+  start_sec: number;
+  end_sec: number;
+}
+
+// 대화 1차 자막 라인 (가라오케 효과용)
+export interface DialogueLine {
+  start_ms: number;
+  end_ms: number;
+  text: string;
 }
 
 export interface PodcastEpisode {
@@ -89,9 +106,13 @@ export interface PodcastRow {
   topic: string;
   description: string;
   warmup_question: string;
+  listening_mission: string;                // 1차 청취 focus 미션
+  dialogue_segment: DialogueSegment | null; // 대화 1차 구간
+  dialogue_lines: DialogueLine[];           // 대화 1차 자막 라인 (가라오케)
   key_expressions: KeyExpression[];
   comprehension_questions: string[];
   discussion_questions: string[];
+  todays_picks: string[];                   // 오늘의 표현 후보 3개
   sort_order: number;
   is_active: boolean;
   created_by: string | null;

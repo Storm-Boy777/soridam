@@ -866,14 +866,86 @@ function ModelAnswer({ modelAnswer }: { modelAnswer: CoachingOutput["model_answe
   ];
   const presentCats = orderedCats.filter((c) => changesByCategory[c]?.length > 0);
 
+  // Web Speech API — 모범 답변 듣기 (브라우저 내장 TTS, OS 보이스 의존)
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [ttsSupported, setTtsSupported] = useState(true);
+  const utterRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      setTtsSupported(false);
+      return;
+    }
+    // voices 비동기 로딩 트리거 (Chrome)
+    window.speechSynthesis.getVoices();
+    const handler = () => window.speechSynthesis.getVoices();
+    window.speechSynthesis.addEventListener?.("voiceschanged", handler);
+    return () => {
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.removeEventListener?.("voiceschanged", handler);
+    };
+  }, []);
+
+  const handleSpeak = () => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+    window.speechSynthesis.cancel(); // 다른 utterance 중복 방지
+    const utter = new SpeechSynthesisUtterance(modelAnswer.text);
+    utter.lang = "en-US";
+    utter.rate = 0.95;
+    utter.pitch = 1.0;
+    const voices = window.speechSynthesis.getVoices();
+    // en-US 우선 → en 전체 폴백
+    const preferred =
+      voices.find((v) => v.lang === "en-US" && /google|samantha|natural|neural/i.test(v.name)) ??
+      voices.find((v) => v.lang === "en-US") ??
+      voices.find((v) => v.lang.startsWith("en"));
+    if (preferred) utter.voice = preferred;
+    utter.onstart = () => setIsSpeaking(true);
+    utter.onend = () => setIsSpeaking(false);
+    utter.onerror = () => setIsSpeaking(false);
+    utterRef.current = utter;
+    window.speechSynthesis.speak(utter);
+  };
+
   return (
     <div className="overflow-hidden rounded-xl border border-primary-200 bg-primary-50/40">
       {/* 헤더 */}
-      <div className="flex items-center gap-1.5 bg-primary-100/60 px-3.5 py-2">
-        <Sparkles className="h-3.5 w-3.5 text-primary-600" />
-        <span className="text-xs font-bold text-primary-700">
-          통합 답변 — 본인 소재로 다시 쓴 모범
-        </span>
+      <div className="flex items-center justify-between gap-2 bg-primary-100/60 px-3.5 py-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary-600" />
+          <span className="truncate text-xs font-bold text-primary-700">
+            통합 답변 — 본인 소재로 다시 쓴 모범
+          </span>
+        </div>
+        {ttsSupported && (
+          <button
+            type="button"
+            onClick={handleSpeak}
+            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ring-1 ring-inset transition ${
+              isSpeaking
+                ? "bg-primary-600 text-white ring-primary-700 hover:bg-primary-700"
+                : "bg-white text-primary-700 ring-primary-300 hover:bg-primary-50"
+            }`}
+            aria-label={isSpeaking ? "재생 중지" : "모범 답변 듣기"}
+          >
+            {isSpeaking ? (
+              <>
+                <Square className="h-3 w-3 fill-current" />
+                <span>정지</span>
+              </>
+            ) : (
+              <>
+                <Volume2 className="h-3 w-3" />
+                <span>듣기</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {/* 모범 본문 */}

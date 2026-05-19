@@ -63,7 +63,7 @@
 
 **소리담 (Soridam)** - AI 기반 OPIc 영어 말하기 학습 플랫폼
 - 도메인: https://soridamhub.com
-- 하루오픽 코드 기반으로 시작, 현재는 독립 프로젝트로 운영 (이관 완료)
+- 소리담 레거시(`back-up/soridam_legacy`)를 백지 재설계한 현행 버전
 
 ## 📚 프로젝트 문서 체계
 
@@ -272,11 +272,6 @@ docs/
 - **DB User**: `postgres.fkkdbnebsaecjpqhhdvl`
 - **Access Token**: 별도 보관 (1Password / 로컬 `.env.secrets`). git 커밋 X. 분실 시 [Supabase Dashboard](https://supabase.com/dashboard/account/tokens)에서 재발급
 
-### Supabase (하루오픽 — 아카이브, 필요 시만 참조)
-- **Project ID**: `rwdsyqnrrpwkureqfxwb`
-- **DB Host (Pooler)**: `aws-1-ap-northeast-2.pooler.supabase.com:6543`
-- **DB User**: `postgres.rwdsyqnrrpwkureqfxwb` / **PW**: `opictalk2026`
-
 ### Vercel
 - **팀**: jays-projects-ef86099d
 - **프로젝트**: soridam-frontend
@@ -473,9 +468,9 @@ AZURE_SPEECH_REGION=koreacentral
 ## 🚨 Critical Development Workflow
 
 ### ✅ 모듈 이관 완료
-- 하루오픽 → 소리담 전체 이관 완료 (시험후기/스크립트/모의고사/튜터링/쉐도잉)
+- 소리담 레거시 → 현행 소리담 전체 재구축 완료 (시험후기/스크립트/모의고사/튜터링/쉐도잉)
 - 신규 기능 구현 시 `docs/설계/{모듈}.md` 참조
-- 하루오픽 소스코드(`C:\Users\js777\Desktop\haruopic`)는 필요 시에만 참조
+- 소리담 레거시 소스코드(`C:\Users\js777\Desktop\back-up\soridam_legacy`)는 필요 시에만 참조
 
 ### ⚠️ 기술 제안 시 필수 원칙: 업계 표준 우선
 - 기술 방식, 아키텍처, 패턴을 제안할 때는 **현재 기술 스택에서 업계에서 가장 보편적이고 검증된 표준 방식**을 먼저 확인한 후 제안한다
@@ -646,6 +641,8 @@ origin: https://Storm-Boy777@github.com/Storm-Boy777/soridam.git
 | 05-16 | **AI 코치 코드 리뷰 보강 ✅** | (1) `coaching-evaluate` 에러 시 attempt가 처리 중 상태로 정지 → **무한 폴링 버그 수정**(바깥 catch에서 `failed` 마킹). (2) `submitAttempt` 회차 번호 **원자적 발급 RPC**(마이그레이션 071 `coaching_claim_attempt_number`) — 동시 제출 레이스 제거. (3) `markTopicMastered` 졸업 가드(평가 완료 답변 필수·중복 졸업 차단) + 유형 마스터 `total_attempts` 누적 집계. (4) 학습 룸 폴링 타임아웃(2분 안내·3분 중단). (5) dead code 제거(`getAttempt`/`getPersonaSetting`) + 중복 쿼리 정리. ※ EF 호출자 인증은 시도했으나 `--no-verify-jwt` + 서비스 롤 키 포맷 드리프트로 정상 호출까지 차단됨 → 되돌림. EF 11개 공통 사안이라 공유 시크릿으로 일괄 처리할 별도 과제로 분리 |
 | 05-17 | **AI 코치 v5 백지 재설계 ✅** | 자료 #1~#17 일타강사 강의 통합. 기존 `coaching_*` 프롬프트 모두 폐기. **Common SSOT 2-layer spec** 구조(등급별 공통 헌법 common × 6 + 유형별 차별 type × 6). 마이그 074(테이블·시스템 프롬프트)/075(description 6 row)/076(시스템 강화)/077(description_IH 강사 etalon 재정렬)/078(common 6 row SSOT)/080(분사구문 의무 짚기 강화). EF 백지 재작성(`resolveSpecId` 4축 매칭 + 돌발 4 그룹 분기 / `fetchSpecPair` 2-layer 합성 / `assembleUserPrompt` 6 섹션). SA `startOrResumeSession` target_level 자동 캐시. UI: `SessionMetaStrip`(목표 등급 sticky 카드) + `ModelAnswer` 시각화(changes 카테고리 자동 감지 7종 — 어휘/문법/분사구문/표현/마무리/위치표지/구조). **Dogfooding 검증 — 자료 #1 강사 etalon 92/100 충실 재현**(음악 IH 답변 3회). 학생 답변 정확 인용·짚는 순서 etalon 1~3순위·강사식 단어 단위 짚기·페르소나 톤 모두 정합 |
 | 05-17 | **AI 코치 접근 권한 시스템 ✅** | 스피킹 코치 v5 Dogfooding 베타 사용자 통제. 마이그 079 `coaching_access` 테이블 + RLS (lecture_access 패턴). `lib/auth.ts` `hasCoachingAccess()` + `requireCoachingAccess()` 헬퍼. 관리자 페이지 `/admin/coaching-access` (사용자 검색·부여·회수·일괄 회수, 감사 로그). 페이지 진입 차단(`/coaching` + `/coaching/learn/*`), 네비바 노출 조건(`coachingAccessOnly`), 사이드바 메뉴 "스피킹 코치" 추가. 초기 부여: `soridamhub@gmail.com` |
+| 05-17 | **AI 코치 v5 돌발 4 그룹 spec ✅** | 마이그 081 `description_random` × 4 그룹 × 6 등급 = **24 row 시드** (1247줄). 자료 #11~#14 풀 적용: 시사(은행/호텔/식당/교통 — 어휘 격상 매트릭스 + 디지털 대체) / 환경(재활용/지형/날씨 — Cohesive 6 카테고리 + 토론적 마무리 카드) / 산업·기술(반도체/한류 — Breath of Vocabulary + 시장 점유율 정량화 + `immense sense of pride`) / 개인(자유시간/추석 — 양면 토론 5단 + 자유시간 100% 스마트폰). EF resolveSpecId는 이미 description_random_* 매칭 보유 — 재배포 불필요. ModelAnswer에 Web Speech API 듣기 버튼(▶/⏹ 토글, en-US 우선 voice) 추가 — [learn-room.tsx:853-915](components/coaching/learn-room.tsx#L853-L915). spec 카탈로그 진행률 12→36/90 (40%) |
+| 05-17 | **AI 코치 v5 3-layer 구조 전환 ✅** | 081 dogfooding(지형 IH)에서 example_model_answer 약화 인용 발견 → 자료 #21 강사 1:1 코칭 etalon 기반 **3-layer 구조 전환**. 마이그 082 `coaching_topic_skeletons` 테이블 신설 + **12 토픽 row** (시사 4/환경 3/산업기술 2/개인 3 — RANDOM_TOPICS_13 화이트리스트 매핑). skeleton_slots jsonb(Step 0~7 만능 표현 풀) + full_etalon(강사 풀 모범 IH→AL 매트릭스) + upgrade_cards(토픽 특화 카드). 자료 #11~#14 + #21 직접 추출. 마이그 083 `coaching_system_v1` 강화(7574→9974자) — TOPIC SKELETON LAYER + STUDENT TEXT VERIFICATION(자료 #21 강화) + QUANTIFICATION CARD(산업기술 결정타) + DEBATE CLOSING CARD(환경 4문장) + DUALITY DEBATE 5-STEP(자유시간) 의무 짚기. EF `coaching-evaluate` `fetchTopicSkeleton` 추가 + assembleUserPrompt에 Layer C(B-Topic) 섹션 + "학생 답변 골격 유지 + 슬롯 카피 의무" 원칙 5개 주입 + 재배포. §11.7.10 본문 정정 — "돌발 = 공통형+description만, 다른 question_type은 돌발 X" 명시 |
 
 <!-- 이후 새 이력은 이 테이블에 행 추가 + memory/개발이력.md에 상세 기록 -->
 
@@ -653,10 +650,14 @@ origin: https://Storm-Boy777@github.com/Storm-Boy777/soridam.git
 
 > **⚠️ 새 세션 시작 시 필수**: 스피킹 코치 작업 이어가면 [`docs/스피킹코치_세션인계.md`](docs/스피킹코치_세션인계.md) 먼저 읽기 (v5 작업 풀 컨텍스트). 오픽 스터디 작업이면 `docs/오픽스터디_세션인계.md` 참조.
 
-**현재**: Phase 1~6 ✅ + **Phase 7 AI 코치 v5 백지 재설계 — 묘사 유형 MVP 작동 검증 완료 (92/100)** ✅ + 권한 시스템 ✅
+**현재**: Phase 1~6 ✅ + **Phase 7 AI 코치 v5 — 묘사 + 돌발 4 그룹(36/90 spec, 40%) ✅ + 권한 시스템 ✅ + Web Speech TTS ✅**
 **다음 작업** (스피킹 코치):
-  1. 마이그 080 분사구문 강화 + UI ModelAnswer 시각화 검증
-  2. 묘사 외 13 유형 spec 작성 — description_random 4 그룹(자료 #11~#14) → rp(자료 #2/#6/#7) → past 3종(자료 #8/#9/#10) → adv(자료 #15~#17) → routine/comparison(DB 합성)
+  1. ~~description_random 4 그룹 × 6 등급 = 24 row~~ ✅ (마이그 081)
+  2. **rp_11 / rp_12 × 6 = 12 row** (자료 #2/#6/#7) — 마이그 082
+  3. past_childhood / past_recent / past_special × 6 = 18 row (자료 #8/#9/#10) — 마이그 083
+  4. adv_14 / adv_15 × 6 = 12 row (자료 #3/#4/#15/#16/#17) — 마이그 084
+  5. routine / comparison × 6 = 12 row (DB 합성) — 마이그 085
+  → 총 90 row 완성 시 14 유형 × 6 등급 매트릭스 완료
   3. 현재 12/90 row → 90/90 row 완성 목표
 
 **⚠️ Claude는 프리뷰 검증 X** (사용자가 직접 브라우저로 진행). 코드 작성/수정만.
@@ -773,12 +774,12 @@ Stage C: mock-test-report (평가엔진 7-Step + overview/growth GPT)
 
 **라우트**: `/coaching`(메인 2탭) → `/coaching/topic/[type]`(토픽) → `/coaching/topic/[type]/[topic]`(질문 리스트) → `/coaching/learn/[sessionId]`(학습룸)
 
-### 소리담 프로젝트 구축 (하루오픽 코드 기반)
+### 소리담 프로젝트 구축 (레거시 재설계 기반)
 
 | # | 작업 | 상태 |
 |---|------|------|
 | 1 | GitHub 저장소 생성 (Storm-Boy777/soridam) | ✅ |
-| 2 | 하루오픽 코드 복사 + 디자인 변경 | ✅ |
+| 2 | 소리담 레거시 기반 재설계 + 디자인 변경 | ✅ |
 | 3 | Supabase 소리담 프로젝트 연결 (fkkdbnebsaecjpqhhdvl) | ✅ |
 | 4 | Vercel 소리담 프로젝트 생성 | ✅ |
 | 5 | 도메인 연결 (soridamhub.com) | ✅ |
@@ -804,7 +805,7 @@ Stage C: mock-test-report (평가엔진 7-Step + overview/growth GPT)
 - **AI 코치** (/coaching): 유형별 | 주제별
 - **오픽 스터디** (/opic-study): 별도 디자인 시스템(.bp-scope) — 홈 / lobby / session(Step 1~7) / my / history
 
-### DB 현황 (46개 테이블 — AI 코치 5개 추가 ✅)
+### DB 현황 (47개 테이블 — AI 코치 5개 + coaching_topic_skeletons 추가 ✅)
 
 > **오픽 스터디 가이드 v3 추가 2테이블** (마이그레이션 056/058):
 > - `question_type_guides` — 10 row 한글 유형 가이드 마스터 (description/routine/comparison/past_*/rp_*/adv_*)
@@ -949,11 +950,6 @@ PGPASSWORD='soridam2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/16
   -d postgres \
   --set=sslmode=require \
   -c "SQL문"
-```
-
-하루오픽 DB (아카이브, 필요 시만):
-```bash
-PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/16/bin/psql" -h aws-1-ap-northeast-2.pooler.supabase.com -p 6543 -U postgres.rwdsyqnrrpwkureqfxwb -d postgres --set=sslmode=require -c "SQL문"
 ```
 
 > 상세 진행 상황은 `docs/실행계획.md`의 "현재 진행 상태" 참조

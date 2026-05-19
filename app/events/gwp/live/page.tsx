@@ -80,13 +80,40 @@ function formatCheerDate(iso: string): string {
 
 export default function GwpLivePage() {
   const [phase, setPhase] = useState<'loading' | 'error' | 'ready' | 'playing'>('loading')
+
+  // 전시용 풀스크린 페이지 — html/body 스크롤바 + scrollbar-gutter 자리 모두 제거
+  // (globals.css에서 데스크톱은 scrollbar-gutter: stable이 걸려 우측에 빈 띠가 보임)
+  useEffect(() => {
+    const html = document.documentElement
+    const body = document.body
+    const prevHtmlOverflow = html.style.overflow
+    const prevBodyOverflow = body.style.overflow
+    const prevHtmlGutter = html.style.scrollbarGutter
+    html.style.overflow = 'hidden'
+    body.style.overflow = 'hidden'
+    html.style.scrollbarGutter = 'auto'
+    return () => {
+      html.style.overflow = prevHtmlOverflow
+      body.style.overflow = prevBodyOverflow
+      html.style.scrollbarGutter = prevHtmlGutter
+    }
+  }, [])
   const [cheers, setCheers] = useState<Cheer[]>([])
   const [loaded, setLoaded] = useState(0)
   const [total, setTotal] = useState(0)
   const [errMsg, setErrMsg] = useState('')
+  // 자동 녹화 모드 — ?mode=record&signal=7777 로 진입 시
+  // 셔플 비활성(시간순 고정) + 시작 버튼 스킵 + 한 바퀴 끝나면 signal 서버에 done 신호
+  const [recordMode, setRecordMode] = useState(false)
+  const [signalPort, setSignalPort] = useState<number | null>(null)
 
   useEffect(() => {
     let cancelled = false
+    const params = new URLSearchParams(window.location.search)
+    const isRecord = params.get('mode') === 'record'
+    const port = Number(params.get('signal')) || null
+    setRecordMode(isRecord)
+    setSignalPort(port)
 
     async function run() {
       try {
@@ -124,9 +151,9 @@ export default function GwpLivePage() {
         if (cancelled) return
 
         setCheers(data)
-        // 로딩 끝나면 '시작 버튼' 화면으로 — 사용자 클릭 후에 슬라이드+BGM 동시 시작
-        // (브라우저 autoplay 정책 우회 + 행사 시작 타이밍 운영자 통제)
-        setPhase('ready')
+        // 녹화 모드는 시작 버튼 스킵 → 바로 슬라이드 (Chrome --autoplay-policy로 BGM도 자동 재생됨)
+        // 일반 모드는 시작 버튼 화면 → 사용자 클릭 후에 슬라이드+BGM 동시 시작
+        setPhase(isRecord ? 'playing' : 'ready')
       } catch (e) {
         if (cancelled) return
         setErrMsg(e instanceof Error ? e.message : '알 수 없는 오류가 났어요')
@@ -143,7 +170,7 @@ export default function GwpLivePage() {
   if (phase === 'loading') return <LoadingScreen loaded={loaded} total={total} />
   if (phase === 'error') return <ErrorScreen message={errMsg} />
   if (phase === 'ready') return <ReadyScreen onStart={() => setPhase('playing')} />
-  return <Slideshow cheers={cheers} />
+  return <Slideshow cheers={cheers} recordMode={recordMode} signalPort={signalPort} />
 }
 
 function LoadingScreen({ loaded, total }: { loaded: number; total: number }) {
@@ -275,7 +302,16 @@ function ReadyScreen({ onStart }: { onStart: () => void }) {
   )
 }
 
-function Slideshow({ cheers }: { cheers: Cheer[] }) {
+function Slideshow({
+  cheers,
+  recordMode = false,
+  signalPort = null,
+}: {
+  cheers: Cheer[]
+  recordMode?: boolean
+  signalPort?: number | null
+}) {
+  // 녹화 / 일반 모두 셔플. 녹화 모드는 한 바퀴 끝나면 재셔플 안 하고 done 신호로 종료.
   const orderRef = useRef<number[]>(shuffle(cheers.length))
   const cursorRef = useRef(0)
   const frontRef = useRef(0)
@@ -288,11 +324,33 @@ function Slideshow({ cheers }: { cheers: Cheer[] }) {
   ])
   const [front, setFront] = useState(0)
   const [paused, setPaused] = useState(false)
+  // 녹화 모드: 한 바퀴 끝나면 true → 인터벌 정지 + done 신호
+  const [isDone, setIsDone] = useState(false)
+
+  // 슬라이드쇼 첫 마운트 시점에 ready 신호 — 녹화 스크립트가 ffmpeg 시작하도록
+  useEffect(() => {
+    if (!recordMode || !signalPort) return
+    fetch(`http://127.0.0.1:${signalPort}/ready`, {
+      method: 'POST',
+      mode: 'no-cors',
+      keepalive: true,
+    }).catch(() => {})
+  }, [recordMode, signalPort])
 
   // 다음 응원을 뒤쪽(안 보이는) 레이어에 깔고 두 레이어를 교차 페이드
   const advance = useCallback(() => {
     let next = cursorRef.current + 1
     if (next >= orderRef.current.length) {
+      // 녹화 모드: 한 바퀴 끝 → 인터벌 정지하고 done 신호 (마지막 슬라이드는 그대로 유지)
+      if (recordMode && signalPort) {
+        setIsDone(true)
+        fetch(`http://127.0.0.1:${signalPort}/done`, {
+          method: 'POST',
+          mode: 'no-cors',
+          keepalive: true,
+        }).catch(() => {})
+        return
+      }
       orderRef.current = shuffle(cheers.length) // 한 바퀴 끝나면 다시 셔플
       next = 0
     }
@@ -307,14 +365,14 @@ function Slideshow({ cheers }: { cheers: Cheer[] }) {
     })
     frontRef.current = back
     setFront(back)
-  }, [cheers])
+  }, [cheers, recordMode, signalPort])
 
-  // 자동 재생 (일시정지 중엔 멈춤)
+  // 자동 재생 (일시정지 중 / 녹화 완료 시엔 멈춤)
   useEffect(() => {
-    if (paused) return
+    if (paused || isDone) return
     const timer = window.setInterval(advance, SLIDE_MS)
     return () => window.clearInterval(timer)
-  }, [paused, advance])
+  }, [paused, advance, isDone])
 
   // 운영자용 단축키: Space = 일시정지/재개, → = 다음 (화면엔 표시 안 함)
   useEffect(() => {
