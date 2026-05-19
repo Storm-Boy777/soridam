@@ -19,8 +19,9 @@ import {
   Loader2, AlertCircle, Square,
 } from "lucide-react";
 import { createBrowserClient } from "@supabase/ssr";
-import { getQuestionsByTopic, getTopicsByCategory } from "@/lib/queries/master-questions";
-import { fetchPanelMembers } from "@/lib/actions/study-group";
+import { getTopicsByCategory } from "@/lib/queries/master-questions";
+import { fetchPanelMembers, fetchTalklishCombos } from "@/lib/actions/study-group";
+import type { TalklishCombo, TalklishComboQuestion } from "@/lib/actions/study-group";
 import type { PanelMember } from "@/lib/types/study-group";
 import { QUESTION_TYPE_LABELS } from "@/lib/types/reviews";
 import { useRecorder } from "@/lib/hooks/use-recorder";
@@ -68,8 +69,8 @@ export function OpicStage({ absentIds, onToggleAttendance }: Props) {
   const [phase, setPhase] = useState(0);
   const [category, setCategory] = useState<Category>("일반");
   const [topic, setTopic] = useState<string | null>(null);
-  const [comboStart, setComboStart] = useState(0); // 콤보 시작 인덱스 (4문항씩)
-  const [qIdx, setQIdx] = useState(0);             // 콤보 내 질문 인덱스 (0~3)
+  const [selectedSig, setSelectedSig] = useState<string | null>(null); // 선택된 콤보 시그니처
+  const [qIdx, setQIdx] = useState(0);             // 콤보 내 질문 인덱스 (0~N-1)
   const [subStep, setSubStep] = useState<SubStep>("speaker");
   const [activeSpeaker, setActiveSpeaker] = useState(0);
   const [spinning, setSpinning] = useState(false);
@@ -83,11 +84,12 @@ export function OpicStage({ absentIds, onToggleAttendance }: Props) {
     queryFn: () => getTopicsByCategory(category),
     staleTime: Infinity,
   });
-  const { data: questions = [] } = useQuery({
-    queryKey: ["study-questions", topic, category],
-    queryFn: () => getQuestionsByTopic(topic!, category),
+  // 시험후기 SSOT 기반 실제 출제 콤보 (/opic-study/explore와 동일 데이터)
+  const { data: combos = [] } = useQuery({
+    queryKey: ["talklish-combos", category, topic],
+    queryFn: () => fetchTalklishCombos({ category, topic: topic! }),
     enabled: !!topic,
-    staleTime: Infinity,
+    staleTime: 5 * 60 * 1000,
   });
   const { data: members = [] } = useQuery({
     queryKey: ["study-panel-members"],
@@ -95,10 +97,11 @@ export function OpicStage({ absentIds, onToggleAttendance }: Props) {
     staleTime: 5 * 60 * 1000,
   });
 
-  const combo = useMemo(
-    () => questions.slice(comboStart, comboStart + 4),
-    [questions, comboStart],
+  const selectedCombo = useMemo(
+    () => combos.find((c) => c.sig === selectedSig) ?? null,
+    [combos, selectedSig],
   );
+  const combo = selectedCombo?.questions ?? [];
   const currentQ = combo[qIdx];
 
   const presentMembers = useMemo(
@@ -214,11 +217,11 @@ export function OpicStage({ absentIds, onToggleAttendance }: Props) {
                 category={category}
                 topics={topics}
                 topic={topic}
-                comboStart={comboStart}
-                questions={questions}
-                onCategoryChange={(c) => { setCategory(c); setTopic(null); setComboStart(0); setQIdx(0); }}
-                onTopicChange={(t) => { setTopic(t); setComboStart(0); setQIdx(0); }}
-                onComboStartChange={(n) => { setComboStart(n); setQIdx(0); }}
+                combos={combos}
+                selectedSig={selectedSig}
+                onCategoryChange={(c) => { setCategory(c); setTopic(null); setSelectedSig(null); setQIdx(0); }}
+                onTopicChange={(t) => { setTopic(t); setSelectedSig(null); setQIdx(0); }}
+                onSelectCombo={(sig) => { setSelectedSig(sig); setQIdx(0); }}
                 onStart={() => { setPhase(2); setQIdx(0); setSubStep("speaker"); }}
               />
             )}
@@ -484,25 +487,25 @@ function ComboPickerPhase({
   category,
   topics,
   topic,
-  comboStart,
-  questions,
+  combos,
+  selectedSig,
   onCategoryChange,
   onTopicChange,
-  onComboStartChange,
+  onSelectCombo,
   onStart,
 }: {
   category: Category;
   topics: TopicMeta[];
   topic: string | null;
-  comboStart: number;
-  questions: { id: string; question_korean?: string | null; question_english?: string | null; question_type_eng?: string | null }[];
+  combos: TalklishCombo[];
+  selectedSig: string | null;
   onCategoryChange: (c: Category) => void;
   onTopicChange: (t: string) => void;
-  onComboStartChange: (n: number) => void;
+  onSelectCombo: (sig: string) => void;
   onStart: () => void;
 }) {
-  const combo = questions.slice(comboStart, comboStart + 4);
-  const comboCount = Math.max(1, Math.ceil(questions.length / 4));
+  const selectedCombo = combos.find((c) => c.sig === selectedSig) ?? null;
+  const combo = selectedCombo?.questions ?? [];
 
   return (
     <div className="flex h-full flex-col gap-7">
@@ -747,8 +750,8 @@ function ComboPickerPhase({
           </div>
         )}
 
-        {/* 콤보 묶음 (토픽 선택 + 5문항 이상일 때 노출) */}
-        {topic && questions.length > 4 && (
+        {/* 콤보 카드 리스트 (토픽 선택 시 자동 노출) — /opic-study/explore 패턴 */}
+        {topic && combos.length > 0 && (
           <div className="mt-6">
             <p
               style={{
@@ -761,26 +764,113 @@ function ComboPickerPhase({
                 marginBottom: 8,
               }}
             >
-              콤보 묶음 ({comboCount}개)
+              실제 출제 콤보 ({combos.length}개) — 빈도순
             </p>
-            <div className="flex flex-wrap gap-1.5">
-              {Array.from({ length: comboCount }).map((_, i) => {
-                const active = comboStart === i * 4;
+            <div className="space-y-2.5">
+              {combos.map((c, ci) => {
+                const isSelected = selectedSig === c.sig;
                 return (
                   <button
-                    key={i}
+                    key={c.sig}
                     type="button"
-                    onClick={() => onComboStartChange(i * 4)}
-                    className="rounded-full px-3 py-1.5 text-xs font-semibold transition-colors"
+                    onClick={() => onSelectCombo(c.sig)}
+                    className="w-full rounded-2xl px-5 py-4 text-left transition-all hover:-translate-y-0.5"
                     style={{
-                      background: active ? TLK.accent2 : TLK.paper,
-                      color: active ? "#fff" : TLK.inkDim,
-                      border: `1px solid ${active ? TLK.accent2 : TLK.rule}`,
-                      fontFamily: TLK_FONT.sans,
+                      background: isSelected ? `${TLK.accent}0d` : TLK.paper,
+                      border: `1.5px solid ${isSelected ? TLK.accent : TLK.rule}`,
+                      boxShadow: isSelected ? `0 0 0 4px ${TLK.accent}14` : "none",
                       cursor: "pointer",
                     }}
                   >
-                    콤보 {i + 1}
+                    {/* 헤더 — 콤보 번호 + 빈도 + 등장률 */}
+                    <div className="mb-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="flex h-7 w-7 items-center justify-center rounded-full"
+                          style={{
+                            background: isSelected ? TLK.accent : TLK.bg2,
+                            color: isSelected ? "#fff" : TLK.inkDim,
+                            fontFamily: TLK_FONT.sans,
+                            fontSize: 11,
+                            fontWeight: 800,
+                          }}
+                        >
+                          {ci + 1}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: TLK_FONT.sans,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            letterSpacing: 1,
+                            color: TLK.accent,
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          {c.frequency}회 · {c.appearance_pct}%
+                        </span>
+                        <span style={{ fontFamily: TLK_FONT.sans, fontSize: 11, color: TLK.inkFaint }}>
+                          ({c.total_in_category}개 중)
+                        </span>
+                      </div>
+                      {isSelected && (
+                        <span
+                          aria-hidden="true"
+                          style={{ color: TLK.accent, fontFamily: TLK_FONT.sans, fontSize: 14, fontWeight: 800 }}
+                        >
+                          ✓
+                        </span>
+                      )}
+                    </div>
+
+                    {/* 콤보 안 질문 미리보기 */}
+                    <div className="grid gap-2 md:grid-cols-2">
+                      {c.questions.map((q, qi) => (
+                        <div
+                          key={q.id}
+                          className="rounded-lg px-3 py-2"
+                          style={{ background: TLK.bg2 }}
+                        >
+                          <div className="mb-1 flex items-center gap-1.5">
+                            <span
+                              style={{
+                                fontFamily: TLK_FONT.mono,
+                                fontSize: 10,
+                                fontWeight: 700,
+                                color: TLK.accent,
+                              }}
+                            >
+                              Q{qi + 1}
+                            </span>
+                            <span
+                              style={{
+                                fontFamily: TLK_FONT.sans,
+                                fontSize: 9,
+                                fontWeight: 700,
+                                letterSpacing: 0.8,
+                                color: TLK.inkFaint,
+                                textTransform: "uppercase",
+                              }}
+                            >
+                              {q.question_type_kor ??
+                                QUESTION_TYPE_LABELS[q.question_type as keyof typeof QUESTION_TYPE_LABELS] ??
+                                q.question_type}
+                            </span>
+                          </div>
+                          <p
+                            className="line-clamp-2"
+                            style={{
+                              fontFamily: TLK_FONT.ko,
+                              fontSize: 12,
+                              color: TLK.ink,
+                              lineHeight: 1.45,
+                            }}
+                          >
+                            {q.question_short ?? q.question_korean ?? q.question_english}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </button>
                 );
               })}
@@ -788,88 +878,7 @@ function ComboPickerPhase({
           </div>
         )}
 
-        {/* 콤보 4문항 미리보기 (토픽 선택 후) */}
-        {topic && combo.length > 0 && (
-          <div className="mt-6">
-            <p
-              style={{
-                fontFamily: TLK_FONT.sans,
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: 2,
-                color: TLK.inkFaint,
-                textTransform: "uppercase",
-                marginBottom: 8,
-              }}
-            >
-              이 콤보 ({combo.length}문항)
-            </p>
-            <div className="grid gap-3 md:grid-cols-2">
-              {combo.map((q, i) => (
-                <div
-                  key={q.id}
-                  className="rounded-2xl px-5 py-4"
-                  style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
-                >
-                  <div className="mb-2 flex items-center gap-2">
-                    <span
-                      className="flex h-7 w-7 items-center justify-center rounded-full"
-                      style={{
-                        background: TLK.accent,
-                        color: "#fff",
-                        fontFamily: TLK_FONT.sans,
-                        fontSize: 11,
-                        fontWeight: 800,
-                      }}
-                    >
-                      {i + 1}
-                    </span>
-                    {q.question_type_eng && (
-                      <span
-                        style={{
-                          fontFamily: TLK_FONT.sans,
-                          fontSize: 10,
-                          fontWeight: 700,
-                          letterSpacing: 1,
-                          color: TLK.inkFaint,
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        {QUESTION_TYPE_LABELS[q.question_type_eng as keyof typeof QUESTION_TYPE_LABELS] ?? q.question_type_eng}
-                      </span>
-                    )}
-                  </div>
-                  <p
-                    style={{
-                      fontFamily: TLK_FONT.serif,
-                      fontStyle: "italic",
-                      fontSize: 16,
-                      color: TLK.ink,
-                      lineHeight: 1.4,
-                    }}
-                  >
-                    {q.question_english}
-                  </p>
-                  {q.question_korean && (
-                    <p
-                      style={{
-                        fontFamily: TLK_FONT.ko,
-                        fontSize: 12,
-                        color: TLK.inkDim,
-                        lineHeight: 1.5,
-                        marginTop: 6,
-                      }}
-                    >
-                      {q.question_korean}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {topic && combo.length === 0 && (
+        {topic && combos.length === 0 && (
           <div className="mt-10 text-center">
             <p
               style={{
@@ -879,7 +888,17 @@ function ComboPickerPhase({
                 color: TLK.inkFaint,
               }}
             >
-              이 토픽에 해당하는 질문이 없어요
+              이 토픽 + 카테고리에 실제 출제된 콤보가 없어요
+            </p>
+            <p
+              style={{
+                fontFamily: TLK_FONT.sans,
+                fontSize: 12,
+                color: TLK.inkFaint,
+                marginTop: 6,
+              }}
+            >
+              시험후기가 더 쌓이면 표시됩니다. 다른 토픽을 골라보세요.
             </p>
           </div>
         )}
@@ -942,7 +961,7 @@ function RunPhase({
   topic,
   onGoRecap,
 }: {
-  combo: { id: string; question_korean?: string | null; question_english?: string | null; question_type_eng?: string | null; audio_url?: string | null }[];
+  combo: TalklishComboQuestion[];
   qIdx: number;
   setQIdx: (n: number) => void;
   subStep: SubStep;
@@ -1033,7 +1052,7 @@ function RunPhase({
           className="rounded-2xl px-7 py-6"
           style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
         >
-          {q.question_type_eng && (
+          {q.question_type && (
             <p
               style={{
                 fontFamily: TLK_FONT.sans,
@@ -1045,7 +1064,7 @@ function RunPhase({
                 marginBottom: 6,
               }}
             >
-              {QUESTION_TYPE_LABELS[q.question_type_eng as keyof typeof QUESTION_TYPE_LABELS] ?? q.question_type_eng}
+              {QUESTION_TYPE_LABELS[q.question_type as keyof typeof QUESTION_TYPE_LABELS] ?? q.question_type}
             </p>
           )}
           <p
@@ -1119,7 +1138,7 @@ function RunPhase({
               questionId={q.id}
               questionEnglish={q.question_english ?? ""}
               questionKorean={q.question_korean ?? undefined}
-              questionType={q.question_type_eng ?? undefined}
+              questionType={q.question_type ?? undefined}
               category={category}
               topic={topic ?? undefined}
               hasResult={!!coachResults[q.id]}
@@ -1996,7 +2015,7 @@ function RecapPhase({
   memberRecaps,
   onChangeRecap,
 }: {
-  combo: { id: string; question_english?: string | null }[];
+  combo: TalklishComboQuestion[];
   coachNotes: Record<string, string>;
   members: PanelMember[];
   absentIds: Set<string>;
@@ -2141,7 +2160,7 @@ function ClosingPhase({
   completed,
   onComplete,
 }: {
-  combo: { id: string; question_english?: string | null }[];
+  combo: TalklishComboQuestion[];
   completed: boolean;
   onComplete: (c: boolean) => void;
 }) {
