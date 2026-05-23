@@ -219,7 +219,7 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
               className="truncate"
               style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 16, fontWeight: 500, color: TLK.ink }}
             >
-              {episode.title}
+              {episode.dialogue_title || episode.title}
             </p>
             <p
               style={{ fontFamily: TLK_FONT.sans, fontSize: 10.5, color: TLK.inkFaint, marginTop: 2, letterSpacing: 0.5 }}
@@ -309,7 +309,7 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
                           lineHeight: 1.3,
                         }}
                       >
-                        {ep.title}
+                        {ep.dialogue_title || ep.title}
                       </p>
                       <p style={{ fontFamily: TLK_FONT.sans, fontSize: 10, color: TLK.inkFaint, marginTop: 2 }}>
                         {ep.source} · {ep.duration}
@@ -1677,7 +1677,7 @@ function OpeningSlide({
             marginBottom: 8,
           }}
         >
-          {episode.title}
+          {episode.dialogue_title || episode.title}
         </h1>
         <p style={{ fontFamily: TLK_FONT.sans, fontSize: 14, color: TLK.inkDim, letterSpacing: 0.5 }}>
           {episode.source} · {episode.duration} · {episode.difficulty} · {episode.topic}
@@ -2325,7 +2325,7 @@ function ClosingSlide({
             lineHeight: 1.3,
           }}
         >
-          {episode.title}
+          {episode.dialogue_title || episode.title}
         </p>
         {keepsake && (
           <div
