@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase";
 import { createTalklishPodcast } from "@/lib/actions/study-group";
 import type { PodcastRow } from "@/lib/types/study-group";
 import { TLK, TLK_FONT } from "./tokens";
-import { Youtube, Sparkles, Loader2, Scissors, Volume2, Check, Save, AlertCircle } from "lucide-react";
+import { Youtube, Sparkles, Loader2, Scissors, Volume2, Mic2, Check, Save, AlertCircle } from "lucide-react";
 
 function extractYouTubeId(url: string): string | null {
   const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/);
@@ -18,6 +18,9 @@ function extractYouTubeId(url: string): string | null {
 
 type Material = {
   description: string;
+  dialogue_title: string;
+  dialogue_script: string;
+  roleplay: PodcastRow["roleplay"];
   warmup_question: string;
   listening_mission: string;
   dialogue_segment: { start_sec: number; end_sec: number } | null;
@@ -42,6 +45,10 @@ export function MondayPrepare() {
   const [endSec, setEndSec] = useState(0);
   const [extracting, setExtracting] = useState(false);
   const [audioUrl, setAudioUrl] = useState("");
+  const [generatingKaraoke, setGeneratingKaraoke] = useState(false);
+  const [dialogueTimestamps, setDialogueTimestamps] = useState<
+    { speaker: string; text: string; translation: string; start: number; end: number }[]
+  >([]);
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -56,6 +63,7 @@ export function MondayPrepare() {
     setGenerating(true);
     setMaterial(null);
     setAudioUrl("");
+    setDialogueTimestamps([]);
     setSaved(false);
     try {
       // oEmbed로 제목/채널 자동 채움
@@ -102,6 +110,30 @@ export function MondayPrepare() {
     }
   };
 
+  const handleKaraoke = async () => {
+    setError("");
+    if (!audioUrl || !material?.dialogue_script) {
+      setError("오디오 추출과 대화 스크립트가 모두 필요합니다");
+      return;
+    }
+    setGeneratingKaraoke(true);
+    try {
+      const supabase = createClient();
+      const { data, error: efErr } = await supabase.functions.invoke("study-dialogue-timestamps", {
+        body: { audioUrl, dialogueScript: material.dialogue_script },
+      });
+      if (efErr || !data?.success) {
+        setError(data?.error || efErr?.message || "가라오케 생성에 실패했습니다");
+        return;
+      }
+      setDialogueTimestamps(data.dialogue_timestamps ?? []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "가라오케 생성 중 오류가 발생했습니다");
+    } finally {
+      setGeneratingKaraoke(false);
+    }
+  };
+
   const handleSave = async () => {
     setError("");
     if (!material) return;
@@ -116,6 +148,10 @@ export function MondayPrepare() {
         difficulty: material.difficulty,
         topic: material.topic,
         description: material.description,
+        dialogue_title: material.dialogue_title || null,
+        dialogue_script: material.dialogue_script || null,
+        dialogue_timestamps: dialogueTimestamps,
+        roleplay: material.roleplay ?? null,
         warmup_question: material.warmup_question,
         listening_mission: material.listening_mission,
         dialogue_segment: { start_sec: startSec, end_sec: endSec },
@@ -225,6 +261,24 @@ export function MondayPrepare() {
             <div className="mt-4">
               <p style={{ fontSize: 11, color: TLK.accent2, fontFamily: TLK_FONT.sans, fontWeight: 700, marginBottom: 6 }}>✓ 추출 완료</p>
               <audio controls src={audioUrl} className="w-full" />
+
+              {/* 가라오케 생성 — Whisper STT + 화자 매칭 + 한국어 번역 */}
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleKaraoke}
+                  disabled={generatingKaraoke || !material?.dialogue_script}
+                  className="flex items-center gap-1.5 rounded-lg px-5 py-2.5 transition-all disabled:opacity-50"
+                  style={{ background: TLK.ink, color: "#fff", border: 0, fontFamily: TLK_FONT.sans, fontSize: 13, fontWeight: 700, cursor: generatingKaraoke ? "wait" : "pointer" }}
+                >
+                  {generatingKaraoke ? (<><Loader2 size={14} className="animate-spin" /> 가라오케 생성 중… (30초~1분)</>) : (<><Mic2 size={14} /> 가라오케 자막 생성</>)}
+                </button>
+                {dialogueTimestamps.length > 0 && (
+                  <span style={{ fontSize: 12, color: TLK.accent2, fontFamily: TLK_FONT.sans, fontWeight: 700 }}>
+                    ✓ 화자 세그먼트 {dialogueTimestamps.length}개 (한국어 번역 포함)
+                  </span>
+                )}
+              </div>
             </div>
           )}
         </section>
@@ -240,7 +294,14 @@ export function MondayPrepare() {
             <Chip label={`핵심표현 ${material.todays_picks.length}`} />
             {material.topic && <Chip label={material.topic} />}
             <Chip label={material.difficulty} />
+            {material.dialogue_script && <Chip label="대화 스크립트 ✓" />}
+            {material.roleplay && <Chip label="역할극 ✓" />}
           </div>
+          {material.dialogue_title && (
+            <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 15, color: TLK.ink, marginTop: 10 }}>
+              🎬 {material.dialogue_title}
+            </p>
+          )}
           {material.description && (
             <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 14, color: TLK.inkDim, marginTop: 12, lineHeight: 1.6 }}>
               {material.description}

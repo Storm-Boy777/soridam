@@ -6,18 +6,20 @@
 //
 // 단축키: ← → 단계 이동 / R 룰렛 / F 헤더·푸터 숨김(영상·어휘 몰입).
 
-import { useMemo, useState, useEffect, useCallback, useRef } from "react";
+import { useMemo, useState, useEffect, useCallback, useRef, type MouseEvent } from "react";
 import {
   Volume2, Mic,
   ChevronLeft, ChevronRight, ChevronDown,
-  Play, Eye, EyeOff,
+  Play, Pause, RotateCcw, Headphones, MessageCircle,
+  Eye, EyeOff,
   Users, Target, Clock, CheckCircle, Sparkles, Undo2,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchPodcasts, fetchPanelMembers } from "@/lib/actions/study-group";
-import type { PodcastRow, PanelMember, KeyExpression, DialogueLine } from "@/lib/types/study-group";
+import type { PodcastRow, PanelMember, KeyExpression, DialogueLine, RoleplayRole } from "@/lib/types/study-group";
 import { TLK, TLK_FONT } from "./tokens";
 import { useSpeakerRoulette } from "./use-speaker-roulette";
+import { SpeakerCard } from "./speaker-card";
 
 /* ─── 데이터 정규화 (구버전 자료 호환) ──────────── */
 
@@ -28,6 +30,8 @@ function normalizeKeyExpression(raw: unknown): KeyExpression {
     const example = typeof k.example === "string" ? k.example : "";
     return {
       expression: typeof k.english === "string" ? k.english : "",
+      pronunciation: "",
+      part_of_speech: "",
       meaning_ko: typeof k.korean === "string" ? k.korean : "",
       meaning_en: "",
       examples: example ? [{ en: example, ko: "" }] : [],
@@ -50,6 +54,8 @@ function normalizeKeyExpression(raw: unknown): KeyExpression {
     : [];
   return {
     expression: typeof k.expression === "string" ? k.expression : "",
+    pronunciation: typeof k.pronunciation === "string" ? k.pronunciation : "",
+    part_of_speech: typeof k.part_of_speech === "string" ? k.part_of_speech : "",
     meaning_ko: typeof k.meaning_ko === "string" ? k.meaning_ko : "",
     meaning_en: typeof k.meaning_en === "string" ? k.meaning_en : "",
     examples,
@@ -73,12 +79,12 @@ function normalizeEpisode(raw: PodcastRow): PodcastRow {
 
 /* ─── 8단계 정의 (레거시 Talklish 흐름 확장) ─────
  *
- * Opening → 1차 청취 → 내용 공유 → 어휘·표현 → 역할극 → 토론 → 랩업 → Closing
+ * Opening → 1차 청취 → 2차 청취 → 어휘·표현 → 역할극 → 토론 → 랩업 → Closing
  *
  * 60분 분배:
  *   0:  Opening      0–2분    (세션 정보 + 출석 — 큰 모니터용)
- *   1:  1차 청취      2–12분   (영상 듣기, 가라오케)
- *   2:  내용 공유    12–22분   (룰렛 + 들은 내용 나누기)
+ *   1:  1차 청취      2–14분   (자막 없이 듣기 + 발화자 룰렛 내용 공유)
+ *   2:  2차 청취     14–22분   (가라오케 자막 보며 다시 듣기)
  *   3:  어휘·표현    22–37분   (플래시 카드)
  *   4:  역할극        37–47분   (짝 대화 — 표현 활용)
  *   5:  토론          47–55분   (AI 토론 질문)
@@ -88,8 +94,8 @@ function normalizeEpisode(raw: PodcastRow): PodcastRow {
 
 const FLOW = [
   { id: 0, label: "Opening",         desc: "세션 정보 + 출석 확인",              range: "0–2"   },
-  { id: 1, label: "1차 청취",        desc: "전체 분위기 파악, 모르는 단어 메모", range: "2–12"  },
-  { id: 2, label: "내용 공유",       desc: "들은 내용 자유롭게 공유",            range: "12–22" },
+  { id: 1, label: "1차 청취",        desc: "자막 없이 듣고 들은 내용 나누기",     range: "2–14"  },
+  { id: 2, label: "2차 청취",        desc: "자막 보며 다시 듣기 (가라오케)",      range: "14–22" },
   { id: 3, label: "어휘·표현 학습",  desc: "주요 표현 복기 + 다시 듣기",         range: "22–37" },
   { id: 4, label: "역할극",          desc: "짝과 함께 오늘 표현 활용",           range: "37–47" },
   { id: 5, label: "토론",            desc: "AI가 만든 질문으로 토론",            range: "47–55" },
@@ -99,7 +105,7 @@ const FLOW = [
 
 function phaseFromElapsed(s: number): number {
   if (s < 2 * 60) return 0;
-  if (s < 12 * 60) return 1;
+  if (s < 14 * 60) return 1;
   if (s < 22 * 60) return 2;
   if (s < 37 * 60) return 3;
   if (s < 47 * 60) return 4;
@@ -174,7 +180,7 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
       if (t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
       if (e.key === "ArrowRight") { e.preventDefault(); goPhase(phase + 1); }
       else if (e.key === "ArrowLeft") { e.preventDefault(); goPhase(phase - 1); }
-      else if (e.key === "r" || e.key === "R") { if (phase === 2 || phase === 5) { e.preventDefault(); spin(); } }
+      else if (e.key === "r" || e.key === "R") { if (phase === 1 || phase === 5) { e.preventDefault(); spin(); } }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -228,7 +234,7 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
               className="hidden sm:block"
               style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 2, color: TLK.inkFaint, textTransform: "uppercase" }}
             >
-              {String(phase + 1).padStart(2, "0")} / 05
+              {String(phase + 1).padStart(2, "0")} / {String(FLOW.length).padStart(2, "0")}
             </p>
             <div className="flex items-center gap-1.5">
               {FLOW.map((f, i) => {
@@ -327,9 +333,8 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
             {phase === 0 && (
               <OpeningSlide episode={episode} members={members} absentIds={absentIds} />
             )}
-            {phase === 1 && <ListenSlide episode={episode} />}
-            {phase === 2 && (
-              <ShareSlide
+            {phase === 1 && (
+              <ListenFirstSlide
                 episode={episode}
                 members={members}
                 absentIds={absentIds}
@@ -337,8 +342,10 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
                 hasSpun={hasSpun}
                 spinning={spinning}
                 onSpin={spin}
+                onToggleAttendance={onToggleAttendance}
               />
             )}
+            {phase === 2 && <ListenAgainSlide episode={episode} />}
             {phase === 3 && (
               <VocabSlide
                 episode={episode}
@@ -511,379 +518,138 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
 }
 
 /* ─────────────────────────────────────────────
-   슬라이드 1 · 1차 청취 (YouTube IFrame + 가라오케)
+   공유 오디오 플레이어 — 레거시 DialoguePlayer/DialogueSegmentSlideWithKaraoke BM
+   재생/일시정지 + 다시듣기 + 시간 + 진행바. 1차·2차 청취가 함께 사용.
    ───────────────────────────────────────────── */
 
-// YouTube IFrame Player API 타입 (최소)
-type YTPlayer = {
-  getCurrentTime: () => number;
-  destroy: () => void;
-};
-type YTApi = {
-  Player: new (
-    id: string,
-    opts: {
-      videoId: string;
-      playerVars?: Record<string, number | string>;
-      events?: { onReady?: () => void };
-    }
-  ) => YTPlayer;
-};
-declare global {
-  interface Window {
-    YT?: YTApi;
-    onYouTubeIframeAPIReady?: () => void;
-  }
-}
+function useAudioPlayer() {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
 
-const YT_API_SRC = "https://www.youtube.com/iframe_api";
-const YT_SCRIPT_ID = "yt-iframe-api";
-
-function loadYouTubeApi(): Promise<YTApi> {
-  return new Promise((resolve) => {
-    if (typeof window === "undefined") return;
-    if (window.YT?.Player) {
-      resolve(window.YT);
-      return;
-    }
-    const existing = document.getElementById(YT_SCRIPT_ID);
-    const prev = window.onYouTubeIframeAPIReady;
-    window.onYouTubeIframeAPIReady = () => {
-      prev?.();
-      if (window.YT) resolve(window.YT);
-    };
-    if (!existing) {
-      const s = document.createElement("script");
-      s.id = YT_SCRIPT_ID;
-      s.src = YT_API_SRC;
-      s.async = true;
-      document.body.appendChild(s);
-    }
-  });
-}
-
-function ListenSlide({ episode }: { episode: PodcastRow }) {
-  const ytId = extractYouTubeId(episode.url);
-  const seg = episode.dialogue_segment;
-  const lines = episode.dialogue_lines;
-  const fmtSec = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-
-  const playerDivId = useMemo(() => `yt-player-${episode.id}`, [episode.id]);
-  const playerRef = useRef<YTPlayer | null>(null);
-  const [currentMs, setCurrentMs] = useState(0);
-  const [showLyrics, setShowLyrics] = useState(true);
-
-  // YouTube IFrame Player 초기화
   useEffect(() => {
-    if (!ytId) return;
-    let cancelled = false;
-    loadYouTubeApi().then((YT) => {
-      if (cancelled) return;
-      // 같은 div에 player가 이미 있으면 정리
-      playerRef.current?.destroy();
-      playerRef.current = new YT.Player(playerDivId, {
-        videoId: ytId,
-        playerVars: {
-          ...(seg ? { start: seg.start_sec, end: seg.end_sec } : {}),
-          rel: 0,
-          modestbranding: 1,
-        },
-      });
-    });
+    const a = audioRef.current;
+    if (!a) return;
+    const onTime = () => setCurrentTime(a.currentTime);
+    const onDur = () => setDuration(Number.isFinite(a.duration) ? a.duration : 0);
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+    const onEnded = () => setIsPlaying(false);
+    a.addEventListener("timeupdate", onTime);
+    a.addEventListener("loadedmetadata", onDur);
+    a.addEventListener("durationchange", onDur);
+    a.addEventListener("play", onPlay);
+    a.addEventListener("pause", onPause);
+    a.addEventListener("ended", onEnded);
     return () => {
-      cancelled = true;
-      try {
-        playerRef.current?.destroy();
-      } catch {
-        /* noop */
-      }
-      playerRef.current = null;
+      a.removeEventListener("timeupdate", onTime);
+      a.removeEventListener("loadedmetadata", onDur);
+      a.removeEventListener("durationchange", onDur);
+      a.removeEventListener("play", onPlay);
+      a.removeEventListener("pause", onPause);
+      a.removeEventListener("ended", onEnded);
     };
-  }, [ytId, playerDivId, seg?.start_sec, seg?.end_sec]);
-
-  // currentTime 폴링 (180ms — 가라오케 자연스러움 + CPU 부담 균형)
-  useEffect(() => {
-    const id = setInterval(() => {
-      const p = playerRef.current;
-      if (!p?.getCurrentTime) return;
-      try {
-        setCurrentMs(p.getCurrentTime() * 1000);
-      } catch {
-        /* noop */
-      }
-    }, 180);
-    return () => clearInterval(id);
   }, []);
 
-  // 활성 라인 인덱스
-  const activeIdx = useMemo(() => {
-    for (let i = 0; i < lines.length; i++) {
-      if (currentMs >= lines[i].start_ms && currentMs < lines[i].end_ms) return i;
-    }
-    return -1;
-  }, [lines, currentMs]);
+  const toggle = () => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (a.paused) void a.play();
+    else a.pause();
+  };
+  const restart = () => {
+    const a = audioRef.current;
+    if (!a) return;
+    a.currentTime = 0;
+    void a.play();
+  };
+  const seekTo = (t: number) => {
+    const a = audioRef.current;
+    if (!a) return;
+    a.currentTime = t;
+    void a.play();
+  };
 
-  // 활성 라인 자동 스크롤
-  const lineRefs = useRef<(HTMLDivElement | null)[]>([]);
-  useEffect(() => {
-    if (activeIdx >= 0 && lineRefs.current[activeIdx]) {
-      lineRefs.current[activeIdx]!.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-  }, [activeIdx]);
+  return { audioRef, currentTime, duration, isPlaying, toggle, restart, seekTo };
+}
 
+function AudioPlayerBar({
+  currentTime,
+  duration,
+  isPlaying,
+  onToggle,
+  onRestart,
+  onSeek,
+  size = "md",
+}: {
+  currentTime: number;
+  duration: number;
+  isPlaying: boolean;
+  onToggle: () => void;
+  onRestart: () => void;
+  onSeek?: (t: number) => void;
+  size?: "md" | "lg";
+}) {
+  const fmt = (t: number) => {
+    if (!Number.isFinite(t)) return "0:00";
+    const m = Math.floor(t / 60);
+    const s = Math.floor(t % 60);
+    return `${m}:${String(s).padStart(2, "0")}`;
+  };
+  const pct = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
+  const big = size === "lg";
+  const onBarClick = (e: MouseEvent<HTMLDivElement>) => {
+    if (!onSeek || duration <= 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    onSeek(ratio * duration);
+  };
   return (
-    <div className="flex h-full flex-col gap-4">
-      {/* 듣기 미션 + Warm-up 칩 (상단) */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {episode.listening_mission ? (
-          <div
-            className="rounded-full px-4 py-2"
-            style={{ background: `${TLK.accent}14`, border: `1px solid ${TLK.accent}33` }}
-          >
-            <span
-              style={{
-                fontFamily: TLK_FONT.sans,
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: 1.5,
-                color: TLK.accent,
-                textTransform: "uppercase",
-                marginRight: 10,
-              }}
-            >
-              듣기 미션
-            </span>
-            <span style={{ fontFamily: TLK_FONT.ko, fontSize: 14, color: TLK.ink }}>
-              {episode.listening_mission}
-            </span>
-          </div>
-        ) : (
-          <span />
-        )}
-        {episode.warmup_question && (
-          <div className="flex max-w-xl items-baseline gap-2">
-            <span
-              style={{
-                fontFamily: TLK_FONT.sans,
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: 1.5,
-                color: TLK.inkFaint,
-                textTransform: "uppercase",
-              }}
-            >
-              Warm-up
-            </span>
-            <span style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 14, color: TLK.ink }}>
-              “{episode.warmup_question}”
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* 영상 */}
-      <div
-        className="mx-auto w-full max-w-4xl overflow-hidden rounded-2xl shadow-xl"
-        style={{ aspectRatio: "16/9", background: "#000", border: `1px solid ${TLK.rule}` }}
+    <div className="flex items-center gap-4">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-label={isPlaying ? "일시정지" : "재생"}
+        className="flex items-center justify-center rounded-full transition-all"
+        style={{ width: big ? 72 : 50, height: big ? 72 : 50, background: TLK.accent, color: "#fff", border: 0, cursor: "pointer" }}
       >
-        {ytId ? (
-          <div id={playerDivId} className="h-full w-full" />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <a
-              href={episode.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-full px-6 py-3 text-sm font-semibold"
-              style={{ background: TLK.accent, color: "#fff", fontFamily: TLK_FONT.sans }}
-            >
-              팟캐스트 열기 ↗
-            </a>
-          </div>
-        )}
-      </div>
-
-      {/* 가라오케 카드 (영상 아래) */}
-      <div className="mx-auto w-full max-w-4xl">
-        <div className="mb-2 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {seg && (
-              <div
-                className="flex items-center gap-2 rounded-full px-3 py-1"
-                style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
-              >
-                <Play size={10} style={{ color: TLK.accent }} />
-                <span style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, color: TLK.accent }}>
-                  대화 구간
-                </span>
-                <span style={{ fontFamily: TLK_FONT.mono, fontSize: 10, color: TLK.inkDim }}>
-                  {fmtSec(seg.start_sec)} – {fmtSec(seg.end_sec)}
-                </span>
-              </div>
-            )}
-            {lines.length > 0 && activeIdx >= 0 && (
-              <span style={{ fontFamily: TLK_FONT.mono, fontSize: 10, color: TLK.inkFaint }}>
-                {String(activeIdx + 1).padStart(2, "0")} / {String(lines.length).padStart(2, "0")}
-              </span>
-            )}
-          </div>
-          {lines.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowLyrics((v) => !v)}
-              className="flex items-center gap-1.5 rounded-full px-3 py-1"
-              style={{
-                background: TLK.bg2,
-                border: `1px solid ${TLK.rule}`,
-                color: TLK.inkDim,
-                fontFamily: TLK_FONT.sans,
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: 1,
-                cursor: "pointer",
-              }}
-            >
-              {showLyrics ? <EyeOff size={11} /> : <Eye size={11} />}
-              {showLyrics ? "자막 숨기기" : "자막 보기"}
-            </button>
-          )}
-        </div>
-
-        {showLyrics && lines.length > 0 ? (
-          <div
-            className="overflow-y-auto rounded-2xl px-4 py-3"
-            style={{
-              background: TLK.paper,
-              border: `1px solid ${TLK.rule}`,
-              maxHeight: 220,
-            }}
-          >
-            {lines.map((line, i) => {
-              const isActive = i === activeIdx;
-              const isPast = i < activeIdx;
-              return (
-                <div
-                  key={i}
-                  ref={(el) => {
-                    lineRefs.current[i] = el;
-                  }}
-                  className="rounded-lg px-3 py-2 transition-all"
-                  style={{
-                    background: isActive ? `${TLK.accent}14` : "transparent",
-                    opacity: isActive ? 1 : isPast ? 0.45 : 0.7,
-                  }}
-                >
-                  <p
-                    style={{
-                      fontFamily: TLK_FONT.serif,
-                      fontStyle: "italic",
-                      fontSize: isActive ? 22 : 16,
-                      fontWeight: isActive ? 500 : 400,
-                      color: TLK.ink,
-                      lineHeight: 1.45,
-                      transition: "all .25s",
-                    }}
-                  >
-                    {isActive ? (
-                      <KaraokeLine
-                        text={line.text}
-                        startMs={line.start_ms}
-                        endMs={line.end_ms}
-                        currentMs={currentMs}
-                      />
-                    ) : (
-                      line.text
-                    )}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        ) : showLyrics && lines.length === 0 ? (
-          <div
-            className="rounded-2xl px-4 py-3 text-center"
-            style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
-          >
-            <p style={{ fontFamily: TLK_FONT.sans, fontSize: 11, color: TLK.inkFaint }}>
-              가라오케 자막이 아직 없습니다 — 자료를 다시 생성해 주세요
-            </p>
-          </div>
-        ) : null}
-      </div>
-
-      {episode.description && (
-        <p
-          className="mx-auto max-w-3xl text-center"
-          style={{
-            fontFamily: TLK_FONT.serif,
-            fontSize: 13,
-            color: TLK.inkDim,
-            fontStyle: "italic",
-            lineHeight: 1.5,
-          }}
+        {isPlaying ? <Pause size={big ? 28 : 20} /> : <Play size={big ? 28 : 20} style={{ marginLeft: 2 }} />}
+      </button>
+      <button
+        type="button"
+        onClick={onRestart}
+        aria-label="처음부터 다시 듣기"
+        className="flex items-center justify-center rounded-full transition-all"
+        style={{ width: big ? 52 : 40, height: big ? 52 : 40, background: TLK.bg2, color: TLK.inkDim, border: `1px solid ${TLK.rule}`, cursor: "pointer" }}
+      >
+        <RotateCcw size={big ? 22 : 16} />
+      </button>
+      <div className="flex flex-1 items-center gap-3">
+        <span style={{ fontFamily: TLK_FONT.mono, fontSize: big ? 14 : 12, color: TLK.inkDim, minWidth: big ? 48 : 40, textAlign: "right" }}>
+          {fmt(currentTime)}
+        </span>
+        <div
+          onClick={onBarClick}
+          className="relative h-2 flex-1 overflow-hidden rounded-full"
+          style={{ background: TLK.bg2, cursor: onSeek ? "pointer" : "default" }}
         >
-          {episode.description}
-        </p>
-      )}
+          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: TLK.accent, transition: "width .1s linear" }} />
+        </div>
+        <span style={{ fontFamily: TLK_FONT.mono, fontSize: big ? 14 : 12, color: TLK.inkDim, minWidth: big ? 48 : 40 }}>
+          {fmt(duration)}
+        </span>
+      </div>
     </div>
   );
 }
 
-// 활성 문장 내 단어별 가라오케 하이라이트 (쉐도잉 KaraokeText 패턴)
-function KaraokeLine({
-  text,
-  startMs,
-  endMs,
-  currentMs,
-}: {
-  text: string;
-  startMs: number;
-  endMs: number;
-  currentMs: number;
-}) {
-  const words = text.split(/\s+/).filter(Boolean);
-  const duration = endMs - startMs;
-  const inRange = currentMs >= startMs && currentMs <= endMs;
-  const progress = inRange && duration > 0
-    ? Math.max(0, Math.min(1, (currentMs - startMs) / duration))
-    : 0;
-
-  let highlighted = 0;
-  if (inRange && progress > 0) {
-    const lens = words.map((w) => w.length);
-    const total = lens.reduce((a, b) => a + b, 0);
-    let acc = 0;
-    for (const len of lens) {
-      acc += len;
-      if (acc / total <= progress) highlighted++;
-      else break;
-    }
-    if (progress > 0.02 && highlighted === 0) highlighted = 1;
-  }
-
-  return (
-    <>
-      {words.map((w, i) => (
-        <span
-          key={i}
-          style={{
-            color: i < highlighted ? TLK.accent : TLK.ink,
-            transition: "color .15s",
-          }}
-        >
-          {w}
-          {i < words.length - 1 ? " " : ""}
-        </span>
-      ))}
-    </>
-  );
-}
-
 /* ─────────────────────────────────────────────
-   슬라이드 2 · 내용 공유 (룰렛 메인)
+   슬라이드 1 · 1차 청취 (Listen First — 자막 없이 오디오만 + 발화자 룰렛 내용 공유)
+   레거시 ListeningModeSlide BM. 들은 내용을 룰렛으로 발화자 뽑아 나눈다.
    ───────────────────────────────────────────── */
 
-function ShareSlide({
+function ListenFirstSlide({
   episode,
   members,
   absentIds,
@@ -891,6 +657,7 @@ function ShareSlide({
   hasSpun,
   spinning,
   onSpin,
+  onToggleAttendance,
 }: {
   episode: PodcastRow;
   members: PanelMember[];
@@ -899,130 +666,226 @@ function ShareSlide({
   hasSpun: boolean;
   spinning: boolean;
   onSpin: () => void;
+  onToggleAttendance: (memberId: string) => void;
 }) {
-  const speaker = hasSpun ? members[activeSpeaker] : undefined;
-  const ytId = extractYouTubeId(episode.url);
+  const { audioRef, currentTime, duration, isPlaying, toggle, restart } = useAudioPlayer();
+  const hasAudio = !!episode.audio_url;
+
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-7">
-      <p
-        style={{
-          fontFamily: TLK_FONT.sans,
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: 2.5,
-          color: TLK.inkFaint,
-          textTransform: "uppercase",
-        }}
-      >
-        Whose turn?
-      </p>
-
-      <div
-        className="flex flex-col items-center gap-4 rounded-3xl px-14 py-10"
-        style={{ background: TLK.paper, border: `1px solid ${TLK.rule}`, minWidth: 320 }}
-      >
-        {speaker ? (
-          <>
-            <div
-              className="flex h-32 w-32 items-center justify-center rounded-full text-7xl"
-              style={{
-                background: `${speaker.color}22`,
-                border: `4px solid ${speaker.color}`,
-                animation: spinning ? "tlk-spin .4s linear infinite" : undefined,
-              }}
-            >
-              {speaker.emoji}
-            </div>
-            <p
-              style={{
-                fontFamily: TLK_FONT.serif,
-                fontStyle: "italic",
-                fontSize: 32,
-                fontWeight: 500,
-                color: TLK.ink,
-              }}
-            >
-              {spinning ? "..." : speaker.name}
-            </p>
-            <p style={{ fontFamily: TLK_FONT.sans, fontSize: 13, color: TLK.inkDim }}>
-              {spinning ? "고르는 중" : absentIds.has(speaker.id) ? "결석" : "What did you hear?"}
-            </p>
-          </>
-        ) : members.length === 0 ? (
-          <p
-            style={{
-              fontFamily: TLK_FONT.serif,
-              fontStyle: "italic",
-              fontSize: 22,
-              color: TLK.inkFaint,
-            }}
-          >
-            패널 멤버를 등록해 주세요
-          </p>
-        ) : (
-          <>
-            <div
-              className="flex h-32 w-32 items-center justify-center rounded-full"
-              style={{ background: TLK.bg2, border: `4px dashed ${TLK.rule}` }}
-            >
-              <span style={{ fontSize: 42, color: TLK.inkFaint }}>?</span>
-            </div>
-            <p
-              style={{
-                fontFamily: TLK_FONT.serif,
-                fontStyle: "italic",
-                fontSize: 22,
-                fontWeight: 500,
-                color: TLK.inkDim,
-              }}
-            >
-              아직 발화자가 정해지지 않았어요
-            </p>
-            <p style={{ fontFamily: TLK_FONT.sans, fontSize: 12, color: TLK.inkFaint, textAlign: "center" }}>
-              아래 PICK NEXT(R)로 첫 발화자를 뽑아주세요
-            </p>
-          </>
-        )}
-      </div>
-
-      <div className="flex flex-col items-center gap-1.5">
-        <button
-          type="button"
-          onClick={onSpin}
-          disabled={spinning || members.length === 0}
-          className="rounded-full px-8 py-3 transition-all disabled:opacity-40"
-          style={{
-            background: TLK.accent,
-            color: "#fff",
-            border: 0,
-            fontFamily: TLK_FONT.sans,
-            fontSize: 13,
-            fontWeight: 700,
-            letterSpacing: 2,
-            cursor: spinning ? "wait" : "pointer",
-          }}
-        >
-          {spinning ? "SPIN…" : "🎲 PICK NEXT"}
-        </button>
-        <p style={{ fontFamily: TLK_FONT.sans, fontSize: 10, color: TLK.inkFaint, letterSpacing: 0.5 }}>
-          단축키 R
+    <div className="mx-auto flex h-full max-w-2xl flex-col gap-5 py-2">
+      {/* 헤더 */}
+      <div className="text-center">
+        <div className="mb-1.5 flex items-center justify-center gap-2.5">
+          <Headphones size={20} style={{ color: TLK.accent }} />
+          <h1 style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 36, fontWeight: 500, color: TLK.ink, lineHeight: 1 }}>
+            Listen First
+          </h1>
+        </div>
+        <p style={{ fontFamily: TLK_FONT.ko, fontSize: 14, color: TLK.inkDim }}>
+          자막 없이 먼저 들어보세요 · 들은 내용을 자유롭게 나눠요
         </p>
       </div>
 
-      {ytId && (
-        <div
-          className="w-72 overflow-hidden rounded-xl"
-          style={{ aspectRatio: "16/9", border: `1px solid ${TLK.rule}` }}
-        >
-          <iframe
-            src={`https://www.youtube.com/embed/${ytId}`}
-            className="h-full w-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            title={episode.title}
-          />
+      {/* 듣기 미션 */}
+      {episode.listening_mission && (
+        <div className="mx-auto rounded-full px-4 py-2" style={{ background: `${TLK.accent}14`, border: `1px solid ${TLK.accent}33` }}>
+          <span style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color: TLK.accent, textTransform: "uppercase", marginRight: 10 }}>
+            듣기 미션
+          </span>
+          <span style={{ fontFamily: TLK_FONT.ko, fontSize: 14, color: TLK.ink }}>{episode.listening_mission}</span>
         </div>
       )}
+
+      {/* 대화 오디오 (자막 없음) */}
+      <div className="rounded-3xl p-8" style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}>
+        {hasAudio ? (
+          <>
+            <audio ref={audioRef} src={episode.audio_url ?? undefined} />
+            <div className="mb-6 flex flex-col items-center gap-2 text-center">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full" style={{ background: `${TLK.accent}14`, border: `1px solid ${TLK.accent}33` }}>
+                <Volume2 size={26} style={{ color: TLK.accent }} />
+              </span>
+              <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 20, color: TLK.ink }}>대화 오디오</p>
+              <p style={{ fontFamily: TLK_FONT.sans, fontSize: 11, color: TLK.inkFaint }}>스크립트 없이 흐름과 분위기에 집중</p>
+            </div>
+            <AudioPlayerBar
+              currentTime={currentTime}
+              duration={duration}
+              isPlaying={isPlaying}
+              onToggle={toggle}
+              onRestart={restart}
+              size="lg"
+            />
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 20, color: TLK.inkDim }}>오디오가 아직 없어요</p>
+            <p style={{ fontFamily: TLK_FONT.ko, fontSize: 12, color: TLK.inkFaint, marginTop: 6 }}>
+              스터디 준비에서 오디오 추출을 먼저 해주세요
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* 발화자 PICK — 들은 내용 나누기 (수요일 SpeakerCard 재사용, 작게) */}
+      <div>
+        <div className="mb-2 flex items-center gap-1.5">
+          <MessageCircle size={13} style={{ color: TLK.accent2 }} />
+          <span style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color: TLK.inkFaint, textTransform: "uppercase" }}>
+            들은 내용 나누기 · Whose turn?
+          </span>
+        </div>
+        <SpeakerCard
+          members={members}
+          absentIds={absentIds}
+          activeSpeaker={activeSpeaker}
+          hasSpun={hasSpun}
+          spinning={spinning}
+          onSpin={onSpin}
+          onToggleAttendance={onToggleAttendance}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   슬라이드 2 · 2차 청취 (가라오케 — 레거시 DialogueSegmentSlideWithKaraoke BM)
+   커스텀 오디오 플레이어 + dialogue_timestamps 화자별 세그먼트 하이라이트 + 번역 + 클릭 seek
+   ───────────────────────────────────────────── */
+
+function ListenAgainSlide({ episode }: { episode: PodcastRow }) {
+  const segments = episode.dialogue_timestamps ?? [];
+  const hasData = !!episode.audio_url && segments.length > 0;
+  const { audioRef, currentTime, duration, isPlaying, toggle, restart, seekTo } = useAudioPlayer();
+  const [showKo, setShowKo] = useState(true);
+  const lineRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // 화자별 색상 (등장 순서)
+  const speakers = useMemo(
+    () => [...new Set(segments.map((s) => s.speaker).filter(Boolean))],
+    [segments]
+  );
+  const palette = [TLK.accent, TLK.accent2, TLK.gold, "#7A5A8C", "#4A6B8C"];
+  const colorOf = (sp: string) => palette[Math.max(0, speakers.indexOf(sp)) % palette.length];
+
+  const activeIdx = useMemo(
+    () => segments.findIndex((s) => currentTime >= s.start && currentTime <= s.end),
+    [segments, currentTime]
+  );
+
+  useEffect(() => {
+    if (activeIdx >= 0) lineRefs.current[activeIdx]?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [activeIdx]);
+
+  if (!hasData) {
+    return (
+      <div className="flex h-full items-center justify-center" style={{ fontFamily: TLK_FONT.ko }}>
+        <div className="text-center">
+          <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 22, color: TLK.inkDim }}>
+            2차 청취 자료가 아직 없어요
+          </p>
+          <p style={{ fontSize: 12, color: TLK.inkFaint, marginTop: 6 }}>
+            스터디 준비에서 오디오 추출 + 가라오케 자막을 먼저 만들어 주세요
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full flex-col gap-4">
+      {/* 헤더 + 번역 토글 */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Headphones size={16} style={{ color: TLK.accent }} />
+          <span style={{ fontFamily: TLK_FONT.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: TLK.inkDim, textTransform: "uppercase" }}>
+            2차 청취 · 자막 가라오케
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowKo((v) => !v)}
+          className="flex items-center gap-1.5 rounded-full px-3 py-1"
+          style={{ background: TLK.bg2, border: `1px solid ${TLK.rule}`, color: TLK.inkDim, fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1, cursor: "pointer" }}
+        >
+          {showKo ? <EyeOff size={11} /> : <Eye size={11} />}
+          {showKo ? "번역 숨기기" : "번역 보기"}
+        </button>
+      </div>
+
+      {/* 커스텀 오디오 플레이어 (레거시 BM) */}
+      <div className="mx-auto w-full max-w-3xl rounded-2xl px-5 py-4" style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}>
+        <audio ref={audioRef} src={episode.audio_url ?? undefined} />
+        <AudioPlayerBar
+          currentTime={currentTime}
+          duration={duration}
+          isPlaying={isPlaying}
+          onToggle={toggle}
+          onRestart={restart}
+          onSeek={seekTo}
+        />
+      </div>
+
+      {/* 화자별 가라오케 자막 */}
+      <div className="relative mx-auto w-full max-w-3xl flex-1">
+        <div
+          className="absolute inset-0 overflow-y-auto rounded-2xl px-4 py-3"
+          style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
+        >
+          {segments.map((s, i) => {
+            const active = i === activeIdx;
+            const color = colorOf(s.speaker);
+            return (
+              <div
+                key={i}
+                ref={(el) => { lineRefs.current[i] = el; }}
+                onClick={() => seekTo(s.start)}
+                className="cursor-pointer rounded-xl px-4 py-3 transition-all"
+                style={{
+                  background: active ? `${color}14` : "transparent",
+                  opacity: active ? 1 : 0.55,
+                  borderLeft: `3px solid ${active ? color : "transparent"}`,
+                  marginBottom: 4,
+                }}
+              >
+                <div className="mb-1 flex items-center gap-2">
+                  <span
+                    className="flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold"
+                    style={{ background: `${color}22`, color }}
+                  >
+                    {s.speaker.charAt(0) || "?"}
+                  </span>
+                  <span style={{ fontFamily: TLK_FONT.sans, fontSize: 11, fontWeight: 700, color }}>
+                    {s.speaker}
+                  </span>
+                </div>
+                <p
+                  style={{
+                    fontFamily: TLK_FONT.serif,
+                    fontStyle: "italic",
+                    fontSize: active ? 20 : 16,
+                    color: TLK.ink,
+                    lineHeight: 1.45,
+                    transition: "all .2s",
+                  }}
+                >
+                  {s.text}
+                </p>
+                {showKo && s.translation && (
+                  <p style={{ fontFamily: TLK_FONT.ko, fontSize: 13, color: TLK.inkDim, marginTop: 4 }}>
+                    {s.translation}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <p className="text-center" style={{ fontFamily: TLK_FONT.sans, fontSize: 10, color: TLK.inkFaint }}>
+        💡 자막을 클릭하면 그 부분부터 재생돼요
+      </p>
     </div>
   );
 }
@@ -1165,6 +1028,36 @@ function VocabSlide({
               {card.level === "stretch" ? "도전" : "필수"}
             </span>
           </div>
+
+          {(card.pronunciation || card.part_of_speech) && (
+            <div className="mt-2 flex flex-wrap items-center gap-2.5">
+              {card.pronunciation && (
+                <span
+                  style={{
+                    fontFamily: TLK_FONT.mono,
+                    fontSize: 15,
+                    color: TLK.inkDim,
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  {card.pronunciation}
+                </span>
+              )}
+              {card.part_of_speech && (
+                <span
+                  className="rounded-md px-2 py-0.5 text-[11px] font-semibold"
+                  style={{
+                    background: TLK.bg2,
+                    color: TLK.inkDim,
+                    fontFamily: TLK_FONT.sans,
+                    fontStyle: "italic",
+                  }}
+                >
+                  {card.part_of_speech}
+                </span>
+              )}
+            </div>
+          )}
 
           {card.meaning_en && (
             <p
@@ -1958,7 +1851,9 @@ function OpeningSlide({
 }
 
 /* ─────────────────────────────────────────────
-   슬라이드 4 · 역할극 (짝 대화)
+   슬라이드 4 · Real-Talk 역할극 (순차 무대형 + A/B 가이드)
+   출석 멤버를 2명씩 팀으로 묶어 차례로 무대에 올린다.
+   나머지는 관객. A/B 각자 역할·목표·추천 표현 가이드를 본다.
    ───────────────────────────────────────────── */
 
 function RoleplaySlide({
@@ -1970,313 +1865,384 @@ function RoleplaySlide({
   members: PanelMember[];
   absentIds: Set<string>;
 }) {
-  const [scenarioIdx, setScenarioIdx] = useState(0);
-  const [showHints, setShowHints] = useState(true);
+  const roleplay = episode.roleplay;
+  const present = useMemo(
+    () => members.filter((m) => !absentIds.has(m.id)),
+    [members, absentIds]
+  );
 
-  // 시나리오 — 자료의 표현/주제에서 자동 생성 (최대 3개)
-  const scenarios = useMemo(() => {
-    const picks = episode.todays_picks;
-    const topic = episode.topic || "오늘의 주제";
-
-    const base = [
-      {
-        title: "Real-Talk",
-        prompt: `방금 들은 영상의 ${topic}에 대해 짝과 영어로 1분간 이야기해보세요.`,
-        roleA: "관심 있는 사람 — 질문을 던지는 쪽",
-        roleB: "경험자 — 자기 경험을 풀어내는 쪽",
-        useExpressions: picks.slice(0, 3),
-      },
-      {
-        title: "Disagree Politely",
-        prompt: "토론 질문 중 하나를 골라 짝과 의견이 살짝 다른 척 영어로 주고받으세요.",
-        roleA: "동의하는 쪽 — 이유 3개",
-        roleB: "동의 안 하는 쪽 — 다른 관점 제시",
-        useExpressions: picks.slice(0, 3),
-      },
-      {
-        title: "Quick Pitch",
-        prompt: `친구에게 ${topic} 주제로 1분 안에 핵심을 영어로 설명해보세요. (짝이 영어로 질문 던짐)`,
-        roleA: "설명하는 쪽 — 핵심 3개",
-        roleB: "궁금한 쪽 — 후속 질문 2개",
-        useExpressions: picks.slice(0, 3),
-      },
-    ];
-    return base;
-  }, [episode.todays_picks, episode.topic]);
-
-  const present = members.filter((m) => !absentIds.has(m.id));
-  // 짝 매칭 — 출석자 짝 만들기 (홀수면 마지막 한 명은 옵서버)
-  const pairs = useMemo(() => {
-    const out: Array<{ a: PanelMember; b: PanelMember | null }> = [];
-    for (let i = 0; i < present.length; i += 2) {
-      out.push({ a: present[i], b: present[i + 1] ?? null });
-    }
-    return out;
+  // 출석 멤버를 2명씩 팀으로 묶기 (마지막 팀은 1명일 수 있음)
+  const teams = useMemo(() => {
+    const t: PanelMember[][] = [];
+    for (let i = 0; i < present.length; i += 2) t.push(present.slice(i, i + 2));
+    return t;
   }, [present]);
 
-  const scenario = scenarios[scenarioIdx];
+  const [teamIdx, setTeamIdx] = useState(0);
+  const [showPhrases, setShowPhrases] = useState(false);
 
-  return (
-    <div className="flex h-full flex-col gap-5">
-      {/* 헤더 — 시나리오 진행 + Hints 토글 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+  // 출석 변동으로 팀 수가 줄면 인덱스 보정
+  useEffect(() => {
+    if (teamIdx > teams.length - 1) setTeamIdx(Math.max(0, teams.length - 1));
+  }, [teams.length, teamIdx]);
+
+  if (!roleplay) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
           <p
             style={{
+              color: TLK.inkFaint,
+              fontFamily: TLK_FONT.serif,
+              fontStyle: "italic",
+              fontSize: 22,
+            }}
+          >
+            역할극 자료가 없습니다
+          </p>
+          <p style={{ color: TLK.inkFaint, fontFamily: TLK_FONT.ko, fontSize: 13, marginTop: 8 }}>
+            스터디 준비에서 자료를 생성하면 역할극이 표시됩니다.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const ti = Math.min(teamIdx, Math.max(0, teams.length - 1));
+  const team = teams[ti] ?? [];
+  const memberA = team[0];
+  const memberB = team[1];
+  const audience = present.filter((m) => !team.some((t) => t.id === m.id));
+
+  return (
+    <div className="flex h-full flex-col gap-4">
+      {/* 상단 — 시나리오 + 팀 진행 + 표현 토글 */}
+      <div
+        className="rounded-3xl px-7 py-5"
+        style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <span
+              style={{
+                fontFamily: TLK_FONT.sans,
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: 1.5,
+                color: TLK.inkFaint,
+                textTransform: "uppercase",
+              }}
+            >
+              Real-Talk · 무대 역할극
+            </span>
+            <h2
+              style={{
+                fontFamily: TLK_FONT.serif,
+                fontStyle: "italic",
+                fontSize: 28,
+                fontWeight: 500,
+                color: TLK.ink,
+                lineHeight: 1.2,
+                marginTop: 4,
+              }}
+            >
+              {roleplay.scenario || "(상황 정보 없음)"}
+            </h2>
+            {roleplay.scenario_ko && (
+              <p
+                style={{
+                  fontFamily: TLK_FONT.ko,
+                  fontSize: 14,
+                  color: TLK.inkDim,
+                  lineHeight: 1.5,
+                  marginTop: 6,
+                }}
+              >
+                {roleplay.scenario_ko}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowPhrases((v) => !v)}
+            className="shrink-0 rounded-full px-4 py-2"
+            style={{
+              background: showPhrases ? TLK.ink : TLK.bg2,
+              color: showPhrases ? "#fff" : TLK.inkDim,
+              border: showPhrases ? 0 : `1px solid ${TLK.rule}`,
+              cursor: "pointer",
               fontFamily: TLK_FONT.sans,
-              fontSize: 11,
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          >
+            {showPhrases ? "표현 숨기기" : "추천 표현 보기"}
+          </button>
+        </div>
+      </div>
+
+      {/* 무대 — Role A / Role B 카드 */}
+      <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-2">
+        <RoleStageCard
+          role={roleplay.role_a}
+          roleLabel="Role A"
+          member={memberA}
+          accent={TLK.accent}
+          showPhrases={showPhrases}
+        />
+        <RoleStageCard
+          role={roleplay.role_b}
+          roleLabel="Role B"
+          member={memberB}
+          accent={TLK.accent2}
+          showPhrases={showPhrases}
+        />
+      </div>
+
+      {/* 하단 — 관객 + 팀 이동 */}
+      <div
+        className="flex flex-wrap items-center justify-between gap-4 rounded-2xl px-6 py-4"
+        style={{ background: TLK.bg2 }}
+      >
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <span
+            style={{
+              fontFamily: TLK_FONT.sans,
+              fontSize: 10,
               fontWeight: 700,
               letterSpacing: 1.5,
               color: TLK.inkFaint,
               textTransform: "uppercase",
             }}
           >
-            Scenario {scenarioIdx + 1} / {scenarios.length}
-          </p>
-          <div className="flex gap-1.5">
-            {scenarios.map((_, n) => {
-              const active = n === scenarioIdx;
-              return (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setScenarioIdx(n)}
-                  aria-label={`시나리오 ${n + 1}로 이동`}
-                  style={{
-                    width: active ? 24 : 6,
-                    height: 6,
-                    borderRadius: 999,
-                    background: active ? TLK.accent : n < scenarioIdx ? TLK.inkFaint : TLK.rule,
-                    border: 0,
-                    cursor: "pointer",
-                    transition: "all .25s",
-                  }}
-                />
-              );
-            })}
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowHints((v) => !v)}
-          className="flex items-center gap-1.5 rounded-full px-3 py-1"
-          style={{
-            background: TLK.bg2,
-            border: `1px solid ${TLK.rule}`,
-            color: TLK.inkDim,
-            fontFamily: TLK_FONT.sans,
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: 1,
-            cursor: "pointer",
-          }}
-        >
-          {showHints ? <EyeOff size={11} /> : <Eye size={11} />}
-          {showHints ? "표현 숨기기" : "표현 보기"}
-        </button>
-      </div>
-
-      {/* 본문 — 시나리오 카드 */}
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <div
-          className="mx-auto max-w-5xl rounded-3xl px-10 py-10"
-          style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
-        >
-          {/* 시나리오 타이틀 + 프롬프트 */}
-          <h2
-            style={{
-              fontFamily: TLK_FONT.serif,
-              fontStyle: "italic",
-              fontSize: 42,
-              fontWeight: 500,
-              color: TLK.ink,
-              lineHeight: 1.15,
-              letterSpacing: -0.5,
-              textAlign: "center",
-            }}
-          >
-            {scenario.title}
-          </h2>
-          <p
-            style={{
-              fontFamily: TLK_FONT.ko,
-              fontSize: 16,
-              color: TLK.inkDim,
-              lineHeight: 1.6,
-              marginTop: 12,
-              textAlign: "center",
-              maxWidth: 640,
-              marginInline: "auto",
-            }}
-          >
-            {scenario.prompt}
-          </p>
-
-          {/* 역할 A / B */}
-          <div className="mt-7 grid gap-4 md:grid-cols-2">
-            <RoleCard label="Role A" color={TLK.accent} text={scenario.roleA} />
-            <RoleCard label="Role B" color={TLK.accent2} text={scenario.roleB} />
-          </div>
-
-          {/* 활용 표현 */}
-          {showHints && scenario.useExpressions.length > 0 && (
-            <div
-              className="mt-6 rounded-xl px-5 py-4"
-              style={{ background: TLK.bg2, border: `1px solid ${TLK.rule}` }}
-            >
-              <div className="mb-2 flex items-center gap-1.5">
-                <Mic size={13} style={{ color: TLK.accent }} />
-                <span
-                  style={{
-                    fontFamily: TLK_FONT.sans,
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: 1.5,
-                    color: TLK.accent,
-                    textTransform: "uppercase",
-                  }}
-                >
-                  오늘의 표현 활용하기
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {scenario.useExpressions.map((s, n) => (
-                  <span
-                    key={n}
-                    className="rounded-lg px-3 py-1.5"
-                    style={{
-                      background: TLK.paper,
-                      color: TLK.ink,
-                      fontFamily: TLK_FONT.serif,
-                      fontStyle: "italic",
-                      fontSize: 14,
-                      border: `1px solid ${TLK.rule}`,
-                    }}
-                  >
-                    {s}
-                  </span>
-                ))}
-              </div>
-            </div>
+            관객 · 듣고 피드백
+          </span>
+          {audience.length > 0 ? (
+            audience.map((m) => (
+              <span
+                key={m.id}
+                className="flex h-7 w-7 items-center justify-center rounded-full text-sm"
+                style={{ background: `${m.color}1f`, border: `1px solid ${m.color}44` }}
+                title={m.name}
+              >
+                {m.emoji}
+              </span>
+            ))
+          ) : (
+            <span style={{ fontFamily: TLK_FONT.ko, fontSize: 12, color: TLK.inkFaint }}>
+              전원 무대 위
+            </span>
           )}
         </div>
 
-        {/* 짝 매칭 — 출석자만 */}
-        {pairs.length > 0 && (
-          <div className="mx-auto mt-5 max-w-5xl">
-            <p
-              style={{
-                fontFamily: TLK_FONT.sans,
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: 2,
-                color: TLK.inkFaint,
-                textTransform: "uppercase",
-                marginBottom: 8,
-              }}
-            >
-              오늘의 짝 — Pairs
-            </p>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {pairs.map((p, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-3 rounded-xl px-4 py-3"
-                  style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className="flex h-9 w-9 items-center justify-center rounded-full text-lg"
-                      style={{ background: `${p.a.color}22`, border: `2px solid ${p.a.color}` }}
-                    >
-                      {p.a.emoji}
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: TLK_FONT.sans,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: TLK.ink,
-                      }}
-                    >
-                      {p.a.name}
-                    </span>
-                  </div>
-                  <span style={{ color: TLK.inkFaint, fontFamily: TLK_FONT.serif, fontStyle: "italic" }}>×</span>
-                  {p.b ? (
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className="flex h-9 w-9 items-center justify-center rounded-full text-lg"
-                        style={{ background: `${p.b.color}22`, border: `2px solid ${p.b.color}` }}
-                      >
-                        {p.b.emoji}
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: TLK_FONT.sans,
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: TLK.ink,
-                        }}
-                      >
-                        {p.b.name}
-                      </span>
-                    </div>
-                  ) : (
-                    <span
-                      style={{
-                        fontFamily: TLK_FONT.sans,
-                        fontSize: 11,
-                        color: TLK.inkFaint,
-                        fontStyle: "italic",
-                      }}
-                    >
-                      옵서버 (다음 짝과 합류)
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          <span
+            style={{
+              fontFamily: TLK_FONT.sans,
+              fontSize: 12,
+              fontWeight: 700,
+              color: TLK.inkDim,
+            }}
+          >
+            팀 {teams.length === 0 ? 0 : ti + 1} / {teams.length}
+          </span>
+          <button
+            type="button"
+            onClick={() => setTeamIdx(Math.max(0, ti - 1))}
+            disabled={ti === 0}
+            className="rounded-full px-4 py-2 transition-all disabled:opacity-30"
+            style={{
+              background: TLK.paper,
+              color: TLK.inkDim,
+              border: `1px solid ${TLK.rule}`,
+              cursor: ti === 0 ? "not-allowed" : "pointer",
+              fontFamily: TLK_FONT.sans,
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          >
+            ← 이전 팀
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setTeamIdx(Math.min(teams.length - 1, ti + 1));
+              setShowPhrases(false);
+            }}
+            disabled={ti >= teams.length - 1}
+            className="rounded-full px-5 py-2 transition-all disabled:opacity-30"
+            style={{
+              background: TLK.ink,
+              color: "#fff",
+              border: 0,
+              cursor: ti >= teams.length - 1 ? "not-allowed" : "pointer",
+              fontFamily: TLK_FONT.sans,
+              fontSize: 12,
+              fontWeight: 700,
+            }}
+          >
+            다음 팀 →
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-function RoleCard({ label, color, text }: { label: string; color: string; text: string }) {
+function RoleStageCard({
+  role,
+  roleLabel,
+  member,
+  accent,
+  showPhrases,
+}: {
+  role: RoleplayRole;
+  roleLabel: string;
+  member: PanelMember | undefined;
+  accent: string;
+  showPhrases: boolean;
+}) {
+  const speak = (text: string) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-US";
+    u.rate = 0.9;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  };
+
+  const labelStyle = {
+    fontFamily: TLK_FONT.sans,
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: 1.5,
+    color: TLK.inkFaint,
+    textTransform: "uppercase" as const,
+  };
+
   return (
     <div
-      className="rounded-2xl px-6 py-5"
-      style={{ background: TLK.paperHi, border: `2px solid ${color}33` }}
+      className="flex min-h-0 flex-col overflow-y-auto rounded-3xl p-7"
+      style={{ background: TLK.paper, border: `1px solid ${accent}44` }}
     >
-      <div
-        className="mb-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1"
-        style={{ background: `${color}1a`, color }}
-      >
-        <Users size={12} />
+      {/* 역할 라벨 + 배정 멤버 */}
+      <div className="flex items-center justify-between gap-3">
         <span
+          className="rounded-full px-3 py-1 text-[10px] font-bold uppercase"
           style={{
-            fontFamily: TLK_FONT.sans,
-            fontSize: 10,
-            fontWeight: 700,
             letterSpacing: 1.5,
-            textTransform: "uppercase",
+            background: `${accent}1f`,
+            color: accent,
+            fontFamily: TLK_FONT.sans,
           }}
         >
-          {label}
+          {roleLabel}
         </span>
+        {member ? (
+          <div className="flex items-center gap-2">
+            <span
+              className="flex h-8 w-8 items-center justify-center rounded-full text-base"
+              style={{ background: `${member.color}22`, border: `1px solid ${member.color}55` }}
+            >
+              {member.emoji}
+            </span>
+            <span style={{ fontFamily: TLK_FONT.ko, fontSize: 13, fontWeight: 600, color: TLK.ink }}>
+              {member.name}
+            </span>
+          </div>
+        ) : (
+          <span style={{ fontFamily: TLK_FONT.ko, fontSize: 12, color: TLK.inkFaint }}>대기</span>
+        )}
       </div>
-      <p
+
+      {/* 역할 이름 + 설명 */}
+      <h3
         style={{
-          fontFamily: TLK_FONT.ko,
-          fontSize: 15,
+          fontFamily: TLK_FONT.serif,
+          fontStyle: "italic",
+          fontSize: 28,
+          fontWeight: 500,
           color: TLK.ink,
-          lineHeight: 1.5,
+          lineHeight: 1.15,
+          marginTop: 14,
         }}
       >
-        {text}
-      </p>
+        {role.name || "(역할 정보 없음)"}
+      </h3>
+      {role.description && (
+        <p
+          style={{
+            fontFamily: TLK_FONT.ko,
+            fontSize: 13.5,
+            color: TLK.inkDim,
+            lineHeight: 1.55,
+            marginTop: 8,
+          }}
+        >
+          {role.description}
+        </p>
+      )}
+
+      {/* 목표 — 어떤 대화를 해야 하는가 */}
+      {role.objectives.length > 0 && (
+        <div className="mt-5">
+          <span style={labelStyle}>이 대화에서 해야 할 것</span>
+          <ul className="mt-2 space-y-1.5">
+            {role.objectives.map((o, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-2"
+                style={{ fontFamily: TLK_FONT.ko, fontSize: 13, color: TLK.ink, lineHeight: 1.5 }}
+              >
+                <span style={{ color: accent, fontWeight: 700 }}>·</span>
+                <span>{o}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* 추천 표현 — 이 표현을 써보세요 (토글) */}
+      {role.suggested_phrases.length > 0 && (
+        <div className="mt-5">
+          <span style={labelStyle}>이 표현을 써보세요</span>
+          {showPhrases ? (
+            <div className="mt-2 space-y-2">
+              {role.suggested_phrases.map((p, i) => (
+                <div
+                  key={i}
+                  className="flex items-start justify-between gap-2 rounded-xl px-3 py-2"
+                  style={{ background: TLK.bg2 }}
+                >
+                  <span
+                    style={{
+                      fontFamily: TLK_FONT.serif,
+                      fontSize: 15,
+                      color: TLK.ink,
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    {p}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => speak(p)}
+                    aria-label="발음 듣기"
+                    className="shrink-0 rounded-lg p-1.5"
+                    style={{ background: TLK.paper, border: 0, cursor: "pointer" }}
+                  >
+                    <Volume2 size={14} style={{ color: TLK.inkDim }} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p style={{ fontFamily: TLK_FONT.ko, fontSize: 12, color: TLK.inkFaint, marginTop: 8 }}>
+              먼저 스스로 말해본 뒤 표현을 확인하세요
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -2485,12 +2451,4 @@ function ClosingSlide({
       </p>
     </div>
   );
-}
-
-/* ─── 유틸 ────────────────────────────────── */
-
-function extractYouTubeId(url: string | null | undefined): string | null {
-  if (!url) return null;
-  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/);
-  return m ? m[1] : null;
 }

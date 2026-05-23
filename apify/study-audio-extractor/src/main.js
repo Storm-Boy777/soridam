@@ -32,41 +32,51 @@ await Actor.main(async () => {
 
   console.log(`[추출] ${youtubeUrl} · ${startSec}s–${endSec}s`);
 
-  // Apify Residential Proxy — YouTube 봇 차단(데이터센터 IP) 우회
+  // Apify Residential Proxy — YouTube 봇 차단 우회
   const proxyConfiguration = await Actor.createProxyConfiguration({
     groups: ["RESIDENTIAL"],
   });
-  const proxyUrl = proxyConfiguration ? await proxyConfiguration.newUrl() : undefined;
-  console.log(proxyUrl ? "[proxy] residential 사용 중" : "[proxy] 없음 — 봇 차단 위험");
 
   // 임시 출력 디렉토리 (yt-dlp 출력 확장자가 후처리로 .wav가 되므로 디렉토리 스캔으로 찾는다)
   const outDir = await mkdtemp(join(tmpdir(), "ytclip-"));
   const outTemplate = join(outDir, "audio.%(ext)s");
   const section = `*${Math.floor(startSec)}-${Math.ceil(endSec)}`;
 
-  const args = [
-    "--download-sections", section,
-    ...(proxyUrl ? ["--proxy", proxyUrl] : []),
-    "--force-keyframes-at-cuts",
-    "-f", "bestaudio/best",
-    "-x", "--audio-format", "wav",
-    "--postprocessor-args", "ffmpeg:-ar 44100 -ac 1", // 44.1kHz mono (코랩과 동일)
-    "--no-playlist",
-    "--no-warnings",
-    "-o", outTemplate,
-    youtubeUrl,
-  ];
-
-  try {
-    const { stdout, stderr } = await execFileAsync("yt-dlp", args, {
-      maxBuffer: 1024 * 1024 * 128,
-    });
-    if (stdout) console.log(stdout);
-    if (stderr) console.warn(stderr);
-  } catch (e) {
-    // 봇차단 / 자막없음 / 구간오류 등 — yt-dlp stderr를 그대로 노출해 진단 가능하게
-    const detail = e?.stderr || e?.message || String(e);
-    throw new Error(`yt-dlp 추출 실패: ${detail}`);
+  // residential proxy도 IP마다 봇 차단될 수 있어, 매 시도 새 IP로 최대 3회 재시도.
+  // player_client(android/ios)는 web보다 봇 감지가 약한 경로.
+  const MAX_ATTEMPTS = 3;
+  let success = false;
+  let lastDetail = "";
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS && !success; attempt++) {
+    const proxyUrl = proxyConfiguration ? await proxyConfiguration.newUrl() : undefined;
+    console.log(`[추출] 시도 ${attempt}/${MAX_ATTEMPTS}${proxyUrl ? " · residential" : ""}`);
+    const args = [
+      "--download-sections", section,
+      ...(proxyUrl ? ["--proxy", proxyUrl] : []),
+      "--extractor-args", "youtube:player_client=default,android,ios",
+      "--force-keyframes-at-cuts",
+      "-f", "bestaudio/best",
+      "-x", "--audio-format", "wav",
+      "--postprocessor-args", "ffmpeg:-ar 44100 -ac 1", // 44.1kHz mono (코랩과 동일)
+      "--no-playlist",
+      "--no-warnings",
+      "-o", outTemplate,
+      youtubeUrl,
+    ];
+    try {
+      const { stdout, stderr } = await execFileAsync("yt-dlp", args, {
+        maxBuffer: 1024 * 1024 * 128,
+      });
+      if (stdout) console.log(stdout);
+      if (stderr) console.warn(stderr);
+      success = true;
+    } catch (e) {
+      lastDetail = e?.stderr || e?.message || String(e);
+      console.warn(`[추출] 시도 ${attempt} 실패: ${lastDetail.slice(0, 200)}`);
+    }
+  }
+  if (!success) {
+    throw new Error(`yt-dlp 추출 실패 (${MAX_ATTEMPTS}회 재시도): ${lastDetail}`);
   }
 
   // 생성된 WAV 찾기

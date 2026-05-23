@@ -3,6 +3,8 @@
 // 팟캐스트 에피소드
 export interface KeyExpression {
   expression: string;                       // 표현 (콜로케이션·구동사·관용구)
+  pronunciation: string;                    // 발음기호 (IPA, 예: /kəmˈplit/)
+  part_of_speech: string;                   // 품사 (예: phrasal verb, idiom, noun)
   meaning_ko: string;                       // 한국어 뜻 + 뉘앙스
   meaning_en: string;                       // 영영 정의
   examples: { en: string; ko: string }[];   // 예문 2~3개 + 번역
@@ -17,11 +19,34 @@ export interface DialogueSegment {
   end_sec: number;
 }
 
-// 대화 1차 자막 라인 (가라오케 효과용)
+// 대화 1차 자막 라인 (구버전 가라오케 — Supadata 자막 기반)
 export interface DialogueLine {
   start_ms: number;
   end_ms: number;
   text: string;
+}
+
+// Whisper 화자별 세그먼트 (추출 오디오 가라오케 재생용)
+export interface DialogueTimestamp {
+  speaker: string;
+  text: string;
+  translation: string;   // 한국어 번역
+  start: number;         // 초
+  end: number;
+}
+
+// 2인 무대 역할극 가이드
+export interface RoleplayRole {
+  name: string;
+  description: string;
+  objectives: string[];
+  suggested_phrases: string[];
+}
+export interface RoleplayData {
+  scenario: string;
+  scenario_ko: string;
+  role_a: RoleplayRole;
+  role_b: RoleplayRole;
 }
 
 export interface PodcastEpisode {
@@ -108,7 +133,11 @@ export interface PodcastRow {
   warmup_question: string;
   listening_mission: string;                // 1차 청취 focus 미션
   dialogue_segment: DialogueSegment | null; // 대화 1차 구간
-  dialogue_lines: DialogueLine[];           // 대화 1차 자막 라인 (가라오케)
+  dialogue_lines: DialogueLine[];           // 구버전 자막 라인 (Supadata)
+  dialogue_title: string | null;            // 대화 상황 영문 제목
+  dialogue_script: string | null;           // 화자 구분 대화 스크립트
+  dialogue_timestamps: DialogueTimestamp[]; // Whisper 화자별 세그먼트 (가라오케)
+  roleplay: RoleplayData | null;            // 2인 무대 역할극
   key_expressions: KeyExpression[];
   comprehension_questions: string[];
   discussion_questions: string[];

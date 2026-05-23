@@ -536,6 +536,11 @@ function PodcastFormModal({ initial, onClose, onSaved }: { initial: PodcastRow |
         comprehension_questions: JSON.parse(comprehensionQuestions),
         discussion_questions: JSON.parse(discussionQuestions),
         todays_picks: JSON.parse(todaysPicks),
+        dialogue_title: initial?.dialogue_title ?? null,
+        dialogue_script: initial?.dialogue_script ?? null,
+        dialogue_timestamps: initial?.dialogue_timestamps ?? [],
+        roleplay: initial?.roleplay ?? null,
+        audio_url: initial?.audio_url ?? null,
         sort_order: initial?.sort_order ?? 0,
         is_active: initial?.is_active ?? true,
       };
