@@ -1,0 +1,29 @@
+{
+  "title": "Study Audio Extractor Input",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "youtubeUrl": {
+      "title": "YouTube URL",
+      "type": "string",
+      "description": "오디오를 추출할 YouTube 영상 URL",
+      "editor": "textfield",
+      "example": "https://youtu.be/bC9Vcp2KtBY"
+    },
+    "startSec": {
+      "title": "시작 (초)",
+      "type": "integer",
+      "description": "대화 구간 시작 시각 (초 단위, 정수)",
+      "minimum": 0,
+      "unit": "초"
+    },
+    "endSec": {
+      "title": "종료 (초)",
+      "type": "integer",
+      "description": "대화 구간 종료 시각 (초 단위, 정수). 시작보다 커야 함",
+      "minimum": 1,
+      "unit": "초"
+    }
+  },
+  "required": ["youtubeUrl", "startSec", "endSec"]
+}

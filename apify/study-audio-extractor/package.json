@@ -1,0 +1,15 @@
+{
+  "name": "study-audio-extractor",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "YouTube 대화 구간 오디오 추출 (yt-dlp + ffmpeg) — 소리담 월요일 스터디 자료 생성용",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "apify": "^3.2.6"
+  },
+  "scripts": {
+    "start": "node src/main.js"
+  }
+}

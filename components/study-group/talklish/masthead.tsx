@@ -3,7 +3,7 @@
 // Talklish · Editorial Studio 매스트헤드
 // 워드마크 + VOL + 요일 탭 + 큰 세리프 타이머 + PAUSE
 //
-// 요일 탭은 라우트 기반 (월/수/금 페이지로 이동). 진입 페이지(/study-group)로 돌아가는
+// 요일 탭은 라우트 기반 (월/수/금 페이지로 이동). 진입 페이지(/talklish)로 돌아가는
 // "스튜디오" 워드마크 링크 포함.
 
 import Link from "next/link";
@@ -12,9 +12,9 @@ import { TLK, TLK_FONT } from "./tokens";
 export type DayKey = "mon" | "wed" | "fri";
 
 const DAYS: { key: DayKey; label: string; sub: string; route: string }[] = [
-  { key: "mon", label: "월요일", sub: "Podcast",   route: "/study-group/monday" },
-  { key: "wed", label: "수요일", sub: "OPIc",      route: "/study-group/wednesday" },
-  { key: "fri", label: "금요일", sub: "Free Talk", route: "/study-group/friday" },
+  { key: "mon", label: "월요일", sub: "Podcast",   route: "/talklish/monday" },
+  { key: "wed", label: "수요일", sub: "OPIc",      route: "/talklish/wednesday" },
+  { key: "fri", label: "금요일", sub: "Free Talk", route: "/talklish/friday" },
 ];
 
 interface MastheadProps {
@@ -57,7 +57,7 @@ export function Masthead({
     >
       {/* 워드마크 — 클릭 시 진입 페이지 복귀 */}
       <Link
-        href="/study-group"
+        href="/talklish"
         title="요일 선택으로 돌아가기"
         style={{ textDecoration: "none", color: "inherit" }}
       >

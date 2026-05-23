@@ -89,7 +89,7 @@ export function DayShell({ day }: DayShellProps) {
           <ArrowLeft size={12} /> 대시보드
         </Link>
         <Link
-          href="/study-group"
+          href="/talklish"
           className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors"
           style={{ color: TLK.inkFaint, fontFamily: TLK_FONT.sans }}
         >

@@ -1,0 +1,10 @@
+{
+  "actorSpecification": 1,
+  "name": "study-audio-extractor",
+  "title": "Study Audio Extractor (YouTube 구간 오디오)",
+  "description": "YouTube 영상에서 지정한 시작·종료 구간의 오디오만 WAV로 추출",
+  "version": "0.0",
+  "buildTag": "latest",
+  "dockerfile": "../Dockerfile",
+  "input": "./input_schema.json"
+}

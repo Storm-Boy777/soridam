@@ -113,6 +113,7 @@ export interface PodcastRow {
   comprehension_questions: string[];
   discussion_questions: string[];
   todays_picks: string[];                   // 오늘의 표현 후보 3개
+  audio_url: string | null;                 // 추출한 대화 구간 오디오 (091, 가라오케 재생 소스)
   sort_order: number;
   is_active: boolean;
   created_by: string | null;

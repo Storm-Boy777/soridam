@@ -303,3 +303,42 @@ export async function fetchPanelMembers(): Promise<PanelMember[]> {
   if (error) return [];
   return data as PanelMember[];
 }
+
+// ─── 멤버 자료 생성 (관리자 결석 대비 — /talklish/manage에서 멤버가 직접) ───
+// 권한: 관리자 OR 활성 패널 멤버. RLS(092)가 멤버 INSERT/UPDATE를 허용.
+
+/** 활성 패널 멤버 또는 관리자인지 확인 (멤버 자료 생성 게이트) */
+async function assertPanelMemberOrAdmin(): Promise<
+  { ok: true; userId: string } | { ok: false; error: string }
+> {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "로그인이 필요합니다" };
+  if (user.app_metadata?.role === "admin") return { ok: true, userId: user.id };
+  const { data: member } = await supabase
+    .from(T.study_panel_members)
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (!member) return { ok: false, error: "스터디 패널 멤버만 자료를 만들 수 있습니다" };
+  return { ok: true, userId: user.id };
+}
+
+/** 멤버가 만든 팟캐스트 자료 저장 */
+export async function createTalklishPodcast(
+  input: Omit<PodcastRow, "id" | "created_by" | "created_at" | "updated_at">
+): Promise<{ success: boolean; error?: string; data?: PodcastRow }> {
+  const gate = await assertPanelMemberOrAdmin();
+  if (!gate.ok) return { success: false, error: gate.error };
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from(T.study_podcasts)
+    .insert({ ...input, created_by: gate.userId })
+    .select()
+    .single();
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: data as PodcastRow };
+}

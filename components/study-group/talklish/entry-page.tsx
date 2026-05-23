@@ -8,7 +8,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, Headphones, Mic, MessagesSquare, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Headphones, Mic, MessagesSquare, Check, ClipboardList } from "lucide-react";
 import { fetchPanelMembers } from "@/lib/actions/study-group";
 import type { PanelMember } from "@/lib/types/study-group";
 import { TLK, TLK_FONT } from "./tokens";
@@ -66,9 +66,9 @@ function formatTodayLabel(): string {
 }
 
 const DAY_TO_PATH: Record<DayKey, string> = {
-  mon: "/study-group/monday",
-  wed: "/study-group/wednesday",
-  fri: "/study-group/friday",
+  mon: "/talklish/monday",
+  wed: "/talklish/wednesday",
+  fri: "/talklish/friday",
 };
 
 export function TalklishEntryPage() {
@@ -169,6 +169,22 @@ export function TalklishEntryPage() {
 
         {/* 패널 멤버 dot — 그룹 정체성 */}
         <MemberStrip members={members} />
+
+        {/* 스터디 준비 — 멤버가 직접 수업 자료 생성 (관리자 결석 대비) */}
+        <Link
+          href="/talklish/manage"
+          className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 transition-all hover:-translate-y-0.5"
+          style={{
+            background: TLK.paper,
+            border: `1px solid ${TLK.ruleHi}`,
+            color: TLK.inkDim,
+            fontFamily: TLK_FONT.sans,
+            fontSize: 12,
+            fontWeight: 700,
+          }}
+        >
+          <ClipboardList size={14} /> 스터디 준비
+        </Link>
       </header>
 
       {/* 본문 — 요일 카드 3개 */}

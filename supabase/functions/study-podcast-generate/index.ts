@@ -295,8 +295,17 @@ Deno.serve(async (req) => {
       error: authError,
     } = await supabase.auth.getUser();
     if (authError || !user) return json({ error: "인증이 필요합니다" }, 401);
-    if (user.app_metadata?.role !== "admin")
-      return json({ error: "관리자 권한이 필요합니다" }, 403);
+    // 관리자 또는 활성 패널 멤버 (멤버가 /talklish에서 직접 자료 생성 — 관리자 결석 대비)
+    if (user.app_metadata?.role !== "admin") {
+      const { data: member } = await supabase
+        .from("study_panel_members")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (!member)
+        return json({ error: "스터디 패널 멤버만 자료를 만들 수 있습니다" }, 403);
+    }
 
     // 입력 검증
     const input = (await req.json()) as GenInput;
