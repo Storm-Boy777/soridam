@@ -83,7 +83,7 @@ interface GenOutput {
   key_expressions: KeyExpressionCard[];
   roleplay: RoleplayData | null;
   comprehension_questions: string[];
-  discussion_questions: string[];
+  discussion_questions: { en: string; ko: string }[];
   todays_picks: string[];
   difficulty: Difficulty;
   topic: string;
@@ -180,7 +180,7 @@ STEP 2 — 학습 자료 생성 (STEP 1의 대화를 근거로)
   · pronunciation: 발음기호(예: "/rɪˈzɔːrsɪz/"). 모르면 빈 문자열. part_of_speech: 품사(noun/verb/adjective/phrase/idiom 등).
   · meaning_ko: 한국어 뜻 + 뉘앙스. 사전식 직역이 아니라 "언제, 어떤 느낌으로 쓰는지"를 풀어준다(멤버가 한국어로 설명하는 활동에 쓰인다).
   · meaning_en: 쉬운 영영 정의 한 문장.
-  · examples: 자연스러운 구어체 예문 2~3개. 서로 다른 상황으로, 학습자가 자기 이야기로 바꿔 말하기 쉽게. 각 { "en": 영문, "ko": 자연스러운 한국어 번역 }(멤버가 돌아가며 소리 내 읽는 자료).
+  · examples: 자연스러운 구어체 예문 **반드시 정확히 5개**. 서로 다른 상황으로, 학습자가 자기 이야기로 바꿔 말하기 쉽게. 각 { "en": 영문, "ko": 자연스러운 한국어 번역 }(멤버가 돌아가며 소리 내 읽는 자료). 표현마다 예외 없이 5개를 채운다.
   · similar_expressions: 같은 뜻의 다른 표현 0~3개(영문).
   · related_vocab: 이 표현과 함께 알면 좋은 확장 어휘 0~4개(audio review식 — 유의어·반의어·관련어). 각 { "word": 영문, "meaning_ko": 한국어 뜻, "relation": "유의어" | "반의어" | "관련어" }.
   · speaking_prompt: 이 표현을 직접 써보게 하는 한국어 질문 (예: "이 표현을 써서 최근 여행 경험을 말해보세요").
@@ -189,9 +189,8 @@ STEP 2 — 학습 자료 생성 (STEP 1의 대화를 근거로)
 - todays_picks: 오늘 꼭 가져갈 핵심 표현 3개 (key_expressions의 expression 값 중에서 골라 그대로).
 - warmup_question: 주제를 여는 가벼운 영문 질문 1개.
 - comprehension_questions: 1차 대화 내용 확인 영문 질문 3~5개 (Yes/No가 아닌, 한 문장 이상 답이 나오는 형태).
-- discussion_questions: 자기 경험·의견을 묻는 개방형 영문 질문 5개.
+- discussion_questions: 자기 경험·의견을 묻는 개방형 질문 5개. 각 { "en": 영문 질문, "ko": 자연스러운 한국어 번역 }. 한국어는 사전식 직역이 아니라 실제 한국인이 그 질문을 던질 때 쓰는 자연스러운 말투로(멤버가 한국어로 질문을 이해하고 영어로 답하는 활동에 쓰인다).
 - description: 한국어 1~2줄 (이 에피소드가 다루는 내용, 50~120자).
-- roleplay: 1차 대화 주제를 응용한 2인 무대 역할극 가이드. scenario(영문 상황 설명), scenario_ko(한국어 번역), role_a/role_b 각각 { name(역할명), description(역할 설명), objectives(이 역할의 목표 2~3개·영문), suggested_phrases(롤플레이에서 쓸 표현 3~5개·key_expressions 활용·영문) }. 멤버 2명이 A/B를 맡아 무대에서 연기하고 나머지는 지켜보는 방식이라, 각 역할이 무엇을 말해야 할지 분명히.
 - difficulty / topic.
 
 # 응답 형식
@@ -219,14 +218,8 @@ STEP 2 — 학습 자료 생성 (STEP 1의 대화를 근거로)
       "level": "core" | "stretch"
     }
   ],
-  "roleplay": {
-    "scenario": string,
-    "scenario_ko": string,
-    "role_a": { "name": string, "description": string, "objectives": [string], "suggested_phrases": [string] },
-    "role_b": { "name": string, "description": string, "objectives": [string], "suggested_phrases": [string] }
-  },
   "comprehension_questions": [string],
-  "discussion_questions": [string],
+  "discussion_questions": [{ "en": string, "ko": string }],
   "todays_picks": [string],
   "difficulty": "beginner" | "intermediate" | "advanced",
   "topic": string
@@ -340,6 +333,20 @@ function validateOutput(data: unknown): GenOutput {
       ? (d.difficulty as Difficulty)
       : "intermediate";
 
+  // discussion_questions — 영문+한글 객체 배열 (구버전 string도 호환)
+  const discussionQuestions = Array.isArray(d.discussion_questions)
+    ? (d.discussion_questions as unknown[])
+        .map((q) => {
+          if (typeof q === "string") return { en: q, ko: "" };
+          const o = (q ?? {}) as Record<string, unknown>;
+          return {
+            en: typeof o.en === "string" ? o.en : "",
+            ko: typeof o.ko === "string" ? o.ko : "",
+          };
+        })
+        .filter((q) => q.en)
+    : [];
+
   return {
     description: d.description,
     dialogue_title: typeof d.dialogue_title === "string" ? d.dialogue_title : "",
@@ -351,7 +358,7 @@ function validateOutput(data: unknown): GenOutput {
     key_expressions: keyExpressions,
     roleplay,
     comprehension_questions: asStringArray(d.comprehension_questions),
-    discussion_questions: asStringArray(d.discussion_questions),
+    discussion_questions: discussionQuestions,
     todays_picks: asStringArray(d.todays_picks),
     difficulty,
     topic: typeof d.topic === "string" ? d.topic : "",

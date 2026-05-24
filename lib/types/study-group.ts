@@ -130,6 +130,12 @@ export interface GameInfo {
 
 /* ── DB Row 타입 ── */
 
+// 토론 질문 (영문 + 자연스러운 한국어 번역)
+export interface DiscussionQuestion {
+  en: string;
+  ko: string;
+}
+
 export interface PodcastRow {
   id: string;
   title: string;
@@ -149,7 +155,7 @@ export interface PodcastRow {
   roleplay: RoleplayData | null;            // 2인 무대 역할극
   key_expressions: KeyExpression[];
   comprehension_questions: string[];
-  discussion_questions: string[];
+  discussion_questions: DiscussionQuestion[]; // 영문 + 한국어 번역
   todays_picks: string[];                   // 오늘의 표현 후보 3개
   audio_url: string | null;                 // 추출한 대화 구간 오디오 (091, 가라오케 재생 소스)
   sort_order: number;

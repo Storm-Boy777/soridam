@@ -43,7 +43,7 @@ type Material = {
   dialogue_lines: PodcastRow["dialogue_lines"];
   key_expressions: PodcastRow["key_expressions"];
   comprehension_questions: string[];
-  discussion_questions: string[];
+  discussion_questions: PodcastRow["discussion_questions"];
   todays_picks: string[];
   difficulty: PodcastRow["difficulty"];
   topic: string;

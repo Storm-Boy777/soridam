@@ -13,6 +13,7 @@ import {
   Play, Pause, RotateCcw, Headphones, MessageCircle,
   Eye, EyeOff,
   Users, Target, Clock, CheckCircle, Sparkles, Undo2,
+  type LucideIcon,
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -22,7 +23,7 @@ import {
   markTalklishPodcastCompleted,
   unmarkTalklishPodcastCompleted,
 } from "@/lib/actions/study-group";
-import type { PodcastRow, PanelMember, KeyExpression, DialogueLine, RoleplayRole } from "@/lib/types/study-group";
+import type { PodcastRow, PanelMember, KeyExpression, DialogueLine, DiscussionQuestion } from "@/lib/types/study-group";
 import { TLK, TLK_FONT } from "./tokens";
 import { useSpeakerRoulette } from "./use-speaker-roulette";
 import { SpeakerCard } from "./speaker-card";
@@ -99,41 +100,38 @@ function normalizeEpisode(raw: PodcastRow): PodcastRow {
   };
 }
 
-/* ─── 8단계 정의 (레거시 Talklish 흐름 확장) ─────
+/* ─── 7단계 정의 (레거시 Talklish 흐름 확장) ─────
  *
- * Opening → 1차 청취 → 2차 청취 → 어휘·표현 → 역할극 → 토론 → 랩업 → Closing
+ * Opening → 1차 청취(듣기) → 어휘·표현(표현 익히기) → 2차 청취(다시 듣기) → 토론 → 랩업 → Closing
  *
  * 60분 분배:
  *   0:  Opening      0–2분    (세션 정보 + 출석 — 큰 모니터용)
- *   1:  1차 청취      2–14분   (자막 없이 듣기 + 발화자 룰렛 내용 공유)
- *   2:  2차 청취     14–22분   (가라오케 자막 보며 다시 듣기)
- *   3:  어휘·표현    22–37분   (플래시 카드)
- *   4:  역할극        37–47분   (짝 대화 — 표현 활용)
- *   5:  토론          47–55분   (AI 토론 질문)
- *   6:  랩업          55–58분   (오늘의 키프세이크)
- *   7:  Closing      58–60분   (마무리 + 세션 완료)
+ *   1:  1차 청취      2–16분   (자막 없이 듣기 + 발화자 룰렛 내용 공유)
+ *   2:  어휘·표현    16–35분   (주요 표현 학습 — 플래시 카드)
+ *   3:  2차 청취     35–45분   (가라오케 자막 보며 다시 듣기 — 얼마나 더 들리는지)
+ *   4:  토론          45–55분   (AI 토론 질문)
+ *   5:  랩업          55–58분   (오늘의 키프세이크)
+ *   6:  Closing      58–60분   (마무리 + 세션 완료)
  */
 
 const FLOW = [
   { id: 0, label: "Opening",         desc: "세션 정보 + 출석 확인",              range: "0–2"   },
-  { id: 1, label: "1차 청취",        desc: "자막 없이 듣고 들은 내용 나누기",     range: "2–14"  },
-  { id: 2, label: "2차 청취",        desc: "자막 보며 다시 듣기 (가라오케)",      range: "14–22" },
-  { id: 3, label: "어휘·표현 학습",  desc: "주요 표현 복기 + 다시 듣기",         range: "22–37" },
-  { id: 4, label: "역할극",          desc: "짝과 함께 오늘 표현 활용",           range: "37–47" },
-  { id: 5, label: "토론",            desc: "AI가 만든 질문으로 토론",            range: "47–55" },
-  { id: 6, label: "랩업",            desc: "오늘 가져갈 표현 1개씩",             range: "55–58" },
-  { id: 7, label: "Closing",         desc: "마무리 + 세션 완료",                 range: "58–60" },
+  { id: 1, label: "1차 청취",        desc: "자막 없이 듣고 들은 내용 나누기",     range: "2–16"  },
+  { id: 2, label: "어휘·표현 학습",  desc: "주요 표현 복기 (플래시 카드)",        range: "16–35" },
+  { id: 3, label: "2차 청취",        desc: "표현 익히고 다시 듣기 (가라오케)",    range: "35–45" },
+  { id: 4, label: "토론",            desc: "AI가 만든 질문으로 토론",            range: "45–55" },
+  { id: 5, label: "랩업",            desc: "오늘 가져갈 표현 1개씩",             range: "55–58" },
+  { id: 6, label: "Closing",         desc: "마무리 + 세션 완료",                 range: "58–60" },
 ] as const;
 
 function phaseFromElapsed(s: number): number {
   if (s < 2 * 60) return 0;
-  if (s < 14 * 60) return 1;
-  if (s < 22 * 60) return 2;
-  if (s < 37 * 60) return 3;
-  if (s < 47 * 60) return 4;
-  if (s < 55 * 60) return 5;
-  if (s < 58 * 60) return 6;
-  return 7;
+  if (s < 16 * 60) return 1;
+  if (s < 35 * 60) return 2;
+  if (s < 45 * 60) return 3;
+  if (s < 55 * 60) return 4;
+  if (s < 58 * 60) return 5;
+  return 6;
 }
 
 /** 완료 일시(ISO) → "M/D" 짧은 표기 (자료 드롭다운 뱃지용) */
@@ -180,7 +178,7 @@ export function PodcastStage({ elapsed, focusMode, absentIds, onToggleAttendance
   const [vocabExIdx, setVocabExIdx] = useState(0);
   const [showExKo, setShowExKo] = useState(false);
   const [activeQ, setActiveQ] = useState(0);
-  const [keepsake, setKeepsake] = useState("");
+  const [showDiscussKo, setShowDiscussKo] = useState(false);
   const [sessionCompleted, setSessionCompleted] = useState(false);
 
   // 자동 선택: 명시 선택 > 아직 안 한(미완료) 첫 자료 > 첫 자료 (전부 완료 시)
@@ -221,11 +219,43 @@ export function PodcastStage({ elapsed, focusMode, absentIds, onToggleAttendance
       if (t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
       if (e.key === "ArrowRight") { e.preventDefault(); goPhase(phase + 1); }
       else if (e.key === "ArrowLeft") { e.preventDefault(); goPhase(phase - 1); }
-      else if (e.key === "r" || e.key === "R") { if (phase === 1 || phase === 5) { e.preventDefault(); spin(); } }
+      else if (e.key === "r" || e.key === "R") { if (phase === 1 || phase === 4) { e.preventDefault(); spin(); } }
+      // 어휘·표현 학습(phase 2) — A/D 표현 이동, Q/E 예문 이동
+      else if ((e.key === "a" || e.key === "A") && phase === 2) {
+        e.preventDefault();
+        setVocabIdx((p) => Math.max(0, p - 1));
+        setShowVocabKo(false); setVocabExIdx(0); setShowExKo(false);
+      } else if ((e.key === "d" || e.key === "D") && phase === 2) {
+        e.preventDefault();
+        const len = episode?.key_expressions.length ?? 0;
+        setVocabIdx((p) => Math.min(len - 1, p + 1));
+        setShowVocabKo(false); setVocabExIdx(0); setShowExKo(false);
+      } else if ((e.key === "q" || e.key === "Q") && phase === 2) {
+        e.preventDefault();
+        setVocabExIdx((p) => Math.max(0, p - 1));
+        setShowExKo(false);
+      } else if ((e.key === "e" || e.key === "E") && phase === 2) {
+        e.preventDefault();
+        const exLen = episode?.key_expressions[vocabIdx]?.examples.length ?? 0;
+        setVocabExIdx((p) => Math.min(exLen - 1, p + 1));
+        setShowExKo(false);
+      }
+      // 토론(phase 4) — A/D 질문 이동, K 한글 번역 토글
+      else if ((e.key === "a" || e.key === "A") && phase === 4) {
+        e.preventDefault();
+        setActiveQ((p) => Math.max(0, p - 1));
+      } else if ((e.key === "d" || e.key === "D") && phase === 4) {
+        e.preventDefault();
+        const qlen = episode?.discussion_questions.length ?? 0;
+        setActiveQ((p) => Math.min(qlen - 1, p + 1));
+      } else if ((e.key === "k" || e.key === "K") && phase === 4) {
+        e.preventDefault();
+        setShowDiscussKo((v) => !v);
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, goPhase, spin]);
+  }, [phase, goPhase, spin, episode, vocabIdx]);
 
   if (!episode) {
     return (
@@ -430,8 +460,7 @@ export function PodcastStage({ elapsed, focusMode, absentIds, onToggleAttendance
                 onToggleAttendance={onToggleAttendance}
               />
             )}
-            {phase === 2 && <ListenAgainSlide episode={episode} />}
-            {phase === 3 && (
+            {phase === 2 && (
               <VocabSlide
                 episode={episode}
                 idx={vocabIdx}
@@ -452,10 +481,8 @@ export function PodcastStage({ elapsed, focusMode, absentIds, onToggleAttendance
                 onToggleExKo={() => setShowExKo((v) => !v)}
               />
             )}
+            {phase === 3 && <ListenAgainSlide episode={episode} />}
             {phase === 4 && (
-              <RoleplaySlide episode={episode} members={members} absentIds={absentIds} />
-            )}
-            {phase === 5 && (
               <DiscussSlide
                 episode={episode}
                 activeQ={activeQ}
@@ -466,12 +493,13 @@ export function PodcastStage({ elapsed, focusMode, absentIds, onToggleAttendance
                 hasSpun={hasSpun}
                 spinning={spinning}
                 onSpin={spin}
+                onToggleAttendance={onToggleAttendance}
+                showKo={showDiscussKo}
+                onToggleKo={() => setShowDiscussKo((v) => !v)}
               />
             )}
+            {phase === 5 && <WrapupSlide episode={episode} />}
             {phase === 6 && (
-              <WrapupSlide episode={episode} keepsake={keepsake} onChangeKeepsake={setKeepsake} />
-            )}
-            {phase === 7 && (
               <ClosingSlide
                 episode={episode}
                 completed={sessionCompleted}
@@ -483,7 +511,6 @@ export function PodcastStage({ elapsed, focusMode, absentIds, onToggleAttendance
                     queryClient.invalidateQueries({ queryKey: ["talklish-completed-podcasts"] })
                   );
                 }}
-                keepsake={keepsake}
               />
             )}
           </div>
@@ -741,6 +768,37 @@ function AudioPlayerBar({
    레거시 ListeningModeSlide BM. 들은 내용을 룰렛으로 발화자 뽑아 나눈다.
    ───────────────────────────────────────────── */
 
+/** 토론 질문 정규화 — 구버전 string도 {en, ko}로 안전 변환 */
+function normalizeDQ(q: string | DiscussionQuestion): DiscussionQuestion {
+  if (typeof q === "string") return { en: q, ko: "" };
+  return { en: q.en ?? "", ko: q.ko ?? "" };
+}
+
+/* 공통 슬라이드 헤더 — 아이콘 + 영문 제목(serif italic) + 한글 부제 */
+function SlideHeader({
+  icon: Icon,
+  title,
+  subtitle,
+}: {
+  icon: LucideIcon;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <div className="text-center">
+      <div className="mb-1.5 flex items-center justify-center gap-2.5">
+        <Icon size={20} style={{ color: TLK.accent }} />
+        <h1 style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 40, fontWeight: 500, color: TLK.ink, lineHeight: 1 }}>
+          {title}
+        </h1>
+      </div>
+      <p style={{ fontFamily: TLK_FONT.ko, fontSize: 16, color: TLK.inkDim }}>
+        {subtitle}
+      </p>
+    </div>
+  );
+}
+
 function ListenFirstSlide({
   episode,
   members,
@@ -764,27 +822,21 @@ function ListenFirstSlide({
   const hasAudio = !!episode.audio_url;
 
   return (
-    <div className="mx-auto flex h-full max-w-2xl flex-col gap-5 py-2">
+    <div className="mx-auto flex h-full max-w-5xl flex-col gap-5">
       {/* 헤더 */}
-      <div className="text-center">
-        <div className="mb-1.5 flex items-center justify-center gap-2.5">
-          <Headphones size={20} style={{ color: TLK.accent }} />
-          <h1 style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 36, fontWeight: 500, color: TLK.ink, lineHeight: 1 }}>
-            Listen First
-          </h1>
-        </div>
-        <p style={{ fontFamily: TLK_FONT.ko, fontSize: 14, color: TLK.inkDim }}>
-          자막 없이 먼저 들어보세요 · 들은 내용을 자유롭게 나눠요
-        </p>
-      </div>
+      <SlideHeader
+        icon={Headphones}
+        title="Listen First"
+        subtitle="자막 없이 먼저 들어보세요 · 들은 내용을 자유롭게 나눠요"
+      />
 
       {/* 듣기 미션 */}
       {episode.listening_mission && (
         <div className="mx-auto rounded-full px-4 py-2" style={{ background: `${TLK.accent}14`, border: `1px solid ${TLK.accent}33` }}>
-          <span style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color: TLK.accent, textTransform: "uppercase", marginRight: 10 }}>
+          <span style={{ fontFamily: TLK_FONT.sans, fontSize: 12, fontWeight: 700, letterSpacing: 1.5, color: TLK.accent, textTransform: "uppercase", marginRight: 10 }}>
             듣기 미션
           </span>
-          <span style={{ fontFamily: TLK_FONT.ko, fontSize: 14, color: TLK.ink }}>{episode.listening_mission}</span>
+          <span style={{ fontFamily: TLK_FONT.ko, fontSize: 17, color: TLK.ink }}>{episode.listening_mission}</span>
         </div>
       )}
 
@@ -797,8 +849,8 @@ function ListenFirstSlide({
               <span className="flex h-14 w-14 items-center justify-center rounded-full" style={{ background: `${TLK.accent}14`, border: `1px solid ${TLK.accent}33` }}>
                 <Volume2 size={26} style={{ color: TLK.accent }} />
               </span>
-              <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 20, color: TLK.ink }}>대화 오디오</p>
-              <p style={{ fontFamily: TLK_FONT.sans, fontSize: 11, color: TLK.inkFaint }}>스크립트 없이 흐름과 분위기에 집중</p>
+              <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 24, color: TLK.ink }}>대화 오디오</p>
+              <p style={{ fontFamily: TLK_FONT.sans, fontSize: 13, color: TLK.inkFaint }}>스크립트 없이 흐름과 분위기에 집중</p>
             </div>
             <AudioPlayerBar
               currentTime={currentTime}
@@ -811,8 +863,8 @@ function ListenFirstSlide({
           </>
         ) : (
           <div className="flex flex-col items-center justify-center py-10 text-center">
-            <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 20, color: TLK.inkDim }}>오디오가 아직 없어요</p>
-            <p style={{ fontFamily: TLK_FONT.ko, fontSize: 12, color: TLK.inkFaint, marginTop: 6 }}>
+            <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 24, color: TLK.inkDim }}>오디오가 아직 없어요</p>
+            <p style={{ fontFamily: TLK_FONT.ko, fontSize: 14, color: TLK.inkFaint, marginTop: 6 }}>
               스터디 준비에서 오디오 추출을 먼저 해주세요
             </p>
           </div>
@@ -822,8 +874,8 @@ function ListenFirstSlide({
       {/* 발화자 PICK — 들은 내용 나누기 (수요일 SpeakerCard 재사용, 작게) */}
       <div>
         <div className="mb-2 flex items-center gap-1.5">
-          <MessageCircle size={13} style={{ color: TLK.accent2 }} />
-          <span style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color: TLK.inkFaint, textTransform: "uppercase" }}>
+          <MessageCircle size={15} style={{ color: TLK.accent2 }} />
+          <span style={{ fontFamily: TLK_FONT.sans, fontSize: 12, fontWeight: 700, letterSpacing: 1.5, color: TLK.inkFaint, textTransform: "uppercase" }}>
             들은 내용 나누기 · Whose turn?
           </span>
         </div>
@@ -888,26 +940,25 @@ function ListenAgainSlide({ episode }: { episode: PodcastRow }) {
   return (
     <div className="flex h-full flex-col gap-4">
       {/* 헤더 + 번역 토글 */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Headphones size={16} style={{ color: TLK.accent }} />
-          <span style={{ fontFamily: TLK_FONT.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: TLK.inkDim, textTransform: "uppercase" }}>
-            2차 청취 · 자막 가라오케
-          </span>
-        </div>
+      <div className="relative">
+        <SlideHeader
+          icon={Headphones}
+          title="Listen Again"
+          subtitle="어휘·표현을 익히고 다시 들어보세요 · 얼마나 더 잘 들리나요?"
+        />
         <button
           type="button"
           onClick={() => setShowKo((v) => !v)}
-          className="flex items-center gap-1.5 rounded-full px-3 py-1"
-          style={{ background: TLK.bg2, border: `1px solid ${TLK.rule}`, color: TLK.inkDim, fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1, cursor: "pointer" }}
+          className="absolute right-0 top-0 flex items-center gap-1.5 rounded-full px-3 py-1"
+          style={{ background: TLK.bg2, border: `1px solid ${TLK.rule}`, color: TLK.inkDim, fontFamily: TLK_FONT.sans, fontSize: 12, fontWeight: 700, letterSpacing: 1, cursor: "pointer" }}
         >
-          {showKo ? <EyeOff size={11} /> : <Eye size={11} />}
-          {showKo ? "번역 숨기기" : "번역 보기"}
+          {showKo ? <EyeOff size={13} /> : <Eye size={13} />}
+          {showKo ? "한글자막 숨기기" : "한글자막 보기"}
         </button>
       </div>
 
       {/* 커스텀 오디오 플레이어 (레거시 BM) */}
-      <div className="mx-auto w-full max-w-3xl rounded-2xl px-5 py-4" style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}>
+      <div className="mx-auto w-full max-w-5xl rounded-2xl px-5 py-4" style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}>
         <audio ref={audioRef} src={episode.audio_url ?? undefined} />
         <AudioPlayerBar
           currentTime={currentTime}
@@ -919,8 +970,8 @@ function ListenAgainSlide({ episode }: { episode: PodcastRow }) {
         />
       </div>
 
-      {/* 화자별 가라오케 자막 */}
-      <div className="relative mx-auto w-full max-w-3xl flex-1">
+      {/* 화자별 가라오케 자막 — 높이 고정 (화면 커져도 일정) */}
+      <div className="relative mx-auto h-[600px] w-full max-w-5xl shrink-0">
         <div
           className="absolute inset-0 overflow-y-auto rounded-2xl px-4 py-3"
           style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
@@ -943,12 +994,12 @@ function ListenAgainSlide({ episode }: { episode: PodcastRow }) {
               >
                 <div className="mb-1 flex items-center gap-2">
                   <span
-                    className="flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold"
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-[13px] font-bold"
                     style={{ background: `${color}22`, color }}
                   >
                     {s.speaker.charAt(0) || "?"}
                   </span>
-                  <span style={{ fontFamily: TLK_FONT.sans, fontSize: 11, fontWeight: 700, color }}>
+                  <span style={{ fontFamily: TLK_FONT.sans, fontSize: 13, fontWeight: 700, color }}>
                     {s.speaker}
                   </span>
                 </div>
@@ -956,7 +1007,7 @@ function ListenAgainSlide({ episode }: { episode: PodcastRow }) {
                   style={{
                     fontFamily: TLK_FONT.serif,
                     fontStyle: "italic",
-                    fontSize: active ? 20 : 16,
+                    fontSize: active ? 26 : 20,
                     color: TLK.ink,
                     lineHeight: 1.45,
                     transition: "all .2s",
@@ -965,7 +1016,7 @@ function ListenAgainSlide({ episode }: { episode: PodcastRow }) {
                   {s.text}
                 </p>
                 {showKo && s.translation && (
-                  <p style={{ fontFamily: TLK_FONT.ko, fontSize: 13, color: TLK.inkDim, marginTop: 4 }}>
+                  <p style={{ fontFamily: TLK_FONT.ko, fontSize: 16, color: TLK.inkDim, marginTop: 4 }}>
                     {s.translation}
                   </p>
                 )}
@@ -975,7 +1026,7 @@ function ListenAgainSlide({ episode }: { episode: PodcastRow }) {
         </div>
       </div>
 
-      <p className="text-center" style={{ fontFamily: TLK_FONT.sans, fontSize: 10, color: TLK.inkFaint }}>
+      <p className="text-center" style={{ fontFamily: TLK_FONT.sans, fontSize: 12, color: TLK.inkFaint }}>
         💡 자막을 클릭하면 그 부분부터 재생돼요
       </p>
     </div>
@@ -1039,12 +1090,17 @@ function VocabSlide({
 
   return (
     <div className="flex h-full flex-col gap-5">
+      <SlideHeader
+        icon={Sparkles}
+        title="Key Expressions"
+        subtitle="오늘의 핵심 어휘·표현을 익혀요 · 예문으로 입에 붙이기"
+      />
       {/* 카드 진행 도트 */}
       <div className="flex items-center justify-center gap-3">
         <p
           style={{
             fontFamily: TLK_FONT.sans,
-            fontSize: 11,
+            fontSize: 13,
             fontWeight: 700,
             letterSpacing: 1.5,
             color: TLK.inkFaint,
@@ -1079,7 +1135,7 @@ function VocabSlide({
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div
-          className="mx-auto max-w-3xl rounded-3xl px-10 py-10"
+          className="mx-auto max-w-5xl rounded-3xl px-10 py-10"
           style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
         >
           <div className="flex items-start justify-between gap-4">
@@ -1111,7 +1167,7 @@ function VocabSlide({
             <div className="flex shrink-0 items-center gap-1.5">
               {card.type && (
                 <span
-                  className="rounded-full px-3 py-1 text-[10px] font-bold"
+                  className="rounded-full px-3 py-1 text-[12px] font-bold"
                   style={{
                     letterSpacing: 0.5,
                     background: card.type === "pattern" ? `${TLK.accent2}1f` : TLK.bg2,
@@ -1123,7 +1179,7 @@ function VocabSlide({
                 </span>
               )}
               <span
-                className="rounded-full px-3 py-1 text-[10px] font-bold uppercase"
+                className="rounded-full px-3 py-1 text-[12px] font-bold uppercase"
                 style={{
                   letterSpacing: 1,
                   background: card.level === "stretch" ? `${TLK.accent}1f` : TLK.bg2,
@@ -1142,7 +1198,7 @@ function VocabSlide({
                 <span
                   style={{
                     fontFamily: TLK_FONT.mono,
-                    fontSize: 15,
+                    fontSize: 17,
                     color: TLK.inkDim,
                     letterSpacing: 0.3,
                   }}
@@ -1152,7 +1208,7 @@ function VocabSlide({
               )}
               {card.part_of_speech && (
                 <span
-                  className="rounded-md px-2 py-0.5 text-[11px] font-semibold"
+                  className="rounded-md px-2 py-0.5 text-[13px] font-semibold"
                   style={{
                     background: TLK.bg2,
                     color: TLK.inkDim,
@@ -1170,7 +1226,7 @@ function VocabSlide({
             <p
               style={{
                 fontFamily: TLK_FONT.serif,
-                fontSize: 18,
+                fontSize: 21,
                 color: TLK.inkDim,
                 marginTop: 14,
                 lineHeight: 1.5,
@@ -1182,7 +1238,7 @@ function VocabSlide({
 
           <div className="mt-4">
             {showKo ? (
-              <p style={{ fontSize: 15, color: TLK.ink, fontFamily: TLK_FONT.ko, lineHeight: 1.5 }}>
+              <p style={{ fontSize: 18, color: TLK.ink, fontFamily: TLK_FONT.ko, lineHeight: 1.5 }}>
                 {card.meaning_ko || "(뜻 정보 없음)"}
               </p>
             ) : (
@@ -1192,7 +1248,7 @@ function VocabSlide({
                 style={{
                   color: TLK.accent,
                   fontFamily: TLK_FONT.sans,
-                  fontSize: 12,
+                  fontSize: 14,
                   fontWeight: 600,
                   background: "transparent",
                   border: 0,
@@ -1214,7 +1270,7 @@ function VocabSlide({
                 <span
                   style={{
                     fontFamily: TLK_FONT.sans,
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: 700,
                     letterSpacing: 1.5,
                     color: TLK.inkFaint,
@@ -1228,18 +1284,18 @@ function VocabSlide({
                     <button
                       type="button"
                       onClick={() => onChangeExIdx(Math.max(0, e - 1))}
-                      aria-label="이전 예문"
-                      style={{ color: TLK.inkDim, background: "transparent", border: 0, cursor: "pointer" }}
+                      aria-label="이전 예문 (Q)"
+                      style={{ color: TLK.inkDim, background: "transparent", border: 0, cursor: "pointer", fontFamily: TLK_FONT.sans, fontSize: 13, fontWeight: 700 }}
                     >
-                      ←
+                      (Q) ←
                     </button>
                     <button
                       type="button"
                       onClick={() => onChangeExIdx(Math.min(card.examples.length - 1, e + 1))}
-                      aria-label="다음 예문"
-                      style={{ color: TLK.inkDim, background: "transparent", border: 0, cursor: "pointer" }}
+                      aria-label="다음 예문 (E)"
+                      style={{ color: TLK.inkDim, background: "transparent", border: 0, cursor: "pointer", fontFamily: TLK_FONT.sans, fontSize: 13, fontWeight: 700 }}
                     >
-                      →
+                      → (E)
                     </button>
                   </div>
                 )}
@@ -1248,7 +1304,7 @@ function VocabSlide({
                 <p
                   style={{
                     fontFamily: TLK_FONT.serif,
-                    fontSize: 19,
+                    fontSize: 23,
                     color: TLK.ink,
                     lineHeight: 1.5,
                   }}
@@ -1262,12 +1318,12 @@ function VocabSlide({
                   className="shrink-0 rounded-lg p-2"
                   style={{ background: TLK.paper, border: 0, cursor: "pointer" }}
                 >
-                  <Volume2 size={16} style={{ color: TLK.inkDim }} />
+                  <Volume2 size={18} style={{ color: TLK.inkDim }} />
                 </button>
               </div>
               {showExKo
                 ? card.examples[e].ko && (
-                    <p style={{ fontSize: 13, color: TLK.inkDim, marginTop: 8, fontFamily: TLK_FONT.ko }}>
+                    <p style={{ fontSize: 16, color: TLK.inkDim, marginTop: 8, fontFamily: TLK_FONT.ko }}>
                       {card.examples[e].ko}
                     </p>
                   )
@@ -1279,7 +1335,7 @@ function VocabSlide({
                       style={{
                         color: TLK.accent,
                         fontFamily: TLK_FONT.sans,
-                        fontSize: 11,
+                        fontSize: 13,
                         fontWeight: 600,
                         background: "transparent",
                         border: 0,
@@ -1295,13 +1351,13 @@ function VocabSlide({
 
           {card.similar_expressions.length > 0 && (
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              <span style={{ fontSize: 11, color: TLK.inkFaint, fontFamily: TLK_FONT.sans }}>
+              <span style={{ fontSize: 13, color: TLK.inkFaint, fontFamily: TLK_FONT.sans }}>
                 유사 표현
               </span>
               {card.similar_expressions.map((s, n) => (
                 <span
                   key={n}
-                  className="rounded-lg px-2.5 py-1 text-xs"
+                  className="rounded-lg px-2.5 py-1 text-sm"
                   style={{
                     background: TLK.bg2,
                     color: TLK.inkDim,
@@ -1317,22 +1373,22 @@ function VocabSlide({
 
           {card.related_vocab && card.related_vocab.length > 0 && (
             <div className="mt-4">
-              <p style={{ fontSize: 11, color: TLK.inkFaint, fontFamily: TLK_FONT.sans, marginBottom: 6 }}>
+              <p style={{ fontSize: 13, color: TLK.inkFaint, fontFamily: TLK_FONT.sans, marginBottom: 6 }}>
                 함께 알아두기
               </p>
               <div className="flex flex-col gap-1.5">
                 {card.related_vocab.map((rv, n) => (
                   <div key={n} className="flex items-baseline gap-2">
                     <span
-                      className="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold"
+                      className="shrink-0 rounded px-1.5 py-0.5 text-[11px] font-bold"
                       style={{ background: TLK.bg2, color: TLK.inkFaint, fontFamily: TLK_FONT.sans }}
                     >
                       {rv.relation}
                     </span>
-                    <span style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 14, color: TLK.ink }}>
+                    <span style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 16, color: TLK.ink }}>
                       {rv.word}
                     </span>
-                    <span style={{ fontFamily: TLK_FONT.ko, fontSize: 12.5, color: TLK.inkDim }}>
+                    <span style={{ fontFamily: TLK_FONT.ko, fontSize: 15, color: TLK.inkDim }}>
                       {rv.meaning_ko}
                     </span>
                   </div>
@@ -1347,11 +1403,11 @@ function VocabSlide({
               style={{ background: `${TLK.accent}0f`, border: `1px solid ${TLK.accent}33` }}
             >
               <div className="mb-1.5 flex items-center gap-1.5">
-                <Mic size={13} style={{ color: TLK.accent }} />
+                <Mic size={15} style={{ color: TLK.accent }} />
                 <span
                   style={{
                     fontFamily: TLK_FONT.sans,
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: 700,
                     letterSpacing: 1.5,
                     color: TLK.accent,
@@ -1361,7 +1417,7 @@ function VocabSlide({
                   말해보기
                 </span>
               </div>
-              <p style={{ fontSize: 14, color: TLK.ink, fontFamily: TLK_FONT.ko, lineHeight: 1.5 }}>
+              <p style={{ fontSize: 17, color: TLK.ink, fontFamily: TLK_FONT.ko, lineHeight: 1.5 }}>
                 {card.speaking_prompt}
               </p>
             </div>
@@ -1381,11 +1437,11 @@ function VocabSlide({
             border: `1px solid ${TLK.rule}`,
             cursor: i === 0 ? "not-allowed" : "pointer",
             fontFamily: TLK_FONT.sans,
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: 600,
           }}
         >
-          ← 이전 표현
+          ← 이전 표현 (A)
         </button>
         <button
           type="button"
@@ -1398,11 +1454,11 @@ function VocabSlide({
             border: 0,
             cursor: i === cards.length - 1 ? "not-allowed" : "pointer",
             fontFamily: TLK_FONT.sans,
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: 700,
           }}
         >
-          다음 표현 →
+          다음 표현 (D) →
         </button>
       </div>
     </div>
@@ -1423,6 +1479,9 @@ function DiscussSlide({
   hasSpun,
   spinning,
   onSpin,
+  onToggleAttendance,
+  showKo,
+  onToggleKo,
 }: {
   episode: PodcastRow;
   activeQ: number;
@@ -1433,8 +1492,11 @@ function DiscussSlide({
   hasSpun: boolean;
   spinning: boolean;
   onSpin: () => void;
+  onToggleAttendance: (memberId: string) => void;
+  showKo: boolean;
+  onToggleKo: () => void;
 }) {
-  const qs = episode.discussion_questions;
+  const qs = episode.discussion_questions.map(normalizeDQ);
   if (qs.length === 0) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -1452,15 +1514,30 @@ function DiscussSlide({
     );
   }
   const idx = Math.min(activeQ, qs.length - 1);
-  const speaker = hasSpun ? members[activeSpeaker] : undefined;
 
   return (
-    <div className="flex h-full flex-col justify-center gap-7">
+    <div className="mx-auto flex h-full w-full max-w-5xl flex-col gap-7">
+      <div className="relative">
+        <SlideHeader
+          icon={MessageCircle}
+          title="Discussion"
+          subtitle="들은 내용을 주제로 자유롭게 토론해요 · 룰렛으로 발표자를 뽑아요"
+        />
+        <button
+          type="button"
+          onClick={onToggleKo}
+          className="absolute right-0 top-0 flex items-center gap-1.5 rounded-full px-3 py-1"
+          style={{ background: TLK.bg2, border: `1px solid ${TLK.rule}`, color: TLK.inkDim, fontFamily: TLK_FONT.sans, fontSize: 12, fontWeight: 700, letterSpacing: 1, cursor: "pointer" }}
+        >
+          {showKo ? <EyeOff size={13} /> : <Eye size={13} />}
+          {showKo ? "한글 숨기기 (K)" : "한글 보기 (K)"}
+        </button>
+      </div>
       <p
         className="text-center"
         style={{
           fontFamily: TLK_FONT.sans,
-          fontSize: 11,
+          fontSize: 13,
           fontWeight: 700,
           letterSpacing: 2.5,
           color: TLK.inkFaint,
@@ -1495,7 +1572,7 @@ function DiscussSlide({
           style={{
             position: "relative",
             fontFamily: TLK_FONT.serif,
-            fontSize: 38,
+            fontSize: 42,
             fontStyle: "italic",
             fontWeight: 500,
             color: TLK.ink,
@@ -1503,66 +1580,42 @@ function DiscussSlide({
             letterSpacing: -0.5,
           }}
         >
-          “{qs[idx]}”
+          “{qs[idx].en}”
         </p>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1.5">
-            {members.map((m, i) => {
-              const isActive = hasSpun && i === activeSpeaker && !spinning && !absentIds.has(m.id);
-              const absent = absentIds.has(m.id);
-              return (
-                <div
-                  key={m.id}
-                  title={m.name}
-                  className="flex h-10 w-10 items-center justify-center rounded-full"
-                  style={{
-                    background: isActive ? m.color : TLK.paper,
-                    border: `2px solid ${isActive ? m.color : TLK.rule}`,
-                    fontSize: 20,
-                    opacity: absent ? 0.35 : 1,
-                    transition: "all .25s",
-                  }}
-                >
-                  {m.emoji}
-                </div>
-              );
-            })}
-          </div>
-          <button
-            type="button"
-            onClick={onSpin}
-            disabled={spinning || members.length === 0}
-            className="rounded-full px-4 py-2 transition-all disabled:opacity-40"
+        {showKo && qs[idx].ko && (
+          <p
             style={{
-              background: TLK.bg2,
-              color: TLK.ink,
-              border: `1px solid ${TLK.rule}`,
-              fontFamily: TLK_FONT.sans,
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: 1.5,
-              cursor: spinning ? "wait" : "pointer",
+              position: "relative",
+              fontFamily: TLK_FONT.ko,
+              fontSize: 18,
+              color: TLK.inkFaint,
+              lineHeight: 1.5,
+              marginTop: 14,
             }}
           >
-            {spinning ? "SPIN…" : "🎲 PICK · R"}
-          </button>
-          {speaker && !spinning && !absentIds.has(speaker.id) && (
-            <span
-              style={{
-                fontFamily: TLK_FONT.serif,
-                fontStyle: "italic",
-                fontSize: 14,
-                color: TLK.inkDim,
-              }}
-            >
-              지금 차례 — <strong style={{ color: TLK.ink }}>{speaker.name}</strong>
-            </span>
-          )}
-        </div>
+            {qs[idx].ko}
+          </p>
+        )}
+      </div>
 
+      {/* 질문 네비게이션 — 이전/다음 + 도트 (질문 카드 바로 아래) */}
+      <div className="flex items-center justify-center gap-4">
+        <button
+          type="button"
+          onClick={() => onChangeQ(Math.max(0, idx - 1))}
+          disabled={idx === 0}
+          className="rounded-full px-4 py-2 transition-all disabled:opacity-30"
+          style={{
+            background: TLK.bg2,
+            color: TLK.inkDim,
+            border: `1px solid ${TLK.rule}`,
+            cursor: idx === 0 ? "not-allowed" : "pointer",
+            fontFamily: TLK_FONT.sans,
+            fontSize: 14,
+          }}
+        >
+          ← 이전 질문
+        </button>
         <div className="flex items-center gap-1.5">
           {qs.map((_, i) => {
             const isActive = i === idx;
@@ -1586,25 +1639,6 @@ function DiscussSlide({
             );
           })}
         </div>
-      </div>
-
-      <div className="flex justify-center gap-3">
-        <button
-          type="button"
-          onClick={() => onChangeQ(Math.max(0, idx - 1))}
-          disabled={idx === 0}
-          className="rounded-full px-4 py-2 transition-all disabled:opacity-30"
-          style={{
-            background: TLK.bg2,
-            color: TLK.inkDim,
-            border: `1px solid ${TLK.rule}`,
-            cursor: idx === 0 ? "not-allowed" : "pointer",
-            fontFamily: TLK_FONT.sans,
-            fontSize: 12,
-          }}
-        >
-          ← 이전 질문
-        </button>
         <button
           type="button"
           onClick={() => onChangeQ(Math.min(qs.length - 1, idx + 1))}
@@ -1616,12 +1650,31 @@ function DiscussSlide({
             border: 0,
             cursor: idx === qs.length - 1 ? "not-allowed" : "pointer",
             fontFamily: TLK_FONT.sans,
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: 700,
           }}
         >
           다음 질문 →
         </button>
+      </div>
+
+      {/* 발화자 PICK — 2페이지(Listen First)와 동일한 SpeakerCard */}
+      <div>
+        <div className="mb-2 flex items-center gap-1.5">
+          <MessageCircle size={15} style={{ color: TLK.accent2 }} />
+          <span style={{ fontFamily: TLK_FONT.sans, fontSize: 12, fontWeight: 700, letterSpacing: 1.5, color: TLK.inkFaint, textTransform: "uppercase" }}>
+            토론 발표자 · Whose turn?
+          </span>
+        </div>
+        <SpeakerCard
+          members={members}
+          absentIds={absentIds}
+          activeSpeaker={activeSpeaker}
+          hasSpun={hasSpun}
+          spinning={spinning}
+          onSpin={onSpin}
+          onToggleAttendance={onToggleAttendance}
+        />
       </div>
     </div>
   );
@@ -1631,29 +1684,21 @@ function DiscussSlide({
    슬라이드 5 · 랩업
    ───────────────────────────────────────────── */
 
-function WrapupSlide({
-  episode,
-  keepsake,
-  onChangeKeepsake,
-}: {
-  episode: PodcastRow;
-  keepsake: string;
-  onChangeKeepsake: (v: string) => void;
-}) {
+function WrapupSlide({ episode }: { episode: PodcastRow }) {
   return (
-    <div className="flex h-full flex-col justify-center gap-8">
+    <div className="mx-auto flex h-full w-full max-w-5xl flex-col gap-6">
+      <SlideHeader
+        icon={CheckCircle}
+        title="Wrap-up"
+        subtitle="오늘 익힌 표현을 한눈에 복습하고 마무리해요"
+      />
+
+      {/* 오늘의 핵심 표현 — 엄선 강조 */}
       {episode.todays_picks.length > 0 && (
         <div>
           <p
-            className="mb-4 text-center"
-            style={{
-              fontFamily: TLK_FONT.sans,
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: 2.5,
-              color: TLK.inkFaint,
-              textTransform: "uppercase",
-            }}
+            className="mb-3 text-center"
+            style={{ fontFamily: TLK_FONT.sans, fontSize: 13, fontWeight: 700, letterSpacing: 2.5, color: TLK.inkFaint, textTransform: "uppercase" }}
           >
             오늘의 핵심 표현
           </p>
@@ -1661,29 +1706,14 @@ function WrapupSlide({
             {episode.todays_picks.map((p, i) => (
               <div
                 key={i}
-                className="rounded-2xl px-6 py-6 text-center"
+                className="rounded-2xl px-6 py-5 text-center"
                 style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
               >
-                <p
-                  style={{
-                    fontFamily: TLK_FONT.mono,
-                    fontSize: 11,
-                    color: TLK.accent,
-                    letterSpacing: 1,
-                  }}
-                >
+                <p style={{ fontFamily: TLK_FONT.mono, fontSize: 13, color: TLK.accent, letterSpacing: 1 }}>
                   {String(i + 1).padStart(2, "0")}
                 </p>
                 <p
-                  style={{
-                    fontFamily: TLK_FONT.serif,
-                    fontStyle: "italic",
-                    fontSize: 22,
-                    fontWeight: 500,
-                    color: TLK.ink,
-                    marginTop: 8,
-                    lineHeight: 1.3,
-                  }}
+                  style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 26, fontWeight: 500, color: TLK.ink, marginTop: 6, lineHeight: 1.3 }}
                 >
                   {p}
                 </p>
@@ -1693,58 +1723,56 @@ function WrapupSlide({
         </div>
       )}
 
+      {/* 오늘 익힌 표현 전체 복습 */}
+      {episode.key_expressions.length > 0 && (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <p
+            className="mb-3 text-center"
+            style={{ fontFamily: TLK_FONT.sans, fontSize: 13, fontWeight: 700, letterSpacing: 2.5, color: TLK.inkFaint, textTransform: "uppercase" }}
+          >
+            오늘 익힌 표현 {episode.key_expressions.length}개
+          </p>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              {episode.key_expressions.map((k, i) => (
+                <div
+                  key={i}
+                  className="flex items-baseline gap-3 rounded-xl px-4 py-3"
+                  style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
+                >
+                  <span style={{ fontFamily: TLK_FONT.mono, fontSize: 12, color: TLK.inkFaint, flexShrink: 0 }}>
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <div className="min-w-0">
+                    <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 18, color: TLK.ink, lineHeight: 1.35 }}>
+                      {k.expression}
+                    </p>
+                    {k.meaning_ko && (
+                      <p style={{ fontFamily: TLK_FONT.ko, fontSize: 14, color: TLK.inkDim, marginTop: 2 }}>
+                        {k.meaning_ko}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 마무리 활동 — 말하기 (적기 X) */}
       <div
-        className="mx-auto w-full max-w-2xl rounded-3xl px-8 py-8 text-center"
-        style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
+        className="shrink-0 rounded-2xl px-6 py-5 text-center"
+        style={{ background: `${TLK.accent}0f`, border: `1px solid ${TLK.accent}33` }}
       >
-        <p
-          style={{
-            fontFamily: TLK_FONT.sans,
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: 2.5,
-            color: TLK.inkFaint,
-            textTransform: "uppercase",
-          }}
-        >
-          Today&apos;s Keepsake
-        </p>
-        <p
-          style={{
-            fontFamily: TLK_FONT.serif,
-            fontStyle: "italic",
-            fontSize: 24,
-            color: TLK.ink,
-            marginTop: 8,
-          }}
-        >
-          오늘 가져갈 표현 1개를 적어보세요
-        </p>
-        <textarea
-          value={keepsake}
-          onChange={(e) => onChangeKeepsake(e.target.value)}
-          placeholder="예: I'll follow through on this."
-          rows={3}
-          aria-label="오늘의 키프세이크"
-          className="mt-6 w-full resize-none rounded-xl px-5 py-3 text-base"
-          style={{
-            background: TLK.paperHi,
-            border: `1px solid ${TLK.rule}`,
-            color: TLK.ink,
-            fontFamily: TLK_FONT.serif,
-            fontStyle: "italic",
-            outline: "none",
-          }}
-        />
-        <p
-          style={{
-            marginTop: 10,
-            fontSize: 12,
-            color: TLK.inkFaint,
-            fontFamily: TLK_FONT.sans,
-          }}
-        >
-          돌아가면서 한 표현씩 짧게 공유해 주세요
+        <div className="mb-1.5 flex items-center justify-center gap-2">
+          <Mic size={16} style={{ color: TLK.accent }} />
+          <span style={{ fontFamily: TLK_FONT.sans, fontSize: 12, fontWeight: 700, letterSpacing: 1.5, color: TLK.accent, textTransform: "uppercase" }}>
+            오늘의 마무리
+          </span>
+        </div>
+        <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 22, color: TLK.ink, lineHeight: 1.4 }}>
+          돌아가며 오늘 가장 기억에 남는 표현을 하나씩 말해보세요
         </p>
       </div>
     </div>
@@ -1984,403 +2012,6 @@ function OpeningSlide({
 }
 
 /* ─────────────────────────────────────────────
-   슬라이드 4 · Real-Talk 역할극 (순차 무대형 + A/B 가이드)
-   출석 멤버를 2명씩 팀으로 묶어 차례로 무대에 올린다.
-   나머지는 관객. A/B 각자 역할·목표·추천 표현 가이드를 본다.
-   ───────────────────────────────────────────── */
-
-function RoleplaySlide({
-  episode,
-  members,
-  absentIds,
-}: {
-  episode: PodcastRow;
-  members: PanelMember[];
-  absentIds: Set<string>;
-}) {
-  const roleplay = episode.roleplay;
-  const present = useMemo(
-    () => members.filter((m) => !absentIds.has(m.id)),
-    [members, absentIds]
-  );
-
-  // 출석 멤버를 2명씩 팀으로 묶기 (마지막 팀은 1명일 수 있음)
-  const teams = useMemo(() => {
-    const t: PanelMember[][] = [];
-    for (let i = 0; i < present.length; i += 2) t.push(present.slice(i, i + 2));
-    return t;
-  }, [present]);
-
-  const [teamIdx, setTeamIdx] = useState(0);
-  const [showPhrases, setShowPhrases] = useState(false);
-
-  // 출석 변동으로 팀 수가 줄면 인덱스 보정
-  useEffect(() => {
-    if (teamIdx > teams.length - 1) setTeamIdx(Math.max(0, teams.length - 1));
-  }, [teams.length, teamIdx]);
-
-  if (!roleplay) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-center">
-          <p
-            style={{
-              color: TLK.inkFaint,
-              fontFamily: TLK_FONT.serif,
-              fontStyle: "italic",
-              fontSize: 22,
-            }}
-          >
-            역할극 자료가 없습니다
-          </p>
-          <p style={{ color: TLK.inkFaint, fontFamily: TLK_FONT.ko, fontSize: 13, marginTop: 8 }}>
-            스터디 준비에서 자료를 생성하면 역할극이 표시됩니다.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  const ti = Math.min(teamIdx, Math.max(0, teams.length - 1));
-  const team = teams[ti] ?? [];
-  const memberA = team[0];
-  const memberB = team[1];
-  const audience = present.filter((m) => !team.some((t) => t.id === m.id));
-
-  return (
-    <div className="flex h-full flex-col gap-4">
-      {/* 상단 — 시나리오 + 팀 진행 + 표현 토글 */}
-      <div
-        className="rounded-3xl px-7 py-5"
-        style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
-      >
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <span
-              style={{
-                fontFamily: TLK_FONT.sans,
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: 1.5,
-                color: TLK.inkFaint,
-                textTransform: "uppercase",
-              }}
-            >
-              Real-Talk · 무대 역할극
-            </span>
-            <h2
-              style={{
-                fontFamily: TLK_FONT.serif,
-                fontStyle: "italic",
-                fontSize: 28,
-                fontWeight: 500,
-                color: TLK.ink,
-                lineHeight: 1.2,
-                marginTop: 4,
-              }}
-            >
-              {roleplay.scenario || "(상황 정보 없음)"}
-            </h2>
-            {roleplay.scenario_ko && (
-              <p
-                style={{
-                  fontFamily: TLK_FONT.ko,
-                  fontSize: 14,
-                  color: TLK.inkDim,
-                  lineHeight: 1.5,
-                  marginTop: 6,
-                }}
-              >
-                {roleplay.scenario_ko}
-              </p>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowPhrases((v) => !v)}
-            className="shrink-0 rounded-full px-4 py-2"
-            style={{
-              background: showPhrases ? TLK.ink : TLK.bg2,
-              color: showPhrases ? "#fff" : TLK.inkDim,
-              border: showPhrases ? 0 : `1px solid ${TLK.rule}`,
-              cursor: "pointer",
-              fontFamily: TLK_FONT.sans,
-              fontSize: 12,
-              fontWeight: 600,
-            }}
-          >
-            {showPhrases ? "표현 숨기기" : "추천 표현 보기"}
-          </button>
-        </div>
-      </div>
-
-      {/* 무대 — Role A / Role B 카드 */}
-      <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-2">
-        <RoleStageCard
-          role={roleplay.role_a}
-          roleLabel="Role A"
-          member={memberA}
-          accent={TLK.accent}
-          showPhrases={showPhrases}
-        />
-        <RoleStageCard
-          role={roleplay.role_b}
-          roleLabel="Role B"
-          member={memberB}
-          accent={TLK.accent2}
-          showPhrases={showPhrases}
-        />
-      </div>
-
-      {/* 하단 — 관객 + 팀 이동 */}
-      <div
-        className="flex flex-wrap items-center justify-between gap-4 rounded-2xl px-6 py-4"
-        style={{ background: TLK.bg2 }}
-      >
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span
-            style={{
-              fontFamily: TLK_FONT.sans,
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: 1.5,
-              color: TLK.inkFaint,
-              textTransform: "uppercase",
-            }}
-          >
-            관객 · 듣고 피드백
-          </span>
-          {audience.length > 0 ? (
-            audience.map((m) => (
-              <span
-                key={m.id}
-                className="flex h-7 w-7 items-center justify-center rounded-full text-sm"
-                style={{ background: `${m.color}1f`, border: `1px solid ${m.color}44` }}
-                title={m.name}
-              >
-                {m.emoji}
-              </span>
-            ))
-          ) : (
-            <span style={{ fontFamily: TLK_FONT.ko, fontSize: 12, color: TLK.inkFaint }}>
-              전원 무대 위
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-3">
-          <span
-            style={{
-              fontFamily: TLK_FONT.sans,
-              fontSize: 12,
-              fontWeight: 700,
-              color: TLK.inkDim,
-            }}
-          >
-            팀 {teams.length === 0 ? 0 : ti + 1} / {teams.length}
-          </span>
-          <button
-            type="button"
-            onClick={() => setTeamIdx(Math.max(0, ti - 1))}
-            disabled={ti === 0}
-            className="rounded-full px-4 py-2 transition-all disabled:opacity-30"
-            style={{
-              background: TLK.paper,
-              color: TLK.inkDim,
-              border: `1px solid ${TLK.rule}`,
-              cursor: ti === 0 ? "not-allowed" : "pointer",
-              fontFamily: TLK_FONT.sans,
-              fontSize: 12,
-              fontWeight: 600,
-            }}
-          >
-            ← 이전 팀
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setTeamIdx(Math.min(teams.length - 1, ti + 1));
-              setShowPhrases(false);
-            }}
-            disabled={ti >= teams.length - 1}
-            className="rounded-full px-5 py-2 transition-all disabled:opacity-30"
-            style={{
-              background: TLK.ink,
-              color: "#fff",
-              border: 0,
-              cursor: ti >= teams.length - 1 ? "not-allowed" : "pointer",
-              fontFamily: TLK_FONT.sans,
-              fontSize: 12,
-              fontWeight: 700,
-            }}
-          >
-            다음 팀 →
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function RoleStageCard({
-  role,
-  roleLabel,
-  member,
-  accent,
-  showPhrases,
-}: {
-  role: RoleplayRole;
-  roleLabel: string;
-  member: PanelMember | undefined;
-  accent: string;
-  showPhrases: boolean;
-}) {
-  const speak = (text: string) => {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = "en-US";
-    u.rate = 0.9;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
-  };
-
-  const labelStyle = {
-    fontFamily: TLK_FONT.sans,
-    fontSize: 10,
-    fontWeight: 700,
-    letterSpacing: 1.5,
-    color: TLK.inkFaint,
-    textTransform: "uppercase" as const,
-  };
-
-  return (
-    <div
-      className="flex min-h-0 flex-col overflow-y-auto rounded-3xl p-7"
-      style={{ background: TLK.paper, border: `1px solid ${accent}44` }}
-    >
-      {/* 역할 라벨 + 배정 멤버 */}
-      <div className="flex items-center justify-between gap-3">
-        <span
-          className="rounded-full px-3 py-1 text-[10px] font-bold uppercase"
-          style={{
-            letterSpacing: 1.5,
-            background: `${accent}1f`,
-            color: accent,
-            fontFamily: TLK_FONT.sans,
-          }}
-        >
-          {roleLabel}
-        </span>
-        {member ? (
-          <div className="flex items-center gap-2">
-            <span
-              className="flex h-8 w-8 items-center justify-center rounded-full text-base"
-              style={{ background: `${member.color}22`, border: `1px solid ${member.color}55` }}
-            >
-              {member.emoji}
-            </span>
-            <span style={{ fontFamily: TLK_FONT.ko, fontSize: 13, fontWeight: 600, color: TLK.ink }}>
-              {member.name}
-            </span>
-          </div>
-        ) : (
-          <span style={{ fontFamily: TLK_FONT.ko, fontSize: 12, color: TLK.inkFaint }}>대기</span>
-        )}
-      </div>
-
-      {/* 역할 이름 + 설명 */}
-      <h3
-        style={{
-          fontFamily: TLK_FONT.serif,
-          fontStyle: "italic",
-          fontSize: 28,
-          fontWeight: 500,
-          color: TLK.ink,
-          lineHeight: 1.15,
-          marginTop: 14,
-        }}
-      >
-        {role.name || "(역할 정보 없음)"}
-      </h3>
-      {role.description && (
-        <p
-          style={{
-            fontFamily: TLK_FONT.ko,
-            fontSize: 13.5,
-            color: TLK.inkDim,
-            lineHeight: 1.55,
-            marginTop: 8,
-          }}
-        >
-          {role.description}
-        </p>
-      )}
-
-      {/* 목표 — 어떤 대화를 해야 하는가 */}
-      {role.objectives.length > 0 && (
-        <div className="mt-5">
-          <span style={labelStyle}>이 대화에서 해야 할 것</span>
-          <ul className="mt-2 space-y-1.5">
-            {role.objectives.map((o, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-2"
-                style={{ fontFamily: TLK_FONT.ko, fontSize: 13, color: TLK.ink, lineHeight: 1.5 }}
-              >
-                <span style={{ color: accent, fontWeight: 700 }}>·</span>
-                <span>{o}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* 추천 표현 — 이 표현을 써보세요 (토글) */}
-      {role.suggested_phrases.length > 0 && (
-        <div className="mt-5">
-          <span style={labelStyle}>이 표현을 써보세요</span>
-          {showPhrases ? (
-            <div className="mt-2 space-y-2">
-              {role.suggested_phrases.map((p, i) => (
-                <div
-                  key={i}
-                  className="flex items-start justify-between gap-2 rounded-xl px-3 py-2"
-                  style={{ background: TLK.bg2 }}
-                >
-                  <span
-                    style={{
-                      fontFamily: TLK_FONT.serif,
-                      fontSize: 15,
-                      color: TLK.ink,
-                      lineHeight: 1.45,
-                    }}
-                  >
-                    {p}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => speak(p)}
-                    aria-label="발음 듣기"
-                    className="shrink-0 rounded-lg p-1.5"
-                    style={{ background: TLK.paper, border: 0, cursor: "pointer" }}
-                  >
-                    <Volume2 size={14} style={{ color: TLK.inkDim }} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p style={{ fontFamily: TLK_FONT.ko, fontSize: 12, color: TLK.inkFaint, marginTop: 8 }}>
-              먼저 스스로 말해본 뒤 표현을 확인하세요
-            </p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────
    슬라이드 7 · Closing (마무리 + 세션 완료)
    ───────────────────────────────────────────── */
 
@@ -2388,12 +2019,10 @@ function ClosingSlide({
   episode,
   completed,
   onComplete,
-  keepsake,
 }: {
   episode: PodcastRow;
   completed: boolean;
   onComplete: (c: boolean) => void;
-  keepsake: string;
 }) {
   return (
     <div className="mx-auto flex h-full max-w-4xl flex-col items-center justify-center gap-7 py-8">
@@ -2460,37 +2089,6 @@ function ClosingSlide({
         >
           {episode.dialogue_title || episode.title}
         </p>
-        {keepsake && (
-          <div
-            className="mt-4 rounded-xl px-4 py-3"
-            style={{ background: TLK.bg2, border: `1px solid ${TLK.rule}` }}
-          >
-            <p
-              style={{
-                fontFamily: TLK_FONT.sans,
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: 1.5,
-                color: TLK.accent,
-                textTransform: "uppercase",
-                marginBottom: 4,
-              }}
-            >
-              Today's Keepsake
-            </p>
-            <p
-              style={{
-                fontFamily: TLK_FONT.serif,
-                fontStyle: "italic",
-                fontSize: 16,
-                color: TLK.ink,
-                lineHeight: 1.5,
-              }}
-            >
-              “{keepsake}”
-            </p>
-          </div>
-        )}
       </div>
 
       {/* 세션 완료 버튼 */}
