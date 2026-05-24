@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Shuffle, Play as PlayIcon, RotateCcw, Clock } from "lucide-react";
+import { Shuffle, Play as PlayIcon, RotateCcw } from "lucide-react";
 import { fetchFreetalkTopics, fetchGameCards, fetchPanelMembers } from "@/lib/actions/study-group";
 import type { FreetalkRow, GameCardRow, StoryStarter } from "@/lib/types/study-group";
 import { TLK, TLK_FONT } from "./tokens";
@@ -67,15 +67,14 @@ const GAMES: GameDef[] = [
 ];
 
 interface Props {
-  clock: string;       // 현재 시각 HH:MM (일반 모드 트래커에 표시)
-  focusMode: boolean;  // Full 모드 — 트래커 시각은 숨기고 우상단 고정 표시가 대신함
+  focusMode: boolean;  // Full 모드 — 헤더의 현재 게임 표시를 가운데로 (일반 모드는 우측)
   absentIds: Set<string>;
   onToggleAttendance: (memberId: string) => void;
 }
 
 type FridayPhase = "intro" | "games" | "closing";
 
-export function FreetalkStage({ clock, focusMode, absentIds, onToggleAttendance }: Props) {
+export function FreetalkStage({ focusMode, absentIds, onToggleAttendance }: Props) {
   const [phase, setPhase] = useState<FridayPhase>("intro");
   const [game, setGame] = useState<GameKey>("spinner");
   // 룰렛 state는 useSpeakerRoulette 훅에서 관리
@@ -156,46 +155,49 @@ export function FreetalkStage({ clock, focusMode, absentIds, onToggleAttendance 
 
   return (
     <div
-      className="grid h-full min-h-0"
-      style={{
-        gridTemplateColumns: "300px 1fr 340px",
-        background: TLK.bg,
-        color: TLK.ink,
-        fontFamily: TLK_FONT.ko,
-      }}
+      className="flex h-full flex-col"
+      style={{ background: TLK.bg, color: TLK.ink, fontFamily: TLK_FONT.ko }}
     >
-      {/* ─── Phase 트래커 (좌측 상단 사이드바 위) ─── */}
-      <div
-        className="absolute right-6 top-3 z-10 flex items-center gap-2 rounded-full px-3 py-1.5"
-        style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
+      {/* ① 헤더 — 월·수 Stage와 동일 구조 (진행바 자리엔 현재 게임 이름) */}
+      <header
+        className="relative flex shrink-0 items-center gap-4 border-b px-6 py-3.5 sm:px-10"
+        style={{ borderColor: TLK.rule, background: TLK.bg }}
       >
-        {/* 현재 시각 — 일반 모드 (Full 모드에선 우상단 고정 표시가 대신함) */}
-        {!focusMode && clock && (
-          <span className="flex items-center gap-1.5 pl-1">
-            <Clock size={12} style={{ color: TLK.inkFaint }} />
-            <span
-              style={{
-                fontFamily: TLK_FONT.mono,
-                fontSize: 12,
-                color: TLK.inkDim,
-                fontVariantNumeric: "tabular-nums",
-                letterSpacing: 0.5,
-              }}
-            >
-              {clock}
-            </span>
-          </span>
-        )}
-        <button
-          type="button"
-          onClick={() => setPhase("closing")}
-          className="rounded-full px-3 py-1 text-[10px] font-bold tracking-widest transition-opacity hover:opacity-80"
-          style={{ background: TLK.ink, color: "#fff", border: 0, fontFamily: TLK_FONT.sans, cursor: "pointer" }}
+        <div className="min-w-0 max-w-md flex-1">
+          <p
+            className="truncate"
+            style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 16, fontWeight: 500, color: TLK.ink }}
+          >
+            Free Talk
+          </p>
+          <p style={{ fontFamily: TLK_FONT.sans, fontSize: 10.5, color: TLK.inkFaint, marginTop: 2, letterSpacing: 0.5 }}>
+            Friday Night
+          </p>
+        </div>
+
+        {!focusMode && <div className="flex-1" />}
+
+        {/* 현재 게임 — 일반 모드 우측 / Full 모드 가운데 (월·수 진행바 자리) */}
+        <div
+          className={
+            focusMode
+              ? "absolute left-1/2 flex -translate-x-1/2 items-center gap-2"
+              : "flex items-center gap-2"
+          }
         >
-          마무리 →
-        </button>
-      </div>
-      {/* ─── 좌: 게임 메뉴 ─── */}
+          <span style={{ fontSize: 16, lineHeight: 1 }}>{def.emoji}</span>
+          <span style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 16, fontWeight: 500, color: TLK.ink }}>
+            {def.name}
+          </span>
+        </div>
+      </header>
+
+      {/* ② 본문 — 3컬럼 (좌:게임 메뉴 / 중:게임 진행 / 우:룰렛) */}
+      <div
+        className="grid min-h-0 flex-1"
+        style={{ gridTemplateColumns: "300px 1fr 340px" }}
+      >
+        {/* ─── 좌: 게임 메뉴 ─── */}
       <aside
         className="flex flex-col gap-5 overflow-y-auto px-6 py-6"
         style={{ background: TLK.bg2, borderRight: `1px solid ${TLK.ruleHi}` }}
@@ -410,6 +412,7 @@ export function FreetalkStage({ clock, focusMode, absentIds, onToggleAttendance 
           }
         />
       </aside>
+      </div>
     </div>
   );
 }

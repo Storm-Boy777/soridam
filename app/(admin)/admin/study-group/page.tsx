@@ -2,21 +2,22 @@
 
 import { useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Headphones, MessageCircle, Ban, ArrowLeftRight, Scale, Link, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Users, Search, Sparkles, Loader2, Youtube } from "lucide-react";
-import { createClient } from "@/lib/supabase";
+import { MessageCircle, Ban, ArrowLeftRight, Scale, Link, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Users, Youtube, ExternalLink } from "lucide-react";
 import {
-  getAdminPodcasts, createPodcast, updatePodcast, deletePodcast,
+  getAdminYoutubeChannels, createYoutubeChannel, updateYoutubeChannel, deleteYoutubeChannel,
   getAdminFreetalk, createFreetalk, updateFreetalk, deleteFreetalk,
   getAdminGameCards, createGameCard, updateGameCard, deleteGameCard,
   getAdminPanelMembers, createPanelMember, updatePanelMember, deletePanelMember,
 } from "@/lib/actions/admin/study-group";
-import type { PodcastRow, FreetalkRow, GameCardRow, GameCardGameType, TabooCard, WouldYouRatherCard, DebateTopic, StoryStarter, FreeTalkCategory, PanelMember, PanelMemberWithProfile } from "@/lib/types/study-group";
+import type { YoutubeChannelRow, FreetalkRow, GameCardRow, GameCardGameType, TabooCard, WouldYouRatherCard, DebateTopic, StoryStarter, FreeTalkCategory, PanelMember, PanelMemberWithProfile } from "@/lib/types/study-group";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "sonner";
 
 /* ── 탭 정의 ── */
 
 const tabs = [
   { id: "members", label: "패널 멤버", icon: Users },
-  { id: "podcasts", label: "팟캐스트", icon: Headphones },
+  { id: "monday", label: "월요일 설정", icon: Youtube },
   { id: "freetalk", label: "프리토킹", icon: MessageCircle },
   { id: "taboo", label: "금칙어", icon: Ban },
   { id: "wyr", label: "Would You Rather", icon: ArrowLeftRight },
@@ -29,7 +30,7 @@ type TabId = (typeof tabs)[number]["id"];
 /* ── 메인 페이지 ── */
 
 export default function AdminStudyGroupPage() {
-  const [activeTab, setActiveTab] = useState<TabId>("podcasts");
+  const [activeTab, setActiveTab] = useState<TabId>("monday");
 
   return (
     <div>
@@ -57,7 +58,7 @@ export default function AdminStudyGroupPage() {
 
       {/* 탭 콘텐츠 */}
       {activeTab === "members" && <PanelMembersAdmin />}
-      {activeTab === "podcasts" && <PodcastsAdmin />}
+      {activeTab === "monday" && <YoutubeChannelsAdmin />}
       {activeTab === "freetalk" && <FreetalkAdmin />}
       {activeTab === "taboo" && <GameCardsAdmin gameType="taboo" />}
       {activeTab === "wyr" && <GameCardsAdmin gameType="would-you-rather" />}
@@ -337,34 +338,46 @@ function PanelMemberFormModal({
 }
 
 /* ══════════════════════════════════════════
-   팟캐스트 관리
+   월요일 설정 — 유튜버 채널 바로가기 관리 (096)
    ══════════════════════════════════════════ */
 
-function PodcastsAdmin() {
+function YoutubeChannelsAdmin() {
   const qc = useQueryClient();
-  const { data: items = [], isLoading } = useQuery({ queryKey: ["admin-podcasts"], queryFn: getAdminPodcasts });
-  const [editing, setEditing] = useState<PodcastRow | null>(null);
+  const { data: items = [], isLoading } = useQuery({ queryKey: ["admin-youtube-channels"], queryFn: getAdminYoutubeChannels });
+  const [editing, setEditing] = useState<YoutubeChannelRow | null>(null);
   const [isNew, setIsNew] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const handleToggle = useCallback(async (item: PodcastRow) => {
-    await updatePodcast(item.id, { is_active: !item.is_active });
-    qc.invalidateQueries({ queryKey: ["admin-podcasts"] });
+  const handleToggle = useCallback(async (item: YoutubeChannelRow) => {
+    await updateYoutubeChannel(item.id, { is_active: !item.is_active });
+    qc.invalidateQueries({ queryKey: ["admin-youtube-channels"] });
   }, [qc]);
 
-  const handleDelete = useCallback(async (id: string) => {
-    if (!confirm("정말 삭제하시겠어요?")) return;
-    await deletePodcast(id);
-    qc.invalidateQueries({ queryKey: ["admin-podcasts"] });
-  }, [qc]);
+  const confirmDelete = useCallback(async () => {
+    if (!deleteId) return;
+    setDeleting(true);
+    const res = await deleteYoutubeChannel(deleteId);
+    setDeleting(false);
+    if (!res.success) { toast.error(res.error || "삭제에 실패했어요"); return; }
+    setDeleteId(null);
+    toast.success("채널을 삭제했어요");
+    qc.invalidateQueries({ queryKey: ["admin-youtube-channels"] });
+  }, [deleteId, qc]);
 
   if (isLoading) return <Loading />;
 
   return (
     <div className="space-y-4">
+      <div className="rounded-xl border border-primary-100 bg-primary-50/30 p-3 text-xs text-primary-700">
+        월요일 자료 준비(<span className="font-mono">/talklish/manage</span>)에서 바로가기 칩으로 뜨는 유튜버 채널이에요.
+        영상 URL을 찾을 때 새 창으로 채널을 바로 열 수 있어요. 자료(에피소드) 생성은 manage 페이지에서 진행합니다.
+      </div>
+
       <div className="flex justify-between items-center">
         <p className="text-sm text-foreground-secondary">총 {items.length}개</p>
-        <button type="button" onClick={() => { setIsNew(true); setEditing({} as PodcastRow); }} className="flex items-center gap-1.5 rounded-lg bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600 transition-colors">
-          <Plus size={14} /> 추가
+        <button type="button" onClick={() => { setIsNew(true); setEditing({} as YoutubeChannelRow); }} className="flex items-center gap-1.5 rounded-lg bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600 transition-colors">
+          <Plus size={14} /> 채널 추가
         </button>
       </div>
 
@@ -373,15 +386,18 @@ function PodcastsAdmin() {
         {items.map((item) => (
           <div key={item.id} className={`flex items-center justify-between rounded-lg border p-3 ${item.is_active ? "border-border bg-surface" : "border-border/50 bg-surface-secondary/50 opacity-60"}`}>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-foreground truncate">{item.title}</p>
-              <p className="text-xs text-foreground-muted">{item.source} · {item.duration} · {item.difficulty} · {item.topic}</p>
+              <p className="text-sm font-semibold text-foreground truncate">{item.name}</p>
+              <a href={item.channel_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary-600 hover:underline">
+                <span className="truncate">{item.channel_url}</span>
+                <ExternalLink size={11} className="shrink-0" />
+              </a>
             </div>
             <div className="flex items-center gap-1 shrink-0 ml-2">
               <button type="button" onClick={() => handleToggle(item)} className="p-1.5 text-foreground-muted hover:text-foreground transition-colors" title={item.is_active ? "비활성화" : "활성화"} aria-label={item.is_active ? "비활성화" : "활성화"}>
                 {item.is_active ? <ToggleRight size={18} className="text-green-600" /> : <ToggleLeft size={18} />}
               </button>
               <button type="button" onClick={() => { setIsNew(false); setEditing(item); }} className="p-1.5 text-foreground-muted hover:text-primary-600 transition-colors" title="수정" aria-label="수정"><Pencil size={14} /></button>
-              <button type="button" onClick={() => handleDelete(item.id)} className="p-1.5 text-foreground-muted hover:text-red-600 transition-colors" title="삭제" aria-label="삭제"><Trash2 size={14} /></button>
+              <button type="button" onClick={() => setDeleteId(item.id)} className="p-1.5 text-foreground-muted hover:text-red-600 transition-colors" title="삭제" aria-label="삭제"><Trash2 size={14} /></button>
             </div>
           </div>
         ))}
@@ -389,12 +405,66 @@ function PodcastsAdmin() {
 
       {/* 편집 모달 */}
       {editing && (
-        <PodcastFormModal
+        <ChannelFormModal
           initial={isNew ? null : editing}
+          existingCount={items.length}
           onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); qc.invalidateQueries({ queryKey: ["admin-podcasts"] }); }}
+          onSaved={() => { setEditing(null); qc.invalidateQueries({ queryKey: ["admin-youtube-channels"] }); }}
         />
       )}
+
+      {/* 삭제 확인 — 소리담 공용 ConfirmDialog */}
+      <ConfirmDialog
+        open={!!deleteId}
+        title="이 채널을 삭제할까요?"
+        description="삭제하면 월요일 자료 준비 페이지의 바로가기에서도 사라져요."
+        confirmLabel="삭제"
+        variant="danger"
+        isLoading={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+      />
+    </div>
+  );
+}
+
+/* ── 채널 폼 모달 ── */
+
+function ChannelFormModal({ initial, existingCount, onClose, onSaved }: { initial: YoutubeChannelRow | null; existingCount: number; onClose: () => void; onSaved: () => void }) {
+  const [name, setName] = useState(initial?.name ?? "");
+  const [channelUrl, setChannelUrl] = useState(initial?.channel_url ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!name.trim() || !channelUrl.trim()) { toast.error("채널명과 URL을 입력하세요"); return; }
+    setSaving(true);
+    const payload = {
+      name: name.trim(),
+      channel_url: channelUrl.trim(),
+      sort_order: initial?.sort_order ?? existingCount,
+      is_active: initial?.is_active ?? true,
+    };
+    const result = initial?.id
+      ? await updateYoutubeChannel(initial.id, payload)
+      : await createYoutubeChannel(payload);
+    if (!result.success) { toast.error(result.error || "저장에 실패했어요"); setSaving(false); return; }
+    toast.success(initial?.id ? "채널을 수정했어요" : "채널을 추가했어요");
+    onSaved();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 pt-20">
+      <div className="w-full max-w-md rounded-xl bg-surface p-6 shadow-xl">
+        <h3 className="mb-4 text-lg font-bold text-foreground">{initial?.id ? "채널 수정" : "채널 추가"}</h3>
+        <div className="space-y-3">
+          <Field label="채널명" value={name} onChange={setName} placeholder="예: EnglishPod, BBC Learning English" />
+          <Field label="채널 URL" value={channelUrl} onChange={setChannelUrl} placeholder="https://www.youtube.com/@..." />
+        </div>
+        <div className="mt-6 flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground-secondary hover:bg-surface-secondary transition-colors">취소</button>
+          <button type="button" onClick={handleSave} disabled={saving || !name.trim() || !channelUrl.trim()} className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 disabled:opacity-50 transition-colors">{saving ? "저장 중..." : "저장"}</button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -135,7 +135,6 @@ export function DayShell({ day }: DayShellProps) {
         )}
         {day === "fri" && (
           <FreetalkStage
-            clock={clock}
             focusMode={focusMode}
             absentIds={absentIds}
             onToggleAttendance={toggleAttendance}

@@ -14,8 +14,14 @@ import {
   Eye, EyeOff,
   Users, Target, Clock, CheckCircle, Sparkles, Undo2,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchPodcasts, fetchPanelMembers } from "@/lib/actions/study-group";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  fetchPodcasts,
+  fetchPanelMembers,
+  fetchTalklishCompletedPodcasts,
+  markTalklishPodcastCompleted,
+  unmarkTalklishPodcastCompleted,
+} from "@/lib/actions/study-group";
 import type { PodcastRow, PanelMember, KeyExpression, DialogueLine, RoleplayRole } from "@/lib/types/study-group";
 import { TLK, TLK_FONT } from "./tokens";
 import { useSpeakerRoulette } from "./use-speaker-roulette";
@@ -52,8 +58,24 @@ function normalizeKeyExpression(raw: unknown): KeyExpression {
   const similar = Array.isArray(k.similar_expressions)
     ? (k.similar_expressions as unknown[]).filter((s): s is string => typeof s === "string")
     : [];
+  const relatedVocab = Array.isArray(k.related_vocab)
+    ? (k.related_vocab as unknown[])
+        .map((r) => {
+          const rv = (r ?? {}) as Record<string, unknown>;
+          return {
+            word: typeof rv.word === "string" ? rv.word : "",
+            meaning_ko: typeof rv.meaning_ko === "string" ? rv.meaning_ko : "",
+            relation: typeof rv.relation === "string" ? rv.relation : "관련어",
+          };
+        })
+        .filter((rv) => rv.word)
+    : [];
+  const exprType =
+    k.type === "phrase" ? "phrase" : k.type === "pattern" ? "pattern" : k.type === "word" ? "word" : undefined;
   return {
     expression: typeof k.expression === "string" ? k.expression : "",
+    type: exprType,
+    related_vocab: relatedVocab,
     pronunciation: typeof k.pronunciation === "string" ? k.pronunciation : "",
     part_of_speech: typeof k.part_of_speech === "string" ? k.part_of_speech : "",
     meaning_ko: typeof k.meaning_ko === "string" ? k.meaning_ko : "",
@@ -114,6 +136,12 @@ function phaseFromElapsed(s: number): number {
   return 7;
 }
 
+/** 완료 일시(ISO) → "M/D" 짧은 표기 (자료 드롭다운 뱃지용) */
+function fmtDoneDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
 /* ─── 메인 ─────────────────────────────────── */
 
 interface Props {
@@ -134,6 +162,13 @@ export function PodcastStage({ elapsed, focusMode, absentIds, onToggleAttendance
     queryFn: fetchPanelMembers,
     staleTime: 5 * 60 * 1000,
   });
+  // 전역 완료 자료 — podcast_id → completed_at (그룹 공통, 095 테이블)
+  const { data: completedPodcasts = {} } = useQuery({
+    queryKey: ["talklish-completed-podcasts"],
+    queryFn: fetchTalklishCompletedPodcasts,
+    staleTime: 60 * 1000,
+  });
+  const queryClient = useQueryClient();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [phaseOverride, setPhaseOverride] = useState<number | null>(null);
@@ -148,7 +183,12 @@ export function PodcastStage({ elapsed, focusMode, absentIds, onToggleAttendance
   const [keepsake, setKeepsake] = useState("");
   const [sessionCompleted, setSessionCompleted] = useState(false);
 
-  const rawEpisode = episodes.find((e) => e.id === selectedId) ?? episodes[0] ?? null;
+  // 자동 선택: 명시 선택 > 아직 안 한(미완료) 첫 자료 > 첫 자료 (전부 완료 시)
+  const rawEpisode =
+    episodes.find((e) => e.id === selectedId) ??
+    episodes.find((e) => !completedPodcasts[e.id]) ??
+    episodes[0] ??
+    null;
   const episode = useMemo(
     () => (rawEpisode ? normalizeEpisode(rawEpisode) : null),
     [rawEpisode]
@@ -292,37 +332,75 @@ export function PodcastStage({ elapsed, focusMode, absentIds, onToggleAttendance
               </button>
               {showMenu && (
                 <div
-                  className="absolute right-0 top-full z-20 mt-1 max-h-80 w-72 overflow-y-auto rounded-xl shadow-xl"
+                  className="absolute right-0 top-full z-20 mt-1 max-h-96 w-80 overflow-y-auto rounded-xl shadow-xl"
                   style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
                 >
-                  {episodes.map((ep) => (
-                    <button
-                      key={ep.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedId(ep.id);
-                        setShowMenu(false);
-                        setPhaseOverride(0);
-                      }}
-                      className="block w-full px-4 py-2.5 text-left transition-colors hover:bg-black/5"
-                      style={{ background: "transparent", border: 0, cursor: "pointer" }}
-                    >
-                      <p
-                        style={{
-                          fontFamily: TLK_FONT.serif,
-                          fontStyle: "italic",
-                          fontSize: 14,
-                          color: ep.id === episode.id ? TLK.accent : TLK.ink,
-                          lineHeight: 1.3,
+                  {(() => {
+                    const undone = episodes.filter((ep) => !completedPodcasts[ep.id]);
+                    const done = episodes.filter((ep) => completedPodcasts[ep.id]);
+                    const renderItem = (ep: PodcastRow, isDone: boolean) => (
+                      <button
+                        key={ep.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedId(ep.id);
+                          setShowMenu(false);
+                          setPhaseOverride(0);
                         }}
+                        className="flex w-full items-start justify-between gap-2 px-4 py-2.5 text-left transition-colors hover:bg-black/5"
+                        style={{ background: "transparent", border: 0, cursor: "pointer", opacity: isDone ? 0.5 : 1 }}
                       >
-                        {ep.dialogue_title || ep.title}
-                      </p>
-                      <p style={{ fontFamily: TLK_FONT.sans, fontSize: 10, color: TLK.inkFaint, marginTop: 2 }}>
-                        {ep.source} · {ep.duration}
-                      </p>
-                    </button>
-                  ))}
+                        <span className="min-w-0">
+                          <span
+                            className="block truncate"
+                            style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 14, color: ep.id === episode.id ? TLK.accent : TLK.ink, lineHeight: 1.3 }}
+                          >
+                            {ep.dialogue_title || ep.title}
+                          </span>
+                          <span className="block" style={{ fontFamily: TLK_FONT.sans, fontSize: 10, color: TLK.inkFaint, marginTop: 2 }}>
+                            {ep.source} · {ep.duration}
+                          </span>
+                        </span>
+                        {isDone && (
+                          <span
+                            className="shrink-0 whitespace-nowrap"
+                            style={{ fontFamily: TLK_FONT.sans, fontSize: 9.5, fontWeight: 700, color: TLK.inkFaint, marginTop: 3 }}
+                          >
+                            {fmtDoneDate(completedPodcasts[ep.id])} 완료
+                          </span>
+                        )}
+                      </button>
+                    );
+                    return (
+                      <>
+                        <p
+                          className="px-4 pb-1 pt-2.5"
+                          style={{ fontFamily: TLK_FONT.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1.5, color: TLK.inkFaint, textTransform: "uppercase" }}
+                        >
+                          아직 안 한 주제 · {undone.length}
+                        </p>
+                        {undone.length === 0 ? (
+                          <p className="px-4 py-2" style={{ fontFamily: TLK_FONT.sans, fontSize: 11, color: TLK.inkFaint }}>
+                            모든 자료를 완료했어요 🎉
+                          </p>
+                        ) : (
+                          undone.map((ep) => renderItem(ep, false))
+                        )}
+                        {done.length > 0 && (
+                          <>
+                            <div className="mx-4 my-1.5" style={{ borderTop: `1px solid ${TLK.rule}` }} />
+                            <p
+                              className="px-4 pb-1"
+                              style={{ fontFamily: TLK_FONT.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1.5, color: TLK.inkFaint, textTransform: "uppercase" }}
+                            >
+                              ✓ 완료한 주제 · {done.length}
+                            </p>
+                            {done.map((ep) => renderItem(ep, true))}
+                          </>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>
@@ -397,7 +475,14 @@ export function PodcastStage({ elapsed, focusMode, absentIds, onToggleAttendance
               <ClosingSlide
                 episode={episode}
                 completed={sessionCompleted}
-                onComplete={setSessionCompleted}
+                onComplete={(c) => {
+                  setSessionCompleted(c);
+                  // 그룹 공통 완료 기록 — 완료(true)면 mark, 취소(false)면 unmark
+                  const fn = c ? markTalklishPodcastCompleted : unmarkTalklishPodcastCompleted;
+                  void fn(episode.id).then(() =>
+                    queryClient.invalidateQueries({ queryKey: ["talklish-completed-podcasts"] })
+                  );
+                }}
                 keepsake={keepsake}
               />
             )}
@@ -1023,17 +1108,32 @@ function VocabSlide({
                 </button>
               )}
             </div>
-            <span
-              className="shrink-0 rounded-full px-3 py-1 text-[10px] font-bold uppercase"
-              style={{
-                letterSpacing: 1,
-                background: card.level === "stretch" ? `${TLK.accent}1f` : TLK.bg2,
-                color: card.level === "stretch" ? TLK.accent : TLK.inkDim,
-                fontFamily: TLK_FONT.sans,
-              }}
-            >
-              {card.level === "stretch" ? "도전" : "필수"}
-            </span>
+            <div className="flex shrink-0 items-center gap-1.5">
+              {card.type && (
+                <span
+                  className="rounded-full px-3 py-1 text-[10px] font-bold"
+                  style={{
+                    letterSpacing: 0.5,
+                    background: card.type === "pattern" ? `${TLK.accent2}1f` : TLK.bg2,
+                    color: card.type === "pattern" ? TLK.accent2 : TLK.inkDim,
+                    fontFamily: TLK_FONT.sans,
+                  }}
+                >
+                  {card.type === "word" ? "단어" : card.type === "phrase" ? "표현" : "회화 패턴"}
+                </span>
+              )}
+              <span
+                className="rounded-full px-3 py-1 text-[10px] font-bold uppercase"
+                style={{
+                  letterSpacing: 1,
+                  background: card.level === "stretch" ? `${TLK.accent}1f` : TLK.bg2,
+                  color: card.level === "stretch" ? TLK.accent : TLK.inkDim,
+                  fontFamily: TLK_FONT.sans,
+                }}
+              >
+                {card.level === "stretch" ? "도전" : "필수"}
+              </span>
+            </div>
           </div>
 
           {(card.pronunciation || card.part_of_speech) && (
@@ -1212,6 +1312,32 @@ function VocabSlide({
                   {s}
                 </span>
               ))}
+            </div>
+          )}
+
+          {card.related_vocab && card.related_vocab.length > 0 && (
+            <div className="mt-4">
+              <p style={{ fontSize: 11, color: TLK.inkFaint, fontFamily: TLK_FONT.sans, marginBottom: 6 }}>
+                함께 알아두기
+              </p>
+              <div className="flex flex-col gap-1.5">
+                {card.related_vocab.map((rv, n) => (
+                  <div key={n} className="flex items-baseline gap-2">
+                    <span
+                      className="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold"
+                      style={{ background: TLK.bg2, color: TLK.inkFaint, fontFamily: TLK_FONT.sans }}
+                    >
+                      {rv.relation}
+                    </span>
+                    <span style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 14, color: TLK.ink }}>
+                      {rv.word}
+                    </span>
+                    <span style={{ fontFamily: TLK_FONT.ko, fontSize: 12.5, color: TLK.inkDim }}>
+                      {rv.meaning_ko}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

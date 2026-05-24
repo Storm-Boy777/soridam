@@ -3,7 +3,7 @@
 import { requireAdmin } from "@/lib/auth";
 import { T } from "@/lib/constants/tables";
 import { RPC } from "@/lib/constants/tables";
-import type { PodcastRow, FreetalkRow, GameCardRow, GameCardGameType, PanelMember, PanelMemberWithProfile, PanelUserSearchResult } from "@/lib/types/study-group";
+import type { PodcastRow, FreetalkRow, GameCardRow, GameCardGameType, PanelMember, PanelMemberWithProfile, PanelUserSearchResult, YoutubeChannelRow } from "@/lib/types/study-group";
 
 /* ══════════════════════════════════════════
    팟캐스트 CRUD
@@ -62,6 +62,60 @@ export async function deletePodcast(id: string) {
     action: "delete_study_podcast", target_type: "study_podcast", target_id: id,
     details: {},
   });
+  return { success: true };
+}
+
+/* ══════════════════════════════════════════
+   월요일 유튜버 채널 바로가기 CRUD (096)
+   ══════════════════════════════════════════ */
+
+export async function getAdminYoutubeChannels(): Promise<YoutubeChannelRow[]> {
+  const { supabase } = await requireAdmin();
+  const { data, error } = await supabase
+    .from(T.talklish_youtube_channels)
+    .select("*")
+    .order("sort_order");
+  if (error) return [];
+  return data as YoutubeChannelRow[];
+}
+
+export async function createYoutubeChannel(input: { name: string; channel_url: string; sort_order?: number; is_active?: boolean }) {
+  const { supabase, userId } = await requireAdmin();
+  const { data, error } = await supabase
+    .from(T.talklish_youtube_channels)
+    .insert({
+      name: input.name,
+      channel_url: input.channel_url,
+      sort_order: input.sort_order ?? 0,
+      is_active: input.is_active ?? true,
+      created_by: userId,
+    })
+    .select()
+    .single();
+  if (error) return { success: false, error: error.message };
+  return { success: true, data };
+}
+
+export async function updateYoutubeChannel(
+  id: string,
+  input: Partial<{ name: string; channel_url: string; sort_order: number; is_active: boolean }>
+) {
+  const { supabase } = await requireAdmin();
+  const { error } = await supabase
+    .from(T.talklish_youtube_channels)
+    .update(input)
+    .eq("id", id);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+export async function deleteYoutubeChannel(id: string) {
+  const { supabase } = await requireAdmin();
+  const { error } = await supabase
+    .from(T.talklish_youtube_channels)
+    .delete()
+    .eq("id", id);
+  if (error) return { success: false, error: error.message };
   return { success: true };
 }
 

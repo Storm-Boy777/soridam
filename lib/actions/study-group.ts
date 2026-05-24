@@ -2,7 +2,7 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { T } from "@/lib/constants/tables";
-import type { PodcastRow, FreetalkRow, GameCardRow, GameCardGameType, PanelMember } from "@/lib/types/study-group";
+import type { PodcastRow, FreetalkRow, GameCardRow, GameCardGameType, PanelMember, YoutubeChannelRow } from "@/lib/types/study-group";
 
 // ─── Talklish 수요일(OPIc) 콤보 조회 헬퍼 ─────────────────────────
 // /opic-study/explore와 동일 데이터 소스 — submission_questions 기반
@@ -249,7 +249,80 @@ export async function unmarkTalklishComboCompleted(
   return { success: true };
 }
 
+// ─── Talklish 완료 팟캐스트 학습 이력 (095 마이그레이션) ──────────
+// 089(콤보)와 동일 모델 — 스터디 모임 단위 전역 1세트.
+
+/** 전역 완료 팟캐스트 — podcast_id → completed_at 매핑 (월요일 자료 정렬/뱃지용) */
+export async function fetchTalklishCompletedPodcasts(): Promise<Record<string, string>> {
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from(T.talklish_completed_podcasts)
+    .select("podcast_id, completed_at");
+  const map: Record<string, string> = {};
+  for (const r of data ?? []) {
+    map[r.podcast_id as string] = r.completed_at as string;
+  }
+  return map;
+}
+
+/** 자료 완료 표시 — 월요일 ClosingSlide "세션 완료" 클릭 시.
+ *  같은 podcast_id 가 있으면 completed_at 갱신 (upsert). */
+export async function markTalklishPodcastCompleted(
+  podcast_id: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "로그인이 필요합니다" };
+
+  const { error } = await supabase
+    .from(T.talklish_completed_podcasts)
+    .upsert(
+      {
+        podcast_id,
+        completed_by: user.id,
+        completed_at: new Date().toISOString(),
+      },
+      { onConflict: "podcast_id" }
+    );
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+/** 자료 완료 취소 — Closing "완료 취소" 클릭 시 (전역 row 삭제) */
+export async function unmarkTalklishPodcastCompleted(
+  podcast_id: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "로그인이 필요합니다" };
+
+  const { error } = await supabase
+    .from(T.talklish_completed_podcasts)
+    .delete()
+    .eq("podcast_id", podcast_id);
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
 // ─────────────────────────────────────────────────────────────────
+
+// 월요일 자료 준비용 유튜버 채널 바로가기 (활성만, sort_order 순) — manage 페이지용
+export async function fetchTalklishYoutubeChannels(): Promise<YoutubeChannelRow[]> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from(T.talklish_youtube_channels)
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order");
+  if (error) return [];
+  return data as YoutubeChannelRow[];
+}
 
 // 팟캐스트 목록 (활성만, sort_order 순)
 export async function fetchPodcasts(): Promise<PodcastRow[]> {
@@ -341,4 +414,31 @@ export async function createTalklishPodcast(
     .single();
   if (error) return { success: false, error: error.message };
   return { success: true, data: data as PodcastRow };
+}
+
+/** 기존 팟캐스트 자료 수정 (멤버 권한, 092 member_update RLS) */
+export async function updateTalklishPodcast(
+  id: string,
+  input: Omit<PodcastRow, "id" | "created_by" | "created_at" | "updated_at">
+): Promise<{ success: boolean; error?: string }> {
+  const gate = await assertPanelMemberOrAdmin();
+  if (!gate.ok) return { success: false, error: gate.error };
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase
+    .from(T.study_podcasts)
+    .update(input)
+    .eq("id", id);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+/** 멤버 자료 수정용 — 활성/비활성 모두 조회 (sort_order 순) */
+export async function fetchTalklishPodcastsForEdit(): Promise<PodcastRow[]> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from(T.study_podcasts)
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) return [];
+  return data as PodcastRow[];
 }

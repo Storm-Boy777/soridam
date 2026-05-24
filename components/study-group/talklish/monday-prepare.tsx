@@ -4,16 +4,32 @@
 //   URL 입력 → AI 자료 생성(study-podcast-generate) → 대화 구간 미리듣기·조절
 //   → 오디오 추출(study-audio-extract) → 저장(createTalklishPodcast)
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase";
-import { createTalklishPodcast } from "@/lib/actions/study-group";
+import { createTalklishPodcast, updateTalklishPodcast, fetchTalklishPodcastsForEdit, fetchTalklishYoutubeChannels } from "@/lib/actions/study-group";
 import type { PodcastRow } from "@/lib/types/study-group";
 import { TLK, TLK_FONT } from "./tokens";
-import { Youtube, Sparkles, Loader2, Scissors, Volume2, Mic2, Check, Save, AlertCircle } from "lucide-react";
+import { Youtube, Sparkles, Loader2, Scissors, Volume2, Mic2, Check, Save, AlertCircle, ExternalLink, Pencil, FilePlus } from "lucide-react";
 
 function extractYouTubeId(url: string): string | null {
   const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/);
   return m ? m[1] : null;
+}
+
+/** 초 → "m:ss" (유튜브식 타임스탬프 표기) */
+function secToMMSS(s: number): string {
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+/** "m:ss" 또는 "초" 문자열 → 초. 부분 입력도 관대하게 파싱 */
+function mmssToSec(str: string): number {
+  const t = str.trim();
+  if (t.includes(":")) {
+    const [m, s] = t.split(":");
+    return Math.max(0, (parseInt(m, 10) || 0) * 60 + (parseInt(s, 10) || 0));
+  }
+  return Math.max(0, parseInt(t, 10) || 0);
 }
 
 type Material = {
@@ -34,6 +50,19 @@ type Material = {
 };
 
 export function MondayPrepare() {
+  // 관리자가 등록한 유튜버 채널 바로가기 (096) — 영상 URL 찾기 편의
+  const { data: channels = [] } = useQuery({
+    queryKey: ["talklish-youtube-channels"],
+    queryFn: fetchTalklishYoutubeChannels,
+    staleTime: 5 * 60 * 1000,
+  });
+  // 수정용 — 기존 자료 목록 (활성/비활성 모두)
+  const { data: editablePodcasts = [], refetch: refetchPodcasts } = useQuery({
+    queryKey: ["talklish-podcasts-edit"],
+    queryFn: fetchTalklishPodcastsForEdit,
+    staleTime: 30 * 1000,
+  });
+  const [editingId, setEditingId] = useState<string | null>(null); // 수정 중인 자료 id (null=새로 만들기)
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
   const [source, setSource] = useState("");
@@ -55,7 +84,6 @@ export function MondayPrepare() {
   const [error, setError] = useState("");
 
   const ytId = useMemo(() => extractYouTubeId(url), [url]);
-  const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
   const handleGenerate = async () => {
     setError("");
@@ -103,6 +131,7 @@ export function MondayPrepare() {
       });
       if (efErr || !data?.success) { setError(data?.error || efErr?.message || "오디오 추출에 실패했습니다"); return; }
       setAudioUrl(data.audio_url);
+      setSaved(false); // 오디오가 새로 생겼으니 다시 저장해야 반영됨
     } catch (e) {
       setError(e instanceof Error ? e.message : "오디오 추출 중 오류가 발생했습니다");
     } finally {
@@ -127,6 +156,7 @@ export function MondayPrepare() {
         return;
       }
       setDialogueTimestamps(data.dialogue_timestamps ?? []);
+      setSaved(false); // 가라오케가 새로 생겼으니 다시 저장해야 반영됨
     } catch (e) {
       setError(e instanceof Error ? e.message : "가라오케 생성 중 오류가 발생했습니다");
     } finally {
@@ -140,7 +170,7 @@ export function MondayPrepare() {
     setSaving(true);
     try {
       const mins = Math.max(1, Math.round((endSec - startSec) / 60));
-      const res = await createTalklishPodcast({
+      const payload = {
         title: title || material.topic || "제목 없음",
         source: source || "YouTube",
         url: url.trim(),
@@ -163,14 +193,63 @@ export function MondayPrepare() {
         audio_url: audioUrl || null,
         sort_order: 0,
         is_active: true,
-      });
+      };
+      const res = editingId
+        ? await updateTalklishPodcast(editingId, payload)
+        : await createTalklishPodcast(payload);
       if (!res.success) { setError(res.error || "저장에 실패했습니다"); return; }
       setSaved(true);
+      void refetchPodcasts();
     } catch (e) {
       setError(e instanceof Error ? e.message : "저장 중 오류가 발생했습니다");
     } finally {
       setSaving(false);
     }
+  };
+
+  // 기존 자료를 편집 상태로 불러오기
+  const loadPodcast = (row: PodcastRow) => {
+    setEditingId(row.id);
+    setUrl(row.url ?? "");
+    setTitle(row.title ?? "");
+    setSource(row.source ?? "");
+    setMaterial({
+      description: row.description ?? "",
+      dialogue_title: row.dialogue_title ?? "",
+      dialogue_script: row.dialogue_script ?? "",
+      roleplay: row.roleplay ?? null,
+      warmup_question: row.warmup_question ?? "",
+      listening_mission: row.listening_mission ?? "",
+      dialogue_segment: row.dialogue_segment ?? null,
+      dialogue_lines: row.dialogue_lines ?? [],
+      key_expressions: row.key_expressions ?? [],
+      comprehension_questions: row.comprehension_questions ?? [],
+      discussion_questions: row.discussion_questions ?? [],
+      todays_picks: row.todays_picks ?? [],
+      difficulty: row.difficulty,
+      topic: row.topic ?? "",
+    });
+    setStartSec(row.dialogue_segment?.start_sec ?? 0);
+    setEndSec(row.dialogue_segment?.end_sec ?? 0);
+    setAudioUrl(row.audio_url ?? "");
+    setDialogueTimestamps(row.dialogue_timestamps ?? []);
+    setSaved(false);
+    setError("");
+  };
+
+  // 새로 만들기 — 편집 상태 초기화
+  const resetToNew = () => {
+    setEditingId(null);
+    setUrl("");
+    setTitle("");
+    setSource("");
+    setMaterial(null);
+    setStartSec(0);
+    setEndSec(0);
+    setAudioUrl("");
+    setDialogueTimestamps([]);
+    setSaved(false);
+    setError("");
   };
 
   return (
@@ -186,8 +265,82 @@ export function MondayPrepare() {
         YouTube URL을 넣으면 AI가 어휘·토론·대화 구간을 뽑고, 대화 구간 오디오를 추출해 가라오케 재생에 씁니다.
       </p>
 
+      {/* 새로 만들기 / 기존 자료 수정 */}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={resetToNew}
+          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5"
+          style={{
+            background: editingId ? TLK.bg2 : TLK.accent,
+            color: editingId ? TLK.inkDim : "#fff",
+            border: editingId ? `1px solid ${TLK.rule}` : "none",
+            fontFamily: TLK_FONT.sans,
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
+        >
+          <FilePlus size={13} /> 새로 만들기
+        </button>
+        {editablePodcasts.length > 0 && (
+          <label className="inline-flex items-center gap-1.5">
+            <Pencil size={13} style={{ color: TLK.inkFaint }} />
+            <select
+              aria-label="기존 자료 수정"
+              value={editingId ?? ""}
+              onChange={(e) => {
+                const row = editablePodcasts.find((p) => p.id === e.target.value);
+                if (row) loadPodcast(row);
+                else resetToNew();
+              }}
+              className="rounded-lg px-2.5 py-1.5 text-sm outline-none"
+              style={{ background: TLK.paperHi, border: `1px solid ${TLK.rule}`, color: TLK.ink, fontFamily: TLK_FONT.ko, maxWidth: 320 }}
+            >
+              <option value="">기존 자료 수정…</option>
+              {editablePodcasts.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.title}
+                  {p.audio_url ? "" : " · 오디오 없음"}
+                  {p.is_active ? "" : " · 비활성"}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {editingId && (
+          <span style={{ fontFamily: TLK_FONT.sans, fontSize: 11, fontWeight: 700, color: TLK.accent }}>
+            수정 중
+          </span>
+        )}
+      </div>
+
       {/* Step 1 — URL + 생성 */}
       <section className="mt-7 rounded-2xl px-6 py-6" style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}>
+        {/* 채널 바로가기 — 관리자 등록 채널을 새 창으로 (영상 찾기 편의) */}
+        {channels.length > 0 && (
+          <div className="mb-4">
+            <p style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color: TLK.inkFaint, textTransform: "uppercase", marginBottom: 6 }}>
+              채널 바로가기 · 새 창
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {channels.map((ch) => (
+                <a
+                  key={ch.id}
+                  href={ch.channel_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-all hover:-translate-y-0.5"
+                  style={{ background: TLK.bg2, border: `1px solid ${TLK.rule}`, color: TLK.inkDim, fontFamily: TLK_FONT.sans, fontSize: 12, fontWeight: 600 }}
+                >
+                  <Youtube size={12} style={{ color: TLK.accent }} />
+                  {ch.name}
+                  <ExternalLink size={10} style={{ color: TLK.inkFaint }} />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
         <label className="mb-2 flex items-center gap-1.5" style={{ fontFamily: TLK_FONT.sans, fontSize: 11, fontWeight: 700, color: TLK.inkDim }}>
           <Youtube size={13} /> YouTube URL
         </label>
@@ -241,10 +394,10 @@ export function MondayPrepare() {
           )}
 
           <div className="mt-4 flex flex-wrap items-end gap-4">
-            <NumberField label="시작 (초)" value={startSec} onChange={setStartSec} hint={fmt(startSec)} />
-            <NumberField label="종료 (초)" value={endSec} onChange={setEndSec} hint={fmt(endSec)} />
+            <TimeField label="시작 (분:초)" value={startSec} onChange={setStartSec} />
+            <TimeField label="종료 (분:초)" value={endSec} onChange={setEndSec} />
             <span style={{ fontFamily: TLK_FONT.sans, fontSize: 12, color: TLK.inkFaint, paddingBottom: 8 }}>
-              길이 {Math.max(0, endSec - startSec)}초
+              길이 {secToMMSS(Math.max(0, endSec - startSec))}
             </span>
             <button
               type="button"
@@ -308,18 +461,28 @@ export function MondayPrepare() {
             </p>
           )}
 
+          {/* 저장 전 체크리스트 — 오디오/가라오케 누락 방지 */}
+          <div className="mt-4 flex flex-wrap items-center gap-3" style={{ fontFamily: TLK_FONT.sans, fontSize: 12, fontWeight: 700 }}>
+            <span style={{ color: audioUrl ? TLK.accent2 : TLK.accent }}>
+              {audioUrl ? "✓ 오디오 추출됨" : "⚠ 오디오 없음"}
+            </span>
+            <span style={{ color: dialogueTimestamps.length > 0 ? TLK.accent2 : TLK.accent }}>
+              {dialogueTimestamps.length > 0 ? `✓ 가라오케 ${dialogueTimestamps.length}` : "⚠ 가라오케 없음"}
+            </span>
+          </div>
+
           <button
             type="button"
             onClick={handleSave}
             disabled={saving || saved}
-            className="mt-5 flex items-center gap-2 rounded-full px-7 py-3 transition-all disabled:opacity-60"
+            className="mt-3 flex items-center gap-2 rounded-full px-7 py-3 transition-all disabled:opacity-60"
             style={{ background: saved ? TLK.accent2 : TLK.ink, color: "#fff", border: 0, fontFamily: TLK_FONT.sans, fontSize: 13, fontWeight: 700, cursor: saving ? "wait" : "pointer" }}
           >
-            {saved ? (<><Check size={15} /> 저장됨</>) : saving ? (<><Loader2 size={15} className="animate-spin" /> 저장 중…</>) : (<><Save size={15} /> 자료 저장</>)}
+            {saved ? (<><Check size={15} /> {editingId ? "수정됨" : "저장됨"}</>) : saving ? (<><Loader2 size={15} className="animate-spin" /> 저장 중…</>) : (<><Save size={15} /> {editingId ? "수정 저장" : "자료 저장"}</>)}
           </button>
           {!audioUrl && !saved && (
-            <p style={{ fontSize: 11, color: TLK.inkFaint, marginTop: 8, fontFamily: TLK_FONT.sans }}>
-              오디오 없이도 저장할 수 있어요 (가라오케는 추출 후에 가능)
+            <p style={{ fontSize: 11, color: TLK.accent, marginTop: 8, fontFamily: TLK_FONT.sans }}>
+              ⚠ 오디오를 추출하지 않았어요. 2차 청취(가라오케)를 쓰려면 위 “오디오 추출 → 가라오케 자막 생성”을 먼저 하세요. (오디오 없이도 저장은 가능)
             </p>
           )}
           {saved && (
@@ -340,21 +503,22 @@ export function MondayPrepare() {
   );
 }
 
-function NumberField({ label, value, onChange, hint }: { label: string; value: number; onChange: (n: number) => void; hint: string }) {
+/** 유튜브식 m:ss 입력 — 내부 값은 초(number), 표시·입력은 "1:10" */
+function TimeField({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) {
+  const [text, setText] = useState(secToMMSS(value));
+  // 외부에서 value가 바뀌면(AI 생성 등) 입력 텍스트 동기화
+  useEffect(() => { setText(secToMMSS(value)); }, [value]);
   return (
     <label className="block">
       <span style={{ fontFamily: TLK_FONT.sans, fontSize: 10.5, fontWeight: 700, color: TLK.inkFaint, display: "block", marginBottom: 3 }}>{label}</span>
-      <div className="flex items-center gap-2">
-        <input
-          type="number"
-          min={0}
-          value={value}
-          onChange={(e) => onChange(Math.max(0, parseInt(e.target.value) || 0))}
-          className="w-24 rounded-lg px-3 py-2 text-sm outline-none"
-          style={{ background: TLK.paperHi, border: `1px solid ${TLK.rule}`, color: TLK.ink, fontFamily: TLK_FONT.mono }}
-        />
-        <span style={{ fontFamily: TLK_FONT.mono, fontSize: 11, color: TLK.inkFaint }}>{hint}</span>
-      </div>
+      <input
+        type="text"
+        value={text}
+        onChange={(e) => { setText(e.target.value); onChange(mmssToSec(e.target.value)); }}
+        placeholder="1:10"
+        className="w-24 rounded-lg px-3 py-2 text-center text-sm outline-none"
+        style={{ background: TLK.paperHi, border: `1px solid ${TLK.rule}`, color: TLK.ink, fontFamily: TLK_FONT.mono }}
+      />
     </label>
   );
 }

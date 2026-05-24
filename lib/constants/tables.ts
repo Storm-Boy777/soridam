@@ -50,6 +50,8 @@ export const T = {
   study_panel_members: "study_panel_members",
   study_admin_access: "study_admin_access",
   talklish_completed_combos: "talklish_completed_combos",
+  talklish_completed_podcasts: "talklish_completed_podcasts",
+  talklish_youtube_channels: "talklish_youtube_channels",
   // 오픽 스터디 모듈 (047_opic_study.sql)
   study_groups: "study_groups",
   study_group_members: "study_group_members",

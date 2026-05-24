@@ -1,14 +1,23 @@
 /* ── 스터디 모임 타입 정의 ── */
 
 // 팟캐스트 에피소드
+// 확장 어휘 (audio review식 — 유의어·반의어·관련어)
+export interface RelatedVocab {
+  word: string;
+  meaning_ko: string;
+  relation: string;                         // "유의어" | "반의어" | "관련어"
+}
+
 export interface KeyExpression {
   expression: string;                       // 표현 (콜로케이션·구동사·관용구)
+  type?: "word" | "phrase" | "pattern";     // 단어 / 구동사·관용구 / 회화 기능 패턴
   pronunciation: string;                    // 발음기호 (IPA, 예: /kəmˈplit/)
   part_of_speech: string;                   // 품사 (예: phrasal verb, idiom, noun)
   meaning_ko: string;                       // 한국어 뜻 + 뉘앙스
   meaning_en: string;                       // 영영 정의
   examples: { en: string; ko: string }[];   // 예문 2~3개 + 번역
   similar_expressions: string[];            // 유사 표현
+  related_vocab?: RelatedVocab[];           // 확장 어휘 (유의어·반의어·관련어)
   speaking_prompt: string;                  // "이 표현으로 말해보기" 프롬프트
   level: "core" | "stretch";                // core=필수 / stretch=도전
 }
@@ -148,6 +157,17 @@ export interface PodcastRow {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/** 월요일 자료 준비용 유튜버 채널 바로가기 (096) */
+export interface YoutubeChannelRow {
+  id: string;
+  name: string;
+  channel_url: string;
+  sort_order: number;
+  is_active: boolean;
+  created_by: string | null;
+  created_at: string;
 }
 
 export interface FreetalkRow {
