@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Shuffle, Play as PlayIcon, RotateCcw } from "lucide-react";
+import { Shuffle, Play as PlayIcon, RotateCcw, Clock } from "lucide-react";
 import { fetchFreetalkTopics, fetchGameCards, fetchPanelMembers } from "@/lib/actions/study-group";
 import type { FreetalkRow, GameCardRow, StoryStarter } from "@/lib/types/study-group";
 import { TLK, TLK_FONT } from "./tokens";
@@ -67,13 +67,15 @@ const GAMES: GameDef[] = [
 ];
 
 interface Props {
+  clock: string;       // 현재 시각 HH:MM (일반 모드 트래커에 표시)
+  focusMode: boolean;  // Full 모드 — 트래커 시각은 숨기고 우상단 고정 표시가 대신함
   absentIds: Set<string>;
   onToggleAttendance: (memberId: string) => void;
 }
 
 type FridayPhase = "intro" | "games" | "closing";
 
-export function FreetalkStage({ absentIds, onToggleAttendance }: Props) {
+export function FreetalkStage({ clock, focusMode, absentIds, onToggleAttendance }: Props) {
   const [phase, setPhase] = useState<FridayPhase>("intro");
   const [game, setGame] = useState<GameKey>("spinner");
   // 룰렛 state는 useSpeakerRoulette 훅에서 관리
@@ -167,6 +169,23 @@ export function FreetalkStage({ absentIds, onToggleAttendance }: Props) {
         className="absolute right-6 top-3 z-10 flex items-center gap-2 rounded-full px-3 py-1.5"
         style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
       >
+        {/* 현재 시각 — 일반 모드 (Full 모드에선 우상단 고정 표시가 대신함) */}
+        {!focusMode && clock && (
+          <span className="flex items-center gap-1.5 pl-1">
+            <Clock size={12} style={{ color: TLK.inkFaint }} />
+            <span
+              style={{
+                fontFamily: TLK_FONT.mono,
+                fontSize: 12,
+                color: TLK.inkDim,
+                fontVariantNumeric: "tabular-nums",
+                letterSpacing: 0.5,
+              }}
+            >
+              {clock}
+            </span>
+          </span>
+        )}
         <button
           type="button"
           onClick={() => setPhase("closing")}

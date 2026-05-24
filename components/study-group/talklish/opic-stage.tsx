@@ -70,11 +70,12 @@ const FLOW = [
 ] as const;
 
 interface Props {
+  focusMode: boolean;  // Full 모드 — 진행바를 헤더 가운데로 (일반 모드는 우측)
   absentIds: Set<string>;
   onToggleAttendance: (memberId: string) => void;
 }
 
-export function OpicStage({ absentIds, onToggleAttendance }: Props) {
+export function OpicStage({ focusMode, absentIds, onToggleAttendance }: Props) {
   const [phase, setPhase] = useState(0);
   const [category, setCategory] = useState<Category>("일반");
   const [topic, setTopic] = useState<string | null>(null);
@@ -158,7 +159,7 @@ export function OpicStage({ absentIds, onToggleAttendance }: Props) {
     >
       {/* ── 헤더: phase 도트 ── */}
       <header
-        className="flex shrink-0 items-center gap-4 border-b px-6 py-3.5 sm:px-10"
+        className="relative flex shrink-0 items-center gap-4 border-b px-6 py-3.5 sm:px-10"
         style={{ borderColor: TLK.rule, background: TLK.bg }}
       >
         <div className="min-w-0 max-w-md flex-1">
@@ -179,7 +180,16 @@ export function OpicStage({ absentIds, onToggleAttendance }: Props) {
           </p>
         </div>
 
-        <div className="flex items-center gap-4">
+        {!focusMode && <div className="flex-1" />}
+
+        {/* 진행바 — 일반 모드 우측 / Full 모드 가운데 */}
+        <div
+          className={
+            focusMode
+              ? "absolute left-1/2 flex -translate-x-1/2 items-center gap-4"
+              : "flex items-center gap-4"
+          }
+        >
           <p
             className="hidden sm:block"
             style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 2, color: TLK.inkFaint, textTransform: "uppercase" }}
@@ -211,8 +221,6 @@ export function OpicStage({ absentIds, onToggleAttendance }: Props) {
             })}
           </div>
         </div>
-
-        <div className="flex-1" />
       </header>
 
       {/* ── 본문 ── */}
@@ -507,7 +515,7 @@ function IntroPhase({
           marginTop: 8,
         }}
       >
-        준비되시면 → 또는 SPACE
+        준비되시면 →
       </p>
     </div>
   );

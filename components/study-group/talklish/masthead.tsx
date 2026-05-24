@@ -19,31 +19,16 @@ const DAYS: { key: DayKey; label: string; sub: string; route: string }[] = [
 
 interface MastheadProps {
   day: DayKey;
-  elapsed: number;            // 초
-  running: boolean;
-  onToggleRunning: () => void;
   sessionNo: number;
   dateLabel: string;
 }
 
-const TOTAL = 60 * 60;
-
-function pad(n: number) {
-  return String(n).padStart(2, "0");
-}
-
 export function Masthead({
   day,
-  elapsed,
-  running,
-  onToggleRunning,
   sessionNo,
   dateLabel,
 }: MastheadProps) {
-  const remain = Math.max(0, TOTAL - elapsed);
-  const mm = pad(Math.floor(remain / 60));
-  const ss = pad(remain % 60);
-  const pct = Math.min(1, elapsed / TOTAL);
+  const current = DAYS.find((d) => d.key === day);
 
   return (
     <div
@@ -88,10 +73,36 @@ export function Masthead({
         </div>
       </Link>
 
+      <div className="hidden flex-1 sm:block" />
+
+      {/* 현재 요일 — 단일 정적 표시 (탭 이동 없음) */}
+      {current && (
+        <div className="text-center">
+          <div style={{ fontFamily: TLK_FONT.sans, fontWeight: 600, fontSize: 16, color: TLK.ink }}>
+            {current.label}
+          </div>
+          <div
+            style={{
+              fontFamily: TLK_FONT.serif,
+              fontStyle: "italic",
+              fontSize: 12,
+              fontWeight: 400,
+              letterSpacing: 0.5,
+              color: TLK.inkDim,
+              marginTop: 2,
+            }}
+          >
+            {current.sub}
+          </div>
+        </div>
+      )}
+
+      <div className="hidden flex-1 sm:block" />
+
       <div className="hidden h-11 w-px sm:block" style={{ background: TLK.rule }} />
 
-      {/* Vol */}
-      <div>
+      {/* VOL / 날짜 — 우측 */}
+      <div style={{ textAlign: "right" }}>
         <div
           style={{
             fontFamily: TLK_FONT.sans,
@@ -112,108 +123,6 @@ export function Masthead({
           }}
         >
           {dateLabel}
-        </div>
-      </div>
-
-      <div className="hidden flex-1 sm:block" />
-
-      {/* 요일 탭 — 라우트 기반 (active = 현재 day) */}
-      <div className="flex items-end" style={{ marginBottom: -19 }}>
-        {DAYS.map((d) => {
-          const active = day === d.key;
-          return (
-            <Link
-              key={d.key}
-              href={d.route}
-              className="cursor-pointer transition-all"
-              style={{
-                background: "transparent",
-                border: 0,
-                paddingTop: 8,
-                paddingBottom: 18,
-                paddingLeft: 18,
-                paddingRight: 18,
-                borderBottom: `3px solid ${active ? TLK.accent : "transparent"}`,
-                color: active ? TLK.ink : TLK.inkFaint,
-                fontFamily: TLK_FONT.sans,
-                fontWeight: 600,
-                textAlign: "center",
-                textDecoration: "none",
-              }}
-            >
-              <div style={{ fontSize: 14, marginBottom: 2 }}>{d.label}</div>
-              <div
-                style={{
-                  fontFamily: TLK_FONT.serif,
-                  fontSize: 11,
-                  fontStyle: "italic",
-                  fontWeight: 400,
-                  letterSpacing: 0.5,
-                }}
-              >
-                {d.sub}
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-
-      <div className="hidden h-11 w-px sm:block" style={{ background: TLK.rule, marginLeft: 8 }} />
-
-      {/* 타이머 */}
-      <div className="ml-auto sm:ml-0" style={{ textAlign: "right" }}>
-        <div
-          style={{
-            fontFamily: TLK_FONT.serif,
-            fontSize: 36,
-            fontWeight: 500,
-            letterSpacing: -1,
-            lineHeight: 1,
-            fontVariantNumeric: "tabular-nums",
-          }}
-        >
-          {mm}
-          <span style={{ color: TLK.accent }}>:</span>
-          {ss}
-        </div>
-        <div
-          className="mt-1.5 flex items-center justify-end gap-2"
-        >
-          <div
-            style={{
-              width: 96,
-              height: 3,
-              background: TLK.rule,
-              borderRadius: 2,
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                width: `${pct * 100}%`,
-                height: "100%",
-                background: TLK.accent,
-                borderRadius: 2,
-                transition: "width .5s",
-              }}
-            />
-          </div>
-          <button
-            onClick={onToggleRunning}
-            style={{
-              fontFamily: TLK_FONT.sans,
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: 2,
-              color: TLK.inkDim,
-              background: "transparent",
-              border: 0,
-              cursor: "pointer",
-              padding: 0,
-            }}
-          >
-            {running ? "PAUSE" : "RESUME"}
-          </button>
         </div>
       </div>
     </div>

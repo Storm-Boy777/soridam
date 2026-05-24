@@ -8,7 +8,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, Headphones, Mic, MessagesSquare, Check, ClipboardList } from "lucide-react";
+import { ArrowRight, Headphones, Mic, MessagesSquare, Check, ClipboardList, LogOut } from "lucide-react";
 import { fetchPanelMembers } from "@/lib/actions/study-group";
 import type { PanelMember } from "@/lib/types/study-group";
 import { TLK, TLK_FONT } from "./tokens";
@@ -89,9 +89,9 @@ export function TalklishEntryPage() {
       className="flex min-h-dvh w-full flex-col"
       style={{ background: TLK.bg, color: TLK.ink, fontFamily: TLK_FONT.ko }}
     >
-      {/* 좌상단 — 대시보드 복귀 */}
+      {/* 우상단 — 스터디 종료(소리담 대시보드 복귀) */}
       <div
-        className="flex items-center justify-between px-6 pt-3 sm:px-12"
+        className="flex items-center justify-end px-6 pt-3 sm:px-12"
         style={{ background: TLK.bg }}
       >
         <Link
@@ -99,7 +99,7 @@ export function TalklishEntryPage() {
           className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors"
           style={{ color: TLK.inkFaint, fontFamily: TLK_FONT.sans }}
         >
-          <ArrowLeft size={12} /> 대시보드
+          <LogOut size={12} /> 스터디 종료하기
         </Link>
       </div>
 

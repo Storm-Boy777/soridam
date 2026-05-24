@@ -118,11 +118,12 @@ function phaseFromElapsed(s: number): number {
 
 interface Props {
   elapsed: number;
+  focusMode: boolean;  // Full 모드 — 진행바를 헤더 가운데로 (일반 모드는 우측)
   absentIds: Set<string>;
   onToggleAttendance: (id: string) => void;
 }
 
-export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) {
+export function PodcastStage({ elapsed, focusMode, absentIds, onToggleAttendance }: Props) {
   const { data: episodes = [] } = useQuery({
     queryKey: ["study-podcasts"],
     queryFn: fetchPodcasts,
@@ -211,7 +212,7 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
     >
       {/* ── 헤더: 자료 제목 + 5도트 + 자료 셀렉터 ── */}
         <header
-          className="flex shrink-0 items-center gap-4 border-b px-6 py-3.5 sm:px-10"
+          className="relative flex shrink-0 items-center gap-4 border-b px-6 py-3.5 sm:px-10"
           style={{ borderColor: TLK.rule, background: TLK.bg }}
         >
           <div className="min-w-0 max-w-md flex-1">
@@ -228,8 +229,16 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
             </p>
           </div>
 
-          {/* 도트 */}
-          <div className="flex items-center gap-4">
+          {!focusMode && <div className="flex-1" />}
+
+          {/* 진행바 — 일반 모드 우측 / Full 모드 가운데 */}
+          <div
+            className={
+              focusMode
+                ? "absolute left-1/2 flex -translate-x-1/2 items-center gap-4"
+                : "flex items-center gap-4"
+            }
+          >
             <p
               className="hidden sm:block"
               style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 2, color: TLK.inkFaint, textTransform: "uppercase" }}
@@ -261,8 +270,6 @@ export function PodcastStage({ elapsed, absentIds, onToggleAttendance }: Props) 
               })}
             </div>
           </div>
-
-          <div className="flex-1" />
 
           {/* 자료 셀렉터 */}
           {episodes.length > 1 && (
@@ -1843,7 +1850,7 @@ function OpeningSlide({
             letterSpacing: 1.5,
           }}
         >
-          단축키 → 또는 SPACE
+          단축키 →
         </p>
       </div>
     </div>
