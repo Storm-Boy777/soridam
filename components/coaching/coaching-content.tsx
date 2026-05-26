@@ -7,7 +7,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { LayoutGrid, FolderTree, ChevronRight, RotateCcw, ArrowRight } from "lucide-react";
+import { LayoutGrid, FolderTree, ChevronRight, RotateCcw, ArrowRight, BookOpen } from "lucide-react";
 import { getTypeCards, getResumableSessions } from "@/lib/actions/coaching";
 import { QUESTION_TYPE_LABELS } from "@/lib/types/coaching";
 import type { TypeCard, QuestionType, ResumableSession } from "@/lib/types/coaching";
@@ -59,6 +59,9 @@ export function CoachingContent({ initialTypeCards, initialResumable, initialErr
     <div>
       {/* 진행 중인 학습 이어하기 배너 */}
       <ResumeBanner initialResumable={initialResumable} />
+
+      {/* 4주 커리큘럼 배너 */}
+      <CurriculumBanner />
 
       {/* 학습 진행 과정 안내 */}
       <ProcessCard />
@@ -128,6 +131,28 @@ function ResumeBanner({ initialResumable }: { initialResumable: ResumableSession
         </Link>
       </div>
     </div>
+  );
+}
+
+// ── 4주 커리큘럼 배너 ──
+
+function CurriculumBanner() {
+  return (
+    <Link
+      href="/coaching/curriculum"
+      className="group mb-4 flex items-center gap-3 rounded-2xl border border-primary-200 bg-gradient-to-r from-primary-50 to-surface p-4 transition-colors hover:border-primary-400 sm:mb-6"
+    >
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-500 text-white">
+        <BookOpen className="h-5 w-5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-foreground">나만의 4주 IH 안정화 커리큘럼</p>
+        <p className="text-xs text-foreground-secondary">
+          강지완 강의 기반 · SAIL 약점 맞춤 학습 로드맵
+        </p>
+      </div>
+      <ArrowRight className="h-5 w-5 shrink-0 text-primary-500 transition-transform group-hover:translate-x-0.5" />
+    </Link>
   );
 }
 
