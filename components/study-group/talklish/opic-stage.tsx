@@ -70,8 +70,8 @@ const CATEGORIES: Category[] = ["일반", "롤플레이", "어드밴스"];
 const FLOW = [
   { id: 0, label: "Intro",       desc: "스터디 안내 + 출석",         range: "0–3"   },
   { id: 1, label: "콤보 선택",   desc: "카테고리/토픽 → 콤보",       range: "3–10"  },
-  { id: 2, label: "진행",        desc: "발화자 룰렛 + 답변 + 토론",  range: "10–48" },
-  { id: 3, label: "회고",        desc: "4문항 한눈에 짚기",          range: "48–55" },
+  { id: 2, label: "진행",        desc: "발화자 룰렛 + 답변 + AI 코칭", range: "10–48" },
+  { id: 3, label: "정리",        desc: "멤버별 답변·코칭 돌아보기",   range: "48–55" },
   { id: 4, label: "Closing",     desc: "마무리 + 세션 완료",         range: "55–60" },
 ] as const;
 
@@ -658,7 +658,7 @@ function IntroPhase({
           textAlign: "center",
         }}
       >
-        한 토픽의 4문항을 룰렛으로 돌려가며 답하고, 답변 끝나면 진행자가 코치 노트를 짧게 정리해요. 그 노트를 발판으로 전원이 한 문장씩 토론합니다.
+        한 콤보의 질문들을 룰렛으로 돌려가며 답하고, 답변이 끝나면 AI가 코치 노트를 정리해줘요. 출석 멤버가 모두 돌아가며 같은 질문에 답한 뒤 다음 질문으로 넘어갑니다.
       </p>
       <div className="flex items-center gap-3 rounded-full px-5 py-3" style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}>
         <Users size={18} style={{ color: TLK.accent2 }} />
@@ -2092,34 +2092,66 @@ function SessionAnswersView({
               )}
 
               {a.coaching && (
-                <div className="mt-3 rounded-xl px-4 py-3" style={{ background: TLK.bg2 }}>
+                <div className="mt-3 flex flex-col gap-3 rounded-xl px-4 py-3.5" style={{ background: TLK.bg2 }}>
                   {a.coaching.summary && (
-                    <p style={{ fontFamily: TLK_FONT.ko, fontSize: 13.5, color: TLK.ink, fontWeight: 600 }}>
+                    <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 15, fontWeight: 500, color: TLK.ink, lineHeight: 1.4 }}>
                       {a.coaching.summary}
                     </p>
                   )}
                   {a.coaching.good_points?.length > 0 && (
-                    <div className="mt-2">
-                      <p style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1, color: TLK.accent2, textTransform: "uppercase", marginBottom: 3 }}>
+                    <div>
+                      <p style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1, color: TLK.accent2, textTransform: "uppercase", marginBottom: 5 }}>
                         좋았던 점
                       </p>
-                      {a.coaching.good_points.map((g, n) => (
-                        <p key={n} style={{ fontFamily: TLK_FONT.ko, fontSize: 12.5, color: TLK.inkDim, lineHeight: 1.45 }}>
-                          · {g.note}
-                        </p>
-                      ))}
+                      <div className="flex flex-col gap-1.5">
+                        {a.coaching.good_points.map((g, n) => (
+                          <div key={n} style={{ borderLeft: `2px solid ${TLK.accent2}`, paddingLeft: 9 }}>
+                            {g.quote && (
+                              <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 13, color: TLK.ink, lineHeight: 1.45 }}>“{g.quote}”</p>
+                            )}
+                            <p style={{ fontFamily: TLK_FONT.ko, fontSize: 12, color: TLK.inkDim, lineHeight: 1.45, marginTop: 1 }}>{g.note}</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                   {a.coaching.improve_points?.length > 0 && (
-                    <div className="mt-2">
-                      <p style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1, color: TLK.accent, textTransform: "uppercase", marginBottom: 3 }}>
+                    <div>
+                      <p style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1, color: TLK.accent, textTransform: "uppercase", marginBottom: 5 }}>
                         개선할 점
                       </p>
-                      {a.coaching.improve_points.map((g, n) => (
-                        <p key={n} style={{ fontFamily: TLK_FONT.ko, fontSize: 12.5, color: TLK.inkDim, lineHeight: 1.45 }}>
-                          · {g.suggestion}
-                        </p>
-                      ))}
+                      <div className="flex flex-col gap-1.5">
+                        {a.coaching.improve_points.map((g, n) => (
+                          <div key={n} style={{ borderLeft: `2px solid ${TLK.accent}`, paddingLeft: 9 }}>
+                            {g.quote && (
+                              <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 13, color: TLK.ink, lineHeight: 1.45 }}>“{g.quote}”</p>
+                            )}
+                            {g.issue && (
+                              <p style={{ fontFamily: TLK_FONT.ko, fontSize: 12, color: TLK.inkDim, lineHeight: 1.45, marginTop: 1 }}>{g.issue}</p>
+                            )}
+                            {g.suggestion && (
+                              <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 12.5, color: TLK.accent, lineHeight: 1.45, marginTop: 2, fontWeight: 500 }}>→ {g.suggestion}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {a.coaching.upgrade_points?.length > 0 && (
+                    <div>
+                      <p style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1, color: TLK.accent2, textTransform: "uppercase", marginBottom: 5 }}>
+                        한 단계 업그레이드
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        {a.coaching.upgrade_points.map((u, n) => (
+                          <div key={n}>
+                            <p style={{ fontFamily: TLK_FONT.ko, fontSize: 12.5, color: TLK.ink, lineHeight: 1.45 }}>· {u.tip}</p>
+                            {u.example && (
+                              <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 12.5, color: TLK.accent2, lineHeight: 1.45, marginLeft: 11, marginTop: 1 }}>“{u.example}”</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2132,7 +2164,7 @@ function SessionAnswersView({
   );
 }
 
-/* ─── Phase 3 · 회고 (오늘의 정리 — 멤버별 답변·코칭) ─── */
+/* ─── Phase 3 · 정리 (오늘의 정리 — 멤버별 답변·코칭) ─── */
 function RecapPhase({
   sessionId,
   members,
@@ -2144,7 +2176,7 @@ function RecapPhase({
     <div className="flex h-full flex-col gap-5">
       <div>
         <p style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 2.5, color: TLK.inkFaint, textTransform: "uppercase" }}>
-          Recap
+          Review
         </p>
         <h2 style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 36, fontWeight: 500, color: TLK.ink, lineHeight: 1.2, marginTop: 4, letterSpacing: -0.5 }}>
           오늘의 정리 · 멤버별 발화
