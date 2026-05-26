@@ -1303,68 +1303,85 @@ function RunPhase({
         className="flex min-h-0 flex-col gap-3 rounded-2xl px-4 py-4"
         style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
       >
-        <div className="flex items-center gap-1.5">
-          <Lightbulb size={15} style={{ color: TLK.accent }} />
-          <span style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: TLK.inkFaint, textTransform: "uppercase" }}>
-            답변 가이드
-          </span>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <Lightbulb size={16} style={{ color: TLK.accent }} />
+            <span style={{ fontFamily: TLK_FONT.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.2, color: TLK.ink, textTransform: "uppercase" }}>
+              답변 가이드
+            </span>
+          </div>
+          {currentGuide?.type_label && (
+            <span className="shrink-0 rounded-full px-2.5 py-0.5" style={{ background: `${TLK.accent}1a`, color: TLK.accent, fontFamily: TLK_FONT.sans, fontSize: 11, fontWeight: 700 }}>
+              {currentGuide.type_label}
+            </span>
+          )}
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">
           {currentGuide ? (
-            <div className="flex flex-col gap-3.5">
-              {currentGuide.type_label && (
-                <span className="self-start rounded-full px-2.5 py-0.5" style={{ background: TLK.bg2, color: TLK.inkDim, fontFamily: TLK_FONT.sans, fontSize: 11, fontWeight: 700 }}>
-                  {currentGuide.type_label}
-                </span>
-              )}
+            <div className="flex flex-col gap-5">
+              {/* 이렇게 답해요 — 번호 스텝 */}
               {currentGuide.answer_flow && currentGuide.answer_flow.length > 0 && (
                 <div>
-                  <p style={{ fontFamily: TLK_FONT.sans, fontSize: 9.5, fontWeight: 700, letterSpacing: 1, color: TLK.inkFaint, textTransform: "uppercase", marginBottom: 5 }}>
+                  <p style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: TLK.accent, textTransform: "uppercase", marginBottom: 8 }}>
                     이렇게 답해요
                   </p>
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-col gap-2">
                     {currentGuide.answer_flow.map((s, n) => (
-                      <p key={n} style={{ fontFamily: TLK_FONT.ko, fontSize: 13, color: TLK.ink, lineHeight: 1.5 }}>
-                        {n + 1}. {s}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {currentGuide.vocab && currentGuide.vocab.length > 0 && (
-                <div>
-                  <p style={{ fontFamily: TLK_FONT.sans, fontSize: 9.5, fontWeight: 700, letterSpacing: 1, color: TLK.inkFaint, textTransform: "uppercase", marginBottom: 5 }}>
-                    추천 표현
-                  </p>
-                  <div className="flex flex-col gap-1.5">
-                    {currentGuide.vocab.map((v, n) => (
-                      <div key={n} className="flex flex-col">
-                        <span style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 13.5, color: TLK.ink }}>
-                          {v.en}
+                      <div key={n} className="flex items-start gap-2.5">
+                        <span
+                          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+                          style={{ background: TLK.accent, color: "#fff", fontFamily: TLK_FONT.sans, fontSize: 11, fontWeight: 700 }}
+                        >
+                          {n + 1}
                         </span>
-                        <span style={{ fontFamily: TLK_FONT.ko, fontSize: 11.5, color: TLK.inkDim }}>
-                          {v.ko}
+                        <span style={{ fontFamily: TLK_FONT.ko, fontSize: 13.5, color: TLK.ink, lineHeight: 1.4, paddingTop: 1 }}>
+                          {s}
                         </span>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-              {currentGuide.example && (
-                <div className="rounded-lg px-3 py-2.5" style={{ background: `${TLK.accent}0f`, border: `1px solid ${TLK.accent}26` }}>
-                  <p style={{ fontFamily: TLK_FONT.sans, fontSize: 9.5, fontWeight: 700, letterSpacing: 1, color: TLK.accent, textTransform: "uppercase", marginBottom: 3 }}>
-                    예시
+              {/* 추천 표현 — 카드 */}
+              {currentGuide.vocab && currentGuide.vocab.length > 0 && (
+                <div>
+                  <p style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: TLK.accent, textTransform: "uppercase", marginBottom: 8 }}>
+                    추천 표현
                   </p>
-                  <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 13, color: TLK.ink, lineHeight: 1.45 }}>
+                  <div className="flex flex-col gap-1.5">
+                    {currentGuide.vocab.map((v, n) => (
+                      <div key={n} className="rounded-lg px-3 py-2" style={{ background: TLK.bg2, border: `1px solid ${TLK.rule}` }}>
+                        <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 14, fontWeight: 500, color: TLK.ink, lineHeight: 1.3 }}>
+                          {v.en}
+                        </p>
+                        <p style={{ fontFamily: TLK_FONT.ko, fontSize: 12, color: TLK.inkDim, marginTop: 1 }}>
+                          {v.ko}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* 예시 답변 — 강조 박스 */}
+              {currentGuide.example && (
+                <div className="rounded-xl px-4 py-3" style={{ background: `${TLK.accent}0f`, border: `1px solid ${TLK.accent}33` }}>
+                  <div className="mb-1.5 flex items-center gap-1.5">
+                    <Sparkles size={12} style={{ color: TLK.accent }} />
+                    <span style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1, color: TLK.accent, textTransform: "uppercase" }}>
+                      예시 답변
+                    </span>
+                  </div>
+                  <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 14, color: TLK.ink, lineHeight: 1.5 }}>
                     “{currentGuide.example}”
                   </p>
                 </div>
               )}
             </div>
           ) : (
-            <p style={{ fontFamily: TLK_FONT.ko, fontSize: 12, color: TLK.inkFaint }}>
-              가이드를 불러오는 중…
-            </p>
+            <div className="flex h-full items-center justify-center gap-2" style={{ color: TLK.inkFaint }}>
+              <Loader2 size={16} className="animate-spin" />
+              <span style={{ fontFamily: TLK_FONT.ko, fontSize: 13 }}>가이드 생성 중…</span>
+            </div>
           )}
         </div>
       </div>
