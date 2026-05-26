@@ -28,8 +28,13 @@ import {
   fetchTalklishCompletedSigs,
   markTalklishComboCompleted,
   unmarkTalklishComboCompleted,
+  getOrGenerateTalklishGuide,
+  getOrCreateTodaySession,
+  saveTalklishAnswer,
+  getTalklishSessionAnswers,
+  listTalklishSessions,
 } from "@/lib/actions/study-group";
-import type { TalklishCombo, TalklishComboQuestion } from "@/lib/actions/study-group";
+import type { TalklishCombo, TalklishComboQuestion, TalklishAnswer } from "@/lib/actions/study-group";
 import type { PanelMember } from "@/lib/types/study-group";
 import { QUESTION_TYPE_LABELS } from "@/lib/types/reviews";
 import { useRecorder } from "@/lib/hooks/use-recorder";
@@ -62,11 +67,11 @@ type Category = "일반" | "롤플레이" | "어드밴스";
 const CATEGORIES: Category[] = ["일반", "롤플레이", "어드밴스"];
 
 const FLOW = [
-  { id: 0, label: "Intro",       desc: "스터디 안내 + 출석",        range: "0–3"   },
-  { id: 1, label: "콤보 선택",   desc: "카테고리/토픽 → 4문항",     range: "3–8"   },
-  { id: 2, label: "진행",        desc: "발화자 룰렛 + 답변 + 토론", range: "8–48"  },
-  { id: 3, label: "회고",        desc: "4문항 한눈에 짚기",         range: "48–55" },
-  { id: 4, label: "Closing",     desc: "마무리 + 세션 완료",        range: "55–60" },
+  { id: 0, label: "Intro",       desc: "스터디 안내 + 출석",         range: "0–3"   },
+  { id: 1, label: "콤보 선택",   desc: "카테고리/토픽 → 콤보",       range: "3–10"  },
+  { id: 2, label: "진행",        desc: "발화자 룰렛 + 답변 + 토론",  range: "10–48" },
+  { id: 3, label: "회고",        desc: "4문항 한눈에 짚기",          range: "48–55" },
+  { id: 4, label: "Closing",     desc: "마무리 + 세션 완료",         range: "55–60" },
 ] as const;
 
 interface Props {
@@ -76,17 +81,16 @@ interface Props {
 }
 
 export function OpicStage({ focusMode, absentIds, onToggleAttendance }: Props) {
+  const [view, setView] = useState<"menu" | "study" | "history">("menu");
   const [phase, setPhase] = useState(0);
   const [category, setCategory] = useState<Category>("일반");
   const [topic, setTopic] = useState<string | null>(null);
   const [selectedSig, setSelectedSig] = useState<string | null>(null); // 선택된 콤보 시그니처
   const [qIdx, setQIdx] = useState(0);             // 콤보 내 질문 인덱스 (0~N-1)
-  const [subStep, setSubStep] = useState<SubStep>("speaker");
   // (룰렛 state는 useSpeakerRoulette 훅에서 관리)
-  const [coachNotes, setCoachNotes] = useState<Record<string, string>>({}); // questionId → note (진행자 수동)
   const [coachResults, setCoachResults] = useState<Record<string, CoachingResult>>({}); // questionId → AI 결과
-  const [memberRecaps, setMemberRecaps] = useState<Record<string, string>>({}); // memberId → recap
   const [sessionCompleted, setSessionCompleted] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   const { data: topics = [] } = useQuery({
     queryKey: ["study-topics", category],
@@ -119,7 +123,6 @@ export function OpicStage({ focusMode, absentIds, onToggleAttendance }: Props) {
     [combos, selectedSig],
   );
   const combo = selectedCombo?.questions ?? [];
-  const currentQ = combo[qIdx];
 
   const presentMembers = useMemo(
     () => members.filter((m) => !absentIds.has(m.id)),
@@ -128,7 +131,7 @@ export function OpicStage({ focusMode, absentIds, onToggleAttendance }: Props) {
 
   // 공통 발화자 룰렛 — 한 라운드 = 출석자 전원 한 번씩 (월·수·금 동일 동작)
   // hasSpun=false 일 때 speaker=undefined → 초기엔 아무도 안 뽑힌 상태
-  const { activeSpeaker, hasSpun, speaker, spinning, spin, roundProgress } = useSpeakerRoulette({
+  const { activeSpeaker, hasSpun, speaker, spinning, spin } = useSpeakerRoulette({
     members,
     presentMembers,
   });
@@ -151,6 +154,14 @@ export function OpicStage({ focusMode, absentIds, onToggleAttendance }: Props) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [phase, goPhase, spin]);
+
+  // 수요일 진입 → 메뉴 (오늘의 스터디 / 히스토리)
+  if (view === "menu") {
+    return <WedMenu onStudy={() => setView("study")} onHistory={() => setView("history")} />;
+  }
+  if (view === "history") {
+    return <HistoryView members={members} onBack={() => setView("menu")} />;
+  }
 
   return (
     <div
@@ -230,7 +241,7 @@ export function OpicStage({ focusMode, absentIds, onToggleAttendance }: Props) {
           className="absolute inset-0 overflow-y-auto"
           style={{ animation: "tlk-fade .35s ease-out" }}
         >
-          <div className="mx-auto h-full max-w-6xl px-6 py-6 sm:px-10 sm:py-10">
+          <div className={`mx-auto h-full px-6 py-6 sm:px-10 sm:py-10 ${phase === 2 ? "max-w-[1800px]" : "max-w-6xl"}`}>
             {phase === 0 && <IntroPhase members={members} absentIds={absentIds} />}
             {phase === 1 && (
               <ComboPickerPhase
@@ -243,16 +254,23 @@ export function OpicStage({ focusMode, absentIds, onToggleAttendance }: Props) {
                 onCategoryChange={(c) => { setCategory(c); setTopic(null); setSelectedSig(null); setQIdx(0); }}
                 onTopicChange={(t) => { setTopic(t); setSelectedSig(null); setQIdx(0); }}
                 onSelectCombo={(sig) => { setSelectedSig(sig); setQIdx(0); }}
-                onStart={() => { setPhase(2); setQIdx(0); setSubStep("speaker"); }}
+                onStart={async () => {
+                  // 진행 진입 시 오늘 세션 확보 (하루 1세션)
+                  if (!sessionId) {
+                    const res = await getOrCreateTodaySession();
+                    if (res.success && res.data) setSessionId(res.data.id);
+                  }
+                  setQIdx(0);
+                  setPhase(2);
+                }}
               />
             )}
             {phase === 2 && (
               <RunPhase
                 combo={combo}
+                sig={selectedSig}
                 qIdx={qIdx}
-                setQIdx={(n) => { setQIdx(n); setSubStep("speaker"); }}
-                subStep={subStep}
-                setSubStep={setSubStep}
+                setQIdx={setQIdx}
                 members={members}
                 absentIds={absentIds}
                 onToggleAttendance={onToggleAttendance}
@@ -261,25 +279,37 @@ export function OpicStage({ focusMode, absentIds, onToggleAttendance }: Props) {
                 hasSpun={hasSpun}
                 spinning={spinning}
                 onSpin={spin}
-                roundProgress={roundProgress}
-                coachNotes={coachNotes}
-                onChangeCoachNote={(qid, note) => setCoachNotes((p) => ({ ...p, [qid]: note }))}
                 coachResults={coachResults}
-                onSaveCoachResult={(qid, result) => setCoachResults((p) => ({ ...p, [qid]: result }))}
+                onSaveCoachResult={(qid, result, audioPath) => {
+                  setCoachResults((p) => ({ ...p, [qid]: result }));
+                  // DB 저장 — 발표자·세션이 있을 때 (룰렛 발표자 기준)
+                  if (sessionId && speaker) {
+                    const q = combo.find((x) => x.id === qid);
+                    void saveTalklishAnswer({
+                      session_id: sessionId,
+                      panel_member_id: speaker.id,
+                      user_id: speaker.user_id,
+                      combo_sig: selectedSig ?? "",
+                      category,
+                      topic,
+                      question_id: qid,
+                      question_idx: combo.findIndex((x) => x.id === qid),
+                      question_type: q?.question_type ?? null,
+                      question_english: q?.question_english ?? null,
+                      question_korean: q?.question_korean ?? null,
+                      audio_url: audioPath,
+                      transcript: result.transcript,
+                      coaching: result.coaching,
+                    });
+                  }
+                }}
                 category={category}
                 topic={topic}
                 onGoRecap={() => setPhase(3)}
               />
             )}
             {phase === 3 && (
-              <RecapPhase
-                combo={combo}
-                coachNotes={coachNotes}
-                members={members}
-                absentIds={absentIds}
-                memberRecaps={memberRecaps}
-                onChangeRecap={(mid, val) => setMemberRecaps((p) => ({ ...p, [mid]: val }))}
-              />
+              <RecapPhase sessionId={sessionId} members={members} />
             )}
             {phase === 4 && (
               <ClosingPhase
@@ -445,10 +475,138 @@ export function OpicStage({ focusMode, absentIds, onToggleAttendance }: Props) {
   );
 }
 
-/* ─── Sub Step ────────────────────────── */
-type SubStep = "speaker" | "answer" | "coach" | "discuss";
-
 /* ─── Phase 0 · Intro ─────────────────── */
+
+/* ─── 세션 날짜 포맷 (YYYY-MM-DD → N월 N일) ─── */
+function fmtSessionDate(d: string): string {
+  const parts = d.split("-").map(Number);
+  if (parts.length !== 3) return d;
+  return `${parts[0]}년 ${parts[1]}월 ${parts[2]}일`;
+}
+
+/* ─── 수요일 진입 메뉴 — 오늘의 스터디 / 히스토리 ─── */
+function WedMenu({ onStudy, onHistory }: { onStudy: () => void; onHistory: () => void }) {
+  return (
+    <div
+      className="flex h-full flex-col items-center justify-center gap-9 px-6"
+      style={{ background: TLK.bg, color: TLK.ink, fontFamily: TLK_FONT.ko }}
+    >
+      <div className="text-center">
+        <h1 style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 42, fontWeight: 500, color: TLK.ink, lineHeight: 1.1 }}>
+          Wednesday · OPIc
+        </h1>
+        <p style={{ fontFamily: TLK_FONT.ko, fontSize: 15, color: TLK.inkDim, marginTop: 8 }}>
+          오늘 무엇을 할까요?
+        </p>
+      </div>
+      <div className="grid w-full max-w-2xl gap-4 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={onStudy}
+          className="flex flex-col items-start gap-3 rounded-3xl px-7 py-7 text-left transition-all hover:-translate-y-0.5"
+          style={{ background: TLK.accent, color: "#fff", border: 0, cursor: "pointer" }}
+        >
+          <Sparkles size={26} />
+          <span style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 24, fontWeight: 500 }}>오늘의 스터디</span>
+          <span style={{ fontFamily: TLK_FONT.ko, fontSize: 13, opacity: 0.9, lineHeight: 1.5 }}>
+            콤보 선택 → AI 가이드 → 발표·코칭 → 정리
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={onHistory}
+          className="flex flex-col items-start gap-3 rounded-3xl px-7 py-7 text-left transition-all hover:-translate-y-0.5"
+          style={{ background: TLK.paper, color: TLK.ink, border: `1px solid ${TLK.rule}`, cursor: "pointer" }}
+        >
+          <NotebookPen size={26} style={{ color: TLK.accent }} />
+          <span style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 24, fontWeight: 500 }}>스터디 히스토리</span>
+          <span style={{ fontFamily: TLK_FONT.ko, fontSize: 13, color: TLK.inkDim, lineHeight: 1.5 }}>
+            지난 세션 · 멤버별 발화 · AI 평가 다시 보기
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── 스터디 히스토리 — 세션 목록 → 멤버별 답변·코칭 ─── */
+function HistoryView({ members, onBack }: { members: PanelMember[]; onBack: () => void }) {
+  const { data: sessions = [], isLoading } = useQuery({
+    queryKey: ["talklish-sessions"],
+    queryFn: listTalklishSessions,
+    staleTime: 30 * 1000,
+  });
+  const [selId, setSelId] = useState<string | null>(null);
+  const selSession = sessions.find((s) => s.id === selId) ?? null;
+
+  return (
+    <div className="flex h-full flex-col" style={{ background: TLK.bg, color: TLK.ink, fontFamily: TLK_FONT.ko }}>
+      <header
+        className="flex shrink-0 items-center gap-3 border-b px-6 py-3.5 sm:px-10"
+        style={{ borderColor: TLK.rule, background: TLK.bg }}
+      >
+        <button
+          type="button"
+          onClick={selId ? () => setSelId(null) : onBack}
+          className="flex items-center gap-1 rounded-full px-3 py-1.5"
+          style={{ background: TLK.bg2, border: `1px solid ${TLK.rule}`, color: TLK.inkDim, fontFamily: TLK_FONT.sans, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+        >
+          <ChevronLeft size={14} />
+          {selId ? "목록" : "메뉴"}
+        </button>
+        <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 18, color: TLK.ink }}>
+          {selSession ? fmtSessionDate(selSession.session_date) : "스터디 히스토리"}
+        </p>
+      </header>
+
+      <main className="relative flex-1 overflow-hidden">
+        <div className="absolute inset-0 overflow-y-auto">
+          <div className="mx-auto flex h-full max-w-5xl flex-col px-6 py-6 sm:px-10">
+            {selSession ? (
+              <SessionAnswersView sessionId={selSession.id} members={members} />
+            ) : isLoading ? (
+              <div className="flex flex-1 items-center justify-center gap-2" style={{ color: TLK.inkDim }}>
+                <Loader2 size={18} className="animate-spin" />
+                <span style={{ fontFamily: TLK_FONT.ko, fontSize: 14 }}>불러오는 중…</span>
+              </div>
+            ) : sessions.length === 0 ? (
+              <div className="flex flex-1 items-center justify-center">
+                <p style={{ fontFamily: TLK_FONT.ko, fontSize: 14, color: TLK.inkFaint }}>아직 진행한 스터디가 없어요</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {sessions.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setSelId(s.id)}
+                    className="flex items-center justify-between gap-4 rounded-2xl px-5 py-4 text-left transition-all hover:-translate-y-0.5"
+                    style={{ background: TLK.paper, border: `1px solid ${TLK.rule}`, cursor: "pointer" }}
+                  >
+                    <div className="min-w-0">
+                      <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 18, color: TLK.ink }}>
+                        {fmtSessionDate(s.session_date)}
+                      </p>
+                      <p style={{ fontFamily: TLK_FONT.ko, fontSize: 12.5, color: TLK.inkDim, marginTop: 2 }}>
+                        {s.topics.length > 0 ? s.topics.join(" · ") : "주제 없음"}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <span style={{ fontFamily: TLK_FONT.sans, fontSize: 11, color: TLK.inkFaint }}>
+                        콤보 {s.combo_count} · 답변 {s.answer_count}
+                      </span>
+                      <ChevronRight size={16} style={{ color: TLK.inkFaint }} />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
 
 function IntroPhase({
   members,
@@ -1024,21 +1182,12 @@ function ComboPickerPhase({
   );
 }
 
-/* ─── Phase 2 · 진행 (sub-step) ──────── */
-
-const SUBS: { key: SubStep; label: string; icon: typeof Mic }[] = [
-  { key: "speaker", label: "발화자 룰렛", icon: Users },
-  { key: "answer",  label: "답변",        icon: Mic },
-  { key: "coach",   label: "코치 노트",   icon: NotebookPen },
-  { key: "discuss", label: "토론",        icon: MessagesSquare },
-];
+/* ─── Phase 2 · 진행 ──────── */
 
 function RunPhase({
   combo,
   qIdx,
   setQIdx,
-  subStep,
-  setSubStep,
   members,
   absentIds,
   onToggleAttendance,
@@ -1047,20 +1196,16 @@ function RunPhase({
   hasSpun,
   spinning,
   onSpin,
-  roundProgress,
-  coachNotes,
-  onChangeCoachNote,
   coachResults,
   onSaveCoachResult,
   category,
   topic,
   onGoRecap,
+  sig,
 }: {
   combo: TalklishComboQuestion[];
   qIdx: number;
   setQIdx: (n: number) => void;
-  subStep: SubStep;
-  setSubStep: (s: SubStep) => void;
   members: PanelMember[];
   absentIds: Set<string>;
   onToggleAttendance: (id: string) => void;
@@ -1069,28 +1214,34 @@ function RunPhase({
   hasSpun: boolean;
   spinning: boolean;
   onSpin: () => void;
-  roundProgress: { picked: number; total: number };
-  coachNotes: Record<string, string>;
-  onChangeCoachNote: (qid: string, v: string) => void;
   coachResults: Record<string, CoachingResult>;
-  onSaveCoachResult: (qid: string, result: CoachingResult) => void;
+  onSaveCoachResult: (qid: string, result: CoachingResult, audioPath: string) => void;
   category: Category;
   topic: string | null;
   onGoRecap: () => void;
+  sig: string | null;
 }) {
   const q = combo[qIdx];
   const isLast = qIdx === combo.length - 1;
-  // speaker는 훅에서 받은 값 — hasSpun=false 일 때 undefined (초기 미선택 상태)
-  const subIdx = SUBS.findIndex((s) => s.key === subStep);
 
-  const goNextSub = useCallback(() => {
-    if (subIdx < SUBS.length - 1) setSubStep(SUBS[subIdx + 1].key);
-    else {
-      // 마지막 sub-step "토론" 끝 → 다음 질문 / 회고로
-      if (isLast) onGoRecap();
-      else setQIdx(qIdx + 1);
-    }
-  }, [subIdx, isLast, onGoRecap, qIdx, setQIdx, setSubStep]);
+  // 현재 질문 가이드 — 가이드 phase에서 만든 캐시 재사용 (queryKey 공유)
+  const { data: comboGuide } = useQuery({
+    queryKey: ["talklish-guide", sig],
+    queryFn: async () => {
+      const res = await getOrGenerateTalklishGuide({
+        sig: sig!,
+        question_ids: combo.map((c) => c.id),
+        topic: topic ?? "",
+        category,
+      });
+      if (!res.success || !res.data) throw new Error(res.error || "가이드 로드 실패");
+      return res.data;
+    },
+    enabled: !!sig,
+    staleTime: Infinity,
+  });
+  const currentGuide =
+    comboGuide?.questions.find((x) => x.question_idx === qIdx) ?? comboGuide?.questions[qIdx];
 
   if (!q) {
     return (
@@ -1103,8 +1254,79 @@ function RunPhase({
   }
 
   return (
-    <div className="grid h-full gap-5" style={{ gridTemplateColumns: "1fr 320px" }}>
-      {/* 좌 — 메인 콘텐츠 */}
+    <div className="grid h-full gap-6" style={{ gridTemplateColumns: "minmax(320px, 1fr) 1.6fr minmax(320px, 1fr)" }}>
+      {/* 좌 — 현재 질문 답변 가이드 */}
+      <div
+        className="flex min-h-0 flex-col gap-3 rounded-2xl px-4 py-4"
+        style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
+      >
+        <div className="flex items-center gap-1.5">
+          <Lightbulb size={15} style={{ color: TLK.accent }} />
+          <span style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: TLK.inkFaint, textTransform: "uppercase" }}>
+            답변 가이드
+          </span>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {currentGuide ? (
+            <div className="flex flex-col gap-3.5">
+              {currentGuide.type_label && (
+                <span className="self-start rounded-full px-2.5 py-0.5" style={{ background: TLK.bg2, color: TLK.inkDim, fontFamily: TLK_FONT.sans, fontSize: 11, fontWeight: 700 }}>
+                  {currentGuide.type_label}
+                </span>
+              )}
+              {currentGuide.answer_flow && currentGuide.answer_flow.length > 0 && (
+                <div>
+                  <p style={{ fontFamily: TLK_FONT.sans, fontSize: 9.5, fontWeight: 700, letterSpacing: 1, color: TLK.inkFaint, textTransform: "uppercase", marginBottom: 5 }}>
+                    이렇게 답해요
+                  </p>
+                  <div className="flex flex-col gap-1">
+                    {currentGuide.answer_flow.map((s, n) => (
+                      <p key={n} style={{ fontFamily: TLK_FONT.ko, fontSize: 13, color: TLK.ink, lineHeight: 1.5 }}>
+                        {n + 1}. {s}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {currentGuide.vocab && currentGuide.vocab.length > 0 && (
+                <div>
+                  <p style={{ fontFamily: TLK_FONT.sans, fontSize: 9.5, fontWeight: 700, letterSpacing: 1, color: TLK.inkFaint, textTransform: "uppercase", marginBottom: 5 }}>
+                    추천 표현
+                  </p>
+                  <div className="flex flex-col gap-1.5">
+                    {currentGuide.vocab.map((v, n) => (
+                      <div key={n} className="flex flex-col">
+                        <span style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 13.5, color: TLK.ink }}>
+                          {v.en}
+                        </span>
+                        <span style={{ fontFamily: TLK_FONT.ko, fontSize: 11.5, color: TLK.inkDim }}>
+                          {v.ko}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {currentGuide.example && (
+                <div className="rounded-lg px-3 py-2.5" style={{ background: `${TLK.accent}0f`, border: `1px solid ${TLK.accent}26` }}>
+                  <p style={{ fontFamily: TLK_FONT.sans, fontSize: 9.5, fontWeight: 700, letterSpacing: 1, color: TLK.accent, textTransform: "uppercase", marginBottom: 3 }}>
+                    예시
+                  </p>
+                  <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 13, color: TLK.ink, lineHeight: 1.45 }}>
+                    “{currentGuide.example}”
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p style={{ fontFamily: TLK_FONT.ko, fontSize: 12, color: TLK.inkFaint }}>
+              가이드를 불러오는 중…
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* 가운데 — 메인 콘텐츠 */}
       <div className="flex min-h-0 flex-col gap-4">
         {/* 콤보 진행 표시 */}
         <div className="flex items-center gap-3">
@@ -1128,7 +1350,7 @@ function RunPhase({
                 <button
                   key={n}
                   type="button"
-                  onClick={() => { setQIdx(n); setSubStep("speaker"); }}
+                  onClick={() => setQIdx(n)}
                   aria-label={`질문 ${n + 1}로 이동`}
                   style={{
                     width: active ? 24 : 8,
@@ -1194,93 +1416,25 @@ function RunPhase({
           {q.audio_url && <AudioRow url={q.audio_url} />}
         </div>
 
-        {/* Sub-step 탭 */}
-        <div className="flex gap-1.5">
-          {SUBS.map((s, i) => {
-            const active = s.key === subStep;
-            const past = i < subIdx;
-            const Icon = s.icon;
-            return (
-              <button
-                key={s.key}
-                type="button"
-                onClick={() => setSubStep(s.key)}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2"
-                style={{
-                  background: active ? TLK.ink : past ? TLK.paper : TLK.bg2,
-                  color: active ? "#fff" : past ? TLK.inkDim : TLK.inkFaint,
-                  border: `1px solid ${active ? TLK.ink : TLK.rule}`,
-                  fontFamily: TLK_FONT.sans,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: 0.5,
-                  cursor: "pointer",
-                  transition: "all .25s",
-                }}
-              >
-                <Icon size={12} />
-                <span>{s.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Sub-step 본문 */}
+        {/* 발화 흐름 — 발표자 선정 → 녹음 → 자동 코칭 → 코치노트 → 다음 (탭 없는 단일 흐름) */}
         <div className="min-h-0 flex-1 overflow-y-auto">
-          {subStep === "speaker" && (
-            <SpeakerPick speaker={speaker} spinning={spinning} roundProgress={roundProgress} />
-          )}
-          {subStep === "answer" && (
-            <AnswerPanel
-              speaker={speaker}
-              questionId={q.id}
-              questionEnglish={q.question_english ?? ""}
-              questionKorean={q.question_korean ?? undefined}
-              questionType={q.question_type ?? undefined}
-              category={category}
-              topic={topic ?? undefined}
-              hasResult={!!coachResults[q.id]}
-              onCoachingDone={(result) => onSaveCoachResult(q.id, result)}
-              onAdvanceToCoach={() => setSubStep("coach")}
-            />
-          )}
-          {subStep === "coach" && (
-            <CoachNotePanel
-              note={coachNotes[q.id] ?? ""}
-              onChange={(v) => onChangeCoachNote(q.id, v)}
-              speaker={speaker}
-              result={coachResults[q.id]}
-            />
-          )}
-          {subStep === "discuss" && (
-            <DiscussPanel coachNote={coachNotes[q.id] ?? ""} result={coachResults[q.id]} />
-          )}
-        </div>
-
-        {/* Sub-step 다음 버튼 */}
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={goNextSub}
-            className="flex items-center gap-1.5 rounded-full px-5 py-2"
-            style={{
-              background: TLK.accent,
-              color: "#fff",
-              border: 0,
-              fontFamily: TLK_FONT.sans,
-              fontSize: 12,
-              fontWeight: 700,
-              letterSpacing: 0.5,
-              cursor: "pointer",
+          <AnswerPanel
+            key={q.id}
+            speaker={speaker}
+            questionId={q.id}
+            questionEnglish={q.question_english ?? ""}
+            questionKorean={q.question_korean ?? undefined}
+            questionType={q.question_type ?? undefined}
+            category={category}
+            topic={topic ?? undefined}
+            initialResult={coachResults[q.id]}
+            onCoachingDone={(result, audioPath) => onSaveCoachResult(q.id, result, audioPath)}
+            onNext={() => {
+              if (isLast) onGoRecap();
+              else setQIdx(qIdx + 1);
             }}
-          >
-            {subIdx < SUBS.length - 1
-              ? `다음: ${SUBS[subIdx + 1].label}`
-              : isLast
-              ? "회고로 →"
-              : `다음 질문 (Q${qIdx + 2}) →`}
-            <ChevronRight size={14} />
-          </button>
+            nextLabel={isLast ? "정리 화면으로" : `다음 질문 (Q${qIdx + 2})`}
+          />
         </div>
       </div>
 
@@ -1330,131 +1484,6 @@ function AudioRow({ url }: { url: string }) {
   );
 }
 
-function SpeakerPick({
-  speaker,
-  spinning,
-  roundProgress,
-}: {
-  speaker: { name: string; emoji: string; color: string } | undefined;
-  spinning: boolean;
-  roundProgress: { picked: number; total: number };
-}) {
-  const isRoundComplete = roundProgress.total > 0 && roundProgress.picked === roundProgress.total;
-  return (
-    <div className="flex h-full flex-col items-center justify-center gap-6">
-      <div className="flex items-center gap-3">
-        <p
-          style={{
-            fontFamily: TLK_FONT.sans,
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: 2.5,
-            color: TLK.inkFaint,
-            textTransform: "uppercase",
-          }}
-        >
-          Who's up?
-        </p>
-        {roundProgress.total > 0 && (
-          <span
-            className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5"
-            style={{
-              background: isRoundComplete ? `${TLK.accent2}1f` : TLK.bg2,
-              border: `1px solid ${isRoundComplete ? `${TLK.accent2}55` : TLK.rule}`,
-              color: isRoundComplete ? TLK.accent2 : TLK.inkDim,
-              fontFamily: TLK_FONT.sans,
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: 1,
-              textTransform: "uppercase",
-            }}
-            title={
-              isRoundComplete
-                ? "모두 한 번씩 뽑혔어요 — 다음 PICK은 새 라운드를 시작합니다"
-                : "이번 라운드에서 같은 사람은 다시 뽑히지 않아요"
-            }
-          >
-            {isRoundComplete ? (
-              <>
-                <CheckCircle size={11} />
-                라운드 완료 ({roundProgress.total}/{roundProgress.total})
-              </>
-            ) : (
-              <>라운드 {roundProgress.picked}/{roundProgress.total}</>
-            )}
-          </span>
-        )}
-      </div>
-      {speaker ? (
-        <>
-          <div
-            className="flex h-32 w-32 items-center justify-center rounded-full text-7xl"
-            style={{
-              background: `${speaker.color}22`,
-              border: `4px solid ${speaker.color}`,
-              animation: spinning ? "tlk-spin .4s linear infinite" : undefined,
-            }}
-          >
-            {speaker.emoji}
-          </div>
-          <p
-            style={{
-              fontFamily: TLK_FONT.serif,
-              fontStyle: "italic",
-              fontSize: 36,
-              fontWeight: 500,
-              color: TLK.ink,
-            }}
-          >
-            {spinning ? "..." : speaker.name}
-          </p>
-          <p style={{ fontFamily: TLK_FONT.sans, fontSize: 13, color: TLK.inkDim }}>
-            오른쪽 PICK NEXT(또는 R)로 다시 뽑을 수 있어요
-          </p>
-        </>
-      ) : roundProgress.total === 0 ? (
-        <p
-          style={{
-            fontFamily: TLK_FONT.serif,
-            fontStyle: "italic",
-            fontSize: 18,
-            color: TLK.inkFaint,
-          }}
-        >
-          출석 멤버가 없어요
-        </p>
-      ) : (
-        // 아직 한 번도 안 뽑힌 상태
-        <>
-          <div
-            className="flex h-32 w-32 items-center justify-center rounded-full"
-            style={{
-              background: TLK.bg2,
-              border: `4px dashed ${TLK.rule}`,
-            }}
-          >
-            <Users size={42} style={{ color: TLK.inkFaint }} />
-          </div>
-          <p
-            style={{
-              fontFamily: TLK_FONT.serif,
-              fontStyle: "italic",
-              fontSize: 24,
-              fontWeight: 500,
-              color: TLK.inkDim,
-            }}
-          >
-            아직 발화자가 정해지지 않았어요
-          </p>
-          <p style={{ fontFamily: TLK_FONT.sans, fontSize: 13, color: TLK.inkFaint, textAlign: "center", maxWidth: 360 }}>
-            오른쪽 <strong style={{ color: TLK.accent }}>PICK NEXT</strong> 버튼(또는 키보드 <strong>R</strong>)을 눌러 첫 발화자를 뽑아주세요.
-          </p>
-        </>
-      )}
-    </div>
-  );
-}
-
 function AnswerPanel({
   speaker,
   questionId,
@@ -1463,9 +1492,10 @@ function AnswerPanel({
   questionType,
   category,
   topic,
-  hasResult,
+  initialResult,
   onCoachingDone,
-  onAdvanceToCoach,
+  onNext,
+  nextLabel,
 }: {
   speaker: { name: string; emoji: string; color: string } | undefined;
   questionId: string;
@@ -1474,15 +1504,15 @@ function AnswerPanel({
   questionType?: string;
   category: Category;
   topic?: string;
-  hasResult: boolean;
-  onCoachingDone: (r: CoachingResult) => void;
-  onAdvanceToCoach: () => void;
+  initialResult?: CoachingResult;
+  onCoachingDone: (r: CoachingResult, audioPath: string) => void;
+  onNext: () => void;
+  nextLabel: string;
 }) {
   const recorder = useRecorder({ maxDuration: 180, minDuration: 1 });
-  // hasResult가 true면 이미 코칭 결과가 있으니 done. 단 result 실데이터는 부모 prop으로만 알 수 있어
-  // 화면에서는 "코칭 노트 보기" 버튼만 노출 (CoachNotePanel이 실제 result 렌더링)
+  // 재방문(부모 coachResults에 이미 결과 있음) 시 코치노트 바로 표시
   const [coachState, setCoachState] = useState<CoachState>(
-    hasResult ? { status: "done", result: { transcript: "", coaching: { summary: "", good_points: [], improve_points: [], discussion_hooks: [], next_speaker_tip: "" } } } : { status: "idle" }
+    initialResult ? { status: "done", result: initialResult } : { status: "idle" }
   );
   const supabaseRef = useRef<ReturnType<typeof createBrowserClient> | null>(null);
   const lastProcessedBlob = useRef<Blob | null>(null);
@@ -1548,7 +1578,7 @@ function AnswerPanel({
         }
 
         const result = data.data as CoachingResult;
-        onCoachingDone(result);
+        onCoachingDone(result, filename);
         setCoachState({ status: "done", result });
       } catch (err) {
         setCoachState({
@@ -1561,10 +1591,9 @@ function AnswerPanel({
 
   const isRecording = recorder.state === "recording";
   const isProcessing = coachState.status === "uploading" || coachState.status === "coaching";
-  const isDone = coachState.status === "done";
   const isFailed = coachState.status === "failed";
 
-  // 발화자 미선택 가드 — 룰렛 먼저 돌리도록 안내
+  // 발화자 미선택 → 우측 룰렛 유도
   if (!speaker) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-5 text-center">
@@ -1583,11 +1612,103 @@ function AnswerPanel({
             maxWidth: 480,
           }}
         >
-          먼저 <strong style={{ color: TLK.accent }}>발화자 룰렛</strong>에서 PICK NEXT를 눌러주세요.
+          오른쪽 <strong style={{ color: TLK.accent }}>PICK NEXT</strong>로 발표자를 먼저 뽑아주세요.
         </p>
         <p style={{ fontFamily: TLK_FONT.sans, fontSize: 12, color: TLK.inkFaint }}>
-          상단 sub-step 탭 또는 우측 카드의 PICK NEXT 버튼 (단축키 R)
+          우측 카드의 PICK NEXT 버튼 (단축키 R)
         </p>
+      </div>
+    );
+  }
+
+  // 코칭 완료 → 코치 노트 펼침 + 다음 버튼 (탭 없이 자동 표시)
+  if (coachState.status === "done") {
+    const c = coachState.result.coaching;
+    return (
+      <div className="flex h-full flex-col gap-4">
+        <div className="flex items-center gap-2">
+          <span
+            className="flex h-9 w-9 items-center justify-center rounded-full text-xl"
+            style={{ background: `${speaker.color}22`, border: `2px solid ${speaker.color}` }}
+          >
+            {speaker.emoji}
+          </span>
+          <p style={{ fontFamily: TLK_FONT.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: TLK.accent, textTransform: "uppercase" }}>
+            {speaker.name} 답변 · AI 코치 노트
+          </p>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="flex flex-col gap-4">
+            {c.summary && (
+              <div className="rounded-2xl px-5 py-4" style={{ background: `${TLK.accent}0d`, border: `1px solid ${TLK.accent}33` }}>
+                <p style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color: TLK.accent, textTransform: "uppercase", marginBottom: 4 }}>한 줄 요약</p>
+                <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 19, color: TLK.ink, lineHeight: 1.45, fontWeight: 500 }}>{c.summary}</p>
+              </div>
+            )}
+            {c.good_points?.length > 0 && (
+              <div>
+                <p style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color: TLK.accent2, textTransform: "uppercase", marginBottom: 6 }}>잘한 점</p>
+                <div className="space-y-2">
+                  {c.good_points.map((p, i) => (
+                    <div key={i} className="rounded-xl px-4 py-3" style={{ background: TLK.paper, border: `1px solid ${TLK.rule}`, borderLeft: `3px solid ${TLK.accent2}` }}>
+                      <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 14, color: TLK.ink, lineHeight: 1.5 }}>“{p.quote}”</p>
+                      <p style={{ fontFamily: TLK_FONT.ko, fontSize: 12.5, color: TLK.inkDim, marginTop: 4, lineHeight: 1.5 }}>{p.note}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {c.improve_points?.length > 0 && (
+              <div>
+                <p style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color: TLK.accent, textTransform: "uppercase", marginBottom: 6 }}>보완할 점</p>
+                <div className="space-y-2">
+                  {c.improve_points.map((p, i) => (
+                    <div key={i} className="rounded-xl px-4 py-3" style={{ background: TLK.paper, border: `1px solid ${TLK.rule}`, borderLeft: `3px solid ${TLK.accent}` }}>
+                      <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 14, color: TLK.ink, lineHeight: 1.5 }}>“{p.quote}”</p>
+                      <p style={{ fontFamily: TLK_FONT.ko, fontSize: 12.5, color: TLK.inkDim, marginTop: 4, lineHeight: 1.5 }}>{p.issue}</p>
+                      <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 13, color: TLK.accent, marginTop: 6, lineHeight: 1.5, fontWeight: 500 }}>→ {p.suggestion}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {c.next_speaker_tip && (
+              <div className="rounded-xl px-4 py-3" style={{ background: TLK.bg2, border: `1px solid ${TLK.rule}` }}>
+                <div className="mb-1.5 flex items-center gap-1.5">
+                  <Mic size={12} style={{ color: TLK.inkDim }} />
+                  <span style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color: TLK.inkDim, textTransform: "uppercase" }}>다음 발화자 팁</span>
+                </div>
+                <p style={{ fontFamily: TLK_FONT.ko, fontSize: 13, color: TLK.ink, lineHeight: 1.5 }}>{c.next_speaker_tip}</p>
+              </div>
+            )}
+            {c.discussion_hooks?.length > 0 && (
+              <div>
+                <div className="mb-1.5 flex items-center gap-1.5">
+                  <MessagesSquare size={13} style={{ color: TLK.accent2 }} />
+                  <span style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color: TLK.accent2, textTransform: "uppercase" }}>토론 거리</span>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {c.discussion_hooks.map((h, i) => (
+                    <p key={i} style={{ fontFamily: TLK_FONT.ko, fontSize: 13.5, color: TLK.ink, lineHeight: 1.5 }}>· {h}</p>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex shrink-0 justify-end">
+          <button
+            type="button"
+            onClick={onNext}
+            className="flex items-center gap-1.5 rounded-full px-6 py-2.5"
+            style={{ background: TLK.ink, color: "#fff", border: 0, fontFamily: TLK_FONT.sans, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+          >
+            {nextLabel}
+            <ChevronRight size={15} />
+          </button>
+        </div>
       </div>
     );
   }
@@ -1618,7 +1739,7 @@ function AnswerPanel({
       )}
 
       {/* 녹음 컨트롤 */}
-      {!isDone && !isFailed && (
+      {!isFailed && (
         <div className="flex flex-col items-center gap-3">
           {!isRecording && !isProcessing && (
             <button
@@ -1713,46 +1834,6 @@ function AnswerPanel({
         </div>
       )}
 
-      {/* 완료 → 코치 노트로 자동 안내 */}
-      {isDone && (
-        <div className="flex flex-col items-center gap-3">
-          <div
-            className="flex h-16 w-16 items-center justify-center rounded-full"
-            style={{ background: `${TLK.accent2}1f`, border: `2px solid ${TLK.accent2}` }}
-          >
-            <CheckCircle size={32} style={{ color: TLK.accent2 }} />
-          </div>
-          <p
-            style={{
-              fontFamily: TLK_FONT.serif,
-              fontStyle: "italic",
-              fontSize: 22,
-              color: TLK.ink,
-            }}
-          >
-            코칭 노트가 준비됐어요
-          </p>
-          <button
-            type="button"
-            onClick={onAdvanceToCoach}
-            className="inline-flex items-center gap-1.5 rounded-full px-5 py-2"
-            style={{
-              background: TLK.accent,
-              color: "#fff",
-              border: 0,
-              fontFamily: TLK_FONT.sans,
-              fontSize: 12,
-              fontWeight: 700,
-              letterSpacing: 1,
-              cursor: "pointer",
-            }}
-          >
-            코치 노트 보기
-            <ArrowRight size={14} />
-          </button>
-        </div>
-      )}
-
       {isFailed && (
         <div className="flex flex-col items-center gap-3">
           <AlertCircle size={36} style={{ color: TLK.accent }} />
@@ -1805,544 +1886,242 @@ function formatDuration(sec: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-function CoachNotePanel({
-  note,
-  onChange,
-  speaker,
-  result,
-}: {
-  note: string;
-  onChange: (v: string) => void;
-  speaker: { name: string; emoji: string; color: string } | undefined;
-  result?: CoachingResult;
-}) {
+/* ─── 답변 음성 (private 버킷 signed URL, ref 기반 재생) ─── */
+function AnswerAudio({ path }: { path: string | null }) {
+  const ref = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const { data: url } = useQuery({
+    queryKey: ["talklish-answer-audio", path],
+    queryFn: async () => {
+      if (!path) return null;
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      );
+      const { data } = await supabase.storage
+        .from("talklish-recordings")
+        .createSignedUrl(path, 3600);
+      return data?.signedUrl ?? null;
+    },
+    enabled: !!path,
+    staleTime: 50 * 60 * 1000,
+  });
+  if (!path) return null;
   return (
-    <div className="flex h-full flex-col gap-4 overflow-y-auto">
-      <div className="flex items-center gap-2">
-        <NotebookPen size={16} style={{ color: TLK.accent }} />
-        <p
-          style={{
-            fontFamily: TLK_FONT.sans,
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: 1.5,
-            color: TLK.accent,
-            textTransform: "uppercase",
-          }}
-        >
-          {speaker?.name ? `${speaker.name} 답변 — AI 코치 노트` : "AI 코치 노트"}
-        </p>
-      </div>
-
-      {result ? (
-        <>
-          {/* AI 요약 */}
-          <div
-            className="rounded-2xl px-5 py-4"
-            style={{ background: `${TLK.accent}0d`, border: `1px solid ${TLK.accent}33` }}
-          >
-            <p
-              style={{
-                fontFamily: TLK_FONT.sans,
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: 1.5,
-                color: TLK.accent,
-                textTransform: "uppercase",
-                marginBottom: 4,
-              }}
-            >
-              한 줄 요약
-            </p>
-            <p
-              style={{
-                fontFamily: TLK_FONT.serif,
-                fontStyle: "italic",
-                fontSize: 19,
-                color: TLK.ink,
-                lineHeight: 1.45,
-                fontWeight: 500,
-              }}
-            >
-              {result.coaching.summary}
-            </p>
-          </div>
-
-          {/* 잘한 점 */}
-          {result.coaching.good_points?.length > 0 && (
-            <div>
-              <p
-                style={{
-                  fontFamily: TLK_FONT.sans,
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: 1.5,
-                  color: TLK.accent2,
-                  textTransform: "uppercase",
-                  marginBottom: 6,
-                }}
-              >
-                잘한 점
-              </p>
-              <div className="space-y-2">
-                {result.coaching.good_points.map((p, i) => (
-                  <div
-                    key={i}
-                    className="rounded-xl px-4 py-3"
-                    style={{ background: TLK.paper, border: `1px solid ${TLK.rule}`, borderLeft: `3px solid ${TLK.accent2}` }}
-                  >
-                    <p
-                      style={{
-                        fontFamily: TLK_FONT.serif,
-                        fontStyle: "italic",
-                        fontSize: 14,
-                        color: TLK.ink,
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      “{p.quote}”
-                    </p>
-                    <p style={{ fontFamily: TLK_FONT.ko, fontSize: 12.5, color: TLK.inkDim, marginTop: 4, lineHeight: 1.5 }}>
-                      {p.note}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 보완할 점 */}
-          {result.coaching.improve_points?.length > 0 && (
-            <div>
-              <p
-                style={{
-                  fontFamily: TLK_FONT.sans,
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: 1.5,
-                  color: TLK.accent,
-                  textTransform: "uppercase",
-                  marginBottom: 6,
-                }}
-              >
-                보완할 점
-              </p>
-              <div className="space-y-2">
-                {result.coaching.improve_points.map((p, i) => (
-                  <div
-                    key={i}
-                    className="rounded-xl px-4 py-3"
-                    style={{ background: TLK.paper, border: `1px solid ${TLK.rule}`, borderLeft: `3px solid ${TLK.accent}` }}
-                  >
-                    <p
-                      style={{
-                        fontFamily: TLK_FONT.serif,
-                        fontStyle: "italic",
-                        fontSize: 14,
-                        color: TLK.ink,
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      “{p.quote}”
-                    </p>
-                    <p style={{ fontFamily: TLK_FONT.ko, fontSize: 12.5, color: TLK.inkDim, marginTop: 4, lineHeight: 1.5 }}>
-                      {p.issue}
-                    </p>
-                    <p
-                      style={{
-                        fontFamily: TLK_FONT.serif,
-                        fontStyle: "italic",
-                        fontSize: 13,
-                        color: TLK.accent,
-                        marginTop: 6,
-                        lineHeight: 1.5,
-                        fontWeight: 500,
-                      }}
-                    >
-                      → {p.suggestion}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 다음 발화자 팁 */}
-          {result.coaching.next_speaker_tip && (
-            <div
-              className="rounded-xl px-4 py-3"
-              style={{ background: TLK.bg2, border: `1px solid ${TLK.rule}` }}
-            >
-              <div className="mb-1.5 flex items-center gap-1.5">
-                <Mic size={12} style={{ color: TLK.inkDim }} />
-                <span
-                  style={{
-                    fontFamily: TLK_FONT.sans,
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: 1.5,
-                    color: TLK.inkDim,
-                    textTransform: "uppercase",
-                  }}
-                >
-                  다음 발화자 한 마디
-                </span>
-              </div>
-              <p style={{ fontFamily: TLK_FONT.ko, fontSize: 13, color: TLK.ink, lineHeight: 1.55 }}>
-                {result.coaching.next_speaker_tip}
-              </p>
-            </div>
-          )}
-
-          {/* 진행자 추가 메모 (보완) */}
-          <div>
-            <p
-              style={{
-                fontFamily: TLK_FONT.sans,
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: 1.5,
-                color: TLK.inkFaint,
-                textTransform: "uppercase",
-                marginBottom: 6,
-              }}
-            >
-              진행자 추가 메모 (선택)
-            </p>
-            <textarea
-              value={note}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder="AI가 놓친 부분이나 진행자만의 코칭 한 줄..."
-              rows={3}
-              aria-label="진행자 추가 메모"
-              className="w-full resize-none rounded-xl px-4 py-3"
-              style={{
-                background: TLK.paperHi,
-                border: `1px solid ${TLK.rule}`,
-                color: TLK.ink,
-                fontFamily: TLK_FONT.serif,
-                fontSize: 14,
-                lineHeight: 1.5,
-                outline: "none",
-              }}
-            />
-          </div>
-        </>
-      ) : (
-        // AI 결과 없음 — 수동 메모 풀모드
-        <>
-          <div
-            className="rounded-xl px-3 py-2"
-            style={{ background: TLK.bg2, border: `1px dashed ${TLK.rule}` }}
-          >
-            <p style={{ fontFamily: TLK_FONT.sans, fontSize: 11, color: TLK.inkDim, lineHeight: 1.5 }}>
-              AI 코칭이 아직 생성되지 않았어요. 답변 단계로 돌아가 녹음하거나, 진행자가 직접 메모를 작성하세요.
-            </p>
-          </div>
-          <textarea
-            value={note}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder="잘한 점 1개 + 보완할 점 1개를 짧게 정리해보세요. 예) 핵심 표현 'I'd rather' 잘 활용 / Linker(however) 한 번 더"
-            rows={8}
-            aria-label="코치 노트"
-            className="w-full flex-1 resize-none rounded-xl px-4 py-3"
-            style={{
-              background: TLK.paperHi,
-              border: `1px solid ${TLK.rule}`,
-              color: TLK.ink,
-              fontFamily: TLK_FONT.serif,
-              fontSize: 15,
-              lineHeight: 1.55,
-              outline: "none",
-            }}
-          />
-        </>
-      )}
+    <div className="flex items-center gap-2">
+      <audio
+        ref={ref}
+        src={url ?? undefined}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => setPlaying(false)}
+      />
+      <button
+        type="button"
+        disabled={!url}
+        onClick={() => {
+          const el = ref.current;
+          if (!el) return;
+          if (el.paused) el.play();
+          else el.pause();
+        }}
+        className="flex h-8 w-8 items-center justify-center rounded-full disabled:opacity-40"
+        style={{ background: TLK.accent, color: "#fff", border: 0, cursor: url ? "pointer" : "wait" }}
+      >
+        {playing ? <Pause size={14} /> : <Play size={14} />}
+      </button>
+      <span style={{ fontFamily: TLK_FONT.sans, fontSize: 11, color: TLK.inkDim }}>답변 음성</span>
     </div>
   );
 }
 
-function DiscussPanel({
-  coachNote,
-  result,
-}: {
-  coachNote: string;
-  result?: CoachingResult;
-}) {
-  // AI 토론 거리 우선, 없으면 fallback
-  const hooks = result?.coaching.discussion_hooks ?? [
-    "이 표현을 자기 답변에도 가져다 쓸 수 있을까?",
-    "보완점 1가지에 대해 다른 멤버는 어떻게 풀어내는지 짧게 공유",
-    "오늘의 키프레이즈 후보 하나 고르기",
-  ];
-
-  return (
-    <div className="flex h-full flex-col gap-4 overflow-y-auto">
-      <div className="flex items-center gap-2">
-        <MessagesSquare size={16} style={{ color: TLK.accent2 }} />
-        <p
-          style={{
-            fontFamily: TLK_FONT.sans,
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: 1.5,
-            color: TLK.accent2,
-            textTransform: "uppercase",
-          }}
-        >
-          토론 — 코치 노트가 발판
-        </p>
-      </div>
-
-      {/* AI 한 줄 요약 (있을 때) */}
-      {result?.coaching.summary && (
-        <div
-          className="rounded-xl px-4 py-3"
-          style={{ background: `${TLK.accent}0d`, border: `1px solid ${TLK.accent}33` }}
-        >
-          <p
-            style={{
-              fontFamily: TLK_FONT.serif,
-              fontStyle: "italic",
-              fontSize: 16,
-              color: TLK.ink,
-              lineHeight: 1.5,
-            }}
-          >
-            {result.coaching.summary}
-          </p>
-        </div>
-      )}
-
-      {/* 진행자 메모 (수동 입력이 있을 때만) */}
-      {coachNote && (
-        <div
-          className="rounded-xl px-4 py-3"
-          style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
-        >
-          <p
-            style={{
-              fontFamily: TLK_FONT.sans,
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: 1.5,
-              color: TLK.inkFaint,
-              textTransform: "uppercase",
-              marginBottom: 4,
-            }}
-          >
-            진행자 메모
-          </p>
-          <p
-            style={{
-              fontFamily: TLK_FONT.serif,
-              fontSize: 15,
-              color: TLK.ink,
-              lineHeight: 1.55,
-              whiteSpace: "pre-wrap",
-            }}
-          >
-            {coachNote}
-          </p>
-        </div>
-      )}
-
-      {/* 토론 거리 */}
-      <div>
-        <p
-          style={{
-            fontFamily: TLK_FONT.sans,
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: 1.5,
-            color: TLK.inkFaint,
-            textTransform: "uppercase",
-            marginBottom: 8,
-          }}
-        >
-          {result ? "AI 토론 거리" : "토론 거리 (기본)"}
-        </p>
-        <ul className="space-y-2">
-          {hooks.map((p, i) => (
-            <li
-              key={i}
-              className="flex items-start gap-3 rounded-xl px-4 py-3"
-              style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
-            >
-              <span
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
-                style={{
-                  background: TLK.accent2,
-                  color: "#fff",
-                  fontFamily: TLK_FONT.sans,
-                  fontSize: 11,
-                  fontWeight: 800,
-                }}
-              >
-                {i + 1}
-              </span>
-              <span
-                style={{
-                  fontFamily: TLK_FONT.ko,
-                  fontSize: 14,
-                  color: TLK.ink,
-                  lineHeight: 1.55,
-                }}
-              >
-                {p}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Phase 3 · 회고 ─────────────────── */
-
-function RecapPhase({
-  combo,
-  coachNotes,
+/* ─── 세션 멤버별 답변·코칭 뷰 (정리 phase + 히스토리 상세 공유) ─── */
+function SessionAnswersView({
+  sessionId,
   members,
-  absentIds,
-  memberRecaps,
-  onChangeRecap,
 }: {
-  combo: TalklishComboQuestion[];
-  coachNotes: Record<string, string>;
+  sessionId: string;
   members: PanelMember[];
-  absentIds: Set<string>;
-  memberRecaps: Record<string, string>;
-  onChangeRecap: (mid: string, v: string) => void;
 }) {
-  const present = members.filter((m) => !absentIds.has(m.id));
+  const { data: answers = [], isLoading } = useQuery({
+    queryKey: ["talklish-session-answers", sessionId],
+    queryFn: () => getTalklishSessionAnswers(sessionId),
+    enabled: !!sessionId,
+    staleTime: 30 * 1000,
+  });
+
+  const byMember = useMemo(() => {
+    const m = new Map<string, TalklishAnswer[]>();
+    for (const a of answers) {
+      const arr = m.get(a.panel_member_id) ?? [];
+      arr.push(a);
+      m.set(a.panel_member_id, arr);
+    }
+    return m;
+  }, [answers]);
+
+  const answeredMembers = useMemo(
+    () => members.filter((m) => byMember.has(m.id)),
+    [members, byMember],
+  );
+
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const activeMemberId = activeId && byMember.has(activeId) ? activeId : answeredMembers[0]?.id ?? null;
+  const activeAnswers = activeMemberId ? byMember.get(activeMemberId) ?? [] : [];
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center gap-2" style={{ color: TLK.inkDim }}>
+        <Loader2 size={18} className="animate-spin" />
+        <span style={{ fontFamily: TLK_FONT.ko, fontSize: 14 }}>불러오는 중…</span>
+      </div>
+    );
+  }
+  if (answeredMembers.length === 0) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p style={{ fontFamily: TLK_FONT.ko, fontSize: 14, color: TLK.inkFaint }}>
+          아직 저장된 답변이 없어요
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
+      {/* 멤버 탭 */}
+      <div className="flex flex-wrap gap-2">
+        {answeredMembers.map((m) => {
+          const active = m.id === activeMemberId;
+          const cnt = byMember.get(m.id)?.length ?? 0;
+          return (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => setActiveId(m.id)}
+              className="flex items-center gap-1.5 rounded-full px-3.5 py-1.5"
+              style={{
+                background: active ? m.color : TLK.bg2,
+                border: `1px solid ${active ? m.color : TLK.rule}`,
+                color: active ? "#fff" : TLK.ink,
+                cursor: "pointer",
+                fontFamily: TLK_FONT.sans,
+                fontSize: 13,
+                fontWeight: 700,
+              }}
+            >
+              <span>{m.emoji}</span>
+              <span>{m.name}</span>
+              <span style={{ opacity: 0.7, fontSize: 11 }}>{cnt}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 선택 멤버 답변들 */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="flex flex-col gap-4">
+          {activeAnswers.map((a) => (
+            <div key={a.id} className="rounded-2xl px-5 py-4" style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}>
+              <div className="mb-1 flex items-center gap-2">
+                <span style={{ fontFamily: TLK_FONT.mono, fontSize: 11, fontWeight: 700, color: TLK.accent }}>
+                  Q{(a.question_idx ?? 0) + 1}
+                </span>
+                {a.question_type && (
+                  <span className="rounded-full px-2 py-0.5" style={{ background: TLK.bg2, color: TLK.inkDim, fontFamily: TLK_FONT.sans, fontSize: 10.5, fontWeight: 700 }}>
+                    {a.question_type}
+                  </span>
+                )}
+              </div>
+              {a.question_english && (
+                <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 15, color: TLK.ink, lineHeight: 1.4 }}>
+                  {a.question_english}
+                </p>
+              )}
+
+              {a.audio_url && (
+                <div className="mt-2.5">
+                  <AnswerAudio path={a.audio_url} />
+                </div>
+              )}
+
+              {a.transcript && (
+                <div className="mt-3">
+                  <p style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: TLK.inkFaint, textTransform: "uppercase", marginBottom: 4 }}>
+                    발화 내용
+                  </p>
+                  <p style={{ fontFamily: TLK_FONT.serif, fontSize: 14, color: TLK.inkDim, lineHeight: 1.5 }}>
+                    {a.transcript}
+                  </p>
+                </div>
+              )}
+
+              {a.coaching && (
+                <div className="mt-3 rounded-xl px-4 py-3" style={{ background: TLK.bg2 }}>
+                  {a.coaching.summary && (
+                    <p style={{ fontFamily: TLK_FONT.ko, fontSize: 13.5, color: TLK.ink, fontWeight: 600 }}>
+                      {a.coaching.summary}
+                    </p>
+                  )}
+                  {a.coaching.good_points?.length > 0 && (
+                    <div className="mt-2">
+                      <p style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1, color: TLK.accent2, textTransform: "uppercase", marginBottom: 3 }}>
+                        좋았던 점
+                      </p>
+                      {a.coaching.good_points.map((g, n) => (
+                        <p key={n} style={{ fontFamily: TLK_FONT.ko, fontSize: 12.5, color: TLK.inkDim, lineHeight: 1.45 }}>
+                          · {g.note}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                  {a.coaching.improve_points?.length > 0 && (
+                    <div className="mt-2">
+                      <p style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1, color: TLK.accent, textTransform: "uppercase", marginBottom: 3 }}>
+                        개선할 점
+                      </p>
+                      {a.coaching.improve_points.map((g, n) => (
+                        <p key={n} style={{ fontFamily: TLK_FONT.ko, fontSize: 12.5, color: TLK.inkDim, lineHeight: 1.45 }}>
+                          · {g.suggestion}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Phase 3 · 회고 (오늘의 정리 — 멤버별 답변·코칭) ─── */
+function RecapPhase({
+  sessionId,
+  members,
+}: {
+  sessionId: string | null;
+  members: PanelMember[];
+}) {
   return (
     <div className="flex h-full flex-col gap-5">
       <div>
-        <p
-          style={{
-            fontFamily: TLK_FONT.sans,
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: 2.5,
-            color: TLK.inkFaint,
-            textTransform: "uppercase",
-          }}
-        >
+        <p style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 2.5, color: TLK.inkFaint, textTransform: "uppercase" }}>
           Recap
         </p>
-        <h2
-          style={{
-            fontFamily: TLK_FONT.serif,
-            fontStyle: "italic",
-            fontSize: 36,
-            fontWeight: 500,
-            color: TLK.ink,
-            lineHeight: 1.2,
-            marginTop: 4,
-            letterSpacing: -0.5,
-          }}
-        >
-          4문항 한눈에 짚어보기
+        <h2 style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 36, fontWeight: 500, color: TLK.ink, lineHeight: 1.2, marginTop: 4, letterSpacing: -0.5 }}>
+          오늘의 정리 · 멤버별 발화
         </h2>
       </div>
-
-      {/* 4문항 노트 그리드 */}
-      <div className="grid gap-3 md:grid-cols-2">
-        {combo.map((q, i) => (
-          <div
-            key={q.id}
-            className="rounded-2xl px-5 py-4"
-            style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
-          >
-            <div className="mb-2 flex items-center gap-2">
-              <span
-                className="flex h-7 w-7 items-center justify-center rounded-full"
-                style={{
-                  background: TLK.accent,
-                  color: "#fff",
-                  fontFamily: TLK_FONT.sans,
-                  fontSize: 11,
-                  fontWeight: 800,
-                }}
-              >
-                {i + 1}
-              </span>
-              <p
-                className="flex-1 truncate"
-                style={{
-                  fontFamily: TLK_FONT.serif,
-                  fontStyle: "italic",
-                  fontSize: 14,
-                  color: TLK.ink,
-                }}
-              >
-                {q.question_english}
-              </p>
-            </div>
-            <p
-              style={{
-                fontFamily: TLK_FONT.ko,
-                fontSize: 12.5,
-                color: coachNotes[q.id] ? TLK.inkDim : TLK.inkFaint,
-                lineHeight: 1.55,
-                whiteSpace: "pre-wrap",
-                fontStyle: coachNotes[q.id] ? "normal" : "italic",
-              }}
-            >
-              {coachNotes[q.id] || "(코치 노트 없음)"}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      {/* 멤버별 한 줄 회고 */}
-      <div>
-        <p
-          style={{
-            fontFamily: TLK_FONT.sans,
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: 2,
-            color: TLK.inkFaint,
-            textTransform: "uppercase",
-            marginBottom: 8,
-          }}
-        >
-          멤버별 한 줄 회고
-        </p>
-        <div className="grid gap-2 md:grid-cols-2">
-          {present.map((m) => (
-            <div
-              key={m.id}
-              className="flex items-center gap-3 rounded-xl px-4 py-3"
-              style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
-            >
-              <span
-                className="flex h-9 w-9 items-center justify-center rounded-full text-lg"
-                style={{ background: `${m.color}22`, border: `2px solid ${m.color}` }}
-              >
-                {m.emoji}
-              </span>
-              <input
-                value={memberRecaps[m.id] ?? ""}
-                onChange={(e) => onChangeRecap(m.id, e.target.value)}
-                placeholder={`${m.name}이(가) 가져갈 한 줄`}
-                aria-label={`${m.name} 회고`}
-                className="flex-1 rounded-lg px-3 py-2 text-sm"
-                style={{
-                  background: TLK.paperHi,
-                  border: `1px solid ${TLK.rule}`,
-                  color: TLK.ink,
-                  fontFamily: TLK_FONT.ko,
-                  outline: "none",
-                }}
-              />
-            </div>
-          ))}
+      {sessionId ? (
+        <SessionAnswersView sessionId={sessionId} members={members} />
+      ) : (
+        <div className="flex flex-1 items-center justify-center">
+          <p style={{ fontFamily: TLK_FONT.ko, fontSize: 14, color: TLK.inkFaint }}>세션 정보가 없어요</p>
         </div>
-      </div>
+      )}
     </div>
   );
 }

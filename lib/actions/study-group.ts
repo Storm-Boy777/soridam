@@ -442,3 +442,275 @@ export async function fetchTalklishPodcastsForEdit(): Promise<PodcastRow[]> {
   if (error) return [];
   return data as PodcastRow[];
 }
+
+/* ═══════════════════════════════════════════════
+   098: 수요일 OPIc — 세션 · 답변 · 가이드 캐시
+   ═══════════════════════════════════════════════ */
+
+/** 하루 1세션 */
+export interface TalklishSession {
+  id: string;
+  session_date: string; // YYYY-MM-DD (KST)
+  started_at: string;
+  ended_at: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+/** talklish-coach EF 코칭 결과 (opic-stage CoachingResult와 동일 구조) */
+export interface TalklishCoaching {
+  summary: string;
+  good_points: { quote: string; note: string }[];
+  improve_points: { quote: string; issue: string; suggestion: string }[];
+  discussion_hooks: string[];
+  next_speaker_tip: string;
+}
+
+/** 발표자 답변 + 코칭 (talklish_answers 행) */
+export interface TalklishAnswer {
+  id: number;
+  session_id: string;
+  panel_member_id: string;
+  user_id: string | null;
+  combo_sig: string;
+  category: string | null;
+  topic: string | null;
+  question_id: string;
+  question_idx: number | null;
+  question_type: string | null;
+  question_english: string | null;
+  question_korean: string | null;
+  audio_url: string | null;
+  transcript: string | null;
+  coaching: TalklishCoaching | null;
+  created_at: string;
+}
+
+/** 세션 요약 (히스토리 목록용) */
+export interface TalklishSessionSummary extends TalklishSession {
+  answer_count: number;
+  combo_count: number;
+  topics: string[];
+}
+
+/** 콤보 가이드 (talklish-guide EF 출력) */
+export interface TalklishGuideQuestion {
+  question_idx: number;
+  type_label: string;
+  answer_flow: string[];
+  vocab: { en: string; ko: string }[];
+  example: string;
+}
+export interface TalklishComboGuide {
+  intro: string;
+  questions: TalklishGuideQuestion[];
+}
+
+/** KST 기준 오늘 날짜 (YYYY-MM-DD) */
+function todayKstDate(): string {
+  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  return kst.toISOString().slice(0, 10);
+}
+
+/** 오늘 세션 get-or-create (하루 1세션, session_date UNIQUE) */
+export async function getOrCreateTodaySession(): Promise<{
+  success: boolean;
+  error?: string;
+  data?: TalklishSession;
+}> {
+  const gate = await assertPanelMemberOrAdmin();
+  if (!gate.ok) return { success: false, error: gate.error };
+  const supabase = await createServerSupabaseClient();
+  const dateStr = todayKstDate();
+
+  const { data: existing } = await supabase
+    .from(T.talklish_sessions)
+    .select("*")
+    .eq("session_date", dateStr)
+    .maybeSingle();
+  if (existing) return { success: true, data: existing as TalklishSession };
+
+  const { data, error } = await supabase
+    .from(T.talklish_sessions)
+    .insert({ session_date: dateStr, created_by: gate.userId })
+    .select()
+    .single();
+  if (error) {
+    // 동시 생성 레이스 → 재조회
+    const { data: retry } = await supabase
+      .from(T.talklish_sessions)
+      .select("*")
+      .eq("session_date", dateStr)
+      .maybeSingle();
+    if (retry) return { success: true, data: retry as TalklishSession };
+    return { success: false, error: error.message };
+  }
+  return { success: true, data: data as TalklishSession };
+}
+
+/** 발표자 답변 + 코칭 저장 */
+export async function saveTalklishAnswer(input: {
+  session_id: string;
+  panel_member_id: string;
+  user_id?: string | null;
+  combo_sig: string;
+  category?: string | null;
+  topic?: string | null;
+  question_id: string;
+  question_idx?: number | null;
+  question_type?: string | null;
+  question_english?: string | null;
+  question_korean?: string | null;
+  audio_url?: string | null;
+  transcript?: string | null;
+  coaching?: TalklishCoaching | null;
+}): Promise<{ success: boolean; error?: string; data?: TalklishAnswer }> {
+  const gate = await assertPanelMemberOrAdmin();
+  if (!gate.ok) return { success: false, error: gate.error };
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from(T.talklish_answers)
+    .insert({
+      session_id: input.session_id,
+      panel_member_id: input.panel_member_id,
+      user_id: input.user_id ?? null,
+      combo_sig: input.combo_sig,
+      category: input.category ?? null,
+      topic: input.topic ?? null,
+      question_id: input.question_id,
+      question_idx: input.question_idx ?? null,
+      question_type: input.question_type ?? null,
+      question_english: input.question_english ?? null,
+      question_korean: input.question_korean ?? null,
+      audio_url: input.audio_url ?? null,
+      transcript: input.transcript ?? null,
+      coaching: input.coaching ?? null,
+    })
+    .select()
+    .single();
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: data as TalklishAnswer };
+}
+
+/** 세션 답변 전체 (정리/히스토리 상세 — 멤버별 탭 구성) */
+export async function getTalklishSessionAnswers(
+  sessionId: string
+): Promise<TalklishAnswer[]> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from(T.talklish_answers)
+    .select("*")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: true });
+  if (error) return [];
+  return (data ?? []) as TalklishAnswer[];
+}
+
+/** 오늘 세션 조회 (없으면 null — 생성하지 않음) */
+export async function getTodayTalklishSession(): Promise<TalklishSession | null> {
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from(T.talklish_sessions)
+    .select("*")
+    .eq("session_date", todayKstDate())
+    .maybeSingle();
+  return (data as TalklishSession) ?? null;
+}
+
+/** 히스토리 — 세션 목록 + 요약 (날짜 내림차순) */
+export async function listTalklishSessions(): Promise<TalklishSessionSummary[]> {
+  const supabase = await createServerSupabaseClient();
+  const { data: sessions } = await supabase
+    .from(T.talklish_sessions)
+    .select("*")
+    .order("session_date", { ascending: false });
+  if (!sessions || sessions.length === 0) return [];
+
+  const { data: answers } = await supabase
+    .from(T.talklish_answers)
+    .select("session_id, combo_sig, topic");
+
+  const agg = new Map<string, { combos: Set<string>; topics: Set<string>; count: number }>();
+  for (const a of (answers ?? []) as {
+    session_id: string;
+    combo_sig: string;
+    topic: string | null;
+  }[]) {
+    const e =
+      agg.get(a.session_id) ?? { combos: new Set<string>(), topics: new Set<string>(), count: 0 };
+    e.combos.add(a.combo_sig);
+    if (a.topic) e.topics.add(a.topic);
+    e.count += 1;
+    agg.set(a.session_id, e);
+  }
+
+  return (sessions as TalklishSession[]).map((s) => {
+    const e = agg.get(s.id);
+    return {
+      ...s,
+      answer_count: e?.count ?? 0,
+      combo_count: e?.combos.size ?? 0,
+      topics: e ? Array.from(e.topics) : [],
+    };
+  });
+}
+
+/** 세션 종료 표시 (ended_at 기록) */
+export async function endTalklishSession(
+  sessionId: string
+): Promise<{ success: boolean; error?: string }> {
+  const gate = await assertPanelMemberOrAdmin();
+  if (!gate.ok) return { success: false, error: gate.error };
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase
+    .from(T.talklish_sessions)
+    .update({ ended_at: new Date().toISOString() })
+    .eq("id", sessionId);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+/** 콤보 가이드 — 캐시 조회만 */
+export async function getTalklishComboGuide(
+  sig: string
+): Promise<TalklishComboGuide | null> {
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from(T.talklish_combo_guide_cache)
+    .select("guide")
+    .eq("sig", sig)
+    .maybeSingle();
+  return (data?.guide as TalklishComboGuide) ?? null;
+}
+
+/** 콤보 가이드 — 캐시 우선, 없으면 talklish-guide EF로 생성 후 캐시 */
+export async function getOrGenerateTalklishGuide(input: {
+  sig: string;
+  question_ids: string[];
+  topic: string;
+  category: string;
+}): Promise<{ success: boolean; error?: string; data?: TalklishComboGuide }> {
+  const gate = await assertPanelMemberOrAdmin();
+  if (!gate.ok) return { success: false, error: gate.error };
+
+  // 1. 캐시 우선
+  const cached = await getTalklishComboGuide(input.sig);
+  if (cached) return { success: true, data: cached };
+
+  // 2. 미스 → talklish-guide EF 생성 (EF가 캐시 UPSERT)
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase.functions.invoke("talklish-guide", {
+    body: {
+      sig: input.sig,
+      question_ids: input.question_ids,
+      topic: input.topic,
+      category: input.category,
+      triggered_by: gate.userId,
+    },
+  });
+  if (error) return { success: false, error: error.message };
+  if (!data?.ok || !data?.data) {
+    return { success: false, error: data?.error || "가이드 생성에 실패했습니다" };
+  }
+  return { success: true, data: data.data as TalklishComboGuide };
+}

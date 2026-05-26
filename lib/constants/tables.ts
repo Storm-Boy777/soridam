@@ -52,6 +52,9 @@ export const T = {
   talklish_completed_combos: "talklish_completed_combos",
   talklish_completed_podcasts: "talklish_completed_podcasts",
   talklish_youtube_channels: "talklish_youtube_channels",
+  talklish_sessions: "talklish_sessions",
+  talklish_answers: "talklish_answers",
+  talklish_combo_guide_cache: "talklish_combo_guide_cache",
   // 오픽 스터디 모듈 (047_opic_study.sql)
   study_groups: "study_groups",
   study_group_members: "study_group_members",
