@@ -462,7 +462,7 @@ export interface TalklishCoaching {
   summary: string;
   good_points: { quote: string; note: string }[];
   improve_points: { quote: string; issue: string; suggestion: string }[];
-  discussion_hooks: string[];
+  upgrade_points: { tip: string; example?: string }[];
   next_speaker_tip: string;
 }
 

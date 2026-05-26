@@ -16,11 +16,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ChevronLeft, ChevronRight, Play, Pause, ArrowRight,
-  Sparkles, Users, CheckCircle, Undo2, NotebookPen, Mic, MicOff, MessagesSquare,
-  Loader2, AlertCircle, Square,
+  Sparkles, Users, CheckCircle, Undo2, NotebookPen, Mic, MicOff,
+  Loader2, AlertCircle, Square, Volume2,
   Coffee, Clapperboard, Lightbulb,
 } from "lucide-react";
 import { createBrowserClient } from "@supabase/ssr";
+import { useQuestionPlayer } from "@/lib/hooks/use-question-player";
 import { getTopicsByCategory } from "@/lib/queries/master-questions";
 import {
   fetchPanelMembers,
@@ -49,7 +50,7 @@ interface CoachingResult {
     summary: string;
     good_points: Array<{ quote: string; note: string }>;
     improve_points: Array<{ quote: string; issue: string; suggestion: string }>;
-    discussion_hooks: string[];
+    upgrade_points: Array<{ tip: string; example?: string }>;
     next_speaker_tip: string;
   };
   cost_usd?: number;
@@ -131,7 +132,7 @@ export function OpicStage({ focusMode, absentIds, onToggleAttendance }: Props) {
 
   // 공통 발화자 룰렛 — 한 라운드 = 출석자 전원 한 번씩 (월·수·금 동일 동작)
   // hasSpun=false 일 때 speaker=undefined → 초기엔 아무도 안 뽑힌 상태
-  const { activeSpeaker, hasSpun, speaker, spinning, spin } = useSpeakerRoulette({
+  const { activeSpeaker, hasSpun, speaker, spinning, spin, resetRound } = useSpeakerRoulette({
     members,
     presentMembers,
   });
@@ -281,7 +282,8 @@ export function OpicStage({ focusMode, absentIds, onToggleAttendance }: Props) {
                 onSpin={spin}
                 coachResults={coachResults}
                 onSaveCoachResult={(qid, result, audioPath) => {
-                  setCoachResults((p) => ({ ...p, [qid]: result }));
+                  // 질문 × 멤버 키로 저장 (한 질문을 출석 전원이 돌아가며 답변)
+                  if (speaker) setCoachResults((p) => ({ ...p, [`${qid}__${speaker.id}`]: result }));
                   // DB 저장 — 발표자·세션이 있을 때 (룰렛 발표자 기준)
                   if (sessionId && speaker) {
                     const q = combo.find((x) => x.id === qid);
@@ -306,6 +308,7 @@ export function OpicStage({ focusMode, absentIds, onToggleAttendance }: Props) {
                 category={category}
                 topic={topic}
                 onGoRecap={() => setPhase(3)}
+                onResetRound={resetRound}
               />
             )}
             {phase === 3 && (
@@ -1201,6 +1204,7 @@ function RunPhase({
   category,
   topic,
   onGoRecap,
+  onResetRound,
   sig,
 }: {
   combo: TalklishComboQuestion[];
@@ -1219,10 +1223,18 @@ function RunPhase({
   category: Category;
   topic: string | null;
   onGoRecap: () => void;
+  onResetRound: () => void;
   sig: string | null;
 }) {
   const q = combo[qIdx];
   const isLast = qIdx === combo.length - 1;
+
+  // 질문 × 멤버 매트릭스 — 현재 질문에 출석 전원이 답변했는지
+  const presentMembers = members.filter((m) => !absentIds.has(m.id));
+  const answeredCount = q
+    ? presentMembers.filter((m) => coachResults[`${q.id}__${m.id}`]).length
+    : 0;
+  const allAnswered = presentMembers.length > 0 && answeredCount >= presentMembers.length;
 
   // 현재 질문 가이드 — 가이드 phase에서 만든 캐시 재사용 (queryKey 공유)
   const { data: comboGuide } = useQuery({
@@ -1254,7 +1266,38 @@ function RunPhase({
   }
 
   return (
-    <div className="grid h-full gap-6" style={{ gridTemplateColumns: "minmax(320px, 1fr) 1.6fr minmax(320px, 1fr)" }}>
+    <div className="flex h-full flex-col gap-4">
+      {/* 콤보 진행 표시 (3단 위 · 가운데) */}
+      <div className="flex shrink-0 items-center justify-center gap-3">
+        <span style={{ fontFamily: TLK_FONT.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: TLK.inkFaint, textTransform: "uppercase" }}>
+          Q {qIdx + 1} / {combo.length}
+        </span>
+        <div className="flex gap-1.5">
+          {combo.map((_, n) => {
+            const active = n === qIdx;
+            const past = n < qIdx;
+            return (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setQIdx(n)}
+                aria-label={`질문 ${n + 1}로 이동`}
+                style={{
+                  width: active ? 24 : 8,
+                  height: 8,
+                  borderRadius: 999,
+                  background: active ? TLK.accent : past ? TLK.inkFaint : TLK.rule,
+                  border: 0,
+                  cursor: "pointer",
+                  transition: "all .25s",
+                }}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="grid min-h-0 flex-1 gap-6" style={{ gridTemplateColumns: "minmax(320px, 1fr) 1.6fr minmax(320px, 1fr)" }}>
       {/* 좌 — 현재 질문 답변 가이드 */}
       <div
         className="flex min-h-0 flex-col gap-3 rounded-2xl px-4 py-4"
@@ -1328,45 +1371,6 @@ function RunPhase({
 
       {/* 가운데 — 메인 콘텐츠 */}
       <div className="flex min-h-0 flex-col gap-4">
-        {/* 콤보 진행 표시 */}
-        <div className="flex items-center gap-3">
-          <span
-            style={{
-              fontFamily: TLK_FONT.sans,
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: 1.5,
-              color: TLK.inkFaint,
-              textTransform: "uppercase",
-            }}
-          >
-            Q {qIdx + 1} / {combo.length}
-          </span>
-          <div className="flex gap-1.5">
-            {combo.map((_, n) => {
-              const active = n === qIdx;
-              const past = n < qIdx;
-              return (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setQIdx(n)}
-                  aria-label={`질문 ${n + 1}로 이동`}
-                  style={{
-                    width: active ? 24 : 8,
-                    height: 8,
-                    borderRadius: 999,
-                    background: active ? TLK.accent : past ? TLK.inkFaint : TLK.rule,
-                    border: 0,
-                    cursor: "pointer",
-                    transition: "all .25s",
-                  }}
-                />
-              );
-            })}
-          </div>
-        </div>
-
         {/* 질문 카드 */}
         <div
           className="rounded-2xl px-7 py-6"
@@ -1413,13 +1417,12 @@ function RunPhase({
               {q.question_korean}
             </p>
           )}
-          {q.audio_url && <AudioRow url={q.audio_url} />}
         </div>
 
         {/* 발화 흐름 — 발표자 선정 → 녹음 → 자동 코칭 → 코치노트 → 다음 (탭 없는 단일 흐름) */}
         <div className="min-h-0 flex-1 overflow-y-auto">
           <AnswerPanel
-            key={q.id}
+            key={`${q.id}-${speaker?.id ?? "none"}`}
             speaker={speaker}
             questionId={q.id}
             questionEnglish={q.question_english ?? ""}
@@ -1427,13 +1430,29 @@ function RunPhase({
             questionType={q.question_type ?? undefined}
             category={category}
             topic={topic ?? undefined}
-            initialResult={coachResults[q.id]}
+            questionAudioUrl={q.audio_url ?? undefined}
+            initialResult={speaker ? coachResults[`${q.id}__${speaker.id}`] : undefined}
             onCoachingDone={(result, audioPath) => onSaveCoachResult(q.id, result, audioPath)}
             onNext={() => {
-              if (isLast) onGoRecap();
-              else setQIdx(qIdx + 1);
+              if (allAnswered) {
+                // 출석 전원 답변 완료 → 다음 질문 (마지막이면 회고)
+                if (isLast) onGoRecap();
+                else {
+                  onResetRound();
+                  setQIdx(qIdx + 1);
+                }
+              } else {
+                // 아직 남은 멤버 → 룰렛으로 다음 발표자 (같은 질문)
+                onSpin();
+              }
             }}
-            nextLabel={isLast ? "정리 화면으로" : `다음 질문 (Q${qIdx + 2})`}
+            nextLabel={
+              allAnswered
+                ? isLast
+                  ? "정리 화면으로"
+                  : `다음 질문 (Q${qIdx + 2})`
+                : "다음 발표자 뽑기"
+            }
           />
         </div>
       </div>
@@ -1448,38 +1467,7 @@ function RunPhase({
         onSpin={onSpin}
         onToggleAttendance={onToggleAttendance}
       />
-    </div>
-  );
-}
-
-function AudioRow({ url }: { url: string }) {
-  const [playing, setPlaying] = useState(false);
-  return (
-    <div className="mt-4 flex items-center gap-3">
-      <audio
-        src={url}
-        onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
-        onEnded={() => setPlaying(false)}
-        id="opic-q-audio"
-      />
-      <button
-        type="button"
-        onClick={() => {
-          const el = document.getElementById("opic-q-audio") as HTMLAudioElement | null;
-          if (!el) return;
-          if (el.paused) el.play();
-          else el.pause();
-        }}
-        aria-label={playing ? "일시정지" : "듣기"}
-        className="flex h-10 w-10 items-center justify-center rounded-full"
-        style={{ background: TLK.accent, color: "#fff", border: 0, cursor: "pointer" }}
-      >
-        {playing ? <Pause size={16} /> : <Play size={16} />}
-      </button>
-      <span style={{ fontFamily: TLK_FONT.sans, fontSize: 12, color: TLK.inkDim }}>
-        질문 음성 재생
-      </span>
+      </div>
     </div>
   );
 }
@@ -1492,6 +1480,7 @@ function AnswerPanel({
   questionType,
   category,
   topic,
+  questionAudioUrl,
   initialResult,
   onCoachingDone,
   onNext,
@@ -1504,6 +1493,7 @@ function AnswerPanel({
   questionType?: string;
   category: Category;
   topic?: string;
+  questionAudioUrl?: string;
   initialResult?: CoachingResult;
   onCoachingDone: (r: CoachingResult, audioPath: string) => void;
   onNext: () => void;
@@ -1514,6 +1504,17 @@ function AnswerPanel({
   const [coachState, setCoachState] = useState<CoachState>(
     initialResult ? { status: "done", result: initialResult } : { status: "idle" }
   );
+
+  // 질문 재생 → 끝나면 자동 녹음 시작 (모의고사 패턴 · 5초 다시듣기 윈도우)
+  const autoStartRecording = useCallback(() => {
+    if (recorder.state === "idle" && coachState.status === "idle") recorder.startRecording();
+  }, [recorder, coachState.status]);
+  const questionPlayer = useQuestionPlayer({ replayWindowSeconds: 5, onPlaybackEnded: autoStartRecording });
+  const handleReplay = useCallback(() => {
+    if (!questionPlayer.canReplay || questionPlayer.hasReplayed) return;
+    if (recorder.state === "recording") recorder.reset(); // 다시 들으면 녹음 리셋 → 재생 후 자동 재시작
+    questionPlayer.replay();
+  }, [questionPlayer, recorder]);
   const supabaseRef = useRef<ReturnType<typeof createBrowserClient> | null>(null);
   const lastProcessedBlob = useRef<Blob | null>(null);
 
@@ -1682,15 +1683,22 @@ function AnswerPanel({
                 <p style={{ fontFamily: TLK_FONT.ko, fontSize: 13, color: TLK.ink, lineHeight: 1.5 }}>{c.next_speaker_tip}</p>
               </div>
             )}
-            {c.discussion_hooks?.length > 0 && (
+            {c.upgrade_points?.length > 0 && (
               <div>
                 <div className="mb-1.5 flex items-center gap-1.5">
-                  <MessagesSquare size={13} style={{ color: TLK.accent2 }} />
-                  <span style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color: TLK.accent2, textTransform: "uppercase" }}>토론 거리</span>
+                  <Sparkles size={13} style={{ color: TLK.accent2 }} />
+                  <span style={{ fontFamily: TLK_FONT.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color: TLK.accent2, textTransform: "uppercase" }}>한 단계 업그레이드</span>
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  {c.discussion_hooks.map((h, i) => (
-                    <p key={i} style={{ fontFamily: TLK_FONT.ko, fontSize: 13.5, color: TLK.ink, lineHeight: 1.5 }}>· {h}</p>
+                <div className="flex flex-col gap-2">
+                  {c.upgrade_points.map((u, i) => (
+                    <div key={i}>
+                      <p style={{ fontFamily: TLK_FONT.ko, fontSize: 13.5, color: TLK.ink, lineHeight: 1.5 }}>· {u.tip}</p>
+                      {u.example && (
+                        <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 13, color: TLK.accent2, lineHeight: 1.45, marginLeft: 12, marginTop: 2 }}>
+                          “{u.example}”
+                        </p>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -1741,21 +1749,32 @@ function AnswerPanel({
       {/* 녹음 컨트롤 */}
       {!isFailed && (
         <div className="flex flex-col items-center gap-3">
-          {!isRecording && !isProcessing && (
+          {/* 질문 듣고 시작 — 재생 끝나면 자동 녹음 (질문 오디오 있을 때) */}
+          {!isRecording && !isProcessing && !questionPlayer.isPlaying && !questionPlayer.hasPlayed && questionAudioUrl && (
+            <button
+              type="button"
+              onClick={() => questionPlayer.play(questionAudioUrl)}
+              className="flex items-center gap-2 rounded-full px-7 py-4 shadow-lg transition-all hover:-translate-y-0.5"
+              style={{ background: TLK.accent, color: "#fff", border: 0, fontFamily: TLK_FONT.sans, fontSize: 14, fontWeight: 700, letterSpacing: 1.5, cursor: "pointer" }}
+            >
+              <Volume2 size={18} />
+              질문 듣고 답변 시작
+            </button>
+          )}
+          {/* 질문 재생 중 */}
+          {questionPlayer.isPlaying && (
+            <div className="flex items-center gap-2" style={{ color: TLK.accent }}>
+              <Loader2 size={20} className="animate-spin" />
+              <span style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 18 }}>질문 재생 중…</span>
+            </div>
+          )}
+          {/* 질문 오디오 없음 → 수동 녹음 시작 */}
+          {!isRecording && !isProcessing && !questionAudioUrl && (
             <button
               type="button"
               onClick={() => recorder.startRecording()}
               className="flex items-center gap-2 rounded-full px-7 py-4 shadow-lg transition-all hover:-translate-y-0.5"
-              style={{
-                background: TLK.accent,
-                color: "#fff",
-                border: 0,
-                fontFamily: TLK_FONT.sans,
-                fontSize: 14,
-                fontWeight: 700,
-                letterSpacing: 1.5,
-                cursor: "pointer",
-              }}
+              style={{ background: TLK.accent, color: "#fff", border: 0, fontFamily: TLK_FONT.sans, fontSize: 14, fontWeight: 700, letterSpacing: 1.5, cursor: "pointer" }}
             >
               <Mic size={18} />
               녹음 시작
@@ -1764,17 +1783,23 @@ function AnswerPanel({
 
           {isRecording && (
             <div className="flex flex-col items-center gap-3">
-              {/* 볼륨 인디케이터 */}
+              {/* 마이크 아이콘 (고정 크기 — 흔들림 없음) */}
               <div
                 className="flex h-24 w-24 items-center justify-center rounded-full"
-                style={{
-                  background: `${TLK.accent}22`,
-                  border: `3px solid ${TLK.accent}`,
-                  transform: `scale(${1 + recorder.volume * 0.4})`,
-                  transition: "transform .1s",
-                }}
+                style={{ background: `${TLK.accent}22`, border: `3px solid ${TLK.accent}` }}
               >
                 <Mic size={36} style={{ color: TLK.accent }} />
+              </div>
+              {/* 볼륨 바 (크기 고정 컨테이너 안에서 차오름) */}
+              <div className="h-2 w-44 overflow-hidden rounded-full" style={{ background: TLK.bg2 }}>
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${Math.min(100, recorder.volume * 100)}%`,
+                    background: TLK.accent,
+                    transition: "width .08s linear",
+                  }}
+                />
               </div>
               <p
                 style={{
@@ -1787,11 +1812,10 @@ function AnswerPanel({
               >
                 {formatDuration(recorder.duration)} / 3:00
               </p>
-              {recorder.warningMessage && (
-                <p style={{ fontFamily: TLK_FONT.sans, fontSize: 11, color: TLK.accent2 }}>
-                  {recorder.warningMessage}
-                </p>
-              )}
+              {/* 경고 문구 — 자리 고정(빈 줄 유지)으로 레이아웃 시프트 방지 */}
+              <p style={{ fontFamily: TLK_FONT.sans, fontSize: 11, color: TLK.accent2, minHeight: 15, lineHeight: "15px" }}>
+                {recorder.warningMessage ?? " "}
+              </p>
               <button
                 type="button"
                 onClick={() => recorder.stopRecording()}
@@ -1810,6 +1834,17 @@ function AnswerPanel({
                 <Square size={14} />
                 녹음 종료
               </button>
+              {questionPlayer.canReplay && !questionPlayer.hasReplayed && (
+                <button
+                  type="button"
+                  onClick={handleReplay}
+                  className="flex animate-pulse items-center gap-1.5 rounded-full px-4 py-1.5"
+                  style={{ background: TLK.bg2, border: `1px solid ${TLK.accent}`, color: TLK.accent, fontFamily: TLK_FONT.sans, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                >
+                  <Undo2 size={13} />
+                  다시 듣기 ({questionPlayer.replayCountdown}초)
+                </button>
+              )}
             </div>
           )}
 
@@ -1827,7 +1862,7 @@ function AnswerPanel({
                 {coachState.status === "uploading" ? "음성 업로드 중…" : "AI 코칭 생성 중… (10~30초)"}
               </p>
               <p style={{ fontFamily: TLK_FONT.sans, fontSize: 11, color: TLK.inkFaint, letterSpacing: 0.5 }}>
-                답변 듣고 잘한 점·보완점·토론 거리를 정리하는 중입니다
+                답변 듣고 잘한 점·보완점·업그레이드 포인트를 정리하는 중입니다
               </p>
             </div>
           )}

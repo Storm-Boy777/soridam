@@ -57,7 +57,7 @@ interface CoachingOutput {
   summary: string;
   good_points: Array<{ quote: string; note: string }>;
   improve_points: Array<{ quote: string; issue: string; suggestion: string }>;
-  discussion_hooks: string[];
+  upgrade_points: Array<{ tip: string; example?: string }>;
   next_speaker_tip: string;
 }
 
@@ -106,9 +106,10 @@ const SYSTEM_PROMPT = `당신은 OPIc 시험 그룹 스터디에서 멤버들에
 [원칙]
 - 한국어로 작성, 단 영어 인용(quote)과 영어 대안(suggestion)은 영어 원문 그대로.
 - 점수/등급(IL, IM, AL 등) 노출 금지 — 멤버 모두가 함께 보는 화면이라 비교 부담 X.
-- 답변 텍스트(transcript)를 정확히 인용해서 짚기 — 환영 금지.
-- 5초 안에 다음 발화자가 받아쓸 만한 토론 거리(discussion_hooks) 제공.
-- 잘한 점은 무리 없이 1~2개, 보완점은 1~2개. 너무 많이 짚으면 다음 멤버 부담.
+- 답변 텍스트(transcript)를 정확히 인용해서 짚기 — 환각 금지.
+- 보완점(improve_points)은 무엇이 왜 어색/틀렸는지 이유까지 짧게 짚고, 바로 쓸 영어 대안을 준다.
+- 답변을 한 단계 끌어올릴 구체 제안(upgrade_points) 2~3개를 반드시 준다: 구체적인 예시·디테일 추가, 표현 격상, 반복 표현 다양화 등. 각 제안에는 바로 따라 말할 영어 예문(example)을 곁들인다.
+- 잘한 점 1~2개, 보완점 1~2개로 핵심만 (너무 많이 짚으면 부담).
 
 [출력 형식 — JSON 객체]
 {
@@ -117,9 +118,11 @@ const SYSTEM_PROMPT = `당신은 OPIc 시험 그룹 스터디에서 멤버들에
     { "quote": "<영어 답변에서 그대로 인용>", "note": "<왜 좋은지 한국어 한 줄>" }
   ],
   "improve_points": [
-    { "quote": "<영어 답변에서 그대로 인용>", "issue": "<문제 한국어 한 줄>", "suggestion": "<영어 대안 그대로>" }
+    { "quote": "<영어 답변에서 그대로 인용>", "issue": "<무엇이 왜 어색/틀렸는지 한국어>", "suggestion": "<영어 대안 그대로>" }
   ],
-  "discussion_hooks": ["<토론 질문 1>", "<토론 질문 2>"],
+  "upgrade_points": [
+    { "tip": "<답변을 더 풍부하게 만들 제안 (한국어)>", "example": "<바로 따라 말할 영어 예문>" }
+  ],
   "next_speaker_tip": "<다음 발화자가 활용할 만한 한 마디 (한국어, 영어 표현 섞어도 OK)>"
 }`;
 
