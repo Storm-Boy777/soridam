@@ -31,7 +31,7 @@ const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
 
 const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "https://soridamhub.com,http://localhost:3001,http://localhost:3000,http://localhost:3100").split(",");
 
-const PROMPT_VERSION = 2; // v2: 카테고리 한글 매핑 + 토픽 다수결 + 클라이언트 명시값 우선
+const PROMPT_VERSION = 3; // v3: 실제 출제 순서(대표 순서)로 가이드 생성 — 정렬 시그니처 대신
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") || "";
@@ -111,6 +111,69 @@ interface TypeGuideRef {
 
 function buildSig(questionIds: string[]): string {
   return [...questionIds].sort().join("|");
+}
+
+/**
+ * 콤보의 대표 "실제 출제 순서" 결정 (SA pickRepresentativeOrder와 동일 로직).
+ * 같은 sig로 묶이는 승인 시험들의 question_ids 중 가장 자주 나온 순서를 채택
+ * (동률: 최신 시험 → 사전순). 매칭 행 없으면 fallback(정렬 순서) 반환.
+ */
+function pickRepresentativeOrder(
+  rows: Array<{ question_ids: string[] | null; exam_date?: string | null }>,
+  targetSig: string,
+  fallback: string[]
+): string[] {
+  const tally = new Map<string, { order: string[]; count: number; latest: string }>();
+  for (const r of rows) {
+    const qids = r.question_ids ?? [];
+    if (qids.length === 0) continue;
+    if (buildSig(qids) !== targetSig) continue;
+    const key = qids.join("|");
+    const ex = r.exam_date ?? "";
+    const cur = tally.get(key);
+    if (cur) {
+      cur.count += 1;
+      if (ex > cur.latest) cur.latest = ex;
+    } else {
+      tally.set(key, { order: qids, count: 1, latest: ex });
+    }
+  }
+  let best: { order: string[]; count: number; latest: string } | null = null;
+  for (const v of tally.values()) {
+    if (
+      !best ||
+      v.count > best.count ||
+      (v.count === best.count && v.latest > best.latest) ||
+      (v.count === best.count && v.latest === best.latest && v.order.join("|") < best.order.join("|"))
+    ) {
+      best = v;
+    }
+  }
+  return best ? best.order : fallback;
+}
+
+/** 정렬 sig에 해당하는 콤보의 대표 출제 순서를 submission_combos에서 복원 */
+async function resolveOrderedQuestionIds(
+  supabase: SupabaseClient,
+  sig: string
+): Promise<string[]> {
+  const sorted = sig.split("|").filter(Boolean);
+  if (sorted.length === 0) return sorted;
+  // 이 질문 집합을 포함하는 승인+완료 콤보 행 조회 → 대표 순서 산출
+  const { data: rows } = await supabase
+    .from("submission_combos")
+    .select("question_ids, submissions!inner(status, exam_approved, exam_date)")
+    .contains("question_ids", sorted)
+    .eq("submissions.status", "complete")
+    .eq("submissions.exam_approved", "approved");
+  const candidates = ((rows ?? []) as unknown as Array<{
+    question_ids: string[];
+    submissions: { exam_date: string | null };
+  }>).map((r) => ({
+    question_ids: r.question_ids,
+    exam_date: r.submissions?.exam_date,
+  }));
+  return pickRepresentativeOrder(candidates, sig, sorted);
 }
 
 // ── 인라인 프롬프트 (v3 — 풀 가이드) ──
@@ -535,9 +598,15 @@ Deno.serve(async (req: Request) => {
       }
       sig = buildSig(questionIds);
     } else {
-      // explore 모드
+      // explore 모드 — 정렬 sig를 받아 실제 출제 순서(대표 순서)로 복원
       sig = inputSig!;
-      questionIds = sig.split("|").filter(Boolean);
+      if (!sig.split("|").filter(Boolean).length) {
+        return new Response(JSON.stringify({ error: "invalid sig" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      questionIds = await resolveOrderedQuestionIds(supabase, sig);
       if (questionIds.length === 0) {
         return new Response(JSON.stringify({ error: "invalid sig" }), {
           status: 400,

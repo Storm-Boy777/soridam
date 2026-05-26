@@ -73,6 +73,58 @@ function buildComboSignature(questionIds: string[]): string {
   return [...questionIds].sort().join("|");
 }
 
+/**
+ * 콤보의 대표 "실제 출제 순서" 결정.
+ *
+ * 시그니처(buildComboSignature)는 정렬되어 순서 정보를 잃는다. 화면에는 실제
+ * 출제 순서로 보여야 하므로, 같은 sig로 묶이는 승인 시험들의 question_ids 중
+ * 가장 자주 나온 순서를 대표로 채택한다. (동률 시: 최신 시험 → 사전순 — 결정적)
+ *
+ * 카드(getCombosForStudy)·상세(getComboBySig)·가이드 EF가 모두 이 로직으로
+ * 동일한 순서를 복원해 일관성을 보장한다.
+ *
+ * @param rows 후보 submission_combos 행 (question_ids + exam_date)
+ * @param targetSig 대상 정렬 시그니처
+ * @returns 대표 question_ids 순서 (매칭 행 없으면 sig 정렬 순서로 폴백)
+ */
+function pickRepresentativeOrder(
+  rows: Array<{ question_ids: string[] | null; exam_date?: string | null }>,
+  targetSig: string
+): string[] {
+  const tally = new Map<
+    string,
+    { order: string[]; count: number; latest: string }
+  >();
+  for (const r of rows) {
+    const qids = r.question_ids ?? [];
+    if (qids.length === 0) continue;
+    if (buildComboSignature(qids) !== targetSig) continue;
+    const orderedKey = qids.join("|");
+    const ex = r.exam_date ?? "";
+    const cur = tally.get(orderedKey);
+    if (cur) {
+      cur.count += 1;
+      if (ex > cur.latest) cur.latest = ex;
+    } else {
+      tally.set(orderedKey, { order: qids, count: 1, latest: ex });
+    }
+  }
+  let best: { order: string[]; count: number; latest: string } | null = null;
+  for (const v of tally.values()) {
+    if (
+      !best ||
+      v.count > best.count ||
+      (v.count === best.count && v.latest > best.latest) ||
+      (v.count === best.count &&
+        v.latest === best.latest &&
+        v.order.join("|") < best.order.join("|"))
+    ) {
+      best = v;
+    }
+  }
+  return best ? best.order : targetSig.split("|").filter(Boolean);
+}
+
 /** combo_type → category 매핑 */
 function comboTypeToCategory(combo_type: string): StudyCategory {
   if (combo_type.startsWith("general")) return "general";
@@ -1158,11 +1210,12 @@ export async function getCombosForStudy(input: {
       };
     }
 
-    // 2. 시그니처로 그루핑 → 빈도 + examples (최대 3개)
+    // 2. 시그니처로 그루핑 → 빈도 + examples (최대 3개) + 순서 후보 수집
     type Group = {
       sig: string;
       representativeQids: string[];
       frequency: number;
+      orderRows: Array<{ question_ids: string[]; exam_date: string }>;
       examples: Array<{
         submission_id: number;
         exam_date: string;
@@ -1176,6 +1229,10 @@ export async function getCombosForStudy(input: {
       const existing = bySig.get(sig);
       if (existing) {
         existing.frequency += 1;
+        existing.orderRows.push({
+          question_ids: r.question_ids,
+          exam_date: r.submissions.exam_date,
+        });
         if (existing.examples.length < 3) {
           existing.examples.push({
             submission_id: r.submission_id,
@@ -1186,8 +1243,11 @@ export async function getCombosForStudy(input: {
       } else {
         bySig.set(sig, {
           sig,
-          representativeQids: r.question_ids,
+          representativeQids: [], // 루프 후 대표 순서로 채움
           frequency: 1,
+          orderRows: [
+            { question_ids: r.question_ids, exam_date: r.submissions.exam_date },
+          ],
           examples: [
             {
               submission_id: r.submission_id,
@@ -1197,6 +1257,11 @@ export async function getCombosForStudy(input: {
           ],
         });
       }
+    }
+
+    // 그룹별 대표 출제 순서 확정 (정렬 시그니처 → 실제 출제 순서 복원)
+    for (const g of bySig.values()) {
+      g.representativeQids = pickRepresentativeOrder(g.orderRows, g.sig);
     }
 
     // 3. 토픽 전체 질문별 등장률 계산
@@ -2246,7 +2311,7 @@ export async function getOrGenerateComboCache(
       return { error: "잘못된 콤보 시그니처" };
     }
 
-    const PROMPT_VERSION = 2; // EF의 PROMPT_VERSION과 일치
+    const PROMPT_VERSION = 3; // EF의 PROMPT_VERSION과 일치 (v3: 실제 출제 순서로 가이드 생성)
 
     // 1. 캐시 조회 (현행 prompt_version만)
     const { data: cached } = await supabase
@@ -2351,7 +2416,7 @@ export async function getComboBySig(input: {
     const [{ data: combosRaw }, { count: totalSubsCount }] = await Promise.all([
       supabase
         .from(T.submission_combos)
-        .select("question_ids, combo_type, submissions!inner(status, exam_approved)")
+        .select("question_ids, combo_type, submissions!inner(status, exam_approved, exam_date)")
         .eq("topic", topic)
         .in("combo_type", allowedComboTypes)
         .eq("submissions.status", "complete")
@@ -2364,7 +2429,10 @@ export async function getComboBySig(input: {
         .eq("exam_approved", "approved"),
     ]);
 
-    type ComboRow = { question_ids: string[] };
+    type ComboRow = {
+      question_ids: string[];
+      submissions: { exam_date: string | null };
+    };
     const allCombos = (combosRaw ?? []) as unknown as ComboRow[];
 
     const targetSig = buildComboSignature(questionIds);
@@ -2380,6 +2448,15 @@ export async function getComboBySig(input: {
         qidAppearance[qid] = (qidAppearance[qid] || 0) + 1;
       }
     }
+
+    // 대표 출제 순서 복원 — sig(정렬) 대신 실제 출제 순서로 표시
+    const orderedQids = pickRepresentativeOrder(
+      allCombos.map((c) => ({
+        question_ids: c.question_ids,
+        exam_date: c.submissions?.exam_date,
+      })),
+      targetSig
+    );
 
     // 카드 점유율 — 카테고리 분모
     const appearance_pct =
@@ -2399,14 +2476,14 @@ export async function getComboBySig(input: {
       studied_in_group = (studied?.length ?? 0) > 0;
     }
 
-    // 4. 출제 순서 보존 — questions를 questionIds 순서로 정렬
-    const orderedQuestions = questionIds
+    // 4. 출제 순서 보존 — questions를 대표 출제 순서로 정렬
+    const orderedQuestions = orderedQids
       .map((qid) => questions.find((q) => q.id === qid))
       .filter((q): q is NonNullable<typeof q> => !!q);
 
     const result: ComboForStudy = {
       sig: targetSig,
-      representative_qids: questionIds,
+      representative_qids: orderedQids,
       frequency,
       total_in_category: totalCombosInCategory,
       total_submissions: totalSubmissions,
