@@ -47,6 +47,7 @@ export const T = {
   study_podcasts: "study_podcasts",
   study_freetalk: "study_freetalk",
   study_game_cards: "study_game_cards",
+  study_freetalk_sets: "study_freetalk_sets",
   study_panel_members: "study_panel_members",
   study_admin_access: "study_admin_access",
   talklish_completed_combos: "talklish_completed_combos",

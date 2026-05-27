@@ -2,7 +2,7 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { T } from "@/lib/constants/tables";
-import type { PodcastRow, FreetalkRow, GameCardRow, GameCardGameType, PanelMember, YoutubeChannelRow } from "@/lib/types/study-group";
+import type { PodcastRow, FreetalkRow, GameCardRow, GameCardGameType, PanelMember, YoutubeChannelRow, TalklishGameSet } from "@/lib/types/study-group";
 
 // ─── Talklish 수요일(OPIc) 콤보 조회 헬퍼 ─────────────────────────
 // /opic-study/explore와 동일 데이터 소스 — submission_questions 기반
@@ -441,6 +441,65 @@ export async function fetchTalklishPodcastsForEdit(): Promise<PodcastRow[]> {
     .order("created_at", { ascending: false });
   if (error) return [];
   return data as PodcastRow[];
+}
+
+// ─── 금요일 AI 게임 세트 (099_study_freetalk_sets) ───────────────
+// 세션 단위 세트 — 월요일 study_podcasts와 동일 모델 (한 행 = 한 세트).
+
+/** 활성 게임 세트 목록 (라이브 화면 세트 선택자용, sort_order 순) */
+export async function fetchTalklishGameSets(): Promise<TalklishGameSet[]> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from(T.study_freetalk_sets)
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order")
+    .order("created_at", { ascending: false });
+  if (error) return [];
+  return data as TalklishGameSet[];
+}
+
+/** 수정용 — 활성/비활성 모두 (created_at 내림차순) */
+export async function fetchTalklishGameSetsForEdit(): Promise<TalklishGameSet[]> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from(T.study_freetalk_sets)
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) return [];
+  return data as TalklishGameSet[];
+}
+
+/** 게임 세트 저장 (멤버/관리자) */
+export async function createTalklishGameSet(
+  input: Omit<TalklishGameSet, "id" | "created_by" | "created_at" | "updated_at">
+): Promise<{ success: boolean; error?: string; data?: TalklishGameSet }> {
+  const gate = await assertPanelMemberOrAdmin();
+  if (!gate.ok) return { success: false, error: gate.error };
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from(T.study_freetalk_sets)
+    .insert({ ...input, created_by: gate.userId })
+    .select()
+    .single();
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: data as TalklishGameSet };
+}
+
+/** 게임 세트 수정 (멤버/관리자) */
+export async function updateTalklishGameSet(
+  id: string,
+  input: Omit<TalklishGameSet, "id" | "created_by" | "created_at" | "updated_at">
+): Promise<{ success: boolean; error?: string }> {
+  const gate = await assertPanelMemberOrAdmin();
+  if (!gate.ok) return { success: false, error: gate.error };
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase
+    .from(T.study_freetalk_sets)
+    .update(input)
+    .eq("id", id);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
 }
 
 /* ═══════════════════════════════════════════════

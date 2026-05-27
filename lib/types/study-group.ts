@@ -191,6 +191,53 @@ export interface FreetalkRow {
 
 export type GameCardGameType = "taboo" | "would-you-rather" | "debate" | "story-chain";
 
+/* ── 금요일 AI 게임 세트 (099_study_freetalk_sets) ── */
+
+// 토픽 스피너 / JAM 모드 주제 (study_freetalk row의 콘텐츠 부분)
+export interface SpinnerTopicData {
+  english: string;
+  korean: string;
+  follow_up: string;
+  category: FreeTalkCategory;
+}
+
+// 롤플레이 카드 (2인 무대 — 금요일 전용 간소 구조)
+export interface RoleplayCardData {
+  emoji?: string;
+  title: string;
+  situation: string;        // 영문 상황
+  situation_ko: string;     // 한국어
+  role_a: { name: string; mission: string };
+  role_b: { name: string; mission: string };
+  phrases: string[];        // 유용 표현 3~5개
+  emotion: string;          // 감정 연기 미션
+}
+
+// 한 세트 = 그날 저녁 게임 콘텐츠 전체 (월요일 PodcastRow와 동일한 단일 행 모델)
+export interface TalklishGameSet {
+  id: string;
+  theme: string;
+  difficulty: "beginner" | "intermediate" | "advanced";
+  description: string;
+  spinner_topics: SpinnerTopicData[];
+  taboo: TabooCard[];               // Taboo + 스무고개 공용
+  wyr: WouldYouRatherCard[];
+  roleplay: RoleplayCardData[];
+  story: StoryStarter[];
+  debate: DebateTopic[];
+  sort_order: number;
+  is_active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// EF(study-freetalk-generate) 생성 결과 — 저장 전 콘텐츠만 (id/메타 제외)
+export type TalklishGameSetContent = Pick<
+  TalklishGameSet,
+  "theme" | "difficulty" | "description" | "spinner_topics" | "taboo" | "wyr" | "roleplay" | "story" | "debate"
+>;
+
 export interface GameCardRow {
   id: string;
   game_type: GameCardGameType;

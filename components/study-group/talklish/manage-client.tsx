@@ -8,13 +8,14 @@ import Link from "next/link";
 import { ArrowLeft, Headphones, Mic, MessagesSquare, Construction } from "lucide-react";
 import { TLK, TLK_FONT } from "./tokens";
 import { MondayPrepare } from "./monday-prepare";
+import { FridayPrepare } from "./friday-prepare";
 
 type DayKey = "mon" | "wed" | "fri";
 
 const DAYS: { key: DayKey; label: string; sub: string; icon: typeof Headphones; ready: boolean }[] = [
   { key: "mon", label: "월요일", sub: "Podcast", icon: Headphones, ready: true },
   { key: "wed", label: "수요일", sub: "OPIc", icon: Mic, ready: false },
-  { key: "fri", label: "금요일", sub: "Free Talk", icon: MessagesSquare, ready: false },
+  { key: "fri", label: "금요일", sub: "Free Talk", icon: MessagesSquare, ready: true },
 ];
 
 export function TalklishManageClient() {
@@ -109,7 +110,7 @@ export function TalklishManageClient() {
       {/* 우측 콘텐츠 */}
       <main className="relative min-w-0 flex-1">
         <div className="absolute inset-0 overflow-y-auto">
-          {day === "mon" ? <MondayPrepare /> : <ComingSoon label={current.label} sub={current.sub} />}
+          {day === "mon" ? <MondayPrepare /> : day === "fri" ? <FridayPrepare /> : <ComingSoon label={current.label} sub={current.sub} />}
         </div>
       </main>
     </div>

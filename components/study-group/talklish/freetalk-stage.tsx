@@ -6,14 +6,14 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Shuffle, Play as PlayIcon, RotateCcw } from "lucide-react";
-import { fetchFreetalkTopics, fetchGameCards, fetchPanelMembers } from "@/lib/actions/study-group";
+import { fetchFreetalkTopics, fetchGameCards, fetchPanelMembers, fetchTalklishGameSets } from "@/lib/actions/study-group";
 import type {
-  FreetalkRow,
-  GameCardRow,
   StoryStarter,
   TabooCard,
   WouldYouRatherCard,
   DebateTopic,
+  SpinnerTopicData,
+  RoleplayCardData,
 } from "@/lib/types/study-group";
 import { TLK, TLK_FONT } from "./tokens";
 import { useSpeakerRoulette } from "./use-speaker-roulette";
@@ -118,6 +118,8 @@ const TIMER_PRESETS: Record<GameKey, number[]> = {
   debate: [120, 180, 300],
 };
 
+const DIFF_LABEL: Record<string, string> = { beginner: "초급", intermediate: "중급", advanced: "고급" };
+
 interface Props {
   focusMode: boolean;  // Full 모드 — 헤더의 현재 게임 표시를 가운데로 (일반 모드는 우측)
   absentIds: Set<string>;
@@ -131,6 +133,7 @@ export function FreetalkStage({ focusMode, absentIds, onToggleAttendance }: Prop
   const [game, setGame] = useState<GameKey>("spinner");
   // 룰렛 state는 useSpeakerRoulette 훅에서 관리
   const [sessionCompleted, setSessionCompleted] = useState(false);
+  const [selectedSetId, setSelectedSetId] = useState<string | null>(null); // null = 기본(전체 풀)
 
   const { data: topics = [] } = useQuery({
     queryKey: ["study-freetalk"],
@@ -162,11 +165,40 @@ export function FreetalkStage({ focusMode, absentIds, onToggleAttendance }: Prop
     queryFn: fetchPanelMembers,
     staleTime: 5 * 60 * 1000,
   });
+  // AI 게임 세트 — 세트 선택자용 (없으면 기본 풀 사용)
+  const { data: gameSets = [] } = useQuery({
+    queryKey: ["talklish-gamesets"],
+    queryFn: fetchTalklishGameSets,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const presentMembers = useMemo(
     () => members.filter((m) => !absentIds.has(m.id)),
     [members, absentIds]
   );
+
+  // 활성 세트 — 선택된 AI 세트 또는 기본(전체 카드 풀 + 하드코딩 롤플레이)
+  const activeSet = useMemo(() => {
+    const set = gameSets.find((s) => s.id === selectedSetId);
+    if (set) {
+      return {
+        spinner_topics: set.spinner_topics ?? [],
+        taboo: set.taboo ?? [],
+        wyr: set.wyr ?? [],
+        roleplay: set.roleplay ?? [],
+        story: set.story ?? [],
+        debate: set.debate ?? [],
+      };
+    }
+    return {
+      spinner_topics: topics as SpinnerTopicData[],
+      taboo: tabooCards.map((c) => c.data as TabooCard),
+      wyr: wyrCards.map((c) => c.data as WouldYouRatherCard),
+      roleplay: ROLEPLAY_SCENARIOS,
+      story: storyCards.map((c) => c.data as StoryStarter),
+      debate: debateCards.map((c) => c.data as DebateTopic),
+    };
+  }, [gameSets, selectedSetId, topics, tabooCards, wyrCards, storyCards, debateCards]);
 
   // 공통 발화자 룰렛 — 한 라운드 = 출석자 전원 한 번씩 (월·수·금 동일 동작)
   const { activeSpeaker, hasSpun, spinning, spin } = useSpeakerRoulette({
@@ -307,6 +339,39 @@ export function FreetalkStage({ focusMode, absentIds, onToggleAttendance }: Prop
           </p>
         </div>
 
+        {/* 오늘의 세트 선택자 — AI 생성 세트가 있을 때만 (없으면 기본 풀) */}
+        {gameSets.length > 0 && (
+          <div>
+            <p
+              style={{
+                fontFamily: TLK_FONT.sans,
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: 2.5,
+                color: TLK.inkFaint,
+                textTransform: "uppercase",
+                marginBottom: 6,
+              }}
+            >
+              오늘의 세트
+            </p>
+            <select
+              aria-label="오늘의 세트"
+              value={selectedSetId ?? ""}
+              onChange={(e) => setSelectedSetId(e.target.value || null)}
+              className="w-full rounded-lg px-2.5 py-2 text-sm outline-none"
+              style={{ background: TLK.paper, border: `1px solid ${TLK.rule}`, color: TLK.ink, fontFamily: TLK_FONT.ko, cursor: "pointer" }}
+            >
+              <option value="">기본 — 전체 카드 풀</option>
+              {gameSets.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.theme} · {DIFF_LABEL[s.difficulty] ?? s.difficulty}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div style={{ height: 1, background: TLK.rule }} />
 
         <div className="flex flex-col gap-1.5">
@@ -444,16 +509,16 @@ export function FreetalkStage({ focusMode, absentIds, onToggleAttendance }: Prop
           </p>
         </div>
 
-        {/* 게임별 본문 */}
-        {game === "spinner" && <SpinnerGame topics={topics} />}
-        {game === "wyr" && <WyrGame cards={wyrCards} />}
-        {game === "whoami" && <WhoAmIGame cards={tabooCards} />}
+        {/* 게임별 본문 — 활성 세트에서 콘텐츠 공급 */}
+        {game === "spinner" && <SpinnerGame topics={activeSet.spinner_topics} />}
+        {game === "wyr" && <WyrGame cards={activeSet.wyr} />}
+        {game === "whoami" && <WhoAmIGame cards={activeSet.taboo} />}
         {game === "twolies" && <TwoLiesGame />}
-        {game === "taboo" && <TabooGame cards={tabooCards} />}
-        {game === "roleplay" && <RoleplayGame />}
+        {game === "taboo" && <TabooGame cards={activeSet.taboo} />}
+        {game === "roleplay" && <RoleplayGame scenarios={activeSet.roleplay} />}
         {game === "hotseat" && <HotseatGame />}
-        {game === "story" && <StoryGame cards={storyCards} />}
-        {game === "debate" && <DebateGame cards={debateCards} />}
+        {game === "story" && <StoryGame cards={activeSet.story} />}
+        {game === "debate" && <DebateGame cards={activeSet.debate} />}
       </main>
 
       {/* ─── 우: 룰렛 + 타이머 ─── */}
@@ -484,8 +549,8 @@ export function FreetalkStage({ focusMode, absentIds, onToggleAttendance }: Prop
    게임별 본문
    ───────────────────────────────────────────── */
 
-function SpinnerGame({ topics }: { topics: FreetalkRow[] }) {
-  const [picked, setPicked] = useState<FreetalkRow | null>(null);
+function SpinnerGame({ topics }: { topics: SpinnerTopicData[] }) {
+  const [picked, setPicked] = useState<SpinnerTopicData | null>(null);
   const [spinning, setSpinning] = useState(false);
   const [showKo, setShowKo] = useState(false);
   const [jam, setJam] = useState(false);  // Just a Minute 모드 — 끊김·반복·주제이탈 금지
@@ -652,7 +717,7 @@ function SpinnerGame({ topics }: { topics: FreetalkRow[] }) {
   );
 }
 
-function StoryGame({ cards }: { cards: GameCardRow[] }) {
+function StoryGame({ cards }: { cards: StoryStarter[] }) {
   const [idx, setIdx] = useState(0);
   if (cards.length === 0) {
     return (
@@ -661,8 +726,7 @@ function StoryGame({ cards }: { cards: GameCardRow[] }) {
       </p>
     );
   }
-  const card = cards[idx % cards.length];
-  const data = card.data as StoryStarter;
+  const data = cards[idx % cards.length];
   return (
     <div
       className="rounded-2xl px-10 py-12 text-center"
@@ -712,7 +776,7 @@ function StoryGame({ cards }: { cards: GameCardRow[] }) {
   );
 }
 
-function WyrGame({ cards }: { cards: GameCardRow[] }) {
+function WyrGame({ cards }: { cards: WouldYouRatherCard[] }) {
   const [idx, setIdx] = useState(0);
   const [spinning, setSpinning] = useState(false);
 
@@ -724,7 +788,7 @@ function WyrGame({ cards }: { cards: GameCardRow[] }) {
     );
   }
 
-  const data = cards[idx % cards.length].data as WouldYouRatherCard;
+  const data = cards[idx % cards.length];
   const next = () => {
     if (spinning) return;
     setSpinning(true);
@@ -801,7 +865,7 @@ function WyrGame({ cards }: { cards: GameCardRow[] }) {
   );
 }
 
-function TabooGame({ cards }: { cards: GameCardRow[] }) {
+function TabooGame({ cards }: { cards: TabooCard[] }) {
   const [idx, setIdx] = useState<number | null>(null);
   const [spinning, setSpinning] = useState(false);
 
@@ -822,7 +886,7 @@ function TabooGame({ cards }: { cards: GameCardRow[] }) {
     }, 600);
   };
 
-  const data = idx !== null ? (cards[idx].data as TabooCard) : null;
+  const data = idx !== null ? cards[idx] : null;
 
   return (
     <div
@@ -905,7 +969,7 @@ function TabooGame({ cards }: { cards: GameCardRow[] }) {
   );
 }
 
-function DebateGame({ cards }: { cards: GameCardRow[] }) {
+function DebateGame({ cards }: { cards: DebateTopic[] }) {
   const [idx, setIdx] = useState(0);
   const [showPoints, setShowPoints] = useState(false);
 
@@ -917,7 +981,7 @@ function DebateGame({ cards }: { cards: GameCardRow[] }) {
     );
   }
 
-  const data = cards[idx % cards.length].data as DebateTopic;
+  const data = cards[idx % cards.length];
   const nextTopic = () => {
     setIdx((p) => p + 1);
     setShowPoints(false);
@@ -1044,7 +1108,7 @@ function PointColumn({ label, color, points }: { label: string; color: string; p
   );
 }
 
-function WhoAmIGame({ cards }: { cards: GameCardRow[] }) {
+function WhoAmIGame({ cards }: { cards: TabooCard[] }) {
   const [idx, setIdx] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [spinning, setSpinning] = useState(false);
@@ -1067,7 +1131,7 @@ function WhoAmIGame({ cards }: { cards: GameCardRow[] }) {
     }, 500);
   };
 
-  const target = idx !== null ? (cards[idx].data as TabooCard).target : null;
+  const target = idx !== null ? cards[idx].target : null;
 
   return (
     <div
@@ -1151,19 +1215,9 @@ function WhoAmIGame({ cards }: { cards: GameCardRow[] }) {
   );
 }
 
-interface RoleplayScenario {
-  emoji: string;
-  title: string;
-  situation: string;
-  situation_ko: string;
-  role_a: { name: string; mission: string };
-  role_b: { name: string; mission: string };
-  phrases: string[];
-  emotion: string;
-}
-
-// 시작 시나리오 세트 (Phase B에서 AI/DB로 승격 예정)
-const ROLEPLAY_SCENARIOS: RoleplayScenario[] = [
+// 기본 세트 롤플레이 — AI 세트가 없을 때(기본 풀) 쓰는 하드코딩 시나리오.
+// 타입은 공용 RoleplayCardData (AI 세트와 동일 모양).
+const ROLEPLAY_SCENARIOS: RoleplayCardData[] = [
   {
     emoji: "🍽️",
     title: "식당 컴플레인",
@@ -1286,11 +1340,19 @@ const ROLEPLAY_SCENARIOS: RoleplayScenario[] = [
   },
 ];
 
-function RoleplayGame() {
-  const [idx, setIdx] = useState(() => Math.floor(Math.random() * ROLEPLAY_SCENARIOS.length));
+function RoleplayGame({ scenarios }: { scenarios: RoleplayCardData[] }) {
+  const [idx, setIdx] = useState(() => (scenarios.length ? Math.floor(Math.random() * scenarios.length) : 0));
   const [showPhrases, setShowPhrases] = useState(false);
 
-  const s = ROLEPLAY_SCENARIOS[idx % ROLEPLAY_SCENARIOS.length];
+  if (scenarios.length === 0) {
+    return (
+      <p style={{ color: TLK.inkFaint, fontSize: 13, fontFamily: TLK_FONT.sans }}>
+        등록된 역할극 상황이 없어요.
+      </p>
+    );
+  }
+
+  const s = scenarios[idx % scenarios.length];
   const nextScenario = () => {
     setIdx((p) => p + 1);
     setShowPhrases(false);
