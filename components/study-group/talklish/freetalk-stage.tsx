@@ -3,16 +3,23 @@
 // Talklish · 금요일 (Free Talk) Stage
 // 3컬럼 (좌:게임 메뉴 / 중:게임 진행 / 우:룰렛+타이머)
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Shuffle, Play as PlayIcon, RotateCcw } from "lucide-react";
 import { fetchFreetalkTopics, fetchGameCards, fetchPanelMembers } from "@/lib/actions/study-group";
-import type { FreetalkRow, GameCardRow, StoryStarter } from "@/lib/types/study-group";
+import type {
+  FreetalkRow,
+  GameCardRow,
+  StoryStarter,
+  TabooCard,
+  WouldYouRatherCard,
+  DebateTopic,
+} from "@/lib/types/study-group";
 import { TLK, TLK_FONT } from "./tokens";
 import { useSpeakerRoulette } from "./use-speaker-roulette";
 import { SpeakerCard } from "./speaker-card";
 
-type GameKey = "spinner" | "chain" | "twolies" | "hotseat" | "story";
+type GameKey = "spinner" | "wyr" | "whoami" | "twolies" | "taboo" | "roleplay" | "hotseat" | "story" | "debate";
 
 interface GameDef {
   key: GameKey;
@@ -29,28 +36,52 @@ const GAMES: GameDef[] = [
     num: "01",
     emoji: "🎯",
     name: "토픽 스피너",
-    desc: "랜덤 주제 1개 → 1분 자유 발화",
-    rule: "버튼을 눌러 랜덤 주제를 뽑고, 발화자가 1분 동안 영어로 자유롭게 말합니다.",
+    desc: "랜덤 주제 1분 발화 (+ JAM 모드)",
+    rule: "버튼을 눌러 랜덤 주제를 뽑고, 발화자가 1분 동안 영어로 자유롭게 말합니다. JAM 모드를 켜면 끊김·반복·주제이탈 없이 도전!",
   },
   {
-    key: "chain",
+    key: "wyr",
     num: "02",
-    emoji: "🔗",
-    name: "워드 체인",
-    desc: "끝 단어로 이어가기. 막히면 패스 1회",
-    rule: "한 사람이 단어를 말하면, 다음 사람이 그 끝 단어로 새 단어를 잇습니다. 막히면 패스(1회).",
+    emoji: "↔️",
+    name: "Would You Rather",
+    desc: "둘 중 하나 고르고 이유를 영어로",
+    rule: "두 선택지 중 반드시 하나를 고르고, 그 이유를 영어로 설명합니다. '둘 다'는 금지! 다른 사람의 선택에도 질문해 봅니다.",
+  },
+  {
+    key: "whoami",
+    num: "03",
+    emoji: "🔍",
+    name: "스무고개",
+    desc: "예/아니오 질문으로 정답 단어 맞히기",
+    rule: "한 명만 정답 단어를 보고, 나머지는 예/아니오로 답할 수 있는 영어 질문을 던져 정답을 추측합니다. 평서문 말고 질문으로만!",
   },
   {
     key: "twolies",
-    num: "03",
+    num: "04",
     emoji: "🎭",
     name: "Two Truths & a Lie",
     desc: "진실 2 + 거짓 1, 영어로만 질문해서 거짓 찾기",
     rule: "한 명이 자기에 대한 사실 2가지 + 거짓 1가지를 말하면, 나머지가 영어로만 질문해서 거짓을 맞춥니다.",
   },
   {
+    key: "taboo",
+    num: "05",
+    emoji: "🚫",
+    name: "Taboo",
+    desc: "금지 단어 없이 목표 단어 설명하기",
+    rule: "설명하는 사람만 화면을 보고, 목표 단어를 금지 단어 없이 영어로 설명합니다. 나머지는 잠깐 눈을 감고 듣다가 맞혀 봅니다.",
+  },
+  {
+    key: "roleplay",
+    num: "06",
+    emoji: "🎬",
+    name: "롤플레이",
+    desc: "실제 상황 2인 역할극 + 감정 연기",
+    rule: "상황 카드를 뽑아 두 명이 각자 역할을 맡아 영어로 연기합니다. 감탄·좌절·놀람 같은 감정 표현을 넣으면 OPIc 롤플레이에 그대로 직결돼요.",
+  },
+  {
     key: "hotseat",
-    num: "04",
+    num: "07",
     emoji: "🔥",
     name: "핫시트",
     desc: "한 명이 의자에. 나머지가 영어로 90초간 질문 폭격",
@@ -58,13 +89,34 @@ const GAMES: GameDef[] = [
   },
   {
     key: "story",
-    num: "05",
+    num: "08",
     emoji: "📚",
     name: "한 문장 이어쓰기",
     desc: "한 사람이 한 문장씩 이어 붙여 즉흥 이야기 만들기",
     rule: "시작 문장이 주어지면, 한 사람이 한 문장씩 영어로 이어 붙여 즉흥 이야기를 완성합니다.",
   },
+  {
+    key: "debate",
+    num: "09",
+    emoji: "⚖️",
+    name: "Debate",
+    desc: "찬성·반대로 나눠 구조 있게 토론",
+    rule: "주제와 배경을 확인하고 찬성·반대로 나뉩니다. 각 팀이 근거를 들어 주장하고, 자유 토론으로 마무리합니다. 고급 발화 연습용.",
+  },
 ];
+
+// 게임별 타이머 프리셋 (초)
+const TIMER_PRESETS: Record<GameKey, number[]> = {
+  spinner: [60, 90, 120],
+  wyr: [60, 90, 120],
+  whoami: [60, 120, 180],
+  twolies: [60, 90, 180],
+  taboo: [30, 60, 90],
+  roleplay: [90, 120, 180],
+  hotseat: [60, 90, 120],
+  story: [60, 90, 180],
+  debate: [120, 180, 300],
+};
 
 interface Props {
   focusMode: boolean;  // Full 모드 — 헤더의 현재 게임 표시를 가운데로 (일반 모드는 우측)
@@ -88,6 +140,21 @@ export function FreetalkStage({ focusMode, absentIds, onToggleAttendance }: Prop
   const { data: storyCards = [] } = useQuery({
     queryKey: ["study-game-cards", "story-chain"],
     queryFn: () => fetchGameCards("story-chain"),
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: tabooCards = [] } = useQuery({
+    queryKey: ["study-game-cards", "taboo"],
+    queryFn: () => fetchGameCards("taboo"),
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: wyrCards = [] } = useQuery({
+    queryKey: ["study-game-cards", "would-you-rather"],
+    queryFn: () => fetchGameCards("would-you-rather"),
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: debateCards = [] } = useQuery({
+    queryKey: ["study-game-cards", "debate"],
+    queryFn: () => fetchGameCards("debate"),
     staleTime: 5 * 60 * 1000,
   });
   const { data: members = [] } = useQuery({
@@ -236,7 +303,7 @@ export function FreetalkStage({ focusMode, absentIds, onToggleAttendance }: Prop
               marginTop: 6,
             }}
           >
-            한 주를 가볍게 마무리하는 5가지 게임
+            한 주를 가볍게 마무리하는 9가지 게임
           </p>
         </div>
 
@@ -379,10 +446,14 @@ export function FreetalkStage({ focusMode, absentIds, onToggleAttendance }: Prop
 
         {/* 게임별 본문 */}
         {game === "spinner" && <SpinnerGame topics={topics} />}
-        {game === "story" && <StoryGame cards={storyCards} />}
-        {game === "chain" && <ChainGame />}
+        {game === "wyr" && <WyrGame cards={wyrCards} />}
+        {game === "whoami" && <WhoAmIGame cards={tabooCards} />}
         {game === "twolies" && <TwoLiesGame />}
+        {game === "taboo" && <TabooGame cards={tabooCards} />}
+        {game === "roleplay" && <RoleplayGame />}
         {game === "hotseat" && <HotseatGame />}
+        {game === "story" && <StoryGame cards={storyCards} />}
+        {game === "debate" && <DebateGame cards={debateCards} />}
       </main>
 
       {/* ─── 우: 룰렛 + 타이머 ─── */}
@@ -401,16 +472,8 @@ export function FreetalkStage({ focusMode, absentIds, onToggleAttendance }: Prop
           onToggleAttendance={onToggleAttendance}
         />
 
-        {/* 게임 타이머 (간단 60/90초 프리셋) */}
-        <GameTimer
-          presets={
-            game === "spinner"
-              ? [60, 90, 120]
-              : game === "hotseat"
-                ? [60, 90, 120]
-                : [60, 90, 180]
-          }
-        />
+        {/* 게임 타이머 (게임별 프리셋) */}
+        <GameTimer presets={TIMER_PRESETS[game]} />
       </aside>
       </div>
     </div>
@@ -425,6 +488,7 @@ function SpinnerGame({ topics }: { topics: FreetalkRow[] }) {
   const [picked, setPicked] = useState<FreetalkRow | null>(null);
   const [spinning, setSpinning] = useState(false);
   const [showKo, setShowKo] = useState(false);
+  const [jam, setJam] = useState(false);  // Just a Minute 모드 — 끊김·반복·주제이탈 금지
 
   const spin = () => {
     if (spinning || topics.length === 0) return;
@@ -447,8 +511,55 @@ function SpinnerGame({ topics }: { topics: FreetalkRow[] }) {
   return (
     <div
       className="rounded-2xl px-10 py-12 text-center"
-      style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
+      style={{ background: TLK.paper, border: `1px solid ${jam ? TLK.accent : TLK.rule}` }}
     >
+      {/* JAM 모드 토글 */}
+      <div className="mb-5 flex justify-center">
+        <button
+          onClick={() => setJam((v) => !v)}
+          className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold tracking-wide transition-colors"
+          style={{
+            background: jam ? TLK.accent : TLK.bg2,
+            color: jam ? "#fff" : TLK.inkDim,
+            border: `1px solid ${jam ? TLK.accent : TLK.rule}`,
+            fontFamily: TLK_FONT.sans,
+            cursor: "pointer",
+          }}
+        >
+          ⏱️ JAM 모드 {jam ? "ON" : "OFF"}
+        </button>
+      </div>
+
+      {/* JAM 규칙 — 끊김·반복·주제이탈 없이 60초 */}
+      {jam && (
+        <div
+          className="mx-auto mb-6 max-w-md rounded-xl px-5 py-4 text-left"
+          style={{ background: `${TLK.accent}0D`, border: `1px solid ${TLK.accent}33` }}
+        >
+          <p
+            style={{
+              fontFamily: TLK_FONT.sans,
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: 2,
+              color: TLK.accent,
+              textTransform: "uppercase",
+              marginBottom: 8,
+            }}
+          >
+            Just a Minute · 60초 룰
+          </p>
+          <ul className="flex flex-col gap-1.5" style={{ fontFamily: TLK_FONT.sans, fontSize: 13, color: TLK.ink }}>
+            <li>🚫 <strong>Hesitation</strong> — um·ah 멈칫거리면 안 돼요</li>
+            <li>🚫 <strong>Repetition</strong> — 같은 단어·표현 반복 금지 (주제어 제외)</li>
+            <li>🚫 <strong>Deviation</strong> — 주제에서 벗어나면 안 돼요</li>
+          </ul>
+          <p style={{ marginTop: 8, fontSize: 11.5, color: TLK.inkDim, fontFamily: TLK_FONT.sans }}>
+            듣는 사람은 위반을 발견하면 “챌린지!”를 외치고 남은 시간을 이어받아요. 우측 60초 타이머와 함께!
+          </p>
+        </div>
+      )}
+
       {!picked ? (
         <p
           style={{
@@ -601,48 +712,724 @@ function StoryGame({ cards }: { cards: GameCardRow[] }) {
   );
 }
 
-function ChainGame() {
+function WyrGame({ cards }: { cards: GameCardRow[] }) {
+  const [idx, setIdx] = useState(0);
+  const [spinning, setSpinning] = useState(false);
+
+  if (cards.length === 0) {
+    return (
+      <p style={{ color: TLK.inkFaint, fontSize: 13, fontFamily: TLK_FONT.sans }}>
+        등록된 질문이 없어요. 관리자 페이지에서 추가해 주세요.
+      </p>
+    );
+  }
+
+  const data = cards[idx % cards.length].data as WouldYouRatherCard;
+  const next = () => {
+    if (spinning) return;
+    setSpinning(true);
+    setTimeout(() => {
+      setIdx((p) => p + 1);
+      setSpinning(false);
+    }, 250);
+  };
+
+  const Option = ({ label, text, color }: { label: string; text: string; color: string }) => (
+    <div
+      className="flex flex-1 flex-col items-center justify-center rounded-2xl px-6 py-10 text-center"
+      style={{ background: TLK.paper, border: `1.5px solid ${color}` }}
+    >
+      <span
+        style={{
+          fontFamily: TLK_FONT.mono,
+          fontSize: 11,
+          letterSpacing: 2,
+          color,
+          textTransform: "uppercase",
+          fontWeight: 700,
+        }}
+      >
+        {label}
+      </span>
+      <p
+        style={{
+          fontFamily: TLK_FONT.serif,
+          fontStyle: "italic",
+          fontSize: 22,
+          fontWeight: 500,
+          color: TLK.ink,
+          lineHeight: 1.4,
+          letterSpacing: -0.3,
+          marginTop: 14,
+        }}
+      >
+        {text}
+      </p>
+    </div>
+  );
+
+  return (
+    <div>
+      <div className="flex flex-col items-stretch gap-4 md:flex-row" style={{ opacity: spinning ? 0.4 : 1, transition: "opacity .2s" }}>
+        <Option label="Option A" text={data.optionA} color={TLK.accent2} />
+        <div className="flex items-center justify-center">
+          <span
+            style={{
+              fontFamily: TLK_FONT.serif,
+              fontStyle: "italic",
+              fontSize: 18,
+              color: TLK.inkFaint,
+            }}
+          >
+            or
+          </span>
+        </div>
+        <Option label="Option B" text={data.optionB} color={TLK.accent} />
+      </div>
+      <div className="mt-6 flex justify-center">
+        <button
+          onClick={next}
+          disabled={spinning}
+          className="inline-flex items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-semibold transition-opacity disabled:opacity-50"
+          style={{ background: TLK.accent, color: "#fff", border: 0, fontFamily: TLK_FONT.sans, cursor: "pointer" }}
+        >
+          <Shuffle size={14} />
+          다른 질문
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TabooGame({ cards }: { cards: GameCardRow[] }) {
+  const [idx, setIdx] = useState<number | null>(null);
+  const [spinning, setSpinning] = useState(false);
+
+  if (cards.length === 0) {
+    return (
+      <p style={{ color: TLK.inkFaint, fontSize: 13, fontFamily: TLK_FONT.sans }}>
+        등록된 카드가 없어요. 관리자 페이지에서 추가해 주세요.
+      </p>
+    );
+  }
+
+  const draw = () => {
+    if (spinning) return;
+    setSpinning(true);
+    setTimeout(() => {
+      setIdx(Math.floor(Math.random() * cards.length));
+      setSpinning(false);
+    }, 600);
+  };
+
+  const data = idx !== null ? (cards[idx].data as TabooCard) : null;
+
   return (
     <div
       className="rounded-2xl px-10 py-12 text-center"
       style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
     >
+      {!data ? (
+        <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 22, color: TLK.inkDim }}>
+          버튼을 눌러 첫 카드를 뽑아주세요
+        </p>
+      ) : (
+        <>
+          <p
+            style={{
+              fontFamily: TLK_FONT.sans,
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: 2,
+              color: TLK.inkFaint,
+              textTransform: "uppercase",
+            }}
+          >
+            Describe this — don&apos;t say it
+          </p>
+          <p
+            style={{
+              fontFamily: TLK_FONT.serif,
+              fontStyle: "italic",
+              fontSize: 44,
+              fontWeight: 500,
+              color: TLK.ink,
+              lineHeight: 1.2,
+              letterSpacing: -0.5,
+              marginTop: 10,
+            }}
+          >
+            {data.target}
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+            <span style={{ fontFamily: TLK_FONT.sans, fontSize: 11, color: TLK.inkFaint, marginRight: 4 }}>
+              금지어
+            </span>
+            {data.forbidden.map((w, i) => (
+              <span
+                key={i}
+                className="rounded-full px-3 py-1 text-xs font-semibold"
+                style={{
+                  background: `${TLK.accent}14`,
+                  color: TLK.accent,
+                  border: `1px solid ${TLK.accent}44`,
+                  fontFamily: TLK_FONT.sans,
+                  textDecoration: "line-through",
+                }}
+              >
+                {w}
+              </span>
+            ))}
+          </div>
+        </>
+      )}
+
+      <div className="mt-7 flex justify-center">
+        <button
+          onClick={draw}
+          disabled={spinning}
+          className="inline-flex items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-semibold transition-opacity disabled:opacity-50"
+          style={{
+            background: TLK.accent,
+            color: "#fff",
+            border: 0,
+            fontFamily: TLK_FONT.sans,
+            cursor: spinning ? "wait" : "pointer",
+          }}
+        >
+          <Shuffle size={14} />
+          {spinning ? "DRAW…" : data ? "다른 카드" : "카드 뽑기"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DebateGame({ cards }: { cards: GameCardRow[] }) {
+  const [idx, setIdx] = useState(0);
+  const [showPoints, setShowPoints] = useState(false);
+
+  if (cards.length === 0) {
+    return (
+      <p style={{ color: TLK.inkFaint, fontSize: 13, fontFamily: TLK_FONT.sans }}>
+        등록된 토론 주제가 없어요. 관리자 페이지에서 추가해 주세요.
+      </p>
+    );
+  }
+
+  const data = cards[idx % cards.length].data as DebateTopic;
+  const nextTopic = () => {
+    setIdx((p) => p + 1);
+    setShowPoints(false);
+  };
+
+  return (
+    <div>
+      {/* 주제 + 배경 */}
+      <div
+        className="rounded-2xl px-8 py-8 text-center"
+        style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
+      >
+        <p
+          style={{
+            fontFamily: TLK_FONT.sans,
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: 2,
+            color: TLK.inkFaint,
+            textTransform: "uppercase",
+          }}
+        >
+          Motion
+        </p>
+        <p
+          style={{
+            fontFamily: TLK_FONT.serif,
+            fontStyle: "italic",
+            fontSize: 28,
+            fontWeight: 500,
+            color: TLK.ink,
+            lineHeight: 1.35,
+            letterSpacing: -0.3,
+            marginTop: 10,
+          }}
+        >
+          “{data.topic}”
+        </p>
+        {data.context && (
+          <p
+            style={{
+              marginTop: 12,
+              fontSize: 13,
+              color: TLK.inkDim,
+              fontFamily: TLK_FONT.sans,
+              lineHeight: 1.6,
+              maxWidth: 560,
+              marginLeft: "auto",
+              marginRight: "auto",
+            }}
+          >
+            {data.context}
+          </p>
+        )}
+      </div>
+
+      {/* 찬반 근거 — 토글로 가렸다가 공개 (먼저 스스로 생각) */}
+      {showPoints ? (
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <PointColumn label="For · 찬성" color={TLK.accent2} points={data.proPoints} />
+          <PointColumn label="Against · 반대" color={TLK.accent} points={data.conPoints} />
+        </div>
+      ) : (
+        <div className="mt-4 flex justify-center">
+          <button
+            onClick={() => setShowPoints(true)}
+            className="rounded-full px-5 py-2 text-xs font-semibold"
+            style={{
+              background: TLK.bg2,
+              color: TLK.inkDim,
+              border: `1px solid ${TLK.rule}`,
+              fontFamily: TLK_FONT.sans,
+              cursor: "pointer",
+            }}
+          >
+            💡 찬반 근거 힌트 보기
+          </button>
+        </div>
+      )}
+
+      <div className="mt-5 flex justify-center">
+        <button
+          onClick={nextTopic}
+          className="inline-flex items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-semibold"
+          style={{ background: TLK.accent, color: "#fff", border: 0, fontFamily: TLK_FONT.sans, cursor: "pointer" }}
+        >
+          <Shuffle size={14} />
+          다른 주제
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PointColumn({ label, color, points }: { label: string; color: string; points: string[] }) {
+  return (
+    <div className="rounded-2xl px-6 py-5" style={{ background: TLK.paper, border: `1.5px solid ${color}` }}>
       <p
         style={{
           fontFamily: TLK_FONT.sans,
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: 700,
-          letterSpacing: 2,
-          color: TLK.inkFaint,
+          letterSpacing: 1.5,
+          color,
           textTransform: "uppercase",
-          marginBottom: 12,
+          marginBottom: 10,
         }}
       >
-        Example
+        {label}
+      </p>
+      <ul className="flex flex-col gap-2">
+        {points.map((p, i) => (
+          <li
+            key={i}
+            className="flex items-start gap-2"
+            style={{ fontFamily: TLK_FONT.sans, fontSize: 14, color: TLK.ink, lineHeight: 1.5 }}
+          >
+            <span style={{ color, fontWeight: 700 }}>·</span>
+            {p}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function WhoAmIGame({ cards }: { cards: GameCardRow[] }) {
+  const [idx, setIdx] = useState<number | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const [spinning, setSpinning] = useState(false);
+
+  if (cards.length === 0) {
+    return (
+      <p style={{ color: TLK.inkFaint, fontSize: 13, fontFamily: TLK_FONT.sans }}>
+        등록된 단어가 없어요. 관리자 페이지에서 추가해 주세요.
+      </p>
+    );
+  }
+
+  const draw = () => {
+    if (spinning) return;
+    setSpinning(true);
+    setRevealed(false);
+    setTimeout(() => {
+      setIdx(Math.floor(Math.random() * cards.length));
+      setSpinning(false);
+    }, 500);
+  };
+
+  const target = idx !== null ? (cards[idx].data as TabooCard).target : null;
+
+  return (
+    <div
+      className="rounded-2xl px-10 py-12 text-center"
+      style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}
+    >
+      {!target ? (
+        <p style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 22, color: TLK.inkDim }}>
+          버튼을 눌러 정답 단어를 뽑아주세요
+        </p>
+      ) : (
+        <>
+          <p
+            style={{
+              fontFamily: TLK_FONT.sans,
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: 2,
+              color: TLK.inkFaint,
+              textTransform: "uppercase",
+            }}
+          >
+            What am I?
+          </p>
+          <p
+            style={{
+              fontFamily: TLK_FONT.serif,
+              fontStyle: "italic",
+              fontSize: 44,
+              fontWeight: 500,
+              color: revealed ? TLK.ink : TLK.inkFaint,
+              lineHeight: 1.2,
+              letterSpacing: -0.5,
+              marginTop: 10,
+              filter: revealed ? "none" : "blur(11px)",
+              transition: "filter .15s",
+              userSelect: revealed ? "auto" : "none",
+            }}
+          >
+            {target}
+          </p>
+          <p style={{ marginTop: 14, fontSize: 12.5, color: TLK.inkDim, fontFamily: TLK_FONT.sans }}>
+            추측하는 사람은 <strong>예/아니오 질문만</strong> — “Is it ~?”, “Can you ~?”, “Do people use it ~?”
+          </p>
+        </>
+      )}
+
+      <div className="mt-7 flex items-center justify-center gap-2">
+        <button
+          onClick={draw}
+          disabled={spinning}
+          className="inline-flex items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-semibold transition-opacity disabled:opacity-50"
+          style={{
+            background: TLK.accent,
+            color: "#fff",
+            border: 0,
+            fontFamily: TLK_FONT.sans,
+            cursor: spinning ? "wait" : "pointer",
+          }}
+        >
+          <Shuffle size={14} />
+          {spinning ? "DRAW…" : target ? "다른 단어" : "단어 뽑기"}
+        </button>
+        {target && (
+          <button
+            onClick={() => setRevealed((v) => !v)}
+            className="rounded-full px-3 py-2 text-xs font-medium"
+            style={{
+              background: TLK.bg2,
+              color: TLK.inkDim,
+              border: `1px solid ${TLK.rule}`,
+              fontFamily: TLK_FONT.sans,
+              cursor: "pointer",
+            }}
+          >
+            {revealed ? "🙈 가리기" : "👁️ 정답 보기"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+interface RoleplayScenario {
+  emoji: string;
+  title: string;
+  situation: string;
+  situation_ko: string;
+  role_a: { name: string; mission: string };
+  role_b: { name: string; mission: string };
+  phrases: string[];
+  emotion: string;
+}
+
+// 시작 시나리오 세트 (Phase B에서 AI/DB로 승격 예정)
+const ROLEPLAY_SCENARIOS: RoleplayScenario[] = [
+  {
+    emoji: "🍽️",
+    title: "식당 컴플레인",
+    situation: "You ordered your steak medium, but it arrived completely burnt. Call the server over and sort it out.",
+    situation_ko: "미디엄으로 주문한 스테이크가 새까맣게 탄 채로 나왔어요. 종업원을 불러 해결하세요.",
+    role_a: { name: "Customer · 손님", mission: "정중하지만 단호하게 문제를 설명하고, 재조리 또는 환불을 요청해요." },
+    role_b: { name: "Server · 종업원", mission: "사과하고 해결책(재조리·할인·서비스)을 제시해 손님을 달래요." },
+    phrases: [
+      "Excuse me, I'm afraid there's a problem with my order.",
+      "This really isn't what I asked for.",
+      "Could you replace it, or take it off the bill?",
+      "I'm so sorry about that — let me fix it right away.",
+    ],
+    emotion: "😤 약간의 짜증 → 🙂 누그러짐",
+  },
+  {
+    emoji: "🏨",
+    title: "호텔 체크인 문제",
+    situation: "You booked a non-smoking double room, but the front desk only has a smoking single left. Sort it out at check-in.",
+    situation_ko: "금연 더블룸을 예약했는데 프런트엔 흡연 싱글룸만 남았다고 해요. 체크인하며 해결하세요.",
+    role_a: { name: "Guest · 투숙객", mission: "예약 내역을 근거로 약속한 방을 요구하고 대안을 협상해요." },
+    role_b: { name: "Front desk · 직원", mission: "상황을 설명하고 업그레이드·할인 같은 대안을 제시해요." },
+    phrases: [
+      "I have a reservation under the name ~.",
+      "I specifically booked a non-smoking room.",
+      "Is there anything you can do for me?",
+      "Let me see what I can offer you.",
+    ],
+    emotion: "😟 당황 → 😮 놀람(업그레이드 제안에)",
+  },
+  {
+    emoji: "📦",
+    title: "환불·교환",
+    situation: "The wireless headphones you bought last week suddenly stopped working. Take them back to the store.",
+    situation_ko: "지난주에 산 무선 헤드폰이 갑자기 고장 났어요. 매장에 가서 반품하세요.",
+    role_a: { name: "Customer · 손님", mission: "문제를 설명하고 영수증을 제시하며 환불 또는 교환을 요구해요." },
+    role_b: { name: "Store clerk · 점원", mission: "환불 정책을 확인하고 교환·수리·환불 중에서 안내해요." },
+    phrases: [
+      "I'd like to return these, please.",
+      "They stopped working after just a few days.",
+      "Do you have the receipt with you?",
+      "Would you prefer a refund or an exchange?",
+    ],
+    emotion: "😑 불만 → 😌 만족",
+  },
+  {
+    emoji: "🏥",
+    title: "병원 진료",
+    situation: "You've had a bad headache and trouble sleeping for a week. Describe your symptoms to the doctor.",
+    situation_ko: "일주일째 심한 두통과 불면에 시달리고 있어요. 의사에게 증상을 설명하세요.",
+    role_a: { name: "Patient · 환자", mission: "증상·기간·정도를 구체적으로 설명하고 궁금한 점을 물어봐요." },
+    role_b: { name: "Doctor · 의사", mission: "추가 질문으로 상태를 파악하고 처방·생활 조언을 제시해요." },
+    phrases: [
+      "I've been having headaches for about a week.",
+      "It seems to get worse in the morning.",
+      "How long has this been going on?",
+      "I'd recommend you ~ and get some rest.",
+    ],
+    emotion: "😣 불편함 호소 → 🙏 안심",
+  },
+  {
+    emoji: "💼",
+    title: "면접",
+    situation: "You're interviewing for your dream job. Answer the interviewer's questions confidently.",
+    situation_ko: "꿈꾸던 회사의 면접 자리예요. 면접관의 질문에 자신 있게 답하세요.",
+    role_a: { name: "Candidate · 지원자", mission: "강점·경험·지원 동기를 자신 있게 어필해요." },
+    role_b: { name: "Interviewer · 면접관", mission: "자기소개·강점/약점·미래 계획을 차례로 물어봐요." },
+    phrases: [
+      "Tell me a little about yourself.",
+      "What would you say are your strengths and weaknesses?",
+      "I'm really passionate about ~.",
+      "Why do you want to work with us?",
+    ],
+    emotion: "😊 자신감(긴장 누르기)",
+  },
+  {
+    emoji: "🗺️",
+    title: "길 안내",
+    situation: "A lost tourist asks you how to get to the nearest subway station. Give clear directions.",
+    situation_ko: "길 잃은 관광객이 가장 가까운 지하철역 가는 길을 물어요. 명확하게 안내하세요.",
+    role_a: { name: "Tourist · 관광객", mission: "길을 묻고, 잘 못 알아들으면 다시 되물어요." },
+    role_b: { name: "Local · 현지인", mission: "방향·거리·랜드마크를 활용해 길을 안내해요." },
+    phrases: [
+      "Excuse me, how do I get to ~?",
+      "Go straight and turn left at the corner.",
+      "It's about a five-minute walk from here.",
+      "Sorry, could you say that one more time?",
+    ],
+    emotion: "😅 헤맴 → 🙏 고마움",
+  },
+  {
+    emoji: "📞",
+    title: "약속 변경 전화",
+    situation: "You can't make tonight's dinner with a friend. Call to cancel and reschedule.",
+    situation_ko: "오늘 저녁 친구와의 약속에 못 가게 됐어요. 전화해서 취소하고 다시 잡으세요.",
+    role_a: { name: "Caller · 거는 사람", mission: "사정을 설명하고 사과한 뒤 새로운 날짜를 제안해요." },
+    role_b: { name: "Friend · 친구", mission: "아쉬움을 표현하면서 새 일정을 함께 조율해요." },
+    phrases: [
+      "Hey, something came up and I can't make it tonight.",
+      "I'm really sorry for the short notice.",
+      "Can we reschedule for another day?",
+      "No worries — how about Friday instead?",
+    ],
+    emotion: "😔 미안함 → 😄 반가움",
+  },
+  {
+    emoji: "🧳",
+    title: "분실물 신고",
+    situation: "You left your bag in a taxi. Call the taxi company to report it and get it back.",
+    situation_ko: "택시에 가방을 두고 내렸어요. 택시 회사에 전화해 신고하고 찾으세요.",
+    role_a: { name: "Passenger · 승객", mission: "분실 시간·장소와 가방 생김새를 설명하고 회수 방법을 물어요." },
+    role_b: { name: "Staff · 직원", mission: "정보를 확인하고 처리 절차를 차분히 안내해요." },
+    phrases: [
+      "I think I left my bag in one of your taxis.",
+      "It's a black backpack with a laptop inside.",
+      "I got off around 8 p.m. near ~.",
+      "Let me check with the driver for you.",
+    ],
+    emotion: "😰 다급함 → 😅 안도",
+  },
+];
+
+function RoleplayGame() {
+  const [idx, setIdx] = useState(() => Math.floor(Math.random() * ROLEPLAY_SCENARIOS.length));
+  const [showPhrases, setShowPhrases] = useState(false);
+
+  const s = ROLEPLAY_SCENARIOS[idx % ROLEPLAY_SCENARIOS.length];
+  const nextScenario = () => {
+    setIdx((p) => p + 1);
+    setShowPhrases(false);
+  };
+
+  const RoleCard = ({ label, role, color }: { label: string; role: { name: string; mission: string }; color: string }) => (
+    <div className="flex-1 rounded-2xl px-6 py-5" style={{ background: TLK.paper, border: `1.5px solid ${color}` }}>
+      <p
+        style={{
+          fontFamily: TLK_FONT.mono,
+          fontSize: 10,
+          letterSpacing: 1.5,
+          color,
+          textTransform: "uppercase",
+          fontWeight: 700,
+        }}
+      >
+        {label}
       </p>
       <p
         style={{
           fontFamily: TLK_FONT.serif,
           fontStyle: "italic",
-          fontSize: 26,
+          fontSize: 20,
           fontWeight: 500,
           color: TLK.ink,
-          lineHeight: 1.5,
+          marginTop: 6,
         }}
       >
-        apple → e<span style={{ color: TLK.accent }}>lephant</span> → t<span style={{ color: TLK.accent }}>iger</span>{" "}
-        → r<span style={{ color: TLK.accent }}>ainbow</span> → …
+        {role.name}
       </p>
-      <p
-        style={{
-          marginTop: 16,
-          fontSize: 13,
-          color: TLK.inkDim,
-          fontFamily: TLK_FONT.sans,
-        }}
+      <p style={{ marginTop: 8, fontSize: 13.5, color: TLK.inkDim, fontFamily: TLK_FONT.sans, lineHeight: 1.55 }}>
+        {role.mission}
+      </p>
+    </div>
+  );
+
+  return (
+    <div>
+      {/* 상황 카드 */}
+      <div className="rounded-2xl px-8 py-7" style={{ background: TLK.paper, border: `1px solid ${TLK.rule}` }}>
+        <p
+          style={{
+            fontFamily: TLK_FONT.sans,
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: 2,
+            color: TLK.inkFaint,
+            textTransform: "uppercase",
+          }}
+        >
+          Scenario {s.emoji} {s.title}
+        </p>
+        <p
+          style={{
+            fontFamily: TLK_FONT.serif,
+            fontStyle: "italic",
+            fontSize: 22,
+            fontWeight: 500,
+            color: TLK.ink,
+            lineHeight: 1.45,
+            letterSpacing: -0.3,
+            marginTop: 10,
+          }}
+        >
+          {s.situation}
+        </p>
+        <p style={{ marginTop: 8, fontSize: 13, color: TLK.inkDim, fontFamily: TLK_FONT.ko, lineHeight: 1.6 }}>
+          {s.situation_ko}
+        </p>
+      </div>
+
+      {/* 2인 역할 */}
+      <div className="mt-4 flex flex-col gap-4 md:flex-row">
+        <RoleCard label="Role A" role={s.role_a} color={TLK.accent2} />
+        <RoleCard label="Role B" role={s.role_b} color={TLK.accent} />
+      </div>
+
+      {/* 감정 연기 미션 */}
+      <div
+        className="mt-4 flex items-center gap-2 rounded-xl px-4 py-3"
+        style={{ background: `${TLK.gold}14`, border: `1px solid ${TLK.gold}44` }}
       >
-        반복·이미 나온 단어는 금지. 막히면 1회 패스 가능.
-      </p>
+        <span style={{ fontSize: 16 }}>🎭</span>
+        <p style={{ fontSize: 13, color: TLK.ink, fontFamily: TLK_FONT.sans }}>
+          <strong>감정 연기 미션</strong> — {s.emotion}
+          <span style={{ color: TLK.inkDim }}> · OPIc 롤플레이는 리액션·감탄사가 점수를 가릅니다</span>
+        </p>
+      </div>
+
+      {/* 유용 표현 토글 */}
+      {showPhrases ? (
+        <div className="mt-4 rounded-xl px-5 py-4" style={{ background: TLK.bg2, border: `1px solid ${TLK.rule}` }}>
+          <p
+            style={{
+              fontFamily: TLK_FONT.sans,
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: 2,
+              color: TLK.inkFaint,
+              textTransform: "uppercase",
+              marginBottom: 8,
+            }}
+          >
+            Useful phrases
+          </p>
+          <ul className="flex flex-col gap-1.5">
+            {s.phrases.map((p, i) => (
+              <li
+                key={i}
+                style={{ fontFamily: TLK_FONT.serif, fontStyle: "italic", fontSize: 15, color: TLK.ink, lineHeight: 1.5 }}
+              >
+                “{p}”
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <div className="mt-4 flex justify-center">
+          <button
+            onClick={() => setShowPhrases(true)}
+            className="rounded-full px-5 py-2 text-xs font-semibold"
+            style={{ background: TLK.bg2, color: TLK.inkDim, border: `1px solid ${TLK.rule}`, fontFamily: TLK_FONT.sans, cursor: "pointer" }}
+          >
+            💬 유용한 표현 보기
+          </button>
+        </div>
+      )}
+
+      <div className="mt-5 flex justify-center">
+        <button
+          onClick={nextScenario}
+          className="inline-flex items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-semibold"
+          style={{ background: TLK.accent, color: "#fff", border: 0, fontFamily: TLK_FONT.sans, cursor: "pointer" }}
+        >
+          <Shuffle size={14} />
+          다른 상황
+        </button>
+      </div>
     </div>
   );
 }
@@ -907,7 +1694,7 @@ function FridayIntro({
           textAlign: "center",
         }}
       >
-        토픽 스피너로 자유 발화, 워드 체인·Two Truths·핫시트·이어쓰기 4가지 게임 중에서 골라가며 가볍게 즐겨봐요. 점수도 평가도 없어요. 그냥 입을 자주 여는 시간.
+        토픽 스피너(JAM 모드)·Would You Rather·스무고개·Two Truths·Taboo·롤플레이·핫시트·이어쓰기·Debate까지 9가지 게임 중에서 골라가며 가볍게 즐겨봐요. 점수도 평가도 없어요. 그냥 입을 자주 여는 시간.
       </p>
       <div
         className="flex items-center gap-3 rounded-full px-5 py-3"
