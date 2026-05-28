@@ -35,12 +35,12 @@ const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
 const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "https://soridamhub.com,http://localhost:3001").split(",");
 
 function getCorsHeaders(req: Request) {
-  const origin = req.headers.get("origin") || "";
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  // origin echo + wildcard fallback — PWA/www variant/인앱 브라우저 모두 커버
+  // (credentials를 안 쓰므로 "*"도 안전)
+  const origin = req.headers.get("origin");
   return {
-    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Origin": origin || "*",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-api-version",
-    // ★ 모바일 브라우저(삼성/모바일 Chrome)는 Allow-Methods 명시가 없으면 preflight 거부 → 본 POST 안 보냄
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Max-Age": "86400",
   };
@@ -261,18 +261,26 @@ function calcGpt41Cost(tokens_in: number, tokens_out: number): number {
 Deno.serve(async (req) => {
   const cors = getCorsHeaders(req);
 
-  if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: cors });
-  }
-
-  // 디버깅: 모든 진입 요청 헤더 로깅 (PC vs 모바일 차이 진단용)
-  console.log("[talklish-coach] request received", {
+  // ★ 모든 진입(OPTIONS 포함) 디버깅 로그 — 모바일이 실제 보낸 origin/요청 헤더 캡처용
+  console.log("[talklish-coach] entry", {
     method: req.method,
     origin: req.headers.get("origin"),
+    acrm: req.headers.get("access-control-request-method"),
+    acrh: req.headers.get("access-control-request-headers"),
     contentType: req.headers.get("content-type"),
     contentLength: req.headers.get("content-length"),
     userAgent: req.headers.get("user-agent")?.slice(0, 100),
     hasAuth: !!req.headers.get("authorization"),
+  });
+
+  if (req.method === "OPTIONS") {
+    // status 200 + "ok" body — 일부 모바일 브라우저(특히 구버전 삼성)는 204를 비정상으로 처리
+    console.log("[talklish-coach] OPTIONS preflight reply", { cors });
+    return new Response("ok", { status: 200, headers: cors });
+  }
+
+  console.log("[talklish-coach] request received", {
+    method: req.method,
   });
 
   if (req.method !== "POST") {
