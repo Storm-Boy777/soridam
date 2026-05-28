@@ -39,8 +39,21 @@ function getCorsHeaders(req: Request) {
   const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-api-version",
+    // ★ 모바일 브라우저(삼성/모바일 Chrome)는 Allow-Methods 명시가 없으면 preflight 거부 → 본 POST 안 보냄
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Max-Age": "86400",
   };
+}
+
+// ── Promise.race timeout 헬퍼 (AbortSignal.timeout이 Deno fetch body stream에 안 먹는 케이스 백업) ──
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timeout (${ms / 1000}s)`)), ms),
+    ),
+  ]);
 }
 
 interface RequestBody {
@@ -64,39 +77,50 @@ interface CoachingOutput {
 // ── Whisper STT (30초 timeout) ──
 
 async function whisperSTT(audioBuffer: ArrayBuffer): Promise<{ transcript: string; duration_sec: number }> {
-  const formData = new FormData();
-  formData.append("file", new Blob([audioBuffer], { type: "audio/webm" }), "audio.webm");
-  formData.append("model", "whisper-1");
-  formData.append("language", "en");
+  const fetchPromise = (async () => {
+    const formData = new FormData();
+    formData.append("file", new Blob([audioBuffer], { type: "audio/webm" }), "audio.webm");
+    formData.append("model", "whisper-1");
+    formData.append("language", "en");
 
-  const resp = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
-    body: formData,
-    signal: AbortSignal.timeout(30_000),
-  });
+    const resp = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+      body: formData,
+      signal: AbortSignal.timeout(30_000),
+    });
 
-  if (!resp.ok) {
-    const err = await resp.text();
-    throw new Error(`Whisper ${resp.status}: ${err.slice(0, 200)}`);
-  }
+    if (!resp.ok) {
+      const err = await resp.text();
+      throw new Error(`Whisper ${resp.status}: ${err.slice(0, 200)}`);
+    }
 
-  const json = await resp.json();
-  const transcript = (json.text || "").trim();
-  // Whisper API는 duration을 반환하지 않으므로 audio size로 대략 추정 (불완전)
-  // webm opus 평균 ~16KB/s
-  const duration_sec = Math.max(1, Math.round(audioBuffer.byteLength / 16000));
-  return { transcript, duration_sec };
+    const json = await resp.json();
+    const transcript = (json.text || "").trim();
+    // Whisper API는 duration을 반환하지 않으므로 audio size로 대략 추정 (불완전)
+    // webm opus 평균 ~16KB/s
+    const duration_sec = Math.max(1, Math.round(audioBuffer.byteLength / 16000));
+    return { transcript, duration_sec };
+  })();
+  // AbortSignal.timeout이 Deno fetch body stream에 안 먹는 케이스 백업 (35s)
+  return await withTimeout(fetchPromise, 35_000, "Whisper STT");
 }
 
-// ── audio 다운로드 ──
+// ── audio 다운로드 (디버깅 로그 + timeout 20s) ──
 
 async function downloadAudio(supabase: SupabaseClient, audioPath: string): Promise<ArrayBuffer> {
-  const { data, error } = await supabase.storage
+  const t0 = Date.now();
+  console.log("[talklish-coach] download start", { path_prefix: audioPath.slice(0, 60) });
+  const downloadPromise = supabase.storage
     .from("talklish-recordings")
-    .download(audioPath);
-  if (error || !data) throw new Error(`Storage 다운로드 실패: ${error?.message}`);
-  return await data.arrayBuffer();
+    .download(audioPath)
+    .then(({ data, error }) => {
+      if (error || !data) throw new Error(`Storage 다운로드 실패: ${error?.message}`);
+      return data.arrayBuffer();
+    });
+  const buffer = await withTimeout(downloadPromise, 20_000, "Storage download");
+  console.log("[talklish-coach] download done", { size: buffer.byteLength, ms: Date.now() - t0 });
+  return buffer;
 }
 
 // ── GPT-4.1 코칭 ──
@@ -131,7 +155,8 @@ async function generateCoaching(
   transcript: string,
   question: { english: string; korean?: string; type?: string; category?: string; topic?: string }
 ): Promise<{ coaching: CoachingOutput; tokens_in: number; tokens_out: number }> {
-  const userPrompt = `[질문]
+  const fetchPromise = (async () => {
+    const userPrompt = `[질문]
 - 영어: ${question.english}
 ${question.korean ? `- 한국어: ${question.korean}\n` : ""}${question.type ? `- 유형: ${question.type}\n` : ""}${question.category ? `- 카테고리: ${question.category}\n` : ""}${question.topic ? `- 토픽: ${question.topic}\n` : ""}
 [답변자] ${speakerName}
@@ -141,46 +166,49 @@ ${transcript || "(빈 답변)"}
 
 위 답변에 대한 코칭 노트를 JSON 형식으로 생성해주세요.`;
 
-  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4.1",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.4,
-      max_tokens: 1500,
-      response_format: { type: "json_object" },
-    }),
-    signal: AbortSignal.timeout(60_000),
-  });
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4.1",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.4,
+        max_tokens: 1500,
+        response_format: { type: "json_object" },
+      }),
+      signal: AbortSignal.timeout(60_000),
+    });
 
-  if (!resp.ok) {
-    const err = await resp.text();
-    throw new Error(`GPT ${resp.status}: ${err.slice(0, 200)}`);
-  }
+    if (!resp.ok) {
+      const err = await resp.text();
+      throw new Error(`GPT ${resp.status}: ${err.slice(0, 200)}`);
+    }
 
-  const json = await resp.json();
-  const content = json.choices?.[0]?.message?.content || "{}";
-  const usage = json.usage || { prompt_tokens: 0, completion_tokens: 0 };
+    const json = await resp.json();
+    const content = json.choices?.[0]?.message?.content || "{}";
+    const usage = json.usage || { prompt_tokens: 0, completion_tokens: 0 };
 
-  let coaching: CoachingOutput;
-  try {
-    coaching = JSON.parse(content) as CoachingOutput;
-  } catch {
-    throw new Error("GPT 응답 JSON 파싱 실패");
-  }
+    let coaching: CoachingOutput;
+    try {
+      coaching = JSON.parse(content) as CoachingOutput;
+    } catch {
+      throw new Error("GPT 응답 JSON 파싱 실패");
+    }
 
-  return {
-    coaching,
-    tokens_in: usage.prompt_tokens || 0,
-    tokens_out: usage.completion_tokens || 0,
-  };
+    return {
+      coaching,
+      tokens_in: usage.prompt_tokens || 0,
+      tokens_out: usage.completion_tokens || 0,
+    };
+  })();
+  // AbortSignal.timeout이 Deno fetch body stream에 안 먹는 케이스 백업 (65s)
+  return await withTimeout(fetchPromise, 65_000, "GPT coaching");
 }
 
 // ── 시스템 비용 로그 ──
@@ -237,6 +265,16 @@ Deno.serve(async (req) => {
     return new Response(null, { status: 204, headers: cors });
   }
 
+  // 디버깅: 모든 진입 요청 헤더 로깅 (PC vs 모바일 차이 진단용)
+  console.log("[talklish-coach] request received", {
+    method: req.method,
+    origin: req.headers.get("origin"),
+    contentType: req.headers.get("content-type"),
+    contentLength: req.headers.get("content-length"),
+    userAgent: req.headers.get("user-agent")?.slice(0, 100),
+    hasAuth: !!req.headers.get("authorization"),
+  });
+
   if (req.method !== "POST") {
     return new Response(
       JSON.stringify({ success: false, error: "POST only" }),
@@ -247,8 +285,21 @@ Deno.serve(async (req) => {
   const t0 = Date.now();
 
   try {
-    const body = (await req.json()) as RequestBody;
+    // body parse — 모바일 chunked transfer가 끊겨도 10초 안에 throw
+    const body = (await withTimeout(req.json(), 10_000, "body parse")) as RequestBody;
+    console.log("[talklish-coach] body parsed", {
+      audio_path_prefix: body.audio_path?.slice(0, 60),
+      speaker: body.speaker_name,
+      q_type: body.question_type,
+      q_en_len: body.question_english?.length,
+      q_kr_len: body.question_korean?.length,
+      category: body.category,
+      topic: body.topic,
+      ms: Date.now() - t0,
+    });
+
     if (!body.audio_path || !body.speaker_name || !body.question_english) {
+      console.warn("[talklish-coach] 필수 필드 누락", { body: Object.keys(body || {}) });
       return new Response(
         JSON.stringify({ success: false, error: "audio_path, speaker_name, question_english 필수" }),
         { status: 400, headers: { ...cors, "Content-Type": "application/json" } }
@@ -261,17 +312,23 @@ Deno.serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     let userId: string | null = null;
     if (token) {
-      const { data } = await supabase.auth.getUser(token);
+      const authT0 = Date.now();
+      const { data } = await withTimeout(supabase.auth.getUser(token), 10_000, "auth.getUser");
       userId = data.user?.id ?? null;
+      console.log("[talklish-coach] auth done", { userId, ms: Date.now() - authT0 });
+    } else {
+      console.warn("[talklish-coach] no auth token");
     }
 
-    // 1. Audio 다운로드
+    // 1. Audio 다운로드 (downloadAudio 내부 timeout 20s)
     const audioBuffer = await downloadAudio(supabase, body.audio_path);
 
-    // 2. Whisper STT
+    // 2. Whisper STT (withTimeout 35s)
     const whisperT0 = Date.now();
+    console.log("[talklish-coach] whisper start");
     const { transcript, duration_sec } = await whisperSTT(audioBuffer);
     const whisperMs = Date.now() - whisperT0;
+    console.log("[talklish-coach] whisper done", { duration_sec, transcript_len: transcript.length, ms: whisperMs });
     const whisperCost = calcWhisperCost(duration_sec);
 
     // Whisper 로그
@@ -285,8 +342,9 @@ Deno.serve(async (req) => {
       processing_time_ms: whisperMs,
     });
 
-    // 3. GPT-4.1 코칭
+    // 3. GPT-4.1 코칭 (withTimeout 65s)
     const gptT0 = Date.now();
+    console.log("[talklish-coach] gpt start");
     const { coaching, tokens_in, tokens_out } = await generateCoaching(
       body.speaker_name,
       transcript,
@@ -299,6 +357,7 @@ Deno.serve(async (req) => {
       }
     );
     const gptMs = Date.now() - gptT0;
+    console.log("[talklish-coach] gpt done", { tokens_in, tokens_out, ms: gptMs });
     const gptCost = calcGpt41Cost(tokens_in, tokens_out);
 
     // GPT 로그
@@ -314,6 +373,7 @@ Deno.serve(async (req) => {
     });
 
     const totalMs = Date.now() - t0;
+    console.log("[talklish-coach] DONE", { totalMs, totalCost: whisperCost + gptCost });
 
     return new Response(
       JSON.stringify({
@@ -330,7 +390,8 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error("[talklish-coach] 실패:", msg);
+    const stack = err instanceof Error ? err.stack?.slice(0, 500) : "";
+    console.error("[talklish-coach] FAIL", { msg, stack, ms: Date.now() - t0 });
     return new Response(
       JSON.stringify({ success: false, error: msg }),
       { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
