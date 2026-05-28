@@ -331,7 +331,8 @@ async function getOrGenerateGuide(
 // ── 메인 핸들러 ──
 Deno.serve(async (req: Request) => {
   const corsHeaders = getCorsHeaders(req);
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+  // status 200 + "ok" body — 일부 모바일 브라우저(삼성/구버전 Chrome)가 204를 거부하는 케이스 회피
+  if (req.method === "OPTIONS") return new Response("ok", { status: 200, headers: corsHeaders });
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,

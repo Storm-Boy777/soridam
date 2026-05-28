@@ -218,7 +218,9 @@ Deno.serve(async (req: Request) => {
   const corsHeaders = getCorsHeaders(req);
 
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders });
+    // status 200 + "ok" body — 일부 모바일 브라우저(특히 삼성 인터넷·구버전 모바일 Chrome)는
+    // OPTIONS preflight에 204를 비정상으로 처리해서 본 POST를 발사하지 않음
+    return new Response("ok", { status: 200, headers: corsHeaders });
   }
 
   if (req.method !== "POST") {
