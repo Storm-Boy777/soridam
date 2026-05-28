@@ -35,14 +35,6 @@ interface Props {
 //
 // 강사 직접 명시 13 토픽 + DB 실 토픽 16개 확장 = 28 토픽을 4 그룹으로 매핑.
 // 추가 토픽은 그룹 본질(시사=공공·생활 서비스 / 환경=자연·시간 / 산업기술=기기·회사 / 개인=일상·관계)에 맞춰 분류.
-// 강사 직접 모범이 있는 13 토픽은 topic_skeleton(082) row 존재 — 추가 16 토픽은 그룹 spec(081)만 적용.
-const TEACHER_CANON_TOPICS = new Set([
-  "은행", "호텔", "음식점", "교통",
-  "재활용", "지형", "날씨",
-  "산업", "기술",
-  "모임", "휴일", "자유시간",
-]);
-
 const COMMON_GROUPS = [
   {
     id: "current_affairs",
@@ -180,14 +172,6 @@ function CommonGroupedSections({
         <Shuffle className="h-4 w-4 text-foreground-muted" />
         <span>공통형 ({common.length}) — 돌발 · 강사 4 그룹</span>
       </div>
-      <div className="mb-3 rounded-xl border border-border bg-surface-secondary/50 px-3 py-2.5 text-xs leading-relaxed text-foreground-secondary">
-        같은 그룹 안의 토픽은 <strong className="font-semibold text-foreground">동일한 그룹 코칭 spec</strong>을 공유해요.
-        그룹별로 격상 카드(어휘 매트릭스 / 토론 마무리 / 정량화 / 양면 토론)가 다르게 적용됩니다.
-        <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
-          ★
-        </span>
-        <span className="ml-1">표시는 강사 자료 #11~#14 직접 모범 풀 모범이 있는 토픽이에요.</span>
-      </div>
 
       <div className="space-y-4">
         {COMMON_GROUPS.map((g) => {
@@ -264,7 +248,6 @@ function TopicGrid({
         const inProgress = t.user_progress?.in_progress_session_id;
         const active = selectedTopic === t.topic;
         const Icon = TOPIC_ICONS[t.topic] ?? Folder;
-        const isCanon = TEACHER_CANON_TOPICS.has(t.topic);
         return (
           <button
             key={t.topic}
@@ -280,14 +263,6 @@ function TopicGrid({
                     : "border-border bg-surface hover:border-primary-300 hover:bg-surface-hover"
             }`}
           >
-            {isCanon && (
-              <span
-                className="absolute right-1 top-1 text-amber-500"
-                title="강사 자료 #11~#14 직접 모범 풀 모범 토픽"
-              >
-                ★
-              </span>
-            )}
             <Icon
               size={18}
               className={

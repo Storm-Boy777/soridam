@@ -517,13 +517,139 @@ origin: https://opictalkdoc@github.com/opictalkdoc/opictalkdoc-app.git
 | 03-15 | UI/UX 개선 | PC 진행과정 화살표 + 제출이력 수직정렬 + 스크립트 크레딧 2회 통일 + 전략가이드 수치 제거 |
 | 03-17 | 평가엔진 보강 ✅ | 모의고사 judge 체크박스 fail-closed 검증 + rule-engine 분모 보강 + `coaching_feedback` 마이그레이션 추가 + 레거시 `skipQuestion` 제거 |
 | 05-08 | 오픽 스터디 개선 ✅ | 학습 기록 페이지 재정리 (답변/패스/실참여자 집계, 빈 세션 숨김, 읽기 전용 상세 페이지 추가) |
+| 05-20 | 기출 콤보 정합성 정정 ✅ | combos.json 스펙 기반 불량 콤보 4개(96, 113, 141, 170) 오염 원인 분석 및 단일 토픽 정석 매칭 정정, DB 업데이트 및 캐시 클렌징 완료 |
 
 <!-- 이후 새 이력은 이 테이블에 행 추가 + memory/개발이력.md에 상세 기록 -->
 
 ## 🔮 현재 상태 & 다음 단계
 
-**현재**: Phase 3 (핵심 모듈 이관) — Step 4 튜터링 ✅ + 성장리포트 ✅ + 관리자 ✅ + 플랜 리뉴얼 ✅ + 카카오페이 ✅ + 모의고사 평가엔진 보강 ✅ + 오픽 스터디 기록 UX 개선 ✅
+**현재**: Phase 3 (핵심 모듈 이관) — Step 4 튜터링 ✅ + 성장리포트 ✅ + 관리자 ✅ + 플랜 리뉴얼 ✅ + 카카오페이 ✅ + 모의고사 평가엔진 보강 ✅ + 오픽 스터디 기록 UX 개선 ✅ + 기출 콤보 정합성 정정 ✅
 **다음 작업**: 오픽 스터디 미니 시뮬레이션 추가 검증 → 모의고사 평가 v3 추가 고도화 → 리브랜딩(P-5)
+
+### 튜터링 모듈 구현 현황
+| 영역 | 상태 | 상세 |
+|------|------|------|
+| DB 스키마 (7테이블) | ✅ | `014_tutoring.sql` — sessions, prescriptions, training_sessions, attempts, review_schedule, skill_history + Storage |
+| Server Actions (7함수) | ✅ | getDiagnosis, startTutoringSession(+처방엔진), getPrescriptions, createTrainingSession, saveAttempt, completeTrainingSession, getTrainingHistory |
+| Type 정의 | ✅ | `lib/types/tutoring.ts` — 6타입 + LEVEL_PARAMS + DRILL_TAG 매핑 |
+| UI (3탭 + 훈련 세션) | ✅ | tutoring-content(진단/처방/훈련) + training-session(Screen 0~6) |
+| 페이지/라우트 | ✅ | `/tutoring` + `/tutoring/training` |
+| Edge Functions (8 handler) | ✅ | session-brief, generate-warmup, generate-epp, generate-variation, generate-transformation, evaluate-timed, evaluate-repair, complete-session |
+| Zod Validation | ⏳ | `lib/validations/tutoring.ts` 미구현 (선택사항) |
+
+### ⏳ 리브랜딩 작업 (P-5: 오픽톡닥 → 하루오픽)
+> Phase 3 전체 완료(Step 4 튜터링까지) 후 진행. 상세는 `docs/의사결정.md` P-5, `docs/실행계획.md` 참조.
+
+| # | 작업 | 상세 |
+|---|------|------|
+| 1 | 도메인 구매 | haruopic.com |
+| 2 | DNS 설정 | Vercel에 haruopic.com 연결 |
+| 3 | 기존 도메인 리다이렉트 | opictalkdoc.com → haruopic.com (301), PG 심사 완료까지 유지 |
+| 4 | 코드 텍스트 치환 | "오픽톡닥" → "하루오픽", "OPIcTalkDoc" → "HaruOPIc" |
+| 5 | 로고 재생성 | 반창고 아이콘 + "하루오픽" (temp/generate-logo.html) |
+| 6 | CORS 변경 | haruopic.com 추가 (opictalkdoc.com도 당분간 유지) |
+| 7 | 환경변수 | NEXT_PUBLIC_SITE_URL → haruopic.com |
+| 8 | GitHub 저장소명 | 변경 (선택) |
+| 9 | 문서 일괄 갱신 | AGENTS.md, 실행계획.md 등 이름/도메인 치환 |
+
+### 네비게이션 구조 (확정)
+```
+대시보드 | 시험후기 | 스크립트 | 모의고사 | 튜터링
+```
+
+### 레이아웃 구조 (확정)
+- **(dashboard)**: 탐색/허브 페이지 — Navbar + Footer 포함
+- **(immersive)**: 활동/몰입 페이지 — ImmersiveHeader만, Navbar/Footer 없음
+
+### 모듈별 내부 탭 구조 (확정)
+- **시험후기** (/reviews): 빈도 분석 | 후기 제출 | 시험 후기
+- **스크립트** (/scripts): 스크립트 생성 | 내 스크립트 | 쉐도잉 훈련
+- **모의고사** (/mock-exam): 응시 | 결과 | 나의 이력
+- **튜터링** (/tutoring): 진단 | 처방 | 훈련
+
+### DB 현황 (28개 테이블)
+- **questions**: 471행 (D-1 전면 교체 — 13컬럼, 새 ID 체계. 원본: `docs/질문 DB/questions_db.xlsx`)
+- **profiles**: 사용자 프로필 (Supabase Auth 연동)
+- **orders**: 결제 기록 테이블 (RLS: 본인 조회만)
+- **user_credits**: 사용자 이용권 테이블 (회원가입 트리거로 자동 생성)
+- **submissions**: 후기 마스터 (17컬럼 + credit_granted, RLS: 본인 CRUD + complete 전체 SELECT)
+- **submission_questions**: 14개 질문 기록 (FK → submissions, questions)
+- **submission_combos**: 통합 콤보 (인증: 전체 SELECT, 비인증: advance만)
+- **ai_prompt_templates**: 2행 RCTF System+User Prompt (스크립트+튜터링 공유)
+- **script_specs**: 60행 등급별 규격서 (10 question_types × 6 levels, 4컬럼 분할)
+- **scripts**: 스크립트 마스터 (생성+교정 통합, UNIQUE(user_id, question_id))
+- **script_packages**: TTS 패키지 WAV+JSON (FK → scripts, CASCADE)
+- **shadowing_sessions**: 쉐도잉 세션 (FK → scripts, script_packages)
+- **shadowing_evaluations**: 쉐도잉 AI 평가 (5영역 + OPIc 등급)
+- **opic_tips**: 학습 팁 (등급별, 답변 유형별)
+- **mock_test_sessions**: 모의고사 세션 (mode, status, 14 question_ids, started_at, 72h/90min)
+- **mock_test_answers**: 답변 기록 (question_number, audio_url, eval_status 7단계)
+- **mock_test_evaluations**: 개별 평가 (STT + 발음 + GPT 체크박스, FK → answers)
+- **mock_test_reports**: 종합 리포트 (FACT 점수, 등급, GPT 총평, 성장 리포트 3컬럼, FK → sessions)
+- **mock_test_eval_settings**: 모의고사 평가 설정
+- **evaluation_prompts**: 평가 프롬프트 템플릿
+- **master_questions**: 레거시 질문 DB (사용 안 함, questions로 대체됨)
+- **tutoring_sessions**: 튜터링 세션 (status: active/paused/completed)
+- **tutoring_prescriptions**: 처방 과제 (priority 1~N, status: pending/in_progress/completed)
+- **tutoring_training_sessions**: 훈련 세션 (session_type: guided/free/simulation)
+- **tutoring_attempts**: 훈련 시도 (Screen별, protocol별, metrics/pronunciation/evaluation)
+- **tutoring_review_schedule**: SRS 복습 스케줄
+- **tutoring_skill_history**: 성장 추적
+- **admin_audit_log**: 관리자 감사 로그 (action, target_type, target_id, details JSONB, RLS: admin SELECT만)
+- **Storage**: audio-recordings + script-packages + mock-test-recordings + tutoring-recordings 버킷
+
+### 결제 시스템 현황
+- **결제 SDK**: 포트원(PortOne) V2 — `@portone/browser-sdk`
+- **PG사**: KG이니시스 (신용카드) + 카카오페이 (간편결제)
+- **결제 플로우**: Store 구매 버튼 → 결제 수단 선택 모달 → 포트원 결제창 → /api/payment/verify 검증 → DB 기록
+- **취소 플로우**: 포트원 콘솔 취소 → 웹훅(`/api/payment/webhook`) → DB 자동 원복
+- **상품**: 실전(19,900), 올인원(49,900), 모의고사 횟수권(7,900), 스크립트 횟수권(3,900/5회), 튜터링 횟수권(5,900)
+
+### ⚠️ 크레딧 시스템 (모듈 구현 시 반드시 참고)
+
+**DB 구조 (`user_credits` 테이블):**
+| 컬럼 | 용도 | 만료 |
+|------|------|------|
+| `plan_mock_exam_credits` | 플랜 구매로 받은 모의고사 크레딧 | 플랜 만료 시 0으로 초기화 |
+| `plan_script_credits` | 플랜 구매로 받은 스크립트 크레딧 | 플랜 만료 시 0으로 초기화 |
+| `mock_exam_credits` | 횟수권으로 구매한 모의고사 크레딧 | 영구 (만료 없음) |
+| `script_credits` | 횟수권으로 구매한 스크립트 크레딧 | 영구 (만료 없음) |
+
+**크레딧 소진 순서:**
+1. **플랜 크레딧 먼저 차감** (`plan_mock_exam_credits`, `plan_script_credits`) — 만료되는 것부터
+2. **횟수권 크레딧 차감** (`mock_exam_credits`, `script_credits`) — 영구 크레딧은 나중에
+- **스크립트 크레딧**: ✅ 구현 완료 (`consume_script_credit` / `refund_script_credit` RPC)
+- **모의고사 크레딧**: ✅ 구현 완료 (`consume_mock_exam_credit` / `refund_mock_exam_credit` RPC)
+
+**후기 제출 크레딧 보상 (25일 룰, 구현 완료):**
+- 최초 2회: 무조건 스크립트 크레딧 2개 지급
+- 3회차부터: 마지막 지급일로부터 25일 경과 시에만 지급 (OPIc 응시 주기 반영)
+- `submissions.credit_granted` boolean으로 지급 이력 추적
+- 완료된 후기는 삭제 불가 (크레딧 악용 방지 + 빈도 분석 데이터 보존)
+
+**플랜 만료 처리 (TODO):**
+- `plan_expires_at < NOW()` 시 → `plan_mock_exam_credits = 0`, `plan_script_credits = 0`, `current_plan = 'free'`
+- 체크 시점: 모의고사/스크립트 사용 시 또는 대시보드 로드 시
+
+### PG사 심사 현황
+| PG사 | 상태 | 비고 |
+|------|------|------|
+| KG이니시스 | ✅ 사전심사 완료 (2026-02-20) | 본계약 절차 진행 대기 |
+| 카카오페이 | ✅ 심사 완료 (2026-03-11) | CID: `CA34718795`, 수수료 3.2%, 정산한도 월200만, 하나카드 사용불가, 파트너어드민 권한 등록 완료 (03-15) |
+| 네이버페이 | ❌ 직가맹 거절 (2026-02-23) | 고위험군(횟수권 판매) + 매출 이력 없음. PG사 인증형 대안 |
+| 토스페이 | 입점 정보 회신 완료 | MID 발급 대기 |
+
+### Supabase DB 접속 (psql)
+```bash
+# Codex에서 psql 직접 실행
+PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/16/bin/psql" \
+  -h aws-1-ap-northeast-2.pooler.supabase.com \
+  -p 6543 \
+  -U postgres.rwdsyqnrrpwkureqfxwb \
+  -d postgres \
+  --set=sslmode=require \
+  -c "SQL문"
+```
 
 ### 튜터링 모듈 구현 현황
 | 영역 | 상태 | 상세 |
@@ -654,5 +780,5 @@ PGPASSWORD='opictalk2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/1
 > 의사결정 기록은 `docs/의사결정.md` 참조
 
 ---
-*최종 업데이트: 2026-03-15*
-*상태: Phase 3 전체 ✅ + 플랜 리뉴얼(체험/실전/올인원) ✅ + 카카오페이 ✅. 다음: 평가 v3 고도화 → 리브랜딩(P-5)*
+*최종 업데이트: 2026-05-20*
+*상태: Phase 3 전체 ✅ + 플랜 리뉴얼(체험/실전/올인원) ✅ + 카카오페이 ✅ + 기출 콤보 정합성 정정 완료. 다음: 평가 v3 고도화 → 리브랜딩(P-5)*

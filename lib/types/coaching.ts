@@ -88,9 +88,6 @@ export const PERSONA_LABELS: Record<PersonaCode, string> = {
   kind_mentor: '친절한 멘토',
 };
 
-// MVP에서 활성화된 유형 (구현된 모듈만)
-export const ACTIVE_QUESTION_TYPES: QuestionType[] = ['description'];
-
 // 자기소개 제외, 본문 10유형
 export const BODY_QUESTION_TYPES: QuestionType[] = [
   'description',
@@ -104,6 +101,12 @@ export const BODY_QUESTION_TYPES: QuestionType[] = [
   'rp_11',
   'rp_12',
 ];
+
+// 학습 가능한 유형 — 본문 10유형 전체 개방 (질문 확인용)
+// ⚠️ 코칭 프롬프트/spec은 묘사(description) 위주로만 완성된 상태.
+//    다른 유형도 질문 탐색·세션 진입은 가능하나, 코칭 품질은 spec 보강 전까지 미완성.
+//    spec 완성 전 묘사만 다시 잠그려면 ['description']로 되돌리면 됨.
+export const ACTIVE_QUESTION_TYPES: QuestionType[] = [...BODY_QUESTION_TYPES];
 
 // ── DB Row 인터페이스 ──
 

@@ -643,6 +643,8 @@ origin: https://Storm-Boy777@github.com/Storm-Boy777/soridam.git
 | 05-17 | **AI 코치 접근 권한 시스템 ✅** | 스피킹 코치 v5 Dogfooding 베타 사용자 통제. 마이그 079 `coaching_access` 테이블 + RLS (lecture_access 패턴). `lib/auth.ts` `hasCoachingAccess()` + `requireCoachingAccess()` 헬퍼. 관리자 페이지 `/admin/coaching-access` (사용자 검색·부여·회수·일괄 회수, 감사 로그). 페이지 진입 차단(`/coaching` + `/coaching/learn/*`), 네비바 노출 조건(`coachingAccessOnly`), 사이드바 메뉴 "스피킹 코치" 추가. 초기 부여: `soridamhub@gmail.com` |
 | 05-17 | **AI 코치 v5 돌발 4 그룹 spec ✅** | 마이그 081 `description_random` × 4 그룹 × 6 등급 = **24 row 시드** (1247줄). 자료 #11~#14 풀 적용: 시사(은행/호텔/식당/교통 — 어휘 격상 매트릭스 + 디지털 대체) / 환경(재활용/지형/날씨 — Cohesive 6 카테고리 + 토론적 마무리 카드) / 산업·기술(반도체/한류 — Breath of Vocabulary + 시장 점유율 정량화 + `immense sense of pride`) / 개인(자유시간/추석 — 양면 토론 5단 + 자유시간 100% 스마트폰). EF resolveSpecId는 이미 description_random_* 매칭 보유 — 재배포 불필요. ModelAnswer에 Web Speech API 듣기 버튼(▶/⏹ 토글, en-US 우선 voice) 추가 — [learn-room.tsx:853-915](components/coaching/learn-room.tsx#L853-L915). spec 카탈로그 진행률 12→36/90 (40%) |
 | 05-17 | **AI 코치 v5 3-layer 구조 전환 ✅** | 081 dogfooding(지형 IH)에서 example_model_answer 약화 인용 발견 → 자료 #21 강사 1:1 코칭 etalon 기반 **3-layer 구조 전환**. 마이그 082 `coaching_topic_skeletons` 테이블 신설 + **12 토픽 row** (시사 4/환경 3/산업기술 2/개인 3 — RANDOM_TOPICS_13 화이트리스트 매핑). skeleton_slots jsonb(Step 0~7 만능 표현 풀) + full_etalon(강사 풀 모범 IH→AL 매트릭스) + upgrade_cards(토픽 특화 카드). 자료 #11~#14 + #21 직접 추출. 마이그 083 `coaching_system_v1` 강화(7574→9974자) — TOPIC SKELETON LAYER + STUDENT TEXT VERIFICATION(자료 #21 강화) + QUANTIFICATION CARD(산업기술 결정타) + DEBATE CLOSING CARD(환경 4문장) + DUALITY DEBATE 5-STEP(자유시간) 의무 짚기. EF `coaching-evaluate` `fetchTopicSkeleton` 추가 + assembleUserPrompt에 Layer C(B-Topic) 섹션 + "학생 답변 골격 유지 + 슬롯 카피 의무" 원칙 5개 주입 + 재배포. §11.7.10 본문 정정 — "돌발 = 공통형+description만, 다른 question_type은 돌발 X" 명시 |
+| 05-27 | **Talklish 금요일 게임 개편 ✅** | 라이브 화면 콘텐츠 정합성 회복 — 관리자엔 있으나 묻혀 있던 **Taboo(20)·WYR(15)·Debate(8) 부활** + 효용 낮은 워드체인 컷(5→7종). 이어 신규 3종 추가(→**9종**): 🎬 롤플레이(OPIc 11~13번 직결, 시작 시나리오 8종 하드코딩 + 감정 연기 미션) · 🔍 스무고개(Taboo 단어 재활용, 정답 blur) · ⏱️ JAM 모드(토픽 스피너에 끊김·반복·주제이탈 3규칙 토글). OPIc 3대 약점(롤플레이·유창성·질문하기) 직격. `freetalk-stage.tsx` 단일 파일 (commit 6fa6e0a) |
+| 05-27 | **Talklish 금요일 Phase B — AI 게임 세트 생성기 ✅** | 테마 1개로 그날 저녁 게임 콘텐츠(스피너·Taboo·WYR·롤플레이·이어쓰기·Debate)를 한 번에 생성하는 **세션 단위 세트** 시스템. 평가 없이 생성만(금요일 철학 유지). 마이그 099 `study_freetalk_sets`(한 행=한 세트, jsonb 게임 배열 + RLS 관리자·멤버) + EF `study-freetalk-generate`(gpt-4.1-mini, OPIc 튜닝, 생성만 — 월요일 EF 패턴) + SA 4개(게임 세트 CRUD) + `FridayPrepare` 콘솔(`/talklish/manage` 금요일 슬롯: 생성→미리보기→저장) + `FreetalkStage` 세트 연동(좌측 "오늘의 세트" 선택자 + 세트 없으면 기존 풀=기본 폴백, 무regression). 회당 ≈ $0.01~0.02 (스터디 무료라 크레딧 차감 X). EF 배포 완료 (commit 3006399) |
 
 <!-- 이후 새 이력은 이 테이블에 행 추가 + memory/개발이력.md에 상세 기록 -->
 
@@ -805,8 +807,11 @@ Stage C: mock-test-report (평가엔진 7-Step + overview/growth GPT)
 - **AI 코치** (/coaching): 유형별 | 주제별
 - **오픽 스터디** (/opic-study): 별도 디자인 시스템(.bp-scope) — 홈 / lobby / session(Step 1~7) / my / history
 
-### DB 현황 (47개 테이블 — AI 코치 5개 + coaching_topic_skeletons 추가 ✅)
+### DB 현황 (48개 테이블 — Talklish 금요일 study_freetalk_sets 추가 ✅)
 
+> **Talklish 금요일 게임 세트** (마이그레이션 099):
+> - `study_freetalk_sets` — 세션 단위 게임 세트 (한 행 = 그날 저녁 게임 전체). theme/difficulty/description + spinner_topics·taboo·wyr·roleplay·story·debate jsonb. RLS: SELECT 전체 / INSERT·UPDATE 관리자+멤버 / DELETE 관리자. EF `study-freetalk-generate`(생성만) + SA `createTalklishGameSet` 등으로 적재
+>
 > **오픽 스터디 가이드 v3 추가 2테이블** (마이그레이션 056/058):
 > - `question_type_guides` — 10 row 한글 유형 가이드 마스터 (description/routine/comparison/past_*/rp_*/adv_*)
 > - `combo_guide_cache` — 콤보 단위 영구 캐시 (sig PK, 둘러보기 + Step5 공유)
@@ -956,5 +961,5 @@ PGPASSWORD='soridam2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/16
 > 의사결정 기록은 `docs/의사결정.md` 참조
 
 ---
-*최종 업데이트: 2026-05-15*
-*상태: Phase 1~6 ✅ + **Phase 7 AI 코치 모듈 MVP 구현 완료** ✅ (묘사 유형 활성 — 프롬프트 Dogfooding 검증 중)*
+*최종 업데이트: 2026-05-27*
+*상태: Phase 1~6 ✅ + **Phase 7 AI 코치 v5** ✅ + **Talklish 금요일 개편(9종 게임) + Phase B AI 게임 세트 생성기** ✅*

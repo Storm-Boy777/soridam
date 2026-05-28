@@ -254,9 +254,9 @@ function QuestionGrid({ category, topic }: { category: Category; topic: string }
   });
 
   function handlePick(q: CoachingCategoryQuestion) {
-    // MVP: 활성 유형(현재 묘사)만 학습 가능
+    // 활성 유형(ACTIVE_QUESTION_TYPES)만 세션 진입 — self_intro 등 비대상 차단
     if (!q.is_active_type) {
-      setError("이 유형은 아직 준비 중입니다. 현재는 묘사 유형만 학습 가능해요.");
+      setError("이 유형은 아직 준비 중이에요.");
       return;
     }
     setError(null);
