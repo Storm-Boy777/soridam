@@ -98,11 +98,9 @@ const menuGroups: MenuGroup[] = [
 interface AdminSidebarProps {
   /** layout.tsx에서 hasStudyAdminAccess() 결과를 server-side로 내려줌 (lectures 패턴) */
   hasStudyAdminAccess?: boolean;
-  /** 관리자 여부. false면 study_admin_access 위임 사용자 → '스터디 모임'만 노출 */
-  isAdmin?: boolean;
 }
 
-export function AdminSidebar({ hasStudyAdminAccess = false, isAdmin = false }: AdminSidebarProps) {
+export function AdminSidebar({ hasStudyAdminAccess = false }: AdminSidebarProps) {
   const pathname = usePathname();
 
   // 미답변 1:1 문의 건수
@@ -111,7 +109,6 @@ export function AdminSidebar({ hasStudyAdminAccess = false, isAdmin = false }: A
     queryFn: () => getUnansweredInquiryCount(),
     staleTime: 60 * 1000,
     refetchInterval: 60 * 1000,
-    enabled: isAdmin,
   });
 
   return (
@@ -127,56 +124,49 @@ export function AdminSidebar({ hasStudyAdminAccess = false, isAdmin = false }: A
         </Link>
       </div>
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-2">
-        {menuGroups
-          .map((group) => ({
-            ...group,
-            // 권한 게이트: studyAdminOnly는 권한 보유자만, 그 외 메뉴는 관리자 전용
-            visibleItems: group.items.filter((item) =>
-              item.studyAdminOnly ? hasStudyAdminAccess : isAdmin
-            ),
-          }))
-          .filter((group) => group.visibleItems.length > 0)
-          .map((group, gi) => (
-            <div key={group.label ?? `g${gi}`}>
-              {/* 구분선 (첫 보이는 그룹 제외) */}
-              {gi > 0 && <div className="mx-2 my-1.5 border-t border-white/8" />}
+        {menuGroups.map((group, gi) => (
+          <div key={gi}>
+            {/* 구분선 (첫 그룹 제외) */}
+            {gi > 0 && <div className="mx-2 my-1.5 border-t border-white/8" />}
 
-              {/* 그룹 라벨 */}
-              {group.label && (
-                <p className="mb-0.5 px-3 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/30">
-                  {group.label}
-                </p>
-              )}
+            {/* 그룹 라벨 */}
+            {group.label && (
+              <p className="mb-0.5 px-3 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/30">
+                {group.label}
+              </p>
+            )}
 
-              {/* 메뉴 항목 */}
-              {group.visibleItems.map((item) => {
-                const isActive =
-                  item.href === "/admin"
-                    ? pathname === "/admin"
-                    : pathname === item.href ||
-                      pathname.startsWith(item.href + "/");
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      isActive
-                        ? "bg-white/15 text-white"
-                        : "text-white/60 hover:bg-white/10 hover:text-white/90"
-                    }`}
-                  >
-                    <item.icon size={16} />
-                    {item.label}
-                    {item.href === "/admin/support" && unansweredCount ? (
-                      <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
-                        {unansweredCount}
-                      </span>
-                    ) : null}
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
+            {/* 메뉴 항목 */}
+            {group.items.map((item) => {
+              // 권한 게이트 (lectures 패턴) — studyAdminOnly면 권한 보유자만
+              if (item.studyAdminOnly && !hasStudyAdminAccess) return null;
+              const isActive =
+                item.href === "/admin"
+                  ? pathname === "/admin"
+                  : pathname === item.href ||
+                    pathname.startsWith(item.href + "/");
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-white/15 text-white"
+                      : "text-white/60 hover:bg-white/10 hover:text-white/90"
+                  }`}
+                >
+                  <item.icon size={16} />
+                  {item.label}
+                  {item.href === "/admin/support" && unansweredCount ? (
+                    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                      {unansweredCount}
+                    </span>
+                  ) : null}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
     </aside>
   );

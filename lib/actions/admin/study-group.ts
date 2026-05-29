@@ -1,6 +1,6 @@
 "use server";
 
-import { requireStudyAdmin } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { T } from "@/lib/constants/tables";
 import { RPC } from "@/lib/constants/tables";
 import type { PodcastRow, FreetalkRow, GameCardRow, GameCardGameType, PanelMember, PanelMemberWithProfile, PanelUserSearchResult, YoutubeChannelRow } from "@/lib/types/study-group";
@@ -10,7 +10,7 @@ import type { PodcastRow, FreetalkRow, GameCardRow, GameCardGameType, PanelMembe
    ══════════════════════════════════════════ */
 
 export async function getAdminPodcasts(): Promise<PodcastRow[]> {
-  const { supabase } = await requireStudyAdmin();
+  const { supabase } = await requireAdmin();
   const { data, error } = await supabase
     .from(T.study_podcasts)
     .select("*")
@@ -20,7 +20,7 @@ export async function getAdminPodcasts(): Promise<PodcastRow[]> {
 }
 
 export async function createPodcast(input: Omit<PodcastRow, "id" | "created_by" | "created_at" | "updated_at">) {
-  const { supabase, userId, userEmail } = await requireStudyAdmin();
+  const { supabase, userId, userEmail } = await requireAdmin();
   const { data, error } = await supabase
     .from(T.study_podcasts)
     .insert({ ...input, created_by: userId })
@@ -36,7 +36,7 @@ export async function createPodcast(input: Omit<PodcastRow, "id" | "created_by" 
 }
 
 export async function updatePodcast(id: string, input: Partial<Omit<PodcastRow, "id" | "created_by" | "created_at" | "updated_at">>) {
-  const { supabase, userId, userEmail } = await requireStudyAdmin();
+  const { supabase, userId, userEmail } = await requireAdmin();
   const { error } = await supabase
     .from(T.study_podcasts)
     .update(input)
@@ -51,7 +51,7 @@ export async function updatePodcast(id: string, input: Partial<Omit<PodcastRow, 
 }
 
 export async function deletePodcast(id: string) {
-  const { supabase, userId, userEmail } = await requireStudyAdmin();
+  const { supabase, userId, userEmail } = await requireAdmin();
   const { error } = await supabase
     .from(T.study_podcasts)
     .delete()
@@ -70,7 +70,7 @@ export async function deletePodcast(id: string) {
    ══════════════════════════════════════════ */
 
 export async function getAdminYoutubeChannels(): Promise<YoutubeChannelRow[]> {
-  const { supabase } = await requireStudyAdmin();
+  const { supabase } = await requireAdmin();
   const { data, error } = await supabase
     .from(T.talklish_youtube_channels)
     .select("*")
@@ -80,7 +80,7 @@ export async function getAdminYoutubeChannels(): Promise<YoutubeChannelRow[]> {
 }
 
 export async function createYoutubeChannel(input: { name: string; channel_url: string; sort_order?: number; is_active?: boolean }) {
-  const { supabase, userId } = await requireStudyAdmin();
+  const { supabase, userId } = await requireAdmin();
   const { data, error } = await supabase
     .from(T.talklish_youtube_channels)
     .insert({
@@ -100,7 +100,7 @@ export async function updateYoutubeChannel(
   id: string,
   input: Partial<{ name: string; channel_url: string; sort_order: number; is_active: boolean }>
 ) {
-  const { supabase } = await requireStudyAdmin();
+  const { supabase } = await requireAdmin();
   const { error } = await supabase
     .from(T.talklish_youtube_channels)
     .update(input)
@@ -110,7 +110,7 @@ export async function updateYoutubeChannel(
 }
 
 export async function deleteYoutubeChannel(id: string) {
-  const { supabase } = await requireStudyAdmin();
+  const { supabase } = await requireAdmin();
   const { error } = await supabase
     .from(T.talklish_youtube_channels)
     .delete()
@@ -124,7 +124,7 @@ export async function deleteYoutubeChannel(id: string) {
    ══════════════════════════════════════════ */
 
 export async function getAdminFreetalk(): Promise<FreetalkRow[]> {
-  const { supabase } = await requireStudyAdmin();
+  const { supabase } = await requireAdmin();
   const { data, error } = await supabase
     .from(T.study_freetalk)
     .select("*")
@@ -134,7 +134,7 @@ export async function getAdminFreetalk(): Promise<FreetalkRow[]> {
 }
 
 export async function createFreetalk(input: Omit<FreetalkRow, "id" | "created_by" | "created_at" | "updated_at">) {
-  const { supabase, userId, userEmail } = await requireStudyAdmin();
+  const { supabase, userId, userEmail } = await requireAdmin();
   const { data, error } = await supabase
     .from(T.study_freetalk)
     .insert({ ...input, created_by: userId })
@@ -150,7 +150,7 @@ export async function createFreetalk(input: Omit<FreetalkRow, "id" | "created_by
 }
 
 export async function updateFreetalk(id: string, input: Partial<Omit<FreetalkRow, "id" | "created_by" | "created_at" | "updated_at">>) {
-  const { supabase, userId, userEmail } = await requireStudyAdmin();
+  const { supabase, userId, userEmail } = await requireAdmin();
   const { error } = await supabase
     .from(T.study_freetalk)
     .update(input)
@@ -165,7 +165,7 @@ export async function updateFreetalk(id: string, input: Partial<Omit<FreetalkRow
 }
 
 export async function deleteFreetalk(id: string) {
-  const { supabase, userId, userEmail } = await requireStudyAdmin();
+  const { supabase, userId, userEmail } = await requireAdmin();
   const { error } = await supabase
     .from(T.study_freetalk)
     .delete()
@@ -184,7 +184,7 @@ export async function deleteFreetalk(id: string) {
    ══════════════════════════════════════════ */
 
 export async function getAdminGameCards(gameType?: GameCardGameType): Promise<GameCardRow[]> {
-  const { supabase } = await requireStudyAdmin();
+  const { supabase } = await requireAdmin();
   let query = supabase
     .from(T.study_game_cards)
     .select("*")
@@ -198,7 +198,7 @@ export async function getAdminGameCards(gameType?: GameCardGameType): Promise<Ga
 }
 
 export async function createGameCard(input: Omit<GameCardRow, "id" | "created_by" | "created_at" | "updated_at">) {
-  const { supabase, userId, userEmail } = await requireStudyAdmin();
+  const { supabase, userId, userEmail } = await requireAdmin();
   const { data, error } = await supabase
     .from(T.study_game_cards)
     .insert({ ...input, created_by: userId })
@@ -214,7 +214,7 @@ export async function createGameCard(input: Omit<GameCardRow, "id" | "created_by
 }
 
 export async function updateGameCard(id: string, input: Partial<Omit<GameCardRow, "id" | "created_by" | "created_at" | "updated_at">>) {
-  const { supabase, userId, userEmail } = await requireStudyAdmin();
+  const { supabase, userId, userEmail } = await requireAdmin();
   const { error } = await supabase
     .from(T.study_game_cards)
     .update(input)
@@ -229,7 +229,7 @@ export async function updateGameCard(id: string, input: Partial<Omit<GameCardRow
 }
 
 export async function deleteGameCard(id: string) {
-  const { supabase, userId, userEmail } = await requireStudyAdmin();
+  const { supabase, userId, userEmail } = await requireAdmin();
   const { error } = await supabase
     .from(T.study_game_cards)
     .delete()
@@ -248,7 +248,7 @@ export async function deleteGameCard(id: string) {
    ══════════════════════════════════════════ */
 
 export async function getAdminPanelMembers(): Promise<PanelMemberWithProfile[]> {
-  const { supabase } = await requireStudyAdmin();
+  const { supabase } = await requireAdmin();
   const { data: rows, error } = await supabase
     .from(T.study_panel_members)
     .select("*")
@@ -289,7 +289,7 @@ export async function searchUserForPanel(
   email: string
 ): Promise<{ user: PanelUserSearchResult | null; error?: string }> {
   if (!email.trim()) return { user: null, error: "이메일을 입력해주세요" };
-  const { supabase } = await requireStudyAdmin();
+  const { supabase } = await requireAdmin();
 
   const { data, error } = await supabase.rpc(RPC.find_user_by_email, {
     p_email: email.trim().toLowerCase(),
@@ -320,7 +320,7 @@ export async function searchUserForPanel(
 export async function createPanelMember(
   input: Omit<PanelMember, "id" | "created_at" | "updated_at">
 ) {
-  const { supabase, userId, userEmail } = await requireStudyAdmin();
+  const { supabase, userId, userEmail } = await requireAdmin();
   const { data, error } = await supabase
     .from(T.study_panel_members)
     .insert(input)
@@ -339,7 +339,7 @@ export async function updatePanelMember(
   id: string,
   input: Partial<Omit<PanelMember, "id" | "created_at" | "updated_at">>
 ) {
-  const { supabase, userId, userEmail } = await requireStudyAdmin();
+  const { supabase, userId, userEmail } = await requireAdmin();
   const { error } = await supabase
     .from(T.study_panel_members)
     .update(input)
@@ -354,7 +354,7 @@ export async function updatePanelMember(
 }
 
 export async function deletePanelMember(id: string) {
-  const { supabase, userId, userEmail } = await requireStudyAdmin();
+  const { supabase, userId, userEmail } = await requireAdmin();
   const { error } = await supabase
     .from(T.study_panel_members)
     .delete()

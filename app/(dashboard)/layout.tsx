@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { getAuthClaims, hasLectureAccess, hasStudyPanelAccess, hasCoachingAccess } from "@/lib/auth";
+import { getAuthClaims, hasLectureAccess, hasStudyAdminAccess, hasCoachingAccess } from "@/lib/auth";
 import { GradeNudgeBanner } from "@/components/ui/grade-nudge-banner";
 import { AnnouncementBanner } from "@/components/ui/announcement-banner";
 import { getActiveAnnouncements } from "@/lib/actions/announcements";
@@ -32,11 +32,11 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   // getAuthClaims(): 로컬 JWT 검증 (0ms) — Navbar 깜빡임 제거를 위해 서버에서 인증 정보 전달
-  // hasLectureAccess / hasStudyPanelAccess / hasCoachingAccess: 권한 메뉴 노출 판단 (관리자 자동 통과 + DB 조회 1회)
+  // hasLectureAccess / hasStudyAdminAccess / hasCoachingAccess: 권한 메뉴 노출 판단 (관리자 자동 통과 + DB 조회 1회)
   const [claims, hasLecAccess, hasPanelAccess, hasCoachAccess] = await Promise.all([
     getAuthClaims(),
     hasLectureAccess(),
-    hasStudyPanelAccess(),
+    hasStudyAdminAccess(),
     hasCoachingAccess(),
   ]);
   const meta = (claims as Record<string, unknown>)?.user_metadata as Record<string, string> | undefined;
@@ -46,10 +46,10 @@ export default async function DashboardLayout({
         userName: meta?.display_name || meta?.full_name || meta?.name || "",
         isAdmin: ((claims as Record<string, unknown>)?.app_metadata as Record<string, string> | undefined)?.role === "admin",
         hasLectureAccess: hasLecAccess,
-        hasStudyPanelAccess: hasPanelAccess,
+        hasStudyAdminAccess: hasPanelAccess,
         hasCoachingAccess: hasCoachAccess,
       }
-    : { isLoggedIn: false, userName: "", isAdmin: false, hasLectureAccess: false, hasStudyPanelAccess: false, hasCoachingAccess: false };
+    : { isLoggedIn: false, userName: "", isAdmin: false, hasLectureAccess: false, hasStudyAdminAccess: false, hasCoachingAccess: false };
 
   return (
     <div className="flex min-h-screen flex-col bg-background">

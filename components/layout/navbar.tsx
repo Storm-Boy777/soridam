@@ -19,7 +19,7 @@ type NavItem = {
   soon?: boolean;
   adminOnly?: boolean;
   lectureAccessOnly?: boolean;
-  studyPanelOnly?: boolean;
+  studyAdminOnly?: boolean;
   coachingAccessOnly?: boolean;
 };
 
@@ -37,7 +37,7 @@ const appNav: NavItem[] = [
   { label: "스피킹 코치", href: "/coaching", coachingAccessOnly: true },
   { label: "오픽 스터디", href: "/opic-study" },
   { label: "강의", href: "/lectures", lectureAccessOnly: true },
-  { label: "스터디", href: "/talklish", studyPanelOnly: true },
+  { label: "스터디", href: "/talklish", studyAdminOnly: true },
   { label: "만능패턴", href: "/patterns" },
   { label: "AI 스토어", href: "/store" },
   { label: "소통함", href: "/support" },
@@ -52,7 +52,7 @@ export interface NavbarServerAuth {
   userName: string;
   isAdmin: boolean;
   hasLectureAccess?: boolean;
-  hasStudyPanelAccess?: boolean;
+  hasStudyAdminAccess?: boolean;
   hasCoachingAccess?: boolean;
 }
 
@@ -62,7 +62,7 @@ export function Navbar({ serverAuth }: { serverAuth?: NavbarServerAuth } = {}) {
   const [userName, setUserName] = useState(serverAuth?.userName ?? "");
   const [isAdmin, setIsAdmin] = useState(serverAuth?.isAdmin ?? false);
   const hasLectureAccess = serverAuth?.hasLectureAccess ?? false;
-  const hasStudyPanelAccess = serverAuth?.hasStudyPanelAccess ?? false;
+  const hasStudyAdminAccess = serverAuth?.hasStudyAdminAccess ?? false;
   const hasCoachingAccess = serverAuth?.hasCoachingAccess ?? false;
 
   const handleLogoClick = useCallback((e: React.MouseEvent) => {
@@ -108,13 +108,13 @@ export function Navbar({ serverAuth }: { serverAuth?: NavbarServerAuth } = {}) {
 
   // 초기 상태 확인 전: 최소한의 레이아웃 유지 (깜빡임 방지)
   // adminOnly: 관리자만, lectureAccessOnly: 권한 보유자(또는 관리자)만,
-  // studyPanelOnly: 패널 멤버 등록자(또는 관리자)만
+  // studyAdminOnly: 스터디 권한(study_admin_access) 보유자(또는 관리자)만
   const navItems = isLoggedIn
     ? (() => {
         const filtered = appNav.filter((item) => {
           if (item.adminOnly && !isAdmin) return false;
           if (item.lectureAccessOnly && !isAdmin && !hasLectureAccess) return false;
-          if (item.studyPanelOnly && !isAdmin && !hasStudyPanelAccess) return false;
+          if (item.studyAdminOnly && !isAdmin && !hasStudyAdminAccess) return false;
           if (item.coachingAccessOnly && !isAdmin && !hasCoachingAccess) return false;
           return true;
         });

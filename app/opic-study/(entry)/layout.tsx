@@ -4,7 +4,7 @@ import { Footer } from "@/components/layout/footer";
 import {
   getAuthClaims,
   hasLectureAccess,
-  hasStudyPanelAccess,
+  hasStudyAdminAccess,
 } from "@/lib/auth";
 
 /**
@@ -24,7 +24,7 @@ export default async function OpicStudyEntryLayout({
   const [claims, hasLecAccess, hasPanelAccess] = await Promise.all([
     getAuthClaims(),
     hasLectureAccess(),
-    hasStudyPanelAccess(),
+    hasStudyAdminAccess(),
   ]);
   const meta = (claims as Record<string, unknown>)?.user_metadata as
     | Record<string, string>
@@ -39,14 +39,14 @@ export default async function OpicStudyEntryLayout({
             | Record<string, string>
             | undefined)?.role === "admin",
         hasLectureAccess: hasLecAccess,
-        hasStudyPanelAccess: hasPanelAccess,
+        hasStudyAdminAccess: hasPanelAccess,
       }
     : {
         isLoggedIn: false,
         userName: "",
         isAdmin: false,
         hasLectureAccess: false,
-        hasStudyPanelAccess: false,
+        hasStudyAdminAccess: false,
       };
 
   return (

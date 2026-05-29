@@ -3,7 +3,7 @@ import { Footer } from "./footer";
 import {
   getAuthClaims,
   hasLectureAccess,
-  hasStudyPanelAccess,
+  hasStudyAdminAccess,
 } from "@/lib/auth";
 
 export async function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -12,7 +12,7 @@ export async function PublicLayout({ children }: { children: React.ReactNode }) 
   const [claims, hasLecAccess, hasPanelAccess] = await Promise.all([
     getAuthClaims(),
     hasLectureAccess(),
-    hasStudyPanelAccess(),
+    hasStudyAdminAccess(),
   ]);
   const meta = (claims as Record<string, unknown>)?.user_metadata as
     | Record<string, string>
@@ -26,14 +26,14 @@ export async function PublicLayout({ children }: { children: React.ReactNode }) 
             | Record<string, string>
             | undefined)?.role === "admin",
         hasLectureAccess: hasLecAccess,
-        hasStudyPanelAccess: hasPanelAccess,
+        hasStudyAdminAccess: hasPanelAccess,
       }
     : {
         isLoggedIn: false,
         userName: "",
         isAdmin: false,
         hasLectureAccess: false,
-        hasStudyPanelAccess: false,
+        hasStudyAdminAccess: false,
       };
 
   return (
