@@ -187,6 +187,32 @@ export async function requireStudyAdminAccess() {
   return user;
 }
 
+// ── requireStudyAdmin(): Server Actions용 스터디 관리 인증 ──
+// 관리자 OR study_admin_access 보유자 통과. requireAdmin과 동일 시그니처(service client 반환).
+// 권한 없으면 에러 throw. 스터디 모임 콘텐츠 CRUD(스터디 권한 위임)에 사용.
+export async function requireStudyAdmin() {
+  const user = await getUser();
+  if (!user) {
+    redirect("/login");
+  }
+  if (user.app_metadata?.role !== "admin") {
+    const serverClient = await createServerSupabaseClient();
+    const { data } = await serverClient
+      .from("study_admin_access")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!data) {
+      throw new Error("스터디 관리 권한이 필요합니다");
+    }
+  }
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  return { supabase, userId: user.id, userEmail: user.email || "" };
+}
+
 // ── hasStudyPanelAccess(): 네비 노출 판단용 (조용한 boolean) ──
 // 관리자 또는 study_panel_members에 등록된 사용자면 true.
 export const hasStudyPanelAccess = cache(async () => {

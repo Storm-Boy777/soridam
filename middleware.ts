@@ -94,6 +94,22 @@ export async function middleware(request: NextRequest) {
       url.pathname = "/dashboard";
       return NextResponse.redirect(url);
     }
+
+    // 관리자 영역: 비관리자(role≠admin)는 '스터디 모임'(/admin/study-group)만 허용.
+    // study_admin_access(스터디 권한 위임) 보유 여부는 (admin)/layout이 최종 판정 —
+    // 여기선 경로만 제한하여 다른 관리 페이지 접근을 차단한다.
+    if (session && pathname.startsWith("/admin")) {
+      const role = (session.user?.app_metadata as { role?: string } | undefined)?.role;
+      if (role !== "admin") {
+        const isStudyGroupPath =
+          pathname === "/admin/study-group" || pathname.startsWith("/admin/study-group/");
+        if (!isStudyGroupPath) {
+          const url = request.nextUrl.clone();
+          url.pathname = "/dashboard";
+          return NextResponse.redirect(url);
+        }
+      }
+    }
   }
 
   return supabaseResponse;

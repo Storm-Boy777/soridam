@@ -8,15 +8,18 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const admin = await getAdminUser();
-  if (!admin) redirect("/dashboard");
-
-  // 사이드바 "스터디 모임" 메뉴 권한 체크 (lectures 패턴 — 090 마이그)
-  const studyAdminAccess = await hasStudyAdminAccess();
+  // 관리자 OR study_admin_access(스터디 권한 위임) 보유자만 진입 허용.
+  // 비관리자의 경로별 차단(/admin/study-group 외 금지)은 middleware가 담당.
+  const [admin, studyAdminAccess] = await Promise.all([
+    getAdminUser(),
+    hasStudyAdminAccess(),
+  ]);
+  if (!admin && !studyAdminAccess) redirect("/dashboard");
+  const isAdmin = !!admin;
 
   return (
     <div className="flex h-screen bg-background">
-      <AdminSidebar hasStudyAdminAccess={studyAdminAccess} />
+      <AdminSidebar hasStudyAdminAccess={studyAdminAccess} isAdmin={isAdmin} />
       {/* 모바일 안내 */}
       <div className="flex flex-1 flex-col items-center justify-center p-6 md:hidden">
         <p className="text-center text-sm text-foreground-secondary">
@@ -29,8 +32,8 @@ export default async function AdminLayout({
           {children}
         </div>
       </main>
-      {/* 미답변 문의 토스트 (세션당 1회) */}
-      <AdminInquiryToast />
+      {/* 미답변 문의 토스트 (세션당 1회) — 관리자에게만 */}
+      {isAdmin && <AdminInquiryToast />}
     </div>
   );
 }
