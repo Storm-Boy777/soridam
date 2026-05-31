@@ -1,0 +1,65 @@
+[
+  {
+    "id": "COM_APP_N_C1_02",
+    "domain": "activity",
+    "topic": "약속",
+    "question": "What types of appointments do you usually schedule? Who do you typically schedule appointments with? It could be a dental or medical appointment. Do you find it difficult to schedule these appointments?",
+    "answer": "Well, most of the appointments I usually schedule are for basic things like dental check-ups or doctor’s visits. Actually, I also book haircuts from time to time, but medical appointments are the main ones. These days, I usually make these appointments through an app on my phone, which is really convenient compared to calling the clinic. I normally go by myself, but if I’m feeling sick or need extra support, my mom sometimes comes with me. Another thing is that I’ve been making these kinds of appointments for years, so it’s just part of my routine now. I try to book them about once every few months, depending on my health needs. As for me, I don’t find it too difficult to schedule these appointments, but sometimes it’s tricky to find a good time slot, since popular times get booked quickly. So yeah, having these appointments helps me stay healthy, and I feel pretty good when I get them done."
+  },
+  {
+    "id": "COM_GAT_N_C1_01",
+    "domain": "society",
+    "topic": "모임",
+    "question": "Tell me about some of the gatherings or celebrations that happen at where you live.",
+    "answer": "Well, where I live, there are several gatherings and celebrations that people look forward to during the year. For example, housewarming parties are pretty popular here—when someone moves into a new home, they usually invite friends or family over, order some food, and spend time together. Another thing is that during big holidays like Chuseok, neighbors sometimes get together, share homemade dishes, and chat in the hallway or even outside. These gatherings are usually casual and friendly, with everyone bringing something to eat or drink. Actually, people use these events as a chance to catch up and strengthen their relationships, which is important in a busy city. As for me, I always look forward to these celebrations because they help me feel more connected to my neighbors and friends. So yeah, I think these gatherings make our community warmer and more welcoming."
+  },
+  {
+    "id": "COM_GAT_N_C1_03",
+    "domain": "society",
+    "topic": "모임",
+    "question": "Pick a major holiday that people celebrate in your country. What do people do to celebrate the holiday? Where do they go? Who do they spend time with? Tell me as much as you can.",
+    "answer": "Well, one of the biggest holidays in my country is Chuseok, which is kind of like Korean Thanksgiving. For example, people usually travel to their hometowns and gather at their grandparents’ house with their relatives. The main thing families do is prepare a big table of traditional food, and they also hold a ceremony to honor their ancestors. Another thing is that after the ceremony, everyone eats together, chats, and sometimes plays simple games. These days, a lot of people also visit the graves of their ancestors or just relax at home if they can't travel. Personally, I really like Chuseok because it's one of the few times when my whole family gets together in one place. So yeah, overall, Chuseok is all about spending quality time with family and keeping traditions alive."
+  },
+  {
+    "id": "COM_HAP_N_C1_05",
+    "domain": "society",
+    "topic": "가전제품",
+    "question": "Are there any current issues related to home appliances in your country? For example, you may talk about environmental concerns, repair difficulties, or rising energy consumption.",
+    "answer": "Well, in my country, there are a few problems related to home appliances that people are talking about these days. For example, one big issue is energy consumption because many families use large refrigerators, air conditioners, and washing machines that run almost every day. Another thing is that modern appliances are getting more complicated, so when something breaks, it's actually pretty hard and expensive to fix. As a result, people often just buy a new one instead of repairing the old one, which leads to more waste and environmental concerns. These days, a lot of people are also worried about how much electricity their appliances use, so they try to buy energy-efficient models if they can. Personally, I think it's important to be careful about these problems, especially because it affects our environment and monthly bills. So yeah, I hope more people become aware of these issues and try to make better choices when buying or using home appliances."
+  },
+  {
+    "id": "COM_IND_N_C2_04",
+    "domain": "society",
+    "topic": "산업",
+    "question": "Can you tell me about one promising or famous company in this particular industry? Tell me how the company started, and all the things that have happened to make it so well-known.",
+    "answer": "Well, when I think about a famous company in this industry, Samsung is the first one that pops into my head. Actually, Samsung started way back as a small trading business, but over time, it moved into the electronics field, which changed everything. For example, they began by making basic home appliances and TVs, and then they expanded into smartphones and semiconductors. One thing that stands out about Samsung is its focus on quality and new technology, which really helped the company build a strong reputation. These days, people use Samsung products everywhere, from their phones to their TVs, so it's pretty common to see the brand in everyday life. As for me, I think Samsung is impressive because it always tries to improve and bring out new products that people need. So yeah, overall, Samsung became famous thanks to its history of innovation and the way it keeps up with what customers want."
+  },
+  {
+    "id": "COM_IND_N_C2_05",
+    "domain": "society",
+    "topic": "산업",
+    "question": "Describe a company or industry in your country that is attractive to workers. When did this company or industry start and how has it grown? What has made this company or industry so attractive to workers?",
+    "answer": "Well, one industry that's really attractive to workers in my country is the semiconductor industry. Actually, there are a few big companies here that make computer chips, and they are known for leading technology worldwide. These companies offer high salaries, stable jobs, and really good benefits, which are some of the main reasons people want to work there. Another thing is that people see this industry as very modern and important, so there’s a lot of pride in being part of it. These days, a lot of students who study engineering or science try hard to get jobs in this field because they think it’s a smart career move. Personally, I think working in the semiconductor industry would be great because it feels secure and you get to work on new technology. So yeah, overall, the combination of good pay, job security, and the chance to work with advanced tech makes this industry really attractive to workers."
+  },
+  {
+    "id": "COM_IND_N_C2_06",
+    "domain": "society",
+    "topic": "산업",
+    "question": "When this company introduced its most important products, were they successful right away? Describe to me the challenges this company faced and how the company was able to succeed. Tell me in as much detail as you can.",
+    "answer": "Well, when this company first launched its most important products, they didn't really see success right away. Actually, their early phones were often seen as cheap copies, and a lot of people didn't take them seriously at first. There were many types of challenges, like strong competition from big foreign brands and some of their first models didn't sell well. Another thing is that people doubted the quality, so it was hard to build trust. To deal with this, the company put a lot of effort and money into research and design, and over time, their products improved a lot. These days, their phones are known for good quality and new features, and more people choose them. As for me, I think their story shows how hard work and not giving up can really pay off. So yeah, overall, it's pretty amazing how they turned things around and became a top brand."
+  },
+  {
+    "id": "COM_IND_N_C2_07",
+    "domain": "society",
+    "topic": "산업",
+    "question": "How did this industry help you in your life? Tell me about what this industry does and how you use its products or services.",
+    "answer": "Well, the electronics industry is actually a huge part of my life, even though I don't always notice it. This industry makes all kinds of devices like smartphones, laptops, and even smart home gadgets. For example, they produce things like microchips and sensors that go into almost every electronic product we use. Another thing is that these products are now getting smarter and more connected, thanks to new technology. People these days rely on their phones for everything, from setting alarms to paying for things and staying in touch with friends. Personally, I use my smartphone and laptop every day for school, entertainment, and even shopping online. So yeah, I really can't imagine my life without the electronics industry because it makes everything so much easier and more convenient."
+  },
+  {
+    "id": "SEL_VAC_N_C2_01",
+    "domain": "activity",
+    "topic": "집에서 휴가",
+    "question": "You indicated in the survey that you stay at home for vacations. Who are the people you would like to see or spend time with on your vacation?",
+    "answer": "Well, when I spend my vacation at home, the people I really want to be with are my family. Actually, I think home vacations are special because I get to relax with them without any stress or busy schedules. Most of the time, we just cook easy meals together, watch some movies, and have long talks in the living room. Another thing is that sometimes I invite a close friend over for coffee or snacks, which makes the time even nicer. As for me, I'm the kind of person who feels most comfortable staying in rather than traveling far away. I’ve always enjoyed quiet days at home with just a few people I care about. These days, I try to have these home vacations whenever I can, maybe once every few months. So yeah, being with my family and close friends at home is what makes my vacation really relaxing and meaningful."
+  }
+]
