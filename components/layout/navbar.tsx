@@ -37,7 +37,7 @@ const appNav: NavItem[] = [
   { label: "스피킹 코치", href: "/coaching", coachingAccessOnly: true },
   { label: "오픽 스터디", href: "/opic-study" },
   { label: "강의", href: "/lectures", lectureAccessOnly: true },
-  { label: "스터디", href: "/talklish", studyAdminOnly: true },
+  { label: "Talklish", href: "/talklish", studyAdminOnly: true },
   { label: "만능패턴", href: "/patterns" },
   { label: "AI 스토어", href: "/store" },
   { label: "소통함", href: "/support" },

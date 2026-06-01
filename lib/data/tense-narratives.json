@@ -1,0 +1,1816 @@
+[
+  {
+    "id": "dining",
+    "domain": "외식·맛집",
+    "title": "음식점과 나의 이야기",
+    "hook": "집밥만 먹던 아이가 맛집 헌터가 되기까지",
+    "tenses": [
+      "과거",
+      "현재완료",
+      "현재",
+      "현재완료진행",
+      "미래"
+    ],
+    "covers": [
+      "음식점 · 최근 외식/배달한 경험",
+      "음식점 · 식사 중 예상치 못한 일 (← 사건 비트)",
+      "음식 · 특별히 기억에 남는 식사",
+      "음식점 · 단골집/맛집을 알게 된 계기"
+    ],
+    "beats": [
+      {
+        "beat": "예전",
+        "tense": "과거 (Past Simple)",
+        "en": "When I was a kid, eating out was a rare treat. My family usually cooked at home, so going to a restaurant felt really special.",
+        "ko": "어릴 땐 외식이 드문 호사였어요. 가족이 보통 집에서 요리를 해서, 식당에 가는 게 정말 특별하게 느껴졌죠.",
+        "why": "한 번의 사건이 아니라 '그 시절 전반의 습관'이라 과거 단순형(was/cooked/felt)을 씁니다.",
+        "role": "이야기의 출발점. '예전엔 이랬다'로 뒤에 올 변화와 대비를 깔아 줍니다."
+      },
+      {
+        "beat": "계기",
+        "tense": "과거 (Past Simple)",
+        "en": "Things changed in college. My friends and I started hunting for good restaurants whenever we had some free time.",
+        "ko": "대학에 가면서 달라졌어요. 친구들과 저는 시간이 날 때마다 맛집을 찾아다니기 시작했죠.",
+        "why": "변화가 '시작된' 특정 과거 시점이라 과거형. started가 전환의 신호입니다.",
+        "role": "습관이 바뀌는 전환점. 이야기에 움직임을 만듭니다."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "One time, we went to a famous place, but the kitchen mixed up our order and brought the wrong dishes. We were a bit flustered, but the staff apologized and gave us a free dessert, so we ended up laughing about it.",
+        "ko": "한번은 유명한 곳에 갔는데, 주방이 주문을 헷갈려서 엉뚱한 음식을 가져왔어요. 좀 당황했지만, 직원이 사과하고 디저트를 서비스로 줘서 결국 웃어넘겼죠.",
+        "why": "특정 과거의 한 사건이라 처음부터 끝까지 과거형으로 시간 순서대로 나열합니다(went/mixed/brought/were/apologized/gave).",
+        "role": "⭐ 사건 만능 비트 — '식사 중 예상치 못한 일이 있었던 경험' 질문을 이 한 칸이 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since then, trying new restaurants has become my favorite hobby, and I've visited dozens of places all over the city.",
+        "ko": "그 뒤로 새 식당을 찾는 게 제일 좋아하는 취미가 됐고, 도시 곳곳 수십 군데를 가봤어요.",
+        "why": "과거의 그 시점부터 '지금까지 쭉 이어진' 변화·누적이라 현재완료(has become / have visited)를 씁니다.",
+        "role": "과거 사건과 현재를 잇는 다리. 시제가 과거에서 현재로 넘어가는 칸입니다."
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "These days, I eat out at least once a week, and I usually check the reviews online before I pick a place.",
+        "ko": "요즘은 적어도 일주일에 한 번은 외식하고, 보통 가게를 고르기 전에 온라인 후기를 확인해요.",
+        "why": "지금의 반복 습관이라 현재형. 주어가 I라 동사원형(eat/check)을 그대로 — 3인칭이 아니니 -s를 붙이지 않습니다.",
+        "role": "'지금의 나'. 면접관이 가장 자주 묻는 '요즘은 어떻게 하느냐' 칸입니다."
+      },
+      {
+        "beat": "요즘 (깊이)",
+        "tense": "현재완료진행 (Present Perfect Continuous)",
+        "en": "Lately, I've been exploring all kinds of different cuisines, and it's really widened my taste.",
+        "ko": "최근에는 온갖 나라 음식을 계속 탐험하고 있는데, 덕분에 입맛이 확 넓어졌어요.",
+        "why": "최근까지 '계속 ~해 오는 중'이라 현재완료진행(have been exploring). 자연스러울 때만 쓰는 고급 시제예요.",
+        "role": "현재 습관에 깊이를 더합니다. 억지스러우면 빼도 되지만, 여기선 자연스럽습니다."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (be going to / will)",
+        "en": "I'm going to keep finding hidden gems, and someday I'll definitely try famous restaurants in other countries too.",
+        "ko": "앞으로도 숨은 맛집을 계속 찾아다닐 거고, 언젠가는 다른 나라의 유명 식당도 꼭 가볼 거예요.",
+        "why": "앞으로의 계획·의지라 미래형. be going to는 '이미 마음먹은 계획', will은 '의지'를 담습니다.",
+        "role": "마무리. '앞으로도'로 이야기를 닫으며 미래 시제를 연습하는 칸입니다."
+      }
+    ]
+  },
+  {
+    "id": "abroad",
+    "domain": "해외여행",
+    "title": "해외여행과 나의 이야기",
+    "hook": "첫 해외여행이 바꿔 놓은 나의 세계",
+    "tenses": [
+      "과거완료",
+      "과거",
+      "과거진행",
+      "현재완료",
+      "현재",
+      "미래진행"
+    ],
+    "covers": [
+      "해외여행 · 처음 해외여행을 갔던 경험",
+      "해외여행 · 여행 중 예상치 못한 일/어려움 (← 사건 비트)",
+      "해외여행 · 가장 기억에 남는 잊지 못할 경험",
+      "지형(여행) · 지리가 전혀 다른 나라를 방문한 경험"
+    ],
+    "beats": [
+      {
+        "beat": "예전",
+        "tense": "과거완료 (Past Perfect)",
+        "en": "I had never been abroad until I was in college. Traveling overseas always felt like something far away.",
+        "ko": "대학에 가기 전까지 저는 한 번도 해외에 가본 적이 없었어요. 해외여행은 늘 먼 이야기처럼 느껴졌죠.",
+        "why": "대학이라는 과거 시점, 그 '이전까지' 경험이 없었다는 뜻이라 과거완료(had never been). 과거보다 더 앞선 시간을 가리킬 때 자연스럽게 씁니다.",
+        "role": "출발점. 고급 시제(과거완료)를 억지 없이 자연스럽게 등장시키는 칸입니다."
+      },
+      {
+        "beat": "첫 경험",
+        "tense": "과거 (Past Simple)",
+        "en": "My very first trip was to Japan with two close friends. We saved up for months and finally booked the tickets together.",
+        "ko": "제 첫 여행은 친한 친구 둘과 간 일본이었어요. 몇 달 동안 돈을 모아서 마침내 함께 티켓을 끊었죠.",
+        "why": "특정한 첫 경험이라 과거형(was/saved/booked).",
+        "role": "이야기의 핵심이 되는 첫 사건. '처음 해외여행' 질문을 정면으로 답합니다."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "On the second day, we got completely lost in Tokyo because we couldn't read any of the signs. A kind local noticed us, walked us all the way to the station, and even drew us a little map. We were incredibly grateful.",
+        "ko": "둘째 날, 표지판을 하나도 못 읽어서 도쿄에서 완전히 길을 잃었어요. 친절한 현지인이 우릴 보고 역까지 데려다주고, 작은 지도까지 그려 줬죠. 정말 고마웠어요.",
+        "why": "특정 과거의 한 사건이라 전부 과거형으로 순서대로(got/couldn't/noticed/walked/drew/were).",
+        "role": "⭐ 사건 만능 비트 — '여행 중 예상치 못한 일/어려움을 겪은 경험' 질문을 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "그때 장면",
+        "tense": "과거진행 (Past Continuous)",
+        "en": "While we were walking back to the hotel, the streets were glowing with neon lights, and I was feeling completely amazed by everything around me.",
+        "ko": "호텔로 걸어 돌아오는데, 거리가 네온 불빛으로 반짝이고 있었고, 저는 주변 모든 게 너무 신기해서 완전히 압도당하고 있었어요.",
+        "why": "그 순간 '진행 중이던' 배경과 감정이라 과거진행(were walking / were glowing / was feeling).",
+        "role": "장면에 생동감을 더합니다. 과거(사건)와 과거진행(배경)의 차이를 보여 주는 칸."
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since that trip, I've traveled to five different countries, and I've completely fallen in love with exploring new cultures.",
+        "ko": "그 여행 이후로 다섯 나라를 더 다녀왔고, 새로운 문화를 탐험하는 데 완전히 빠져 버렸어요.",
+        "why": "그때 이후부터 지금까지의 누적 경험이라 현재완료(have traveled / have fallen).",
+        "role": "과거의 첫 여행과 현재의 나를 잇는 다리."
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "Now, traveling abroad is my biggest passion. I always try to learn a few words of the local language before I go.",
+        "ko": "지금 해외여행은 제 가장 큰 열정이에요. 가기 전엔 늘 그 나라 말을 몇 마디라도 배우려고 해요.",
+        "why": "현재의 가치관·습관이라 현재형(is/try).",
+        "role": "'지금의 나' — 여행에 대한 현재의 태도."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래진행 (Future Continuous)",
+        "en": "Next, I'm planning to visit Europe, and I really hope I'll be traveling somewhere new every single year from now on.",
+        "ko": "다음은 유럽을 갈 계획이고, 앞으로는 매년 어딘가 새로운 곳을 여행하고 있으면 정말 좋겠어요.",
+        "why": "'앞으로 (그 시기에) 계속 ~하고 있을' 모습이라 미래진행(will be traveling). 미래의 진행되는 장면을 그릴 때 자연스럽습니다.",
+        "role": "마무리 + 미래진행을 자연스럽게 등장시키는 칸."
+      }
+    ]
+  },
+  {
+    "id": "domestic",
+    "domain": "국내·자연여행",
+    "title": "국내 여행과 나의 이야기",
+    "hook": "어릴 적 가족 여행에서 자연을 사랑하게 되기까지",
+    "tenses": [
+      "과거",
+      "과거진행",
+      "현재완료",
+      "현재",
+      "현재완료진행",
+      "미래"
+    ],
+    "covers": [
+      "국내여행 · 어릴 적 기억에 남는 국내 여행",
+      "지형 · 어릴 적 자주 가던 우리나라의 장소",
+      "지형 · 자연 명소를 탐방하며 인상 깊었던 경험 (← 사건 비트)",
+      "국내여행 · 잊지 못할 국내 여행"
+    ],
+    "beats": [
+      {
+        "beat": "예전",
+        "tense": "과거 (Past Simple)",
+        "en": "When I was little, my family took road trips around the country almost every summer. We usually went to the mountains or the coast, and I always looked forward to it.",
+        "ko": "어릴 땐 가족이 거의 여름마다 전국으로 자동차 여행을 다녔어요. 보통 산이나 바닷가에 갔는데, 저는 늘 그 여행을 손꼽아 기다렸죠.",
+        "why": "한 번의 일이 아니라 '그 시절 반복하던 습관'이라 과거 단순형(took/went/looked)을 씁니다.",
+        "role": "이야기의 출발점. 자연과 처음 가까워진 어린 시절을 깔아 줍니다."
+      },
+      {
+        "beat": "자주 가던 곳",
+        "tense": "과거 (Past Simple)",
+        "en": "Our favorite spot was a quiet valley near my grandparents' town. We swam in the cold stream, grilled food by the rocks, and stayed until the sun went down.",
+        "ko": "우리가 제일 좋아한 곳은 할머니 댁 근처의 조용한 계곡이었어요. 차가운 개울에서 헤엄치고, 바위 옆에서 고기를 구워 먹고, 해가 질 때까지 머물렀죠.",
+        "why": "특정한 그 장소에서 반복하던 과거의 일이라 과거형(was/swam/grilled/stayed).",
+        "role": "'어릴 적 자주 가던 우리나라의 장소' 질문을 정면으로 답하는 칸입니다."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "One time, we hiked up a famous mountain, but halfway up a thick fog rolled in and we lost the trail for a while. We got a little nervous, but we followed the signs carefully and kept climbing. When we finally reached the top, the fog cleared and an amazing view opened up in front of us. That moment took my breath away.",
+        "ko": "한번은 유명한 산을 올랐는데, 중턱에서 짙은 안개가 끼어 한동안 길을 놓쳤어요. 좀 불안했지만, 표지판을 잘 따라가며 계속 올라갔죠. 마침내 정상에 도착하니 안개가 걷히고 눈앞에 멋진 풍경이 펼쳐졌어요. 그 순간은 정말 숨이 멎을 정도였어요.",
+        "why": "특정 과거의 한 사건이라 처음부터 끝까지 과거형으로 시간 순서대로 나열합니다(hiked/rolled/lost/got/followed/kept/reached/cleared/opened/took).",
+        "role": "⭐ 사건 만능 비트 — '자연 명소를 탐방하며 인상 깊었던 경험' 질문을 이 한 칸이 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "그때 장면",
+        "tense": "과거진행 (Past Continuous)",
+        "en": "While we were standing at the summit, the wind was blowing gently and clouds were drifting right below our feet. I was feeling completely at peace.",
+        "ko": "정상에 서 있는데, 바람이 부드럽게 불고 구름이 바로 발밑으로 흘러가고 있었어요. 저는 완전히 평온한 기분이었죠.",
+        "why": "그 순간 '진행 중이던' 배경과 감정이라 과거진행(were standing / was blowing / were drifting / was feeling).",
+        "role": "장면에 생동감을 더합니다. 과거(사건)와 과거진행(배경)의 차이를 보여 주는 칸입니다."
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since then, I've fallen in love with nature, and I've traveled to all kinds of beautiful places across the country.",
+        "ko": "그 뒤로 저는 자연을 사랑하게 됐고, 전국의 온갖 아름다운 곳들을 다녀왔어요.",
+        "why": "그때부터 지금까지 '쭉 이어진' 변화·누적이라 현재완료(have fallen / have traveled)를 씁니다.",
+        "role": "과거의 그 경험과 현재의 나를 잇는 다리. 시제가 과거에서 현재로 넘어가는 칸입니다."
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "These days, I take a short domestic trip whenever I need a break, and I usually pick somewhere close to the sea or the mountains.",
+        "ko": "요즘은 쉼이 필요할 때마다 짧게 국내 여행을 떠나는데, 보통 바다나 산 가까운 곳을 골라요.",
+        "why": "지금의 반복 습관이라 현재형. 주어가 I라 동사원형(take/pick)을 그대로 — 3인칭이 아니니 -s를 붙이지 않습니다.",
+        "role": "'지금의 나'. 면접관이 가장 자주 묻는 '요즘은 어떻게 하느냐' 칸입니다."
+      },
+      {
+        "beat": "요즘 (깊이)",
+        "tense": "현재완료진행 (Present Perfect Continuous)",
+        "en": "Lately, I've been collecting little stamps from each place I visit, and it's slowly turning into a fun travel diary.",
+        "ko": "최근에는 가는 곳마다 작은 스탬프를 모으고 있는데, 점점 재미있는 여행 일기가 되어 가고 있어요.",
+        "why": "최근까지 '계속 ~해 오는 중'이라 현재완료진행(have been collecting). 자연스러울 때만 쓰는 고급 시제예요.",
+        "role": "현재 습관에 깊이를 더합니다. 억지스러우면 빼도 되지만, 여기선 자연스럽습니다."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (be going to / will)",
+        "en": "I'm going to keep exploring hidden spots around Korea, and someday I'll definitely hike every famous mountain on my list.",
+        "ko": "앞으로도 한국의 숨은 명소들을 계속 찾아다닐 거고, 언젠가는 제 목록에 있는 유명한 산을 전부 올라볼 거예요.",
+        "why": "앞으로의 계획·의지라 미래형. be going to는 '이미 마음먹은 계획', will은 '의지'를 담습니다.",
+        "role": "마무리. '앞으로도'로 이야기를 닫으며 미래 시제를 연습하는 칸입니다."
+      }
+    ]
+  },
+  {
+    "id": "hotel",
+    "domain": "호텔·렌터카",
+    "title": "호텔과 나의 이야기",
+    "hook": "첫 호텔 1박이 만든 작은 사건과 추억",
+    "tenses": [
+      "과거",
+      "현재완료",
+      "현재",
+      "현재진행",
+      "미래"
+    ],
+    "covers": [
+      "호텔 · 가장 최근에 호텔에서 묵은 경험",
+      "호텔 · 방 문제 등 예상치 못한 일을 겪은 경험 (← 사건 비트)",
+      "호텔 · 기억에 남는 특별한 호텔",
+      "렌터카 · 차를 렌트해 여행한 경험"
+    ],
+    "beats": [
+      {
+        "beat": "예전",
+        "tense": "과거 (Past Simple)",
+        "en": "I stayed at a hotel for the very first time when I traveled with my friends in college. Back then, even a simple room felt like a luxury to me.",
+        "ko": "대학 때 친구들과 여행하면서 호텔에 처음으로 묵어 봤어요. 그땐 평범한 방 하나도 저한텐 호사처럼 느껴졌죠.",
+        "why": "처음 묵은 특정 과거 + 그 시절의 느낌이라 과거형(stayed/traveled/felt).",
+        "role": "출발점. 지금과 대비되는 '첫 호텔 경험'을 보여 줍니다."
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since then, I've stayed at all sorts of hotels, and I've learned exactly what makes a stay comfortable for me.",
+        "ko": "그 뒤로 온갖 호텔에 묵어 봤고, 저한테 편한 숙박이 어떤 건지 정확히 알게 됐어요.",
+        "why": "그때부터 지금까지의 누적 경험이라 현재완료(have stayed / have learned).",
+        "role": "과거의 첫 경험과 현재를 잇는 다리."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "One time, I checked into a hotel late at night, but the room they gave me was already occupied by someone else. I was so embarrassed, so I went back down and explained the situation to the front desk. They apologized right away, upgraded me to a nicer room, and even sent up some snacks. In the end, it turned into a pretty pleasant stay.",
+        "ko": "한번은 밤늦게 호텔에 체크인했는데, 받은 방에 이미 다른 사람이 묵고 있었어요. 너무 민망해서 다시 내려가 프런트에 상황을 설명했죠. 직원이 바로 사과하고 더 좋은 방으로 업그레이드해 줬고, 간식까지 올려보내 줬어요. 결국엔 꽤 기분 좋은 숙박이 됐죠.",
+        "why": "특정 과거의 한 사건이라 전부 과거형으로 순서대로(checked/gave/was/went/explained/apologized/upgraded/sent/turned).",
+        "role": "⭐ 사건 만능 비트 — '방 문제 등 예상치 못한 일을 겪은 경험' 질문을 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "기억에 남는 호텔",
+        "tense": "과거 (Past Simple)",
+        "en": "The most memorable one was a small hotel by the beach. The room had a huge window facing the ocean, and I woke up to the sound of waves every morning.",
+        "ko": "가장 기억에 남는 곳은 바닷가의 작은 호텔이었어요. 방에는 바다를 향한 큰 창이 있어서, 매일 아침 파도 소리에 잠을 깼죠.",
+        "why": "특정한 과거의 그 호텔 경험이라 과거형(was/had/woke).",
+        "role": "'기억에 남는 특별한 호텔' 질문을 커버하는 보조 사건 칸."
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "These days, I always read the reviews carefully before I book a hotel, and I usually care more about cleanliness than fancy facilities.",
+        "ko": "요즘은 호텔을 예약하기 전에 항상 후기를 꼼꼼히 읽고, 보통 화려한 시설보다 청결을 더 따져요.",
+        "why": "지금의 반복 습관이라 현재형. 주어가 I라 read/care에 -s를 붙이지 않습니다.",
+        "role": "'지금의 나' — 호텔을 고르는 현재의 기준."
+      },
+      {
+        "beat": "요즘 (지금 하는 중)",
+        "tense": "현재진행 (Present Continuous)",
+        "en": "Actually, I'm planning a short trip right now, so I'm comparing a few hotels and rental cars to get the best deal.",
+        "ko": "사실 지금 짧은 여행을 계획하는 중이라, 제일 좋은 조건을 찾으려고 호텔이랑 렌터카 몇 군데를 비교하고 있어요.",
+        "why": "지금 '하는 중'인 일시적 일이라 현재진행(am planning / am comparing). 늘 그런 습관(현재)과 구분됩니다.",
+        "role": "현재에 디테일을 더하고, '렌터카' 질문도 살짝 끌어오는 칸."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (will / be going to)",
+        "en": "Next time, I'm going to rent a car and drive along the coast, and I'll probably book a hotel with a nice ocean view again.",
+        "ko": "다음번엔 차를 렌트해서 해안 도로를 달릴 거고, 아마 또 바다 전망이 좋은 호텔을 잡을 것 같아요.",
+        "why": "앞으로의 계획·예측이라 미래형. be going to는 정해 둔 계획, will은 예측.",
+        "role": "마무리 + 미래 시제 연습. '렌터카' 질문까지 자연스럽게 닫아 줍니다."
+      }
+    ]
+  },
+  {
+    "id": "movie",
+    "domain": "영화·TV",
+    "title": "영화와 나의 이야기",
+    "hook": "극장 단골이 된 영화 덕후의 기록",
+    "tenses": [
+      "과거",
+      "현재완료",
+      "과거진행",
+      "현재",
+      "현재완료진행",
+      "미래"
+    ],
+    "covers": [
+      "영화 · 최근 영화를 보러 간 날",
+      "영화 · 티켓/예약 문제를 겪은 경험 (← 사건 비트)",
+      "영화 · 기억에 남는 영화 한 편",
+      "TV · 최근에 본 TV 프로그램"
+    ],
+    "beats": [
+      {
+        "beat": "예전",
+        "tense": "과거 (Past Simple)",
+        "en": "When I was younger, I rarely went to the theater. I mostly watched movies at home on TV, so the big screen felt like a special event.",
+        "ko": "어릴 땐 극장에 거의 안 갔어요. 주로 집에서 TV로 영화를 봐서, 큰 화면은 특별한 이벤트처럼 느껴졌죠.",
+        "why": "한 번의 사건이 아니라 '그 시절 전반의 습관'이라 과거 단순형(went/watched/felt)을 씁니다.",
+        "role": "이야기의 출발점. '예전엔 이랬다'로 뒤에 올 변화와 대비를 깔아 줍니다."
+      },
+      {
+        "beat": "계기",
+        "tense": "과거 (Past Simple)",
+        "en": "Everything changed when a friend dragged me to a midnight premiere in college. The atmosphere completely hooked me, and I was amazed by the sound and the huge screen.",
+        "ko": "대학 때 친구가 저를 심야 시사회에 끌고 가면서 다 달라졌어요. 그 분위기에 완전히 빠졌고, 사운드랑 거대한 화면에 압도당했죠.",
+        "why": "변화가 '시작된' 특정 과거 시점이라 과거형(changed/dragged/hooked/was). dragged가 전환의 신호입니다.",
+        "role": "습관이 바뀌는 전환점. 이야기에 움직임을 만듭니다."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "One time, I booked tickets online for a big premiere, but when I got to the theater, the system said my reservation had been canceled. I panicked because the show was almost sold out. I rushed to the counter, explained the situation, and a staff member managed to find me two seats in the front row. The movie turned out great, so we just laughed about the whole mess afterward.",
+        "ko": "한번은 큰 개봉작을 온라인으로 예매했는데, 극장에 도착하니 시스템에 예약이 취소됐다고 떴어요. 거의 매진이라 패닉이 왔죠. 카운터로 달려가서 상황을 설명했더니, 직원이 앞줄에 두 자리를 겨우 찾아 줬어요. 영화가 너무 좋아서, 그 난리를 결국 웃어넘겼어요.",
+        "why": "특정 과거의 한 사건이라 처음부터 끝까지 과거형으로 시간 순서대로 나열합니다(booked/got/panicked/rushed/explained/found/turned/laughed). 'had been canceled'는 도착보다 더 앞서 일어난 일이라 과거완료를 한 번 자연스럽게 끼웠습니다.",
+        "role": "⭐ 사건 만능 비트 — '티켓/예약 문제를 겪은 경험' 질문을 이 한 칸이 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since then, going to the movies has turned into my favorite weekend ritual, and I've watched almost every big release on the big screen.",
+        "ko": "그 뒤로 영화 보러 가는 게 제일 좋아하는 주말 의식이 됐고, 웬만한 대형 개봉작은 다 극장에서 봤어요.",
+        "why": "과거의 그 시점부터 '지금까지 쭉 이어진' 변화·누적이라 현재완료(has turned / have watched)를 씁니다.",
+        "role": "과거 사건과 현재를 잇는 다리. 시제가 과거에서 현재로 넘어가는 칸입니다."
+      },
+      {
+        "beat": "기억에 남는 한 편",
+        "tense": "과거진행 (Past Continuous)",
+        "en": "I still remember one film that really moved me. While I was watching the ending, everyone in the theater was crying, and I was holding back tears too. That scene has stuck with me ever since.",
+        "ko": "지금도 정말 감동했던 영화 한 편이 기억나요. 엔딩을 보고 있는데, 극장 안 사람들이 다 울고 있었고 저도 눈물을 참고 있었죠. 그 장면은 그 뒤로 계속 마음에 남아 있어요.",
+        "why": "그 순간 '진행 중이던' 장면과 감정이라 과거진행(was watching / were crying / was holding). 마지막 문장은 지금까지 이어지는 여운이라 현재완료(has stuck)로 자연스럽게 넘어갑니다.",
+        "role": "'기억에 남는 영화 한 편' 질문을 커버합니다. 과거진행으로 그 순간을 생생하게 그립니다."
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "These days, I watch a movie at least once a week, and on top of that, I'm really into one TV drama that airs every Friday night.",
+        "ko": "요즘은 적어도 일주일에 한 번은 영화를 보고, 거기다 매주 금요일 밤에 하는 TV 드라마 하나에 푹 빠져 있어요.",
+        "why": "지금의 반복 습관이라 현재형. 주어가 I라 동사원형(watch)을 그대로 — 3인칭이 아니니 -s를 붙이지 않습니다. airs는 주어가 it(드라마)이라 -s가 붙습니다.",
+        "role": "'지금의 나'. '요즘 본 TV 프로그램' 질문까지 한 칸으로 함께 답합니다."
+      },
+      {
+        "beat": "요즘 (깊이)",
+        "tense": "현재완료진행 (Present Perfect Continuous)",
+        "en": "Lately, I've been exploring all sorts of genres I used to ignore, and it's really broadened what I enjoy.",
+        "ko": "최근에는 예전엔 거들떠보지도 않던 온갖 장르를 계속 파고들고 있는데, 덕분에 즐기는 폭이 확 넓어졌어요.",
+        "why": "최근까지 '계속 ~해 오는 중'이라 현재완료진행(have been exploring). 자연스러울 때만 쓰는 고급 시제예요.",
+        "role": "현재 습관에 깊이를 더합니다. 억지스러우면 빼도 되지만, 여기선 자연스럽습니다."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (will / be going to)",
+        "en": "I'm going to keep catching every premiere I can, and someday I'll definitely visit one of those famous film festivals abroad.",
+        "ko": "앞으로도 볼 수 있는 개봉작은 다 챙겨 볼 거고, 언젠가는 해외의 유명한 영화제에도 꼭 가볼 거예요.",
+        "why": "앞으로의 계획·의지라 미래형. be going to는 '이미 마음먹은 계획', will은 '의지'를 담습니다.",
+        "role": "마무리. '앞으로도'로 이야기를 닫으며 미래 시제를 연습하는 칸입니다."
+      }
+    ]
+  },
+  {
+    "id": "music",
+    "domain": "음악·공연",
+    "title": "음악과 나의 이야기",
+    "hook": "이어폰 속 음악이 라이브 무대로 이어지기까지",
+    "tenses": [
+      "과거",
+      "현재완료",
+      "과거진행",
+      "현재",
+      "현재진행",
+      "미래"
+    ],
+    "covers": [
+      "음악 · 기억에 남는 라이브 음악 공연",
+      "공연 · 예약했지만 참석하지 못한 경험 (← 사건 비트)",
+      "음악 · 음악을 좋아하게 된 계기",
+      "음악 · 요즘 음악을 듣는 방식"
+    ],
+    "beats": [
+      {
+        "beat": "계기",
+        "tense": "과거 (Past Simple)",
+        "en": "I fell in love with music in high school. A friend shared a playlist with me, and I instantly got hooked on it.",
+        "ko": "고등학교 때 음악에 푹 빠졌어요. 친구가 플레이리스트를 공유해 줬는데, 곧바로 거기에 빠져 버렸죠.",
+        "why": "음악을 좋아하게 된 특정 과거의 계기라 과거형(fell/shared/got).",
+        "role": "이야기의 출발점. '음악을 좋아하게 된 계기' 질문을 정면으로 답합니다."
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since then, music has become a huge part of my daily life, and I've been to quite a few concerts over the years.",
+        "ko": "그 뒤로 음악은 제 일상의 큰 부분이 됐고, 그동안 꽤 여러 공연을 다녀왔어요.",
+        "why": "그때부터 지금까지의 누적·변화라 현재완료(has become / have been to).",
+        "role": "과거의 계기와 현재를 잇는 다리."
+      },
+      {
+        "beat": "기억에 남는 공연",
+        "tense": "과거진행 (Past Continuous)",
+        "en": "The most memorable one was an outdoor concert by my favorite band. While they were playing my favorite song, the whole crowd was singing along, and I was getting goosebumps the entire time.",
+        "ko": "가장 기억에 남는 건 제일 좋아하는 밴드의 야외 공연이었어요. 그들이 제 최애곡을 연주하고 있는데, 관객 전체가 따라 부르고 있었고, 저는 내내 소름이 돋고 있었죠.",
+        "why": "공연 자체는 과거형(was)으로 시작하고, 그 순간 '진행 중이던' 장면은 과거진행(were playing / were singing / was getting)으로 그립니다.",
+        "role": "'기억에 남는 라이브 공연' 질문을 커버합니다. 과거진행으로 그 현장을 생생하게 살립니다."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "But not every plan worked out. One time, I booked tickets months in advance for a concert I'd been dying to see. On the day of the show, I suddenly came down with a terrible fever and couldn't even get out of bed. I tried to sell the tickets to a friend, but it was too last-minute, so in the end I just missed it and felt gutted for days.",
+        "ko": "그런데 모든 계획이 잘 풀린 건 아니에요. 한번은 너무 보고 싶던 공연을 몇 달 전에 예매했어요. 공연 당일, 갑자기 심한 열이 나서 침대에서 일어나지도 못했죠. 친구한테 표를 팔아 보려 했지만 너무 임박해서, 결국 그냥 못 가고 며칠 동안 속상했어요.",
+        "why": "특정 과거의 한 사건이라 전부 과거형으로 순서대로(booked/came down/couldn't/tried/was/missed/felt). 'I'd been dying to see'는 예매 시점보다 더 앞선 마음이라 과거완료진행을 한 번 자연스럽게 끼웠습니다.",
+        "role": "⭐ 사건 만능 비트 — '예약했지만 참석하지 못한 경험' 질문을 이 한 칸이 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "These days, I listen to music almost all day long. I usually stream it on my phone, and I make a new playlist for every mood.",
+        "ko": "요즘은 거의 하루 종일 음악을 들어요. 보통 폰으로 스트리밍하고, 기분마다 새 플레이리스트를 만들죠.",
+        "why": "지금의 반복 습관이라 현재형. 주어 I라 listen/make에 -s를 붙이지 않습니다.",
+        "role": "'지금의 나'. '요즘 음악을 듣는 방식' 질문을 정면으로 답합니다."
+      },
+      {
+        "beat": "요즘 (지금 하는 중)",
+        "tense": "현재진행 (Present Continuous)",
+        "en": "Actually, these days I'm getting into vinyl records, so I'm slowly building a small collection at home.",
+        "ko": "사실 요즘은 LP에 빠지고 있어서, 집에 작은 컬렉션을 천천히 모으는 중이에요.",
+        "why": "지금 '하는 중'인 일시적 변화라 현재진행(am getting / am building). 늘 그런 습관(현재)과 구분됩니다.",
+        "role": "현재에 디테일을 더하고, 현재형과 현재진행의 차이를 보여 줍니다."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (will / be going to)",
+        "en": "I'm going to catch that band live again next year, and this time I'll make absolutely sure nothing gets in the way.",
+        "ko": "내년엔 그 밴드를 다시 라이브로 볼 거고, 이번엔 무슨 일이 있어도 못 가는 일은 절대 없게 할 거예요.",
+        "why": "앞으로의 계획·의지라 미래형. be going to는 '이미 마음먹은 계획', will은 '의지'를 담습니다.",
+        "role": "마무리. 앞선 사건(못 간 공연)과 연결해 미래 시제로 이야기를 닫습니다."
+      }
+    ]
+  },
+  {
+    "id": "shopping",
+    "domain": "쇼핑·옷",
+    "title": "쇼핑과 나의 이야기",
+    "hook": "충동구매러에서 신중한 쇼퍼가 되기까지",
+    "tenses": [
+      "과거",
+      "현재완료",
+      "현재",
+      "현재완료진행",
+      "미래"
+    ],
+    "covers": [
+      "쇼핑 · 최근에 옷/물건을 산 경험",
+      "쇼핑 · 불량품·하자로 반품한 경험 (← 사건 비트)",
+      "쇼핑 · 어릴 적 쇼핑을 좋아하게 된 계기",
+      "쇼핑 · 기억에 남는 쇼핑"
+    ],
+    "beats": [
+      {
+        "beat": "계기",
+        "tense": "과거 (Past Simple)",
+        "en": "I started loving shopping when I was a teenager. My mom took me clothes shopping for the first time, and I had a blast picking out my own outfits.",
+        "ko": "십 대 때 쇼핑을 좋아하게 됐어요. 엄마가 처음으로 옷 쇼핑에 데려갔는데, 제 옷을 직접 고르는 게 너무 신났죠.",
+        "why": "쇼핑을 좋아하게 된 특정 과거의 계기라 과거형(started/took/had).",
+        "role": "이야기의 출발점. '어릴 적 쇼핑을 좋아하게 된 계기' 질문을 정면으로 답합니다."
+      },
+      {
+        "beat": "예전 습관",
+        "tense": "과거 (Past Simple)",
+        "en": "Back then, I was a total impulse buyer. I bought whatever caught my eye, and honestly, half of it just sat in my closet unused.",
+        "ko": "그땐 완전 충동구매러였어요. 눈에 띄는 건 다 샀고, 솔직히 그중 절반은 옷장에서 쓰지도 못한 채 방치됐죠.",
+        "why": "그 시절 전반의 습관이라 과거형(was/bought/sat).",
+        "role": "지금과 대비되는 '예전의 나'를 보여 줍니다. 변화의 발판입니다."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "One time, I ordered a jacket online that I was super excited about. When it arrived, I noticed a broken zipper and a small tear on the sleeve. I was pretty annoyed, so I contacted customer service right away. They apologized, sent me a prepaid return label, and shipped a brand-new one within a few days. The replacement was perfect, so it ended on a good note.",
+        "ko": "한번은 엄청 기대하던 재킷을 온라인으로 주문했어요. 도착해서 보니 지퍼가 망가졌고 소매에 작은 찢어진 자국이 있었죠. 꽤 짜증 나서 바로 고객센터에 연락했어요. 사과하면서 선불 반품 라벨을 보내 주고, 며칠 안에 새 제품을 보내 줬죠. 교환품은 완벽해서, 결국 좋게 마무리됐어요.",
+        "why": "특정 과거의 한 사건이라 처음부터 끝까지 과거형으로 시간 순서대로 나열합니다(ordered/arrived/noticed/was/contacted/apologized/sent/shipped/was/ended).",
+        "role": "⭐ 사건 만능 비트 — '불량품·하자로 반품한 경험' 질문을 이 한 칸이 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since then, I've become a much more careful shopper, and I've completely stopped buying things on a whim.",
+        "ko": "그 뒤로 훨씬 신중한 쇼퍼가 됐고, 충동적으로 물건 사는 건 완전히 끊었어요.",
+        "why": "그 사건 이후부터 지금까지의 변화·누적이라 현재완료(have become / have stopped).",
+        "role": "과거 사건과 현재를 잇는 다리. 시제가 과거에서 현재로 넘어가는 칸입니다."
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "These days, I always check the reviews and the return policy before I buy anything. In fact, I bought a coat just last week after comparing it with a few others.",
+        "ko": "요즘은 뭘 사기 전에 항상 후기랑 반품 정책을 확인해요. 실제로 바로 지난주에도 다른 것들이랑 비교한 다음에 코트를 하나 샀어요.",
+        "why": "현재의 반복 습관이라 현재형(check/buy). 주어 I라 -s를 붙이지 않습니다. 뒷문장은 '지난주'라는 특정 과거라 과거형(bought)으로 자연스럽게 넘어갑니다.",
+        "role": "'지금의 나'. '최근에 옷/물건을 산 경험' 질문까지 한 칸으로 함께 답합니다."
+      },
+      {
+        "beat": "요즘 (깊이)",
+        "tense": "현재완료진행 (Present Perfect Continuous)",
+        "en": "Lately, I've been trying to buy fewer but better-quality pieces, and it's actually saved me a lot of money.",
+        "ko": "최근에는 적게 사되 품질 좋은 것만 사려고 계속 노력하고 있는데, 사실 덕분에 돈을 많이 아꼈어요.",
+        "why": "최근까지 '계속 ~해 오는 중'이라 현재완료진행(have been trying). 자연스러울 때만 쓰는 고급 시제예요.",
+        "role": "현재 습관에 깊이를 더합니다. 억지스러우면 빼도 되지만, 여기선 자연스럽습니다."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (will / be going to)",
+        "en": "I'm going to keep shopping more mindfully, and from now on I'll always check an item carefully before I pay for it.",
+        "ko": "앞으로도 더 현명하게 쇼핑할 거고, 이제부턴 결제하기 전에 항상 물건을 꼼꼼히 확인할 거예요.",
+        "why": "앞으로의 계획·의지라 미래형. be going to는 '이미 마음먹은 계획', will은 '의지'를 담습니다.",
+        "role": "마무리. '앞으로도'로 이야기를 닫으며 미래 시제를 연습하는 칸입니다."
+      }
+    ]
+  },
+  {
+    "id": "internet",
+    "domain": "인터넷",
+    "title": "인터넷과 나의 이야기",
+    "hook": "삐삐 시절에서 모든 걸 검색하는 지금까지",
+    "tenses": [
+      "과거",
+      "현재완료",
+      "현재",
+      "미래"
+    ],
+    "covers": [
+      "인터넷 · 처음 인터넷에 관심을 가진 계기",
+      "인터넷 · 접속 문제를 겪은 경험 (← 사건 비트)",
+      "인터넷 · 인터넷으로 과제/조사를 한 경험",
+      "인터넷 · 어제 온라인에서 한 일"
+    ],
+    "beats": [
+      {
+        "beat": "예전",
+        "tense": "과거 (Past Simple)",
+        "en": "When I was young, the internet was painfully slow. We had a dial-up connection, so loading a single page took forever.",
+        "ko": "어릴 땐 인터넷이 끔찍하게 느렸어요. 전화 모뎀을 썼던 터라 페이지 하나 뜨는 데도 한참 걸렸죠.",
+        "why": "한 번의 사건이 아니라 '그 시절 전반의 상태'라 과거 단순형(was/had/took)을 씁니다.",
+        "role": "이야기의 출발점. '예전엔 이랬다'로 지금과의 대비를 깔아 줍니다."
+      },
+      {
+        "beat": "계기",
+        "tense": "과거 (Past Simple)",
+        "en": "I really got into it in middle school. A friend showed me how to look things up online, and I was instantly hooked.",
+        "ko": "본격적으로 빠진 건 중학교 때였어요. 친구가 온라인으로 검색하는 법을 알려 줬는데, 곧바로 푹 빠져 버렸죠.",
+        "why": "관심이 '시작된' 특정 과거 시점이라 과거형. showed/was가 전환의 신호입니다.",
+        "role": "인터넷과 가까워지는 계기. '처음 관심을 가진 계기' 질문을 정면으로 답합니다."
+      },
+      {
+        "beat": "과제",
+        "tense": "과거 (Past Simple)",
+        "en": "Back in high school, I used it for almost every assignment. I searched for articles, compared sources, and put my reports together late at night.",
+        "ko": "고등학교 땐 거의 모든 과제에 인터넷을 썼어요. 자료를 검색하고, 출처를 비교하고, 밤늦게 리포트를 완성하곤 했죠.",
+        "why": "과거의 한 시절에 했던 일이라 과거형으로 나열합니다(used/searched/compared/put).",
+        "role": "'인터넷으로 과제/조사를 한 경험' 질문을 커버하는 보조 사건 칸."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "One evening, my internet suddenly went down right before an important deadline. The page just wouldn't load no matter what I tried. I rebooted the router, called my provider, and after about an hour the connection finally came back, so I managed to submit everything just in time.",
+        "ko": "어느 날 저녁, 중요한 마감 직전에 인터넷이 갑자기 끊겼어요. 뭘 해도 페이지가 안 뜨더라고요. 공유기를 재부팅하고, 통신사에 전화하고, 한 시간쯤 지나서야 연결이 돌아와서 가까스로 제때 다 제출했죠.",
+        "why": "특정 과거의 한 사건이라 처음부터 끝까지 과거형으로 순서대로 나열합니다(went/wouldn't/rebooted/called/came/managed).",
+        "role": "⭐ 사건 만능 비트 — '인터넷 접속 문제를 겪은 경험' 질문을 이 한 칸이 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since then, the internet has become absolutely essential to my life, and I've come to rely on it for just about everything.",
+        "ko": "그 뒤로 인터넷은 제 삶에 완전히 필수가 됐고, 거의 모든 일을 인터넷에 기대게 됐어요.",
+        "why": "과거의 그 시점부터 '지금까지 쭉 이어진' 변화·누적이라 현재완료(has become / have come)를 씁니다.",
+        "role": "과거와 현재를 잇는 다리. 시제가 과거에서 현재로 넘어가는 칸입니다."
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "These days, I look almost everything up online — recipes, directions, news, you name it. I honestly can't imagine a single day without it.",
+        "ko": "요즘은 거의 모든 걸 온라인으로 찾아봐요. 레시피, 길 찾기, 뉴스 등등요. 솔직히 인터넷 없는 하루는 상상이 안 돼요.",
+        "why": "지금의 반복 습관이라 현재형. 주어가 I라 동사원형(look)을 그대로 — 3인칭이 아니니 -s를 붙이지 않습니다.",
+        "role": "'지금의 나'. 면접관이 자주 묻는 '요즘은 어떻게 하느냐' 칸입니다."
+      },
+      {
+        "beat": "어제",
+        "tense": "과거 (Past Simple)",
+        "en": "Just yesterday, I booked a movie ticket, ordered some groceries, and watched a couple of videos — all online without leaving my couch.",
+        "ko": "바로 어제만 해도 영화 표를 예매하고, 장을 보고, 영상 몇 개를 봤어요. 소파에서 안 일어나고 전부 온라인으로요.",
+        "why": "어제라는 분명한 과거 시점의 일이라 과거형으로 나열합니다(booked/ordered/watched).",
+        "role": "'어제 온라인에서 한 일' 질문을 커버하는 칸. 현재 습관을 구체적 과거 사례로 받쳐 줍니다."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (will / be going to)",
+        "en": "Going forward, I'm going to be a bit more careful about how much time I spend online, but I'll definitely keep using it as my main window to the world.",
+        "ko": "앞으로는 온라인에 쓰는 시간을 조금 더 신경 쓸 생각이에요. 그래도 세상으로 통하는 제 주된 창구로 계속 쓸 거예요.",
+        "why": "앞으로의 계획·의지라 미래형. be going to는 '이미 마음먹은 계획', will은 '의지'를 담습니다.",
+        "role": "마무리. '앞으로도'로 이야기를 닫으며 미래 시제를 연습하는 칸입니다."
+      }
+    ]
+  },
+  {
+    "id": "device",
+    "domain": "휴대폰·기기",
+    "title": "스마트폰과 나의 이야기",
+    "hook": "문자용 폰에서 내 삶의 중심이 되기까지",
+    "tenses": [
+      "과거",
+      "현재완료",
+      "현재",
+      "현재진행",
+      "미래"
+    ],
+    "covers": [
+      "전화기 · 휴대폰/기기가 고장 나 겪은 경험 (← 사건 비트)",
+      "전화기 · 지금 쓰는 폰을 구입한 과정",
+      "가전제품/기술 · 기기 문제로 불편했던 경험",
+      "전화기 · 전화로 기억에 남는 대화"
+    ],
+    "beats": [
+      {
+        "beat": "예전",
+        "tense": "과거 (Past Simple)",
+        "en": "I got my first smartphone in middle school. Back then, I mostly used it for texting friends and playing simple games.",
+        "ko": "중학교 때 첫 스마트폰이 생겼어요. 그땐 주로 친구들과 문자하거나 간단한 게임을 하는 데 썼죠.",
+        "why": "처음 가진 특정 과거 + 그 시절의 용도라 과거형(got/used).",
+        "role": "출발점. 지금과 대비되는 '예전의 폰'을 보여 줍니다."
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since then, phones have become the center of my daily life, and I've upgraded mine three times.",
+        "ko": "그 뒤로 휴대폰은 제 일상의 중심이 됐고, 세 번이나 새 폰으로 바꿨어요.",
+        "why": "그때부터 지금까지의 누적·변화라 현재완료(have become / have upgraded).",
+        "role": "과거에서 현재로 넘어가는 다리."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "One day, my phone suddenly froze and wouldn't turn on at all. I panicked because all my photos were on it. I rushed to a service center, and luckily a technician fixed it and recovered my data.",
+        "ko": "하루는 폰이 갑자기 먹통이 되더니 아예 안 켜졌어요. 사진이 전부 거기 있어서 패닉이 왔죠. 서비스센터로 달려갔는데, 다행히 기사님이 고쳐서 데이터까지 살려 줬어요.",
+        "why": "특정 과거의 한 사건이라 전부 과거형으로 순서대로(froze/panicked/rushed/fixed/recovered).",
+        "role": "⭐ 사건 만능 비트 — '기기가 고장 나 불편을 겪은 경험' 질문을 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "Now I use my phone for almost everything — banking, maps, work, and watching videos on the subway.",
+        "ko": "지금은 폰으로 거의 모든 걸 해요. 은행 업무, 길 찾기, 일, 지하철에서 영상 보기까지요.",
+        "why": "현재의 반복 습관이라 현재형. 주어 I라 use에 -s를 붙이지 않습니다.",
+        "role": "'지금의 나' — 현재 용도."
+      },
+      {
+        "beat": "요즘 (지금 하는 중)",
+        "tense": "현재진행 (Present Continuous)",
+        "en": "Actually, these days I'm trying to cut down my screen time, because I think I use it a little too much.",
+        "ko": "사실 요즘은 화면 보는 시간을 줄이려고 하는 중이에요. 좀 너무 많이 쓰는 것 같아서요.",
+        "why": "지금 '하는 중'인 일시적 노력이라 현재진행(am trying). 늘 그런 습관(현재)과 구분됩니다.",
+        "role": "현재에 디테일을 더하고, 현재형과 현재진행의 차이를 보여 줍니다."
+      },
+      {
+        "beat": "구입 과정",
+        "tense": "과거 (Past Simple)",
+        "en": "When I bought my current phone, I compared several models online and read a ton of reviews before I finally decided.",
+        "ko": "지금 폰을 살 때는 여러 모델을 온라인으로 비교하고 후기를 잔뜩 읽은 다음에야 골랐어요.",
+        "why": "구입이라는 과거의 절차라 과거형(bought/compared/read/decided).",
+        "role": "'폰을 구입한 과정' 질문을 커버하는 보조 사건 칸."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (will / be going to)",
+        "en": "I'll probably get a new model next year, but this time I'm going to back up everything to the cloud first.",
+        "ko": "아마 내년엔 새 모델을 살 것 같아요. 다만 이번엔 먼저 클라우드에 전부 백업해 둘 거예요.",
+        "why": "앞으로의 계획·예측이라 미래형. will은 예측, be going to는 정해 둔 계획.",
+        "role": "마무리 + 미래 시제 연습."
+      }
+    ]
+  },
+  {
+    "id": "home",
+    "domain": "집·가구",
+    "title": "집과 나의 이야기",
+    "hook": "내 손으로 바꿔 온 우리 집 이야기",
+    "tenses": [
+      "과거",
+      "현재완료",
+      "현재",
+      "현재진행",
+      "미래"
+    ],
+    "covers": [
+      "집 · 집에서 생긴 문제를 해결한 경험 (← 사건 비트)",
+      "집 · 인테리어/가구를 바꾼 경험",
+      "가구 · 기대와 다른 가구를 산 경험",
+      "집 · 가족과 집에서의 추억"
+    ],
+    "beats": [
+      {
+        "beat": "예전",
+        "tense": "과거 (Past Simple)",
+        "en": "I grew up in a small apartment with my parents and my younger brother. It was a bit cramped, but it always felt warm and cozy.",
+        "ko": "저는 부모님, 남동생과 함께 작은 아파트에서 자랐어요. 좀 비좁긴 했지만, 늘 따뜻하고 아늑했죠.",
+        "why": "어린 시절 전반의 상태·환경이라 과거 단순형(grew/was/felt)을 씁니다.",
+        "role": "이야기의 출발점. '예전의 집'을 보여 주며 뒤에 올 변화를 깔아 줍니다."
+      },
+      {
+        "beat": "추억",
+        "tense": "과거 (Past Simple)",
+        "en": "On weekends, my whole family gathered in the living room, watched movies together, and ate snacks until late. Those evenings are some of my happiest memories.",
+        "ko": "주말이면 온 가족이 거실에 모여 다 같이 영화를 보고, 늦게까지 간식을 먹곤 했어요. 그 저녁들이 제일 행복한 추억 중 하나예요.",
+        "why": "과거에 반복됐던 가족의 일과라 과거형으로 나열합니다(gathered/watched/ate).",
+        "role": "'가족과 집에서의 추억' 질문을 커버하는 칸. 이야기에 정서를 더합니다."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "One winter night, a pipe under our kitchen sink suddenly burst and water spread all over the floor. I panicked at first, but I quickly shut off the main valve, mopped up the water, and called a plumber the next morning. He fixed it in no time, and I felt pretty proud that I handled it calmly.",
+        "ko": "어느 겨울밤, 주방 싱크대 아래 배관이 갑자기 터져서 물이 바닥에 쫙 퍼졌어요. 처음엔 당황했지만, 얼른 수도 밸브를 잠그고, 물을 닦아 내고, 다음 날 아침 배관공을 불렀죠. 금방 고쳐 줬고, 침착하게 처리한 게 좀 뿌듯했어요.",
+        "why": "특정 과거의 한 사건이라 처음부터 끝까지 과거형으로 순서대로 나열합니다(burst/spread/shut/mopped/called/fixed/felt).",
+        "role": "⭐ 사건 만능 비트 — '집에서 생긴 문제를 해결한 경험' 질문을 이 한 칸이 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since I moved into my own place, I've gradually made it feel like home, and I've changed quite a few things to match my taste.",
+        "ko": "제 집으로 이사한 뒤로, 조금씩 진짜 우리 집처럼 느껴지게 만들었고, 제 취향에 맞춰 꽤 여러 가지를 바꿔 왔어요.",
+        "why": "이사한 그 시점부터 지금까지의 누적·변화라 현재완료(have made / have changed)를 씁니다.",
+        "role": "과거와 현재를 잇는 다리. 시제가 과거에서 현재로 넘어가는 칸입니다."
+      },
+      {
+        "beat": "가구",
+        "tense": "과거 (Past Simple)",
+        "en": "Once, I ordered a sofa online that looked perfect in the photos, but when it arrived, the color was totally different and it barely fit through the door. I was a little disappointed, but I ended up keeping it anyway.",
+        "ko": "한번은 사진으로는 완벽해 보이는 소파를 온라인으로 주문했는데, 막상 도착하니 색이 완전히 다르고 문에 겨우 들어왔어요. 좀 실망했지만 결국 그냥 쓰기로 했죠.",
+        "why": "기대와 달랐던 특정 과거의 구매라 과거형으로 나열합니다(ordered/arrived/was/fit/kept).",
+        "role": "'기대와 다른 가구를 산 경험' 질문을 커버하는 보조 사건 칸."
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "Now, I really enjoy decorating my space. I rearrange the furniture every now and then, and I add little plants and lights to make it feel cozier.",
+        "ko": "지금은 제 공간을 꾸미는 게 정말 즐거워요. 가끔 가구 배치를 바꾸고, 작은 화분이나 조명을 더해서 더 아늑하게 만들죠.",
+        "why": "현재의 반복 습관·취향이라 현재형. 주어 I라 enjoy/rearrange/add에 -s를 붙이지 않습니다.",
+        "role": "'지금의 나' — 집을 대하는 현재의 태도와 습관."
+      },
+      {
+        "beat": "요즘 (지금 하는 중)",
+        "tense": "현재진행 (Present Continuous)",
+        "en": "Actually, these days I'm slowly redoing my bedroom — I'm repainting one wall and looking for a new desk that fits the corner.",
+        "ko": "사실 요즘은 침실을 천천히 손보는 중이에요. 한쪽 벽을 다시 칠하고, 구석에 맞는 새 책상을 찾고 있죠.",
+        "why": "지금 '진행 중'인 일시적 작업이라 현재진행(am redoing / am repainting / looking). 늘 그런 습관(현재)과 구분됩니다.",
+        "role": "현재에 디테일을 더하고, 현재형과 현재진행의 차이를 보여 줍니다."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (will / be going to)",
+        "en": "Someday, I'm going to move into a bigger place with a real balcony, and I'll finally set up the cozy little reading nook I've always dreamed of.",
+        "ko": "언젠가는 진짜 발코니가 있는 더 넓은 집으로 이사 갈 거예요. 그러면 늘 꿈꿔 온 아늑한 독서 공간을 드디어 만들 거예요.",
+        "why": "앞으로의 계획·의지라 미래형. be going to는 '마음먹은 계획', will은 '의지'를 담습니다.",
+        "role": "마무리. '앞으로도'로 이야기를 닫으며 미래 시제를 연습하는 칸입니다."
+      }
+    ]
+  },
+  {
+    "id": "family",
+    "domain": "가족·친구",
+    "title": "가족·친구와 나의 이야기",
+    "hook": "함께한 시간이 쌓여 만든 가족 이야기",
+    "tenses": [
+      "과거",
+      "현재완료",
+      "현재",
+      "현재완료진행",
+      "미래"
+    ],
+    "covers": [
+      "가족/친구 · 최근 가족·친구와 만난 날",
+      "가족/친구 · 특별한 행사·명절을 함께 보낸 경험 (← 사건 비트)",
+      "가족/친구 · 어릴 적 친척집을 방문한 기억",
+      "가족/친구 · 방문 중 기억에 남는 일"
+    ],
+    "beats": [
+      {
+        "beat": "예전",
+        "tense": "과거 (Past Simple)",
+        "en": "When I was little, my whole family lived close together, so we visited my grandparents almost every weekend. I really looked forward to those trips.",
+        "ko": "어릴 땐 온 가족이 가까이 살아서, 거의 주말마다 조부모님 댁에 갔어요. 저는 그 나들이를 정말 기다렸죠.",
+        "why": "어린 시절 전반의 반복 습관이라 과거 단순형(lived/visited/looked)을 씁니다. '주말마다'처럼 반복이어도 다 지난 일이면 과거형이에요.",
+        "role": "이야기의 출발점. 어릴 적 친척집을 방문하던 기억을 깔아 줍니다."
+      },
+      {
+        "beat": "계기",
+        "tense": "과거 (Past Simple)",
+        "en": "As I grew up, everyone got busy and we slowly drifted apart. For a while, we only saw each other on big holidays.",
+        "ko": "크면서 다들 바빠졌고, 우리는 서서히 멀어졌어요. 한동안은 큰 명절에만 서로 얼굴을 봤죠.",
+        "why": "관계가 '변하기 시작한' 특정 과거 흐름이라 과거형(grew/got/drifted/saw). drifted가 전환의 신호입니다.",
+        "role": "관계가 멀어지는 전환점. 뒤에 올 '다시 가까워짐'과 대비를 만듭니다."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "One Chuseok, we all gathered at my aunt's house after years apart. We cooked together, played old board games, and stayed up talking until late. At one point everyone burst out laughing at my uncle's silly story, and I suddenly realized how much I had missed them.",
+        "ko": "한번은 추석에, 몇 년 만에 다 같이 이모 댁에 모였어요. 함께 음식을 만들고, 옛날 보드게임을 하고, 늦게까지 얘기하며 밤을 새웠죠. 어느 순간 삼촌의 엉뚱한 얘기에 다 같이 빵 터졌는데, 그제야 제가 그들을 얼마나 그리워했는지 깨달았어요.",
+        "why": "특정 과거의 한 사건이라 처음부터 끝까지 과거형으로 순서대로 나열합니다(gathered/cooked/played/stayed/burst/realized).",
+        "role": "⭐ 사건 만능 비트 — '특별한 행사·명절을 가족·친구와 함께 보낸 경험' 질문을 이 한 칸이 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since that day, we've made a real effort to stay close, and we've started a small family group chat that's been surprisingly active.",
+        "ko": "그날 이후로 우리는 가깝게 지내려고 진짜 노력해 왔고, 작은 가족 단톡방도 만들었는데 의외로 활발해요.",
+        "why": "그 시점부터 지금까지 '쭉 이어진' 변화·노력이라 현재완료(have made / have started)를 씁니다.",
+        "role": "과거 사건과 현재를 잇는 다리. 시제가 과거에서 현재로 넘어가는 칸입니다."
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "These days, I meet up with my close friends or family at least twice a month, and we usually grab dinner or just catch up over coffee.",
+        "ko": "요즘은 친한 친구나 가족이랑 적어도 한 달에 두 번은 만나고, 보통 저녁을 먹거나 커피 마시며 근황을 나눠요.",
+        "why": "지금의 반복 습관이라 현재형. 주어가 I라 동사원형(meet/grab)을 그대로 — 3인칭이 아니니 -s를 붙이지 않습니다.",
+        "role": "'지금의 나'. 면접관이 자주 묻는 '최근 가족·친구와 만난 날' 칸입니다."
+      },
+      {
+        "beat": "요즘 (깊이)",
+        "tense": "현재완료진행 (Present Perfect Continuous)",
+        "en": "Lately, I've been calling my parents more often than before, and it's really brought us closer.",
+        "ko": "요즘 들어 예전보다 부모님께 더 자주 전화를 드리고 있는데, 그게 우리를 정말 가깝게 만들어 줬어요.",
+        "why": "최근까지 '계속 ~해 오는 중'이라 현재완료진행(have been calling). 자연스러울 때만 쓰는 고급 시제예요.",
+        "role": "현재 습관에 깊이를 더합니다. 억지스러우면 빼도 되지만, 여기선 자연스럽습니다."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (will / be going to)",
+        "en": "I'm going to keep these relationships strong no matter how busy I get, and I'll definitely plan a family trip together next year.",
+        "ko": "아무리 바빠져도 이 관계들을 계속 끈끈하게 지킬 거고, 내년엔 가족 여행도 꼭 같이 계획할 거예요.",
+        "why": "앞으로의 계획·의지라 미래형. be going to는 '이미 마음먹은 계획', will은 '의지'를 담습니다.",
+        "role": "마무리. '앞으로도'로 이야기를 닫으며 미래 시제를 연습하는 칸입니다."
+      }
+    ]
+  },
+  {
+    "id": "party",
+    "domain": "모임·파티",
+    "title": "모임·파티와 나의 이야기",
+    "hook": "모임 준비를 즐기게 된 나의 변화",
+    "tenses": [
+      "과거",
+      "현재완료",
+      "현재",
+      "현재진행",
+      "미래"
+    ],
+    "covers": [
+      "모임 · 최근 참석한 파티/행사",
+      "파티 · 예상치 못한 일이 생긴 경험 (← 사건 비트)",
+      "파티 · 준비를 도왔던 경험",
+      "파티 · 가고 싶었는데 못 간 경험"
+    ],
+    "beats": [
+      {
+        "beat": "예전",
+        "tense": "과거 (Past Simple)",
+        "en": "I used to be pretty shy at gatherings. Whenever there was a party, I usually stayed in a corner and barely talked to anyone.",
+        "ko": "예전엔 모임에서 꽤 수줍음이 많았어요. 파티가 있을 때마다 보통 구석에 있으면서 거의 아무하고도 얘기를 안 했죠.",
+        "why": "그 시절 전반의 성향·습관이라 과거형(used to be/stayed/talked). used to는 '예전엔 그랬지만 지금은 아닌' 과거 습관을 딱 짚어 줍니다.",
+        "role": "이야기의 출발점. '예전의 소극적인 나'로 뒤에 올 변화와 대비를 깔아 줍니다."
+      },
+      {
+        "beat": "계기",
+        "tense": "과거 (Past Simple)",
+        "en": "Things changed when a close friend asked me to help plan her birthday party. I took charge of the food and decorations, and I actually had a blast doing it.",
+        "ko": "친한 친구가 자기 생일 파티 준비를 도와달라고 하면서 달라졌어요. 음식이랑 장식을 제가 맡았는데, 의외로 정말 즐거웠죠.",
+        "why": "변화가 '시작된' 특정 과거 시점이라 과거형(changed/asked/took/had). asked가 전환의 신호입니다.",
+        "role": "성향이 바뀌는 전환점이자, '파티 준비를 도왔던 경험' 질문을 함께 커버합니다."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "At one party I hosted, the power suddenly went out right in the middle of everything. At first everyone panicked, but I quickly grabbed some candles and turned on music from my phone. In the end, the blackout made the night even more memorable, and people still talk about it.",
+        "ko": "제가 연 어느 파티에서, 한창 분위기가 무르익을 때 갑자기 정전이 됐어요. 처음엔 다들 당황했지만, 저는 얼른 초를 꺼내 오고 핸드폰으로 음악을 틀었죠. 결국 그 정전 덕분에 그날 밤이 더 기억에 남게 됐고, 사람들이 지금도 그 얘기를 해요.",
+        "why": "특정 과거의 한 사건이라 처음부터 끝까지 과거형으로 시간 순서대로 나열합니다(went/panicked/grabbed/turned/made).",
+        "role": "⭐ 사건 만능 비트 — '파티/행사에서 예상치 못한 일이 생긴 경험' 질문을 이 한 칸이 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "못 간 경험",
+        "tense": "과거 (Past Simple)",
+        "en": "There was also a reunion I really wanted to go to, but I caught a bad cold the day before and had to cancel. I was so disappointed that I missed it.",
+        "ko": "정말 가고 싶었던 동창 모임도 있었는데, 하루 전에 심한 감기에 걸려서 취소해야 했어요. 못 가서 너무 아쉬웠죠.",
+        "why": "못 갔던 과거의 특정 일이라 과거형(was/wanted/caught/had to/missed).",
+        "role": "'가고 싶었는데 못 간 경험' 질문을 커버하는 보조 사건 칸."
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since then, I've become the go-to person for organizing get-togethers, and I've thrown quite a few parties for my friends.",
+        "ko": "그 뒤로 저는 모임을 꾸리는 일을 도맡는 사람이 됐고, 친구들을 위해 파티도 꽤 여러 번 열었어요.",
+        "why": "과거의 그 시점부터 '지금까지 쭉 이어진' 변화·누적이라 현재완료(have become / have thrown)를 씁니다.",
+        "role": "과거 사건과 현재를 잇는 다리. 시제가 과거에서 현재로 넘어가는 칸입니다."
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "Now I genuinely enjoy gatherings, and I go to a party or a casual meetup at least once or twice a month.",
+        "ko": "지금은 모임을 진심으로 즐기고, 한 달에 적어도 한두 번은 파티나 가벼운 모임에 가요.",
+        "why": "현재의 반복 습관이라 현재형. 주어가 I라 enjoy/go에 -s를 붙이지 않습니다.",
+        "role": "'지금의 나'. 면접관이 자주 묻는 '최근 참석한 파티/행사' 칸입니다."
+      },
+      {
+        "beat": "요즘 (지금 하는 중)",
+        "tense": "현재진행 (Present Continuous)",
+        "en": "Actually, right now I'm planning a small housewarming party, and I'm already picking out the menu and a playlist.",
+        "ko": "사실 지금은 작은 집들이 파티를 준비하는 중이라, 벌써 메뉴랑 플레이리스트를 고르고 있어요.",
+        "why": "지금 '진행 중'인 일시적 준비라 현재진행(am planning / am picking). 늘 하는 습관(현재)과 구분됩니다.",
+        "role": "현재에 디테일을 더하고, 현재형과 현재진행의 차이를 보여 줍니다."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (will / be going to)",
+        "en": "I'm going to host even bigger gatherings in the future, and someday I'll throw a huge party to celebrate a special milestone.",
+        "ko": "앞으로는 더 큰 모임도 열 거고, 언젠가는 특별한 날을 기념하는 성대한 파티도 열 거예요.",
+        "why": "앞으로의 계획·의지라 미래형. be going to는 '이미 마음먹은 계획', will은 '의지'를 담습니다.",
+        "role": "마무리. '앞으로도'로 이야기를 닫으며 미래 시제를 연습하는 칸입니다."
+      }
+    ]
+  },
+  {
+    "id": "holiday",
+    "domain": "명절·휴일",
+    "title": "명절·휴일과 나의 이야기",
+    "hook": "어린 시절 명절이 지금의 나에게 남긴 것",
+    "tenses": [
+      "과거",
+      "과거진행",
+      "현재완료",
+      "현재",
+      "미래"
+    ],
+    "covers": [
+      "휴일 · 어릴 적 기억에 남는 명절",
+      "휴일 · 가장 최근에 보낸 명절/휴일",
+      "휴일 · 휴일 계획이 틀어진 경험 (← 사건 비트)",
+      "휴일 · 명절을 기념하는 방식"
+    ],
+    "beats": [
+      {
+        "beat": "예전",
+        "tense": "과거 (Past Simple)",
+        "en": "When I was a child, holidays were the most exciting time of the year. The whole family came over, and the house was always full of food and laughter.",
+        "ko": "어릴 땐 명절이 일 년 중 가장 신나는 때였어요. 온 가족이 모였고, 집은 늘 음식과 웃음으로 가득했죠.",
+        "why": "어린 시절 전반의 모습이라 과거 단순형(were/came/was)을 씁니다. 한 번이 아니라 매년 반복된 풍경이어도 다 지난 일이면 과거형이에요.",
+        "role": "이야기의 출발점. '어릴 적 기억에 남는 명절'을 정면으로 답하며 따뜻한 분위기를 깔아 줍니다."
+      },
+      {
+        "beat": "그때 장면",
+        "tense": "과거진행 (Past Continuous)",
+        "en": "I still remember one Lunar New Year vividly. The adults were making dumplings in the kitchen, the kids were running around the yard, and I was helping my grandmother set the table.",
+        "ko": "어느 설날이 아직도 생생하게 기억나요. 어른들은 부엌에서 만두를 빚고 계셨고, 아이들은 마당을 뛰어다니고 있었고, 저는 할머니가 상 차리는 걸 돕고 있었죠.",
+        "why": "그 순간 여러 일이 '동시에 진행 중'이던 장면이라 과거진행(were making / were running / was helping)을 씁니다. 배경을 그릴 때 자연스러워요.",
+        "role": "장면에 생동감을 더합니다. 과거(사실)와 과거진행(진행 중 배경)의 차이를 보여 주는 칸."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "A couple of years ago, we planned a relaxing trip to the beach for the holiday, but a huge typhoon hit and ruined everything. We got stuck indoors for two whole days. In the end, we just ordered food, played card games, and honestly had a great time anyway.",
+        "ko": "몇 년 전엔, 명절에 바다로 느긋한 여행을 가기로 했는데, 거대한 태풍이 와서 다 망쳐 버렸어요. 꼬박 이틀을 실내에 갇혔죠. 결국 그냥 음식을 시켜 먹고, 카드 게임을 하면서, 솔직히 그래도 즐거운 시간을 보냈어요.",
+        "why": "특정 과거의 한 사건이라 처음부터 끝까지 과거형으로 순서대로 나열합니다(planned/hit/ruined/got/ordered/played/had).",
+        "role": "⭐ 사건 만능 비트 — '휴일/명절 계획이 날씨나 사정으로 틀어진 경험' 질문을 이 한 칸이 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Over the years, the way we celebrate has changed a lot, and we've started mixing old traditions with new ones like short trips.",
+        "ko": "세월이 흐르면서 우리가 명절을 기념하는 방식이 많이 바뀌었고, 옛 전통에 짧은 여행 같은 새로운 것들을 섞기 시작했어요.",
+        "why": "과거부터 지금까지 '쭉 이어진' 변화·누적이라 현재완료(has changed / have started)를 씁니다.",
+        "role": "과거 추억과 현재를 잇는 다리. 시제가 과거에서 현재로 넘어가는 칸입니다."
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "These days, I usually visit my parents on major holidays, and we cook traditional dishes together and just enjoy a slow, cozy day at home.",
+        "ko": "요즘은 보통 큰 명절에 부모님 댁에 가서, 같이 전통 음식을 만들고 집에서 느긋하고 아늑한 하루를 보내요.",
+        "why": "지금의 반복 습관이라 현재형. 주어가 I라 동사원형(visit/cook/enjoy)을 그대로 — -s를 붙이지 않습니다.",
+        "role": "'지금의 나'. '명절을 기념하는 방식'과 '최근에 보낸 명절' 질문을 함께 커버하는 칸입니다."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (will / be going to)",
+        "en": "I'm going to keep these holiday traditions alive, and someday I'll pass them down to my own kids just like my parents did for me.",
+        "ko": "앞으로도 이 명절 전통을 계속 이어 갈 거고, 언젠가는 부모님이 제게 해 주셨던 것처럼 제 아이들에게도 물려줄 거예요.",
+        "why": "앞으로의 계획·의지라 미래형. be going to는 '이미 마음먹은 계획', will은 '의지'를 담습니다.",
+        "role": "마무리. '앞으로도'로 이야기를 닫으며 미래 시제를 연습하는 칸입니다."
+      }
+    ]
+  },
+  {
+    "id": "health",
+    "domain": "건강·운동",
+    "title": "운동·건강과 나의 이야기",
+    "hook": "작심삼일에서 운동이 습관이 되기까지",
+    "tenses": [
+      "과거",
+      "현재완료",
+      "현재",
+      "현재완료진행",
+      "미래"
+    ],
+    "covers": [
+      "건강 · 건강을 위해 새로운 시도를 한 경험",
+      "헬스클럽 · 건강 관리하며 힘들었던 경험 (← 사건 비트)",
+      "건강 · 식습관/운동을 바꾼 계기",
+      "건강 · 요즘 건강을 챙기는 방식"
+    ],
+    "beats": [
+      {
+        "beat": "예전",
+        "tense": "과거 (Past Simple)",
+        "en": "A few years ago, I was honestly pretty out of shape. I sat at my desk all day, ate whatever I wanted, and barely moved at all.",
+        "ko": "몇 년 전엔 솔직히 몸 상태가 영 엉망이었어요. 하루 종일 책상에 앉아 있었고, 먹고 싶은 대로 먹었고, 거의 움직이지도 않았죠.",
+        "why": "한 번의 사건이 아니라 '그 시절 전반의 생활 습관'이라 과거 단순형(was/sat/ate/moved)을 씁니다.",
+        "role": "이야기의 출발점. '예전엔 이랬다'로 뒤에 올 변화와 대비를 깔아 줍니다."
+      },
+      {
+        "beat": "계기",
+        "tense": "과거 (Past Simple)",
+        "en": "Then one day, I got out of breath just from climbing the stairs, and that really shocked me. So I decided to start working out and eating healthier.",
+        "ko": "그러던 어느 날, 계단을 오르는 것만으로도 숨이 차서 정말 충격을 받았어요. 그래서 운동을 시작하고 더 건강하게 먹기로 결심했죠.",
+        "why": "결심이 '시작된' 특정 과거 시점이라 과거형. got과 decided가 전환의 신호입니다.",
+        "role": "생활이 바뀌는 전환점. '운동/식습관을 바꾼 계기' 질문을 정면으로 답합니다."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "At first, it was brutal. One week, my whole body ached so badly that I almost gave up completely. I even skipped the gym for a few days. But then a trainer there encouraged me, showed me some easier routines, and slowly I got back on track.",
+        "ko": "처음엔 정말 고통스러웠어요. 한 주는 온몸이 너무 쑤셔서 아예 포기할 뻔했죠. 며칠은 헬스장도 빠졌고요. 그런데 거기 트레이너가 격려해 주고, 더 쉬운 루틴을 알려 줘서 천천히 다시 궤도에 올랐어요.",
+        "why": "특정 과거의 한 고비라 처음부터 끝까지 과거형으로 시간 순서대로 나열합니다(was/ached/gave/skipped/encouraged/showed/got).",
+        "role": "⭐ 사건 만능 비트 — '건강 관리하며 힘들었던 경험' 질문을 이 한 칸이 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since then, working out has become a real part of my life, and I've already lost about eight kilos.",
+        "ko": "그 뒤로 운동은 제 삶의 진짜 일부가 됐고, 벌써 8킬로 정도 빠졌어요.",
+        "why": "그 고비를 넘긴 시점부터 '지금까지 쭉 이어진' 변화·누적이라 현재완료(has become / have lost)를 씁니다.",
+        "role": "과거 사건과 현재를 잇는 다리. 시제가 과거에서 현재로 넘어가는 칸입니다."
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "These days, I go to the gym three times a week, and I usually cook my own meals so I can watch what I eat.",
+        "ko": "요즘은 일주일에 세 번 헬스장에 가고, 먹는 걸 신경 쓰려고 보통 직접 요리를 해요.",
+        "why": "지금의 반복 습관이라 현재형. 주어가 I라 동사원형(go/cook)을 그대로 — 3인칭이 아니니 -s를 붙이지 않습니다.",
+        "role": "'지금의 나'. 면접관이 가장 자주 묻는 '요즘은 건강을 어떻게 챙기느냐' 칸입니다."
+      },
+      {
+        "beat": "요즘 (깊이)",
+        "tense": "현재완료진행 (Present Perfect Continuous)",
+        "en": "Lately, I've been trying out home workouts too, and they've really helped me stay consistent.",
+        "ko": "최근에는 홈트레이닝도 계속 시도해 보고 있는데, 꾸준히 하는 데 정말 도움이 됐어요.",
+        "why": "최근까지 '계속 ~해 오는 중'이라 현재완료진행(have been trying). 자연스러울 때만 쓰는 고급 시제예요.",
+        "role": "현재 습관에 깊이를 더합니다. 억지스러우면 빼도 되지만, 여기선 자연스럽습니다."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (be going to / will)",
+        "en": "I'm going to keep this routine going no matter what, and someday I'll probably even sign up for a marathon.",
+        "ko": "앞으로도 무슨 일이 있어도 이 루틴을 계속 이어갈 거고, 언젠가는 마라톤에도 등록할 것 같아요.",
+        "why": "앞으로의 계획·의지라 미래형. be going to는 '이미 마음먹은 계획', will은 '의지·예측'을 담습니다.",
+        "role": "마무리. '앞으로도'로 이야기를 닫으며 미래 시제를 연습하는 칸입니다."
+      }
+    ]
+  },
+  {
+    "id": "hospital",
+    "domain": "병원·치과",
+    "title": "병원과 나의 이야기",
+    "hook": "병원을 무서워하던 아이의 성장기",
+    "tenses": [
+      "과거",
+      "과거진행",
+      "현재완료",
+      "현재",
+      "미래"
+    ],
+    "covers": [
+      "병원 · 최근 병원/치과/약국 방문 경험",
+      "병원 · 기억에 남는 병원 경험 (← 사건 비트)",
+      "병원 · 어릴 적 병원에 갔던 기억",
+      "치과 · 치과에서 겪은 일"
+    ],
+    "beats": [
+      {
+        "beat": "예전",
+        "tense": "과거 (Past Simple)",
+        "en": "When I was little, I was absolutely terrified of hospitals. Every time my mom took me to the dentist, I cried and tried to hide behind her.",
+        "ko": "어릴 땐 병원이 너무너무 무서웠어요. 엄마가 치과에 데려갈 때마다 울면서 엄마 뒤에 숨으려고 했죠.",
+        "why": "한 번이 아니라 '그 시절 반복되던 모습'이라 과거 단순형(was/took/cried/tried)을 씁니다.",
+        "role": "이야기의 출발점. '어릴 적 병원에 갔던 기억' 질문을 정면으로 답하며 뒤의 성장과 대비를 깔아 줍니다."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "One time really stuck with me. I had a terrible toothache, so my mom rushed me to the dentist. I was so scared that my hands were shaking. But the dentist was really gentle, explained everything step by step, and the treatment didn't hurt at all. After that, I felt so relieved.",
+        "ko": "한번은 정말 기억에 남아요. 이가 너무 아파서 엄마가 저를 급히 치과로 데려갔어요. 너무 무서워서 손이 다 떨렸죠. 그런데 치과 의사 선생님이 정말 부드럽게, 하나하나 설명해 주셨고, 치료도 전혀 안 아팠어요. 그러고 나니 너무 안심이 됐죠.",
+        "why": "특정 과거의 한 사건이라 처음부터 끝까지 과거형으로 시간 순서대로 나열합니다(had/rushed/was/explained/didn't hurt/felt).",
+        "role": "⭐ 사건 만능 비트 — '기억에 남는 병원/치과 경험' 질문을 이 한 칸이 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "그때 장면",
+        "tense": "과거진행 (Past Continuous)",
+        "en": "While I was sitting in that dentist's chair, my heart was pounding like crazy, but the calm music playing in the background slowly made me relax.",
+        "ko": "그 치과 의자에 앉아 있는 동안 심장이 미친 듯이 뛰고 있었는데, 배경에 잔잔하게 흐르던 음악이 천천히 저를 진정시켜 줬어요.",
+        "why": "그 순간 '진행 중이던' 상태와 배경이라 과거진행(was sitting / was pounding / was playing).",
+        "role": "장면에 생동감을 더합니다. 과거(사건)와 과거진행(배경)의 차이를 보여 주는 칸입니다."
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since then, my fear has pretty much disappeared, and I've learned that going to the doctor early is way better than putting it off.",
+        "ko": "그 뒤로 두려움은 거의 사라졌고, 병원에 일찍 가는 게 미루는 것보다 훨씬 낫다는 걸 배웠어요.",
+        "why": "그 시점부터 지금까지의 누적·변화라 현재완료(has disappeared / have learned)를 씁니다.",
+        "role": "과거 사건과 현재를 잇는 다리. 시제가 과거에서 현재로 넘어가는 칸입니다."
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "Now, I go for a checkup once a year, and I see the dentist regularly to keep my teeth healthy.",
+        "ko": "지금은 일 년에 한 번 건강검진을 받고, 치아 건강을 위해 치과에도 정기적으로 가요.",
+        "why": "지금의 반복 습관이라 현재형. 주어가 I라 동사원형(go/see)을 그대로 — 3인칭이 아니니 -s를 붙이지 않습니다.",
+        "role": "'지금의 나'. 면접관이 자주 묻는 '최근 병원/치과 방문 경험'까지 자연스럽게 커버합니다."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (be going to / will)",
+        "en": "From now on, I'm going to take better care of my health, and I'll definitely never skip my regular checkups again.",
+        "ko": "앞으로는 건강을 더 잘 챙길 거고, 정기 검진은 절대 다시는 거르지 않을 거예요.",
+        "why": "앞으로의 계획·의지라 미래형. be going to는 '이미 마음먹은 계획', will은 '의지'를 담습니다.",
+        "role": "마무리. '앞으로도'로 이야기를 닫으며 미래 시제를 연습하는 칸입니다."
+      }
+    ]
+  },
+  {
+    "id": "bank",
+    "domain": "은행",
+    "title": "은행과 나의 이야기",
+    "hook": "통장 하나로 시작한 나의 돈 관리",
+    "tenses": [
+      "과거",
+      "현재완료",
+      "현재",
+      "현재완료진행",
+      "미래"
+    ],
+    "covers": [
+      "은행 · 은행 업무 중 문제를 겪은 경험 (← 사건 비트)",
+      "은행 · ATM/카드 사용 중 곤란했던 일",
+      "은행 · 요즘 은행 업무를 보는 방식",
+      "은행 · 돈 관리 습관의 변화"
+    ],
+    "beats": [
+      {
+        "beat": "예전",
+        "tense": "과거 (Past Simple)",
+        "en": "I opened my very first bank account in high school. Back then, I had to visit the branch in person for almost everything, even just to check my balance.",
+        "ko": "고등학교 때 제 첫 통장을 만들었어요. 그땐 잔액 확인 하나만 하려 해도 거의 모든 걸 직접 지점에 가서 해야 했죠.",
+        "why": "통장을 만든 특정 과거 + 그 시절의 방식이라 과거형(opened/had/check)을 씁니다.",
+        "role": "이야기의 출발점. 지금과 대비되는 '예전의 은행 이용'을 보여 줍니다."
+      },
+      {
+        "beat": "곤란",
+        "tense": "과거 (Past Simple)",
+        "en": "In college, I once tried to withdraw cash late at night, but the ATM kept rejecting my card for no clear reason. I felt so frustrated standing there alone in the cold.",
+        "ko": "대학 때 한번은 밤늦게 현금을 뽑으려 했는데, ATM이 별 이유도 없이 카드를 계속 거부했어요. 추운 데서 혼자 서서 정말 답답했죠.",
+        "why": "특정 과거의 곤란한 경험이라 과거형으로 나열합니다(tried/kept/felt).",
+        "role": "'ATM/카드 사용 중 곤란했던 일' 질문을 커버하는 보조 사건 칸."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "One day, the ATM suddenly swallowed my card right in the middle of a transaction and the screen froze completely. I got really nervous, so I pressed the help button and called the bank's hotline. A staff member calmed me down, walked me through it, and they returned my card the next day, so it turned out fine in the end.",
+        "ko": "하루는 거래 도중에 ATM이 갑자기 제 카드를 삼켜 버리고 화면이 완전히 멈췄어요. 정말 초조해져서 도움 버튼을 누르고 은행 상담 전화를 걸었죠. 직원분이 진정시켜 주고 차근차근 안내해 줬고, 다음 날 카드를 돌려줘서 결국 잘 해결됐어요.",
+        "why": "특정 과거의 한 사건이라 처음부터 끝까지 과거형으로 순서대로 나열합니다(swallowed/froze/got/pressed/called/calmed/walked/returned/turned).",
+        "role": "⭐ 사건 만능 비트 — '은행 업무 중 문제를 겪은 경험' 질문을 이 한 칸이 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since then, banking has changed so much, and I've pretty much stopped going to the branch altogether.",
+        "ko": "그 뒤로 은행 업무 방식이 정말 많이 바뀌었고, 저는 이제 지점에 가는 걸 거의 완전히 그만뒀어요.",
+        "why": "과거의 그 시점부터 지금까지의 변화·누적이라 현재완료(has changed / have stopped)를 씁니다.",
+        "role": "과거와 현재를 잇는 다리. 시제가 과거에서 현재로 넘어가는 칸입니다."
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "These days, I handle almost all my banking on my phone. I transfer money, pay bills, and check my balance in just a few taps.",
+        "ko": "요즘은 거의 모든 은행 업무를 폰으로 봐요. 몇 번만 누르면 송금하고, 공과금을 내고, 잔액을 확인하죠.",
+        "why": "지금의 반복 습관이라 현재형. 주어 I라 handle/transfer/pay/check에 -s를 붙이지 않습니다.",
+        "role": "'요즘 은행 업무를 보는 방식' 질문을 정면으로 답하는 '지금의 나' 칸입니다."
+      },
+      {
+        "beat": "요즘 (깊이)",
+        "tense": "현재완료진행 (Present Perfect Continuous)",
+        "en": "Lately, I've been trying to manage my money more wisely. I've been setting a monthly budget and saving a little bit every paycheck.",
+        "ko": "최근에는 돈을 더 현명하게 관리하려고 계속 노력하고 있어요. 매달 예산을 정하고, 월급마다 조금씩 저축하는 중이죠.",
+        "why": "최근까지 '계속 ~해 오는 중'이라 현재완료진행(have been trying / have been setting). 자연스러울 때만 쓰는 고급 시제예요.",
+        "role": "'돈 관리 습관의 변화' 질문을 커버하며 현재 습관에 깊이를 더합니다."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (will / be going to)",
+        "en": "Going forward, I'm going to start investing a portion of my savings, and I'll keep building better financial habits step by step.",
+        "ko": "앞으로는 저축의 일부를 투자하기 시작할 거고, 더 나은 돈 관리 습관을 한 걸음씩 계속 쌓아 갈 거예요.",
+        "why": "앞으로의 계획·의지라 미래형. be going to는 '마음먹은 계획', will은 '의지'를 담습니다.",
+        "role": "마무리. '앞으로도'로 이야기를 닫으며 미래 시제를 연습하는 칸입니다."
+      }
+    ]
+  },
+  {
+    "id": "recycle",
+    "domain": "재활용",
+    "title": "재활용과 나의 이야기",
+    "hook": "분리수거 초보에서 습관이 되기까지",
+    "tenses": [
+      "과거",
+      "현재완료",
+      "현재",
+      "현재진행",
+      "미래"
+    ],
+    "covers": [
+      "재활용 · 어릴 적 분리수거 방법",
+      "재활용 · 재활용하다 문제가 생긴 경험 (← 사건 비트)",
+      "재활용 · 처음 재활용을 배운 때",
+      "재활용 · 요즘 분리수거하는 방식"
+    ],
+    "beats": [
+      {
+        "beat": "예전",
+        "tense": "과거 (Past Simple)",
+        "en": "When I was a kid, recycling wasn't a big deal in my house. We mostly threw everything into one bin and didn't really think much about sorting it.",
+        "ko": "어릴 땐 우리 집에서 재활용이 큰일이 아니었어요. 거의 다 한 통에 던져 넣었고, 분류 같은 건 별로 신경 안 썼죠.",
+        "why": "어린 시절 전반의 습관이라 과거 단순형(was/threw/didn't think)을 씁니다.",
+        "role": "이야기의 출발점. '어릴 적 분리수거 방법' 질문을 정면으로 답합니다."
+      },
+      {
+        "beat": "계기",
+        "tense": "과거 (Past Simple)",
+        "en": "I first learned to recycle properly in elementary school. A teacher explained how to separate paper, plastic, and cans, and it honestly stuck with me ever since.",
+        "ko": "재활용을 제대로 배운 건 초등학교 때예요. 선생님이 종이, 플라스틱, 캔을 어떻게 분리하는지 알려 주셨는데, 솔직히 그때부터 쭉 기억에 남았어요.",
+        "why": "처음 배운 특정 과거 시점이라 과거형(learned/explained/stuck)을 씁니다.",
+        "role": "재활용을 익히는 계기. '처음 재활용을 배운 때' 질문을 커버합니다."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "Right after I moved into a new neighborhood, I had no idea about the local rules, so I put my recycling out on the wrong day. The next morning, a neighbor kindly pointed out my mistake and showed me the proper schedule. I felt a little embarrassed, but I thanked her, sorted everything again, and never mixed it up after that.",
+        "ko": "새 동네로 막 이사했을 땐 그 지역 규칙을 전혀 몰라서, 재활용을 엉뚱한 요일에 내놨어요. 다음 날 아침, 이웃분이 친절하게 제 실수를 짚어 주고 올바른 일정을 알려 줬죠. 좀 민망했지만, 감사 인사를 하고 전부 다시 분류했고, 그 뒤로는 다시는 헷갈리지 않았어요.",
+        "why": "특정 과거의 한 사건이라 처음부터 끝까지 과거형으로 순서대로 나열합니다(moved/had/put/pointed/showed/felt/thanked/sorted/mixed).",
+        "role": "⭐ 사건 만능 비트 — '재활용하다 문제가 생긴 경험' 질문을 이 한 칸이 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since then, recycling has become a real habit for me, and I've gotten much more careful about sorting my waste correctly.",
+        "ko": "그 뒤로 재활용은 제게 진짜 습관이 됐고, 쓰레기를 제대로 분류하는 데 훨씬 더 꼼꼼해졌어요.",
+        "why": "과거의 그 시점부터 지금까지의 변화·누적이라 현재완료(has become / have gotten)를 씁니다.",
+        "role": "과거와 현재를 잇는 다리. 시제가 과거에서 현재로 넘어가는 칸입니다."
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "These days, I separate paper, plastic, glass, and food waste into different bins. I also rinse out containers before I toss them, just to keep things clean.",
+        "ko": "요즘은 종이, 플라스틱, 유리, 음식물 쓰레기를 각각 다른 통에 나눠요. 버리기 전에 용기를 헹구기도 하는데, 그냥 깔끔하게 하려고요.",
+        "why": "지금의 반복 습관이라 현재형. 주어 I라 separate/rinse/toss에 -s를 붙이지 않습니다.",
+        "role": "'요즘 분리수거하는 방식' 질문을 정면으로 답하는 '지금의 나' 칸입니다."
+      },
+      {
+        "beat": "요즘 (지금 하는 중)",
+        "tense": "현재진행 (Present Continuous)",
+        "en": "Actually, these days I'm trying to cut down on plastic in general — I'm carrying a tumbler around and using reusable bags whenever I shop.",
+        "ko": "사실 요즘은 플라스틱 자체를 줄이려고 하는 중이에요. 텀블러를 들고 다니고, 장 볼 때마다 재사용 가방을 쓰고 있죠.",
+        "why": "지금 '진행 중'인 일시적 노력이라 현재진행(am trying / am carrying / using). 늘 그런 습관(현재)과 구분됩니다.",
+        "role": "현재에 디테일을 더하고, 현재형과 현재진행의 차이를 보여 줍니다."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (will / be going to)",
+        "en": "Going forward, I'm going to make even greener choices in my daily life, and I'll keep encouraging my friends and family to recycle more.",
+        "ko": "앞으로는 일상에서 더 친환경적인 선택을 할 거고, 친구들과 가족에게도 재활용을 더 하라고 계속 권할 거예요.",
+        "why": "앞으로의 계획·의지라 미래형. be going to는 '마음먹은 계획', will은 '의지'를 담습니다.",
+        "role": "마무리. '앞으로도'로 이야기를 닫으며 미래 시제를 연습하는 칸입니다."
+      }
+    ]
+  },
+  {
+    "id": "transport",
+    "domain": "교통·이동",
+    "title": "교통과 나의 이야기",
+    "hook": "대중교통과 함께한 나의 이동 이야기",
+    "tenses": [
+      "과거",
+      "현재완료",
+      "현재",
+      "현재진행",
+      "미래"
+    ],
+    "covers": [
+      "교통 · 교통 문제를 겪은 경험 (← 사건 비트)",
+      "교통 · 차/기차를 놓친 경험",
+      "교통 · 자동차가 고장 난 경험",
+      "교통 · 요즘 이동하는 방식"
+    ],
+    "beats": [
+      {
+        "beat": "예전",
+        "tense": "과거 (Past Simple)",
+        "en": "Back in high school, I took the bus everywhere. I knew the schedule by heart and rarely had any problems getting around.",
+        "ko": "고등학교 때는 어딜 가든 버스를 탔어요. 시간표를 외우고 있었고, 이동하는 데 별 문제가 거의 없었죠.",
+        "why": "한 번이 아니라 '그 시절의 이동 습관'이라 과거 단순형(took/knew/had)을 씁니다.",
+        "role": "이야기의 출발점. '예전엔 이렇게 다녔다'로 뒤에 올 사건의 배경을 깔아 줍니다."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "But one morning, things went completely wrong. I overslept and missed my usual bus, so I had to take a taxi instead. On the way, the car suddenly broke down in the middle of the road. I panicked because I had an important exam, but the driver called another taxi right away, and I made it just in time.",
+        "ko": "그런데 어느 날 아침, 모든 게 완전히 꼬였어요. 늦잠을 자서 늘 타던 버스를 놓쳤고, 어쩔 수 없이 택시를 탔죠. 가는 길에 차가 도로 한가운데서 갑자기 고장 났어요. 중요한 시험이 있어서 패닉이 왔는데, 기사님이 바로 다른 택시를 불러 줘서 아슬아슬하게 도착했어요.",
+        "why": "특정 과거의 한 사건이라 처음부터 끝까지 과거형으로 시간 순서대로 나열합니다(went/overslept/missed/had to/broke down/panicked/called/made).",
+        "role": "⭐ 사건 만능 비트 — '교통 문제를 겪은 경험', '차를 놓친 경험', '차가 고장 난 경험'을 이 한 칸이 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since that day, I've always left home a little earlier, and I've started checking the bus app before I head out.",
+        "ko": "그날 이후로 저는 늘 집에서 조금 더 일찍 나오게 됐고, 나가기 전에 버스 앱을 확인하기 시작했어요.",
+        "why": "그 사건 이후부터 지금까지 이어진 변화·습관이라 현재완료(have left / have started)를 씁니다.",
+        "role": "과거 사건과 현재를 잇는 다리. 시제가 과거에서 현재로 넘어가는 칸입니다."
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "These days, I mostly take the subway because it's fast and never gets stuck in traffic. I also use a transit app to plan the quickest route.",
+        "ko": "요즘은 빠르고 절대 길이 막히지 않아서 주로 지하철을 타요. 가장 빠른 길을 짜려고 교통 앱도 써요.",
+        "why": "지금의 반복 습관이라 현재형. 주어가 I라 동사원형(take/use)을 그대로 — 3인칭이 아니니 -s를 붙이지 않습니다.",
+        "role": "'지금의 나'. 면접관이 가장 자주 묻는 '요즘은 어떻게 이동하느냐' 칸입니다."
+      },
+      {
+        "beat": "요즘 (지금 하는 중)",
+        "tense": "현재진행 (Present Continuous)",
+        "en": "Actually, these days I'm thinking about getting a bike, because the subway gets way too crowded during rush hour.",
+        "ko": "사실 요즘은 자전거를 살까 고민하는 중이에요. 출퇴근 시간엔 지하철이 너무 붐벼서요.",
+        "why": "지금 '하는 중'인 일시적 고민이라 현재진행(am thinking). 늘 그런 습관(현재)과 구분됩니다.",
+        "role": "현재에 디테일을 더하고, 현재형과 현재진행의 차이를 보여 줍니다."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (be going to / will)",
+        "en": "Once I save up enough, I'm going to buy my own car, but I'll probably still use public transport for my daily commute.",
+        "ko": "돈을 충분히 모으면 제 차를 살 거예요. 그래도 평소 출퇴근은 아마 여전히 대중교통을 이용할 것 같아요.",
+        "why": "앞으로의 계획·예측이라 미래형. be going to는 '정해 둔 계획', will은 '예측'을 담습니다.",
+        "role": "마무리. '앞으로도'로 이야기를 닫으며 미래 시제를 연습하는 칸입니다."
+      }
+    ]
+  },
+  {
+    "id": "appointment",
+    "domain": "약속·예약",
+    "title": "약속과 나의 이야기",
+    "hook": "약속을 지키는 법을 배워 온 이야기",
+    "tenses": [
+      "과거",
+      "현재완료",
+      "현재",
+      "현재진행",
+      "미래"
+    ],
+    "covers": [
+      "약속 · 최근에 있었던 약속/예약",
+      "약속 · 약속을 지키지 못한 경험 (← 사건 비트)",
+      "약속 · 어릴 적 기억에 남는 약속/예약",
+      "약속 · 기억에 남는 특별한 약속"
+    ],
+    "beats": [
+      {
+        "beat": "예전",
+        "tense": "과거 (Past Simple)",
+        "en": "When I was younger, I was honestly terrible at keeping appointments. I often forgot the time or showed up late, and my friends teased me about it a lot.",
+        "ko": "어릴 땐 솔직히 약속을 지키는 데 영 젬병이었어요. 시간을 자주 까먹거나 늦게 나타났고, 친구들이 그걸로 저를 많이 놀렸죠.",
+        "why": "그 시절 전반의 모습·습관이라 과거형(was/forgot/showed/teased)을 씁니다. 자주 그랬어도 다 지난 일이면 과거형이에요.",
+        "role": "이야기의 출발점. '약속에 약했던 예전의 나'로 뒤에 올 변화와 대비를 깔아 줍니다."
+      },
+      {
+        "beat": "기억에 남는 약속",
+        "tense": "과거 (Past Simple)",
+        "en": "One appointment I'll never forget was a promise to take my little brother to an amusement park for his birthday. I planned the whole day carefully, and he was thrilled.",
+        "ko": "절대 못 잊을 약속 하나는, 동생 생일에 놀이공원에 데려가기로 한 거였어요. 하루를 꼼꼼히 다 계획했고, 동생은 너무 좋아했죠.",
+        "why": "특정한 과거의 약속이라 과거형(planned/was). 잊지 못할 한 사건을 콕 집어 말할 때 과거형을 씁니다.",
+        "role": "'기억에 남는 특별한 약속'과 '어릴 적 기억에 남는 약속' 질문을 함께 커버하는 칸."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "Once, I made plans to meet a close friend for dinner, but my boss suddenly asked me to finish an urgent report that evening. I felt awful, so I called her right away, apologized sincerely, and we rescheduled for the weekend. She totally understood, and we ended up having an even better time.",
+        "ko": "한번은 친한 친구와 저녁을 먹기로 했는데, 상사가 그날 저녁에 급한 보고서를 끝내라고 갑자기 시켰어요. 너무 미안해서 바로 전화해 진심으로 사과했고, 우리는 주말로 약속을 다시 잡았죠. 친구가 완전히 이해해 줬고, 결국 더 좋은 시간을 보냈어요.",
+        "why": "특정 과거의 한 사건이라 처음부터 끝까지 과거형으로 시간 순서대로 나열합니다(made/asked/felt/called/apologized/rescheduled/understood/ended).",
+        "role": "⭐ 사건 만능 비트 — '약속을 사정이 생겨 못 지키게 되어 대처한 경험' 질문을 이 한 칸이 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since then, I've become much more reliable about my commitments, and I've learned to always give people plenty of notice if something comes up.",
+        "ko": "그 뒤로 저는 약속에 훨씬 더 믿음직한 사람이 됐고, 무슨 일이 생기면 늘 미리 충분히 알려 주는 법을 배웠어요.",
+        "why": "과거의 그 시점부터 '지금까지 쭉 이어진' 변화·성장이라 현재완료(have become / have learned)를 씁니다.",
+        "role": "과거 사건과 현재를 잇는 다리. 시제가 과거에서 현재로 넘어가는 칸입니다."
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "Now I write every appointment in my phone calendar, and I always set a reminder so I never miss anything important.",
+        "ko": "지금은 모든 약속을 폰 캘린더에 적고, 중요한 걸 절대 놓치지 않게 늘 알림을 맞춰 둬요.",
+        "why": "현재의 반복 습관이라 현재형. 주어가 I라 write/set에 -s를 붙이지 않습니다.",
+        "role": "'지금의 나'. 면접관이 자주 묻는 '최근에 있었던 약속/예약'으로 이어지는 칸입니다."
+      },
+      {
+        "beat": "요즘 (지금 하는 중)",
+        "tense": "현재진행 (Present Continuous)",
+        "en": "In fact, right now I'm getting ready for a dinner reservation I made for this Friday with some old friends.",
+        "ko": "사실 지금도 이번 주 금요일에 오랜 친구들과 잡아 둔 저녁 예약을 준비하는 중이에요.",
+        "why": "지금 '진행 중'인 일시적 준비라 현재진행(am getting). 늘 하는 습관(현재)과 구분됩니다.",
+        "role": "현재에 디테일을 더하고, '최근 약속/예약' 질문을 생생하게 연결합니다."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (will / be going to)",
+        "en": "I'm going to keep being someone people can count on, and I'll always do my best to honor every promise I make.",
+        "ko": "앞으로도 사람들이 믿고 의지할 수 있는 사람으로 남을 거고, 제가 한 모든 약속을 지키려고 늘 최선을 다할 거예요.",
+        "why": "앞으로의 계획·의지라 미래형. be going to는 '이미 마음먹은 계획', will은 '의지'를 담습니다.",
+        "role": "마무리. '앞으로도'로 이야기를 닫으며 미래 시제를 연습하는 칸입니다."
+      }
+    ]
+  },
+  {
+    "id": "salon",
+    "domain": "미용실",
+    "title": "미용실과 나의 이야기",
+    "hook": "단골 미용실을 찾기까지의 시행착오",
+    "tenses": [
+      "과거",
+      "현재완료",
+      "현재",
+      "현재진행",
+      "미래"
+    ],
+    "covers": [
+      "미용실 · 머리하며 기억에 남는 경험",
+      "미용실 · 결과가 만족스럽지 않았던 경험 (← 사건 비트)",
+      "미용실 · 단골 미용실을 다니게 된 계기",
+      "미용실 · 요즘 머리를 관리하는 방식"
+    ],
+    "beats": [
+      {
+        "beat": "예전",
+        "tense": "과거 (Past Simple)",
+        "en": "For years, I never had a regular hair salon. I just walked into whatever place was closest, and the results were always a bit hit or miss.",
+        "ko": "몇 년 동안 저는 단골 미용실이 없었어요. 그냥 제일 가까운 데 아무 곳이나 들어갔고, 결과는 늘 복불복이었죠.",
+        "why": "그 시절 전반의 습관이라 과거형(had/walked/were).",
+        "role": "이야기의 출발점. 지금과 대비되는 '예전의 나'를 보여 줍니다."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "One time, I went to a new place and asked for just a light trim. But the stylist misunderstood me and cut off way too much. When I looked in the mirror, I was honestly shocked. I calmly told her it wasn't what I wanted, and she fixed the shape as best she could and gave me a discount. It still took weeks to grow back, though.",
+        "ko": "한번은 새 미용실에 가서 살짝만 다듬어 달라고 했어요. 그런데 미용사가 잘못 알아듣고 너무 많이 잘라 버렸죠. 거울을 봤을 때 솔직히 충격받았어요. 차분하게 원한 게 아니라고 말했더니, 최대한 모양을 잡아 주고 할인도 해 줬어요. 그래도 다시 자라는 데 몇 주나 걸렸지만요.",
+        "why": "특정 과거의 한 사건이라 처음부터 끝까지 과거형으로 시간 순서대로 나열합니다(went/asked/misunderstood/cut/looked/was/told/fixed/gave/took).",
+        "role": "⭐ 사건 만능 비트 — '결과가 만족스럽지 않았던 경험' 질문을 이 한 칸이 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "계기",
+        "tense": "과거 (Past Simple)",
+        "en": "After that mess, a close friend recommended her stylist. I gave it a try, and the designer understood exactly what I wanted, so I decided to stick with that place.",
+        "ko": "그 난리 이후에, 친한 친구가 자기 미용사를 추천해 줬어요. 한번 가봤는데, 그 디자이너가 제가 원하는 걸 정확히 이해해 줘서, 그 미용실을 계속 다니기로 했죠.",
+        "why": "단골이 된 특정 과거의 계기라 과거형(recommended/gave/understood/decided).",
+        "role": "'단골 미용실을 다니게 된 계기' 질문을 정면으로 답합니다. 사건에서 변화로 넘어가는 전환점."
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since then, I've been going to the same salon for over two years, and I've finally found a style that really suits me.",
+        "ko": "그 뒤로 같은 미용실을 2년 넘게 다니고 있고, 마침내 저한테 정말 잘 어울리는 스타일을 찾았어요.",
+        "why": "그 시점부터 지금까지의 누적·변화라 현재완료(have been going / have found).",
+        "role": "과거의 계기와 현재를 잇는 다리. 시제가 과거에서 현재로 넘어가는 칸입니다."
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "These days, I visit my salon about once a month, and I always book the same designer in advance.",
+        "ko": "요즘은 한 달에 한 번쯤 미용실에 가고, 항상 같은 디자이너로 미리 예약해요.",
+        "why": "현재의 반복 습관이라 현재형(visit/book). 주어 I라 -s를 붙이지 않습니다.",
+        "role": "'지금의 나'. '요즘 머리를 관리하는 방식' 질문을 정면으로 답합니다."
+      },
+      {
+        "beat": "요즘 (지금 하는 중)",
+        "tense": "현재진행 (Present Continuous)",
+        "en": "Right now, I'm actually growing my hair out, so my designer is helping me shape it step by step.",
+        "ko": "지금은 사실 머리를 기르는 중이라, 디자이너가 단계별로 모양을 잡아 주고 있어요.",
+        "why": "지금 '진행 중'인 일시적 상태라 현재진행(am growing / is helping). 늘 그런 습관(현재)과 구분됩니다.",
+        "role": "현재에 디테일을 더하고, 현재형과 현재진행의 차이를 보여 줍니다."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (will / be going to)",
+        "en": "I'm going to keep going to the same designer, and once my hair gets long enough, I'll probably try a bold new color.",
+        "ko": "앞으로도 같은 디자이너한테 계속 다닐 거고, 머리가 충분히 길면 아마 과감한 새 컬러에 도전해 볼 거예요.",
+        "why": "앞으로의 계획·의지·예측이라 미래형. be going to는 '이미 마음먹은 계획', will은 '예측·의지'를 담습니다.",
+        "role": "마무리. '앞으로도'로 이야기를 닫으며 미래 시제를 연습하는 칸입니다."
+      }
+    ]
+  },
+  {
+    "id": "work",
+    "domain": "직장·취업",
+    "title": "일·직장과 나의 이야기",
+    "hook": "첫 직장에서 배운 것들의 기록",
+    "tenses": [
+      "과거완료",
+      "과거",
+      "현재완료",
+      "현재",
+      "미래"
+    ],
+    "covers": [
+      "직장 · 초창기 직업 경험",
+      "직장 · 취업 준비하며 기억에 남는 에피소드 (← 사건 비트)",
+      "직장 · 면접/회의에 못 간 경험",
+      "직장 · 일에서 배운 것"
+    ],
+    "beats": [
+      {
+        "beat": "예전",
+        "tense": "과거완료 (Past Perfect)",
+        "en": "Before I landed my first job, I had spent almost a year just preparing — writing résumés, studying, and going to interview after interview.",
+        "ko": "첫 직장을 잡기 전까지, 저는 거의 일 년을 준비만 하면서 보냈어요. 이력서를 쓰고, 공부하고, 면접을 보고 또 봤죠.",
+        "why": "첫 직장이라는 과거 시점, 그 '이전까지' 쌓인 준비 기간이라 과거완료(had spent). 과거보다 더 앞선 시간을 가리킬 때 자연스럽게 씁니다.",
+        "role": "출발점. '취업 준비'를 배경으로 깔며 고급 시제(과거완료)를 억지 없이 등장시키는 칸입니다."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "One interview is still unforgettable. On the day of a big interview, my alarm didn't go off, and I woke up way too late. I jumped out of bed, threw on a suit, and ran to catch a taxi. I called the company in a total panic, but luckily they kindly let me move to a later slot. In the end, I made it, calmed down, and actually got the job.",
+        "ko": "한 면접은 아직도 잊을 수가 없어요. 중요한 면접 날, 알람이 안 울려서 너무 늦게 일어났어요. 침대에서 벌떡 일어나 정장을 대충 걸치고 택시를 잡으러 뛰었죠. 완전 패닉 상태로 회사에 전화했는데, 다행히 친절하게 나중 시간대로 옮겨 줬어요. 결국엔 도착해서, 마음을 가라앉히고, 진짜로 그 일자리를 얻었어요.",
+        "why": "특정 과거의 한 사건이라 처음부터 끝까지 과거형으로 시간 순서대로 나열합니다(didn't go off/woke/jumped/threw/ran/called/let/made/got).",
+        "role": "⭐ 사건 만능 비트 — '취업 준비하며 기억에 남는 에피소드', '면접에 못 갈 뻔한 경험'을 이 한 칸이 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "초창기",
+        "tense": "과거 (Past Simple)",
+        "en": "In my early days at work, I made a lot of small mistakes and felt nervous all the time. But my senior colleagues guided me patiently, and I gradually got the hang of things.",
+        "ko": "일 초창기에는 사소한 실수를 많이 했고 늘 긴장돼 있었어요. 그래도 선배들이 끈기 있게 이끌어 줘서, 점점 일에 감을 잡아 갔죠.",
+        "why": "'그 시절 초창기 전반의 모습'이라 과거 단순형(made/felt/guided/got)을 씁니다. 한 사건이 아니라 반복되던 상황이에요.",
+        "role": "'초창기 직업 경험' 질문을 정면으로 답하는 보조 사건 칸. 사건과 현재 사이를 채워 줍니다."
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since I started working, I've grown so much, and I've learned how to handle pressure and work well with all kinds of people.",
+        "ko": "일을 시작한 뒤로 저는 정말 많이 성장했고, 압박을 다루는 법과 온갖 사람들과 잘 일하는 법을 배웠어요.",
+        "why": "일을 시작한 시점부터 지금까지의 누적·성장이라 현재완료(have grown / have learned)를 씁니다.",
+        "role": "과거 사건과 현재를 잇는 다리이자 '일에서 배운 것' 질문을 자연스럽게 커버하는 칸입니다."
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "These days, I really enjoy my job. I work with a great team, and I take on new challenges whenever I get the chance.",
+        "ko": "요즘은 제 일을 정말 즐겨요. 좋은 팀과 함께 일하고, 기회가 있을 때마다 새로운 도전을 맡아요.",
+        "why": "지금의 상태·반복 습관이라 현재형. 주어가 I라 동사원형(enjoy/work/take)을 그대로 — 3인칭이 아니니 -s를 붙이지 않습니다.",
+        "role": "'지금의 나'. 면접관이 가장 자주 묻는 '요즘 일은 어떠냐' 칸입니다."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (be going to / will)",
+        "en": "Going forward, I'm going to keep building my skills, and someday I'll definitely take on a bigger role at my company.",
+        "ko": "앞으로도 제 실력을 계속 키워 나갈 거고, 언젠가는 회사에서 꼭 더 큰 역할을 맡을 거예요.",
+        "why": "앞으로의 계획·의지라 미래형. be going to는 '이미 마음먹은 계획', will은 '의지'를 담습니다.",
+        "role": "마무리. '앞으로도'로 이야기를 닫으며 미래 시제를 연습하는 칸입니다."
+      }
+    ]
+  },
+  {
+    "id": "weather",
+    "domain": "날씨",
+    "title": "날씨와 나의 이야기",
+    "hook": "날씨에 휘둘리던 하루가 남긴 이야기",
+    "tenses": [
+      "과거",
+      "과거진행",
+      "현재완료",
+      "현재",
+      "현재완료진행",
+      "미래"
+    ],
+    "covers": [
+      "날씨 · 심한 날씨로 어려움을 겪은 경험 (← 사건 비트)",
+      "날씨 · 기억에 남는 날씨",
+      "날씨 · 요즘 날씨에 대처하는 방식",
+      "날씨 · 계절에 따라 달라지는 내 생활"
+    ],
+    "beats": [
+      {
+        "beat": "예전",
+        "tense": "과거 (Past Simple)",
+        "en": "Growing up, I never really paid attention to the weather. I just wore whatever I wanted and went outside without checking the forecast.",
+        "ko": "자라면서 날씨엔 사실 별로 신경을 안 썼어요. 그냥 입고 싶은 걸 입고, 예보도 안 보고 밖에 나갔죠.",
+        "why": "그 시절 전반의 습관·태도라 과거 단순형(paid/wore/went)을 씁니다.",
+        "role": "이야기의 출발점. '예전엔 날씨에 무심했다'로 뒤의 변화와 대비를 깔아 줍니다."
+      },
+      {
+        "beat": "기억에 남는 날씨",
+        "tense": "과거 (Past Simple)",
+        "en": "One winter, it snowed for three days straight and the whole city turned completely white. I remember it was freezing, but it also looked absolutely beautiful.",
+        "ko": "어느 겨울엔 사흘 내내 눈이 내려서 도시 전체가 새하얗게 변했어요. 정말 추웠지만, 동시에 너무 아름다웠던 게 기억나요.",
+        "why": "특정 과거의 그 날씨 경험이라 과거형(snowed/turned/was/looked).",
+        "role": "'기억에 남는 날씨' 질문을 정면으로 답하는 칸입니다."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "One summer day, a sudden downpour hit while I was out, and the streets flooded within minutes. The buses stopped running, so I got completely stranded. I waited under a shop's roof for an hour, and finally I called a friend who picked me up by car. I was soaked, but I was really relieved.",
+        "ko": "어느 여름날엔 외출했는데 갑자기 폭우가 쏟아져서 몇 분 만에 길이 잠겼어요. 버스가 끊겨서 완전히 발이 묶였죠. 한 시간 동안 가게 처마 밑에서 기다리다가, 결국 친구한테 전화해 차로 데리러 오게 했어요. 흠뻑 젖었지만, 정말 안도했죠.",
+        "why": "특정 과거의 한 사건이라 전부 과거형으로 순서대로(hit/flooded/stopped/got/waited/called/picked/was).",
+        "role": "⭐ 사건 만능 비트 — '심한 날씨로 어려움을 겪은 경험' 질문을 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "그때 장면",
+        "tense": "과거진행 (Past Continuous)",
+        "en": "While I was waiting for my friend, the rain was pouring down so hard that I could barely see the road, and people were rushing everywhere for shelter.",
+        "ko": "친구를 기다리는 동안, 비가 너무 세차게 쏟아져서 도로가 거의 안 보일 정도였고, 사람들은 비를 피하려 사방으로 뛰어다니고 있었어요.",
+        "why": "그 순간 '진행 중이던' 배경 상황이라 과거진행(was waiting / was pouring / were rushing).",
+        "role": "장면에 생동감을 더합니다. 과거(사건)와 과거진행(배경)의 차이를 보여 주는 칸입니다."
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since that day, I've become much more careful about the weather, and I've made it a habit to check the forecast every single morning.",
+        "ko": "그날 이후로 저는 날씨에 훨씬 더 신경 쓰게 됐고, 매일 아침 예보를 확인하는 습관을 들였어요.",
+        "why": "그때 이후부터 지금까지의 변화·누적이라 현재완료(have become / have made).",
+        "role": "과거 사건과 현재를 잇는 다리. 시제가 과거에서 현재로 넘어가는 칸입니다."
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "These days, I always check the weather app before I leave home, and I dress in layers so I can handle sudden changes.",
+        "ko": "요즘은 집을 나서기 전에 항상 날씨 앱을 확인하고, 갑작스러운 변화에 대비해 옷을 겹겹이 껴입어요.",
+        "why": "지금의 반복 습관이라 현재형. 주어가 I라 동사원형(check/dress)을 그대로 — 3인칭이 아니니 -s를 붙이지 않습니다.",
+        "role": "'지금의 나'. '요즘 날씨에 대처하는 방식' 질문을 직접 답하는 칸입니다."
+      },
+      {
+        "beat": "요즘 (깊이)",
+        "tense": "현재완료진행 (Present Perfect Continuous)",
+        "en": "Honestly, the summers have been getting hotter and the winters colder, so lately I've been adjusting my whole routine to each season.",
+        "ko": "솔직히 여름은 점점 더 더워지고 겨울은 더 추워져서, 최근엔 계절마다 제 생활 패턴을 통째로 맞춰 오고 있어요.",
+        "why": "최근까지 '계속 ~해 오는 중'이라 현재완료진행(have been getting / have been adjusting). 자연스러울 때만 쓰는 고급 시제예요.",
+        "role": "현재 습관에 깊이를 더하고, '계절에 따라 달라지는 내 생활' 질문까지 끌어오는 칸입니다."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (be going to / will)",
+        "en": "From now on, I'm going to keep an umbrella in my bag at all times, and I'll definitely plan my outdoor trips around the forecast.",
+        "ko": "앞으로는 가방에 항상 우산을 넣어 다닐 거고, 야외 일정은 꼭 예보에 맞춰 짤 거예요.",
+        "why": "앞으로의 계획·의지라 미래형. be going to는 '이미 마음먹은 계획', will은 '의지'를 담습니다.",
+        "role": "마무리. '앞으로는'으로 이야기를 닫으며 미래 시제를 연습하는 칸입니다."
+      }
+    ]
+  },
+  {
+    "id": "leisure",
+    "domain": "여가·집콕휴가",
+    "title": "여가 시간과 나의 이야기",
+    "hook": "아무것도 안 하는 시간의 소중함을 알기까지",
+    "tenses": [
+      "과거",
+      "현재완료",
+      "현재",
+      "현재진행",
+      "미래"
+    ],
+    "covers": [
+      "자유시간 · 가장 최근에 여유 시간을 보낸 날",
+      "집에서 휴가 · 집에서 보낸 휴가",
+      "집에서 휴가 · 특별했던 집콕 휴가 경험 (← 사건 비트)",
+      "자유시간 · 요즘 여가를 보내는 방식"
+    ],
+    "beats": [
+      {
+        "beat": "예전",
+        "tense": "과거 (Past Simple)",
+        "en": "I used to feel guilty whenever I had free time. Back in school, I always thought I had to be productive every single minute.",
+        "ko": "예전엔 여유 시간이 생길 때마다 죄책감을 느끼곤 했어요. 학창 시절엔 늘 매 순간 뭔가 생산적이어야 한다고 생각했죠.",
+        "why": "그 시절의 습관·생각이라 과거형(used to feel / had / thought)을 씁니다. 'used to'는 '예전엔 ~하곤 했다'는 과거 습관을 나타내요.",
+        "role": "이야기의 출발점. '예전엔 쉬는 걸 못했다'로 뒤의 변화와 대비를 깔아 줍니다."
+      },
+      {
+        "beat": "집에서 휴가",
+        "tense": "과거 (Past Simple)",
+        "en": "A couple of years ago, I had a long holiday but no plans, so I just stayed home the whole time. I slept in, watched movies, and cooked simple meals for myself.",
+        "ko": "몇 년 전엔 긴 연휴가 있었는데 계획이 없어서 그냥 내내 집에 있었어요. 늦잠 자고, 영화 보고, 간단한 밥을 직접 해 먹었죠.",
+        "why": "특정 과거의 그 연휴 경험이라 과거형(had/stayed/slept/watched/cooked).",
+        "role": "'집에서 보낸 휴가' 질문을 정면으로 답하는 칸입니다."
+      },
+      {
+        "beat": "그 사건",
+        "tense": "과거 (Past Simple, 연속)",
+        "en": "On one of those days, I planned to do absolutely nothing, but it turned into the best day ever. I made a big pot of coffee, opened a novel I had been meaning to read, and ended up finishing the whole thing in one sitting by the window. Time just flew by, and I felt completely recharged. That quiet day honestly meant more to me than any fancy trip.",
+        "ko": "그중 하루는 아무것도 안 하기로 했는데, 오히려 최고의 하루가 됐어요. 커피를 잔뜩 내리고, 읽으려고 미뤄 뒀던 소설을 펼쳐서, 결국 창가에서 한자리에 앉아 그 책을 다 읽어 버렸죠. 시간이 그냥 훌쩍 지나갔고, 완전히 충전된 기분이었어요. 그 조용한 하루가 솔직히 어떤 화려한 여행보다 저한텐 의미가 컸어요.",
+        "why": "특정 과거의 한 사건이라 전부 과거형으로 순서대로(planned/turned/made/opened/ended/flew/felt/meant). 'had been meaning'은 그보다 더 앞선 시간이라 과거완료진행을 살짝 곁들였습니다.",
+        "role": "⭐ 사건 만능 비트 — '특별했던 집콕 휴가 경험' 질문을 이 한 칸이 통째로 답합니다.",
+        "incident": true
+      },
+      {
+        "beat": "변화",
+        "tense": "현재완료 (Present Perfect)",
+        "en": "Since then, I've completely changed how I see free time, and I've learned that doing nothing can be just as valuable as staying busy.",
+        "ko": "그 뒤로 여유 시간을 보는 시각이 완전히 바뀌었고, 아무것도 안 하는 게 바쁘게 사는 것만큼 가치 있을 수 있다는 걸 알게 됐어요.",
+        "why": "그때부터 지금까지 '쭉 이어진' 변화·깨달음이라 현재완료(have changed / have learned)를 씁니다.",
+        "role": "과거 사건과 현재를 잇는 다리. 시제가 과거에서 현재로 넘어가는 칸입니다."
+      },
+      {
+        "beat": "요즘",
+        "tense": "현재 (Present Simple)",
+        "en": "These days, I spend my free time doing whatever relaxes me — reading, taking slow walks, or just lying on the couch with music.",
+        "ko": "요즘은 여유 시간을 저를 편하게 해 주는 일로 보내요. 책 읽고, 느긋하게 산책하고, 아니면 그냥 음악 틀고 소파에 누워 있죠.",
+        "why": "지금의 반복 습관이라 현재형. 주어가 I라 동사원형(spend)을 그대로 — 3인칭이 아니니 -s를 붙이지 않습니다.",
+        "role": "'지금의 나'. '요즘 여가를 보내는 방식' 질문을 직접 답하는 칸입니다."
+      },
+      {
+        "beat": "요즘 (지금 하는 중)",
+        "tense": "현재진행 (Present Continuous)",
+        "en": "Actually, I'm getting into a new hobby these days — I'm learning to brew my own coffee at home, and it's surprisingly relaxing.",
+        "ko": "사실 요즘 새 취미에 빠지는 중이에요. 집에서 직접 커피 내리는 법을 배우고 있는데, 의외로 정말 힐링이 돼요.",
+        "why": "지금 '하는 중'인 일시적 일이라 현재진행(am getting / am learning). 늘 그런 습관(현재)과 구분됩니다.",
+        "role": "현재에 디테일을 더하고, 현재형과 현재진행의 차이를 보여 줍니다."
+      },
+      {
+        "beat": "앞으로",
+        "tense": "미래 (be going to / will)",
+        "en": "From now on, I'm going to protect my downtime no matter how busy I get, and I'll keep finding small ways to enjoy doing nothing.",
+        "ko": "앞으로는 아무리 바빠져도 제 휴식 시간을 지킬 거고, 아무것도 안 하는 걸 즐기는 작은 방법들을 계속 찾아갈 거예요.",
+        "why": "앞으로의 계획·의지라 미래형. be going to는 '이미 마음먹은 계획', will은 '의지'를 담습니다.",
+        "role": "마무리. '앞으로는'으로 이야기를 닫으며 미래 시제를 연습하는 칸입니다."
+      }
+    ]
+  }
+]

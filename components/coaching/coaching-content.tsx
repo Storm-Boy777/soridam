@@ -7,15 +7,16 @@ import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { LayoutGrid, FolderTree, Mic, ChevronRight, RotateCcw, ArrowRight, BookOpen } from "lucide-react";
+import { LayoutGrid, FolderTree, Mic, Clock, ChevronRight, RotateCcw, ArrowRight, BookOpen } from "lucide-react";
 import { getTypeCards, getResumableSessions } from "@/lib/actions/coaching";
 import { QUESTION_TYPE_LABELS } from "@/lib/types/coaching";
 import type { TypeCard, QuestionType, ResumableSession } from "@/lib/types/coaching";
 import { TypeBrowser } from "@/components/coaching/type-browser";
 import { CategoryBrowser } from "@/components/coaching/category-browser";
 import { ShadowingBrowser } from "@/components/coaching/shadowing-browser";
+import { TenseBrowser } from "@/components/coaching/tense-browser";
 
-type TabKey = "type" | "topic" | "shadow";
+type TabKey = "type" | "topic" | "shadow" | "tense";
 
 interface Props {
   initialTypeCards: TypeCard[];
@@ -64,8 +65,8 @@ export function CoachingContent({ initialTypeCards, initialResumable, initialErr
       {/* 4주 커리큘럼 배너 */}
       <CurriculumBanner />
 
-      {/* 학습 진행 과정 안내 (쉐도잉 탭에서는 숨김) */}
-      {tab !== "shadow" && <ProcessCard />}
+      {/* 학습 진행 과정 안내 (쉐도잉·시제 탭에서는 숨김 — 녹음/코칭 흐름이 아님) */}
+      {tab !== "shadow" && tab !== "tense" && <ProcessCard />}
 
       {/* 탭 네비게이션 */}
       <div className="mb-4 flex border-b border-border sm:mb-6">
@@ -87,6 +88,12 @@ export function CoachingContent({ initialTypeCards, initialResumable, initialErr
           icon={<Mic className="h-4 w-4 shrink-0" />}
           label="쉐도잉"
         />
+        <TabButton
+          active={tab === "tense"}
+          onClick={() => setTab("tense")}
+          icon={<Clock className="h-4 w-4 shrink-0" />}
+          label="시제"
+        />
       </div>
 
       {tab === "type" && (
@@ -94,6 +101,7 @@ export function CoachingContent({ initialTypeCards, initialResumable, initialErr
       )}
       {tab === "topic" && <CategoryBrowser />}
       {tab === "shadow" && <ShadowingBrowser />}
+      {tab === "tense" && <TenseBrowser />}
     </div>
   );
 }
