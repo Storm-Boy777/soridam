@@ -647,6 +647,7 @@ origin: https://Storm-Boy777@github.com/Storm-Boy777/soridam.git
 | 05-27 | **Talklish 금요일 Phase B — AI 게임 세트 생성기 ✅** | 테마 1개로 그날 저녁 게임 콘텐츠(스피너·Taboo·WYR·롤플레이·이어쓰기·Debate)를 한 번에 생성하는 **세션 단위 세트** 시스템. 평가 없이 생성만(금요일 철학 유지). 마이그 099 `study_freetalk_sets`(한 행=한 세트, jsonb 게임 배열 + RLS 관리자·멤버) + EF `study-freetalk-generate`(gpt-4.1-mini, OPIc 튜닝, 생성만 — 월요일 EF 패턴) + SA 4개(게임 세트 CRUD) + `FridayPrepare` 콘솔(`/talklish/manage` 금요일 슬롯: 생성→미리보기→저장) + `FreetalkStage` 세트 연동(좌측 "오늘의 세트" 선택자 + 세트 없으면 기존 풀=기본 폴백, 무regression). 회당 ≈ $0.01~0.02 (스터디 무료라 크레딧 차감 X). EF 배포 완료 (commit 3006399) |
 | 05-31 | **쉐도잉(답변뱅크) 모듈 ✅** | 코칭 3번째 탭 — **현재 questions DB(469문항) 기준** 유형→질문(묘사 도메인·그 외 토픽 그룹) + DB 질문 음성 연결. **전 문항 IH 안정권 모범답안 + 담화 필러(도입/전개/개인/맺음) + 유형별 엔진 슬롯 분해**(10유형 8엔진: 묘사 5도메인·경험 EVENT 과거·루틴 현재·비교 두시제·오피니언·롤플레이 Q-CHAIN/CALL). 카드: 질문 음성·구조보기↔통문장 토글·가리기(골격 회상)·IH 5체크 셀프평가·내 녹음 자가점검(TTS X). 데이터 `answer-bank.json`(508)+`answer-bank-gap.json`(9)+`answer-structure.json`(508 슬롯분해) id join. 서브에이전트 팀 오케스트레이션(묘사 4·경험 4 + 큐 8파일). 구조 508/508 일치, 빌드 통과 (commit 0c27682) |
 | 06-01 | **시제 만능 아크 (코칭 4번째 탭) ✅** | 경험 기출 149문항(64토픽) 정독 → "특정 과거 한 사건" 질문이 지배 + 중복 다수 발견 → **23 경험 도메인 풀 아크**로 통합. 각 도메인 "X와 나의 이야기" 시간축 서사(예전→계기→**그 사건**→변화→요즘→앞으로)로 **과거↔현재↔미래 시제를 서사로 체화**(SAIL 1번 약점=시제). ⭐사건 비트 1칸 내장 → 그 토픽 기출 통째 커버(만능 답변 겸용). 전문가 가이드: 억지 12시제 X·Core 7 자유+Advanced 자연스러울 때만·해설 3요소(왜 이 시제/역할/재활용). 한글 토글(기본 OFF)+해설 토글(기본 ON). 정적 JSON `lib/data/tense-narratives.json`(23편 평균 7.1칸) + SA `lib/actions/tense.ts` + 뷰어/브라우저 2컴포넌트 + 진행도 훅. 서브에이전트 팀 5명 병렬 생성(레퍼런스 3편 본인 작성 후 도메인 4개씩). 녹음/평가 없는 읽기 학습 |
+| 06-03 | **쉐도잉 묘사 답변 AL 격상 ✅** | 전문가 1:1 피드백(TV/영화 답변 직접 리뷰) 반영 — 교과서 모범답안 → "실제 말하는 사람". 7원칙(생활 디테일·미니스토리·감정·자연 필러 **위치>양**·IH 안정 캘리브레이션) + **슬롯 골격 유지(STEP1)**. 묘사 **80개**(place 26·society 24·activity 17·thing 9·person 4) 전수 격상: 상투구("the perfect way to relax/my own little break/brings me a lot of joy/forget about any stress" 등) **0건**, 활동·장소·사물·사람엔 과거시제 **미니스토리 1칸** 내장, society는 개인 일화 대신 구체 예시+개인 의견. 서브에이전트 팀 6명 병렬 → ETL 패치(answer-bank/gap/structure 동시, **join==answer 정합성 80/80**). 플래그십 TV 답변은 승인 파일럿으로 복원(미니스토리·자연 리듬) |
 
 <!-- 이후 새 이력은 이 테이블에 행 추가 + memory/개발이력.md에 상세 기록 -->
 
@@ -778,7 +779,7 @@ Stage C: mock-test-report (평가엔진 7-Step + overview/growth GPT)
 
 **라우트**: `/coaching`(메인 **4탭: 유형별·주제별·쉐도잉·시제**) → `/coaching/topic/[type]`(토픽) → `/coaching/topic/[type]/[topic]`(질문 리스트) → `/coaching/learn/[sessionId]`(학습룸)
 
-**쉐도잉 탭(답변뱅크)** — 코칭(OUTPUT 교정)과 별개의 INPUT 학습(흡수). DB 469문항 IH 안정권 답변 + 담화 필러 + **유형별 엔진 슬롯 분해**. 흐름: 질문 음성 듣기 → 모범답안 구조보기/가리기(골격 회상) → 내 목소리 녹음·재생 자가점검 → IH 안정권 5체크. 정적 JSON(`lib/data/answer-bank.json`·`answer-bank-gap.json`·`answer-structure.json`)을 questions DB에 id로 join. SA `lib/actions/shadowing.ts`, 엔진 메타 `lib/types/shadowing.ts`(ENGINE_SLOTS·TYPE_TO_ENGINE·필러), 진행도 `lib/hooks/use-shadowing-progress.ts`(localStorage), 컴포넌트 `shadowing-browser.tsx`·`shadowing-card.tsx`. ⚠️ 답변뱅크 생성/재생성 ETL은 `scripts/*.mjs`(gitignore, gpt-4.1+엔진 SYS) + 원본 마크다운 `D:/강지완 오픽 AL 강의/편집본/교본/유형별공략/답변뱅크_*.md` → 재파싱.
+**쉐도잉 탭(답변뱅크)** — 코칭(OUTPUT 교정)과 별개의 INPUT 학습(흡수). DB 469문항 IH 안정권 답변 + 담화 필러 + **유형별 엔진 슬롯 분해**. 흐름: 질문 음성 듣기 → 모범답안 구조보기/가리기(골격 회상) → 내 목소리 녹음·재생 자가점검 → IH 안정권 5체크. 정적 JSON(`lib/data/answer-bank.json`·`answer-bank-gap.json`·`answer-structure.json`)을 questions DB에 id로 join. SA `lib/actions/shadowing.ts`, 엔진 메타 `lib/types/shadowing.ts`(ENGINE_SLOTS·TYPE_TO_ENGINE·필러), 진행도 `lib/hooks/use-shadowing-progress.ts`(localStorage), 컴포넌트 `shadowing-browser.tsx`·`shadowing-card.tsx`. ⚠️ 답변뱅크 생성/재생성 ETL은 `scripts/*.mjs`(gitignore, gpt-4.1+엔진 SYS) + 원본 마크다운 `D:/강지완 오픽 AL 강의/편집본/교본/유형별공략/답변뱅크_*.md` → 재파싱. ⚠️ **묘사 80개는 2026-06-03 AL 격상**(전문가 1:1 피드백 — 생활 디테일+미니스토리+감정+자연 필러, 상투구 0건, 슬롯 골격 유지). 격상 ETL: `scripts/build-desc-chunks·apply-desc-upgrade·fix-desc-cousins·fix-caps.mjs`(gitignore, 서브에이전트 팀 6명 → answer-bank/gap/structure 동시 패치).
 
 **시제 탭(시제 만능 아크)** — 쉐도잉(INPUT 흡수)·코칭(OUTPUT 교정)과 또 다른 축의 **시제 체화** 학습(녹음/평가 X, 읽기). 경험 기출 149문항(64토픽)을 **23 경험 도메인**으로 통합하고, 각 도메인을 "X와 나의 이야기" 시간축 서사(예전→계기→**그 사건**→변화→요즘→앞으로)로 작성 — 과거↔현재↔미래가 서사로 자연 체화(SAIL 1번 약점=시제). ⭐사건 비트 1칸이 그 토픽 기출("~했던 경험")을 통째로 커버(만능 답변 겸용). 비트마다 영어 + 한글(기본 숨김 토글) + 해설(기본 표시 토글: 왜 이 시제·역할). 정적 JSON `lib/data/tense-narratives.json`(23편), SA `lib/actions/tense.ts`, 타입 `lib/types/tense.ts`(TenseNarrative/TenseBeat + 23도메인 순서), 진행도 `lib/hooks/use-tense-progress.ts`, 컴포넌트 `tense-browser.tsx`·`tense-narrative.tsx`. 병합 ETL `scripts/merge-tense.mjs`(gitignore). 설계: 전문가 가이드(서사 우선·Core 7 자유+Advanced 자연스러울 때만·억지 12시제 금지).
 
@@ -967,5 +968,5 @@ PGPASSWORD='soridam2026' PGCLIENTENCODING='UTF8' "/c/Program Files/PostgreSQL/16
 > 의사결정 기록은 `docs/의사결정.md` 참조
 
 ---
-*최종 업데이트: 2026-06-01*
-*상태: Phase 1~6 ✅ + **Phase 7 AI 코치 v5 + 쉐도잉(답변뱅크) + 시제 만능 아크** ✅ + **Talklish 금요일 개편** ✅*
+*최종 업데이트: 2026-06-03*
+*상태: Phase 1~6 ✅ + **Phase 7 AI 코치 v5 + 쉐도잉(답변뱅크·묘사 AL 격상) + 시제 만능 아크** ✅ + **Talklish 금요일 개편** ✅*
