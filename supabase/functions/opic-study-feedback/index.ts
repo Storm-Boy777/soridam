@@ -457,7 +457,7 @@ Deno.serve(async (req: Request) => {
         ],
         response_format: { type: "json_object" },
         temperature: 0.5,
-        max_tokens: 2000,
+        max_tokens: 2500,
       }),
       signal: AbortSignal.timeout(45_000),
     });
@@ -492,7 +492,16 @@ Deno.serve(async (req: Request) => {
     parsed.summary = typeof parsed.summary === "string" && parsed.summary
       ? parsed.summary
       : "AI 응답에 summary가 누락되었습니다.";
-    parsed.flow = typeof parsed.flow === "string" && parsed.flow ? parsed.flow : "";
+    // flow는 객체 { intro, body, conclusion } — 과거 버그: string으로 취급해 빈 문자열로 덮어써 UI에서 흐름 섹션이 사라졌음
+    parsed.flow =
+      parsed.flow && typeof parsed.flow === "object" && !Array.isArray(parsed.flow)
+        ? {
+            intro: typeof parsed.flow.intro === "string" && parsed.flow.intro ? parsed.flow.intro : null,
+            body: typeof parsed.flow.body === "string" && parsed.flow.body ? parsed.flow.body : null,
+            conclusion:
+              typeof parsed.flow.conclusion === "string" && parsed.flow.conclusion ? parsed.flow.conclusion : null,
+          }
+        : { intro: null, body: null, conclusion: null };
     parsed.good_expressions = Array.isArray(parsed.good_expressions)
       ? parsed.good_expressions
       : [];
