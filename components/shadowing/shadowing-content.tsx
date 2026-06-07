@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import dynamic from "next/dynamic";
+import { PartyPopper, Target, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useShadowingStore } from "@/lib/stores/shadowing";
 import { ShadowingStepNav } from "./shadowing-step-nav";
+import { ScriptSwitcher, NextTrainingCards } from "./script-navigator";
 import { TrialBanner } from "@/components/trial/trial-banner";
 import { TrialComplete } from "@/components/trial/trial-complete";
 
@@ -12,60 +16,57 @@ const StepLoadingFallback = () => <div className="animate-pulse h-64 rounded-xl 
 const StepListen = dynamic(() => import("./step-listen").then(m => ({ default: m.StepListen })), { loading: StepLoadingFallback });
 const StepShadow = dynamic(() => import("./step-shadow").then(m => ({ default: m.StepShadow })), { loading: StepLoadingFallback });
 const StepRecite = dynamic(() => import("./step-recite").then(m => ({ default: m.StepRecite })), { loading: StepLoadingFallback });
-const StepSpeak = dynamic(() => import("./step-speak").then(m => ({ default: m.StepSpeak })), { loading: StepLoadingFallback });
 import type { ShadowingData } from "@/lib/actions/scripts";
-import type { ShadowingStep } from "@/lib/types/scripts";
+import type { ScriptListItem } from "@/lib/types/scripts";
 import { SHADOWING_STEP_DESCRIPTIONS } from "@/lib/types/scripts";
 
 interface ShadowingContentProps {
   data: ShadowingData;
+  scriptList?: ScriptListItem[];
   isTrialMode?: boolean;
 }
 
 // 진행 상태에 따른 동적 가이드 메시지
-function useStepGuideMessage(isTrialMode: boolean): string {
+function useStepGuideMessage(): string {
   const {
     currentStep,
     sentences,
     listenedSentences,
     shadowPlayCounts,
-    speakResult,
   } = useShadowingStore();
 
   return useMemo(() => {
-    if (currentStep === "speak" && isTrialMode) {
-      return "체험판에서는 발화 평가를 제공하지 않습니다.";
-    }
-
     const total = sentences.length;
 
     if (currentStep === "listen") {
       const heard = listenedSentences.length;
       if (heard === 0) return SHADOWING_STEP_DESCRIPTIONS.listen;
-      if (heard >= total * 0.8) return "모든 문장을 들었습니다 — 따라 읽기로 넘어가 보세요";
+      if (heard >= total * 0.8) return "모든 문장을 들었습니다 — 따라 말하기로 넘어가 보세요";
       return `잘 듣고 계세요! ${heard}/${total} 문장 청취 완료`;
     }
 
     if (currentStep === "shadow") {
       const mastered = Object.values(shadowPlayCounts).filter((c) => c >= 3).length;
       if (mastered === 0) return SHADOWING_STEP_DESCRIPTIONS.shadow;
-      if (mastered >= total) return "모든 문장 연습 완료! 다음 단계로 넘어가 보세요";
+      if (mastered >= total) return "모든 문장 연습 완료! 통째로 체화로 넘어가 보세요";
       return `${mastered}/${total} 문장 연습 중 — 3번 이상 반복해보세요`;
     }
 
-    if (currentStep === "recite") return SHADOWING_STEP_DESCRIPTIONS.recite;
-
-    if (currentStep === "speak") {
-      if (speakResult) return "평가가 완료되었습니다. 결과를 확인해보세요!";
-      return SHADOWING_STEP_DESCRIPTIONS.speak;
-    }
-
-    return SHADOWING_STEP_DESCRIPTIONS[currentStep];
-  }, [currentStep, sentences.length, listenedSentences.length, shadowPlayCounts, speakResult, isTrialMode]);
+    return SHADOWING_STEP_DESCRIPTIONS.recite;
+  }, [currentStep, sentences.length, listenedSentences.length, shadowPlayCounts]);
 }
 
-export function ShadowingContent({ data, isTrialMode = false }: ShadowingContentProps) {
-  const { currentStep, setStep, init, packageId } = useShadowingStore();
+export function ShadowingContent({ data, scriptList = [], isTrialMode = false }: ShadowingContentProps) {
+  const router = useRouter();
+  const { currentStep, setStep, init, packageId, stepCompletions } = useShadowingStore();
+
+  // 인페이지 전환: 페이지를 나가지 않고 다른 질문 훈련으로 이동 (URL만 교체 → 서버 데이터 재조회)
+  const switchTo = useCallback(
+    (pkgId: string, scrId: string) => {
+      router.replace(`/scripts/shadowing?packageId=${pkgId}&scriptId=${scrId}`, { scroll: false });
+    },
+    [router],
+  );
 
   // persist 수동 rehydration: 렌더 중 Zustand setState 방지
   useEffect(() => {
@@ -89,22 +90,39 @@ export function ShadowingContent({ data, isTrialMode = false }: ShadowingContent
     }
   }, [data, packageId, init]);
 
-  const stepDescription = useStepGuideMessage(isTrialMode);
+  // 단계 축소(speak 제거) 이전에 persist된 잘못된 currentStep 보정
+  useEffect(() => {
+    const cs = currentStep as string;
+    if (cs !== "listen" && cs !== "shadow" && cs !== "recite") {
+      setStep("recite");
+    }
+  }, [currentStep, setStep]);
+
+  const stepDescription = useStepGuideMessage();
 
   const renderStepContent = () => {
     switch (currentStep) {
       case "listen":  return <StepListen />;
       case "shadow":  return <StepShadow />;
       case "recite":  return <StepRecite />;
-      case "speak":   return isTrialMode ? <TrialComplete type="script" /> : <StepSpeak />;
     }
   };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {/* 고정 탭 네비게이션 */}
-      <div className="shrink-0 border-b border-border bg-surface/80 backdrop-blur-sm">
+      {/* 고정 탭 네비게이션 (+ 인페이지 질문 전환기) */}
+      {/* relative z-30: backdrop-blur가 만든 stacking context를 콘텐츠 위로 올려 드롭다운이 가려지지 않게 */}
+      <div className="relative z-30 shrink-0 border-b border-border bg-surface/80 backdrop-blur-sm">
         <div className="mx-auto max-w-5xl">
+          {!isTrialMode && (
+            <ScriptSwitcher
+              list={scriptList}
+              currentScriptId={data.scriptId}
+              currentTopic={data.topic}
+              currentCategory={data.category}
+              onSwitch={switchTo}
+            />
+          )}
           <ShadowingStepNav currentStep={currentStep} onStepChange={setStep} />
         </div>
       </div>
@@ -137,6 +155,40 @@ export function ShadowingContent({ data, isTrialMode = false }: ShadowingContent
                 {renderStepContent()}
               </motion.div>
             </AnimatePresence>
+
+            {/* 체화 완료 후 — 실전(모의고사) 핸드오프 + 다음 훈련 */}
+            {currentStep === "recite" && stepCompletions.recite && (
+              isTrialMode ? (
+                <TrialComplete type="script" />
+              ) : (
+                <div className="mt-6 space-y-4">
+                  <div className="rounded-[var(--radius-xl)] border border-primary-200 bg-primary-50/40 p-4 sm:p-5">
+                    <div className="flex items-center gap-2">
+                      <PartyPopper size={16} className="text-primary-500" />
+                      <h3 className="text-sm font-semibold text-foreground">통째로 체화 완료!</h3>
+                    </div>
+                    <p className="mt-1 text-xs leading-relaxed text-foreground-secondary">
+                      이 스크립트를 입에 붙였어요. 실제 시험처럼 평가받고 싶다면 모의고사에서 실력을 확인해보세요.
+                    </p>
+                    <Link
+                      href="/mock-exam"
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-primary-500 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-primary-600"
+                    >
+                      <Target size={14} />
+                      모의고사로 실전 평가받기
+                      <ArrowRight size={14} />
+                    </Link>
+                  </div>
+                  <NextTrainingCards
+                    list={scriptList}
+                    currentScriptId={data.scriptId}
+                    currentTopic={data.topic}
+                    currentCategory={data.category}
+                    onSwitch={switchTo}
+                  />
+                </div>
+              )
+            )}
           </div>
         </div>
       </div>

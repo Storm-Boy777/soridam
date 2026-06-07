@@ -27,8 +27,8 @@ export type TtsVoice = (typeof TTS_VOICES)[number];
 export const SESSION_STATUSES = ['active', 'completed'] as const;
 export type SessionStatus = (typeof SESSION_STATUSES)[number];
 
-// 쉐도잉 4단계 훈련 스텝
-export const SHADOWING_STEPS = ['listen', 'shadow', 'recite', 'speak'] as const;
+// 쉐도잉 3단계 훈련 스텝 (실전 평가는 모의고사 모듈로 분리)
+export const SHADOWING_STEPS = ['listen', 'shadow', 'recite'] as const;
 export type ShadowingStep = (typeof SHADOWING_STEPS)[number];
 
 // ── 한글 레이블 매핑 ──
@@ -92,25 +92,24 @@ export const TTS_VOICE_META: Record<TtsVoice, TtsVoiceMeta> = {
   },
 };
 
+// 목표 프레이밍: '동작'이 아니라 '무엇을 얻는 단계인지' (귀 → 입 → 머리)
 export const SHADOWING_STEP_LABELS: Record<ShadowingStep, string> = {
-  listen: '쉐도잉',
-  shadow: '문장 말하기',
-  recite: '구조로 말하기',
-  speak: '실전 평가',
+  listen: '감각 익히기',
+  shadow: '따라 말하기',
+  recite: '통째로 체화',
 };
 
 export const SHADOWING_STEP_SHORT_LABELS: Record<ShadowingStep, string> = {
-  listen: '쉐도잉',
-  shadow: '문장말하기',
-  recite: '구조로 말하기',
-  speak: '실전 평가',
+  listen: '감각',
+  shadow: '따라하기',
+  recite: '체화',
 };
 
+// 각 설명은 '목표 + 직전 단계와의 연결'을 함께 담아 학습 경로로 인식되게 한다
 export const SHADOWING_STEP_DESCRIPTIONS: Record<ShadowingStep, string> = {
-  listen: '원어민 음성을 듣고 전체 흐름을 파악하세요',
-  shadow: '원어민 음성을 따라 말하세요. 익숙해질 때까지 반복합니다',
-  recite: '답변 구조를 참고하여 스크립트를 떠올려 말해보세요',
-  speak: '훈련한 내용을 얼마나 체화했는지 확인해보세요',
+  listen: '원어민이 내 답변을 어떻게 말하는지 귀로 익혀요 — 리듬·억양·끊어 읽기 감각을 잡는 단계',
+  shadow: '들은 감각 그대로 따라 말하며 입에 붙여요 — 발음과 유창함이 몸에 배는 단계',
+  recite: '이제 스크립트 없이 흐름만 떠올리며 통째로 말해봐요 — 시험장에서 바로 나오게 체화하는 단계',
 };
 
 // ── 4계층 JSON 구조 (paragraphs > slots > sentences) ──
@@ -436,6 +435,9 @@ export interface ShadowingHistoryItem {
   script_id: string;
   topic: string | null;
   question_korean: string | null;
+  question_text: string | null;   // 영어 질문 (세션 저장값)
+  question_short: string | null;  // 짧은 한글 (questions join)
+  question_type: string | null;   // 질문 유형 (scripts join)
   status: SessionStatus;
   audio_duration: number | null;
   started_at: string;

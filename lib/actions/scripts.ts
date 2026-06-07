@@ -641,9 +641,10 @@ export async function getShadowingHistory(): Promise<ActionResult<ShadowingHisto
     const { data, error } = await supabase
       .from(T.shadowing_sessions)
       .select(`
-        id, script_id, topic, question_korean, status,
+        id, script_id, topic, question_korean, question_text, status,
         audio_duration, started_at, completed_at,
-        shadowing_evaluations(overall_score, estimated_level, pronunciation, fluency)
+        shadowing_evaluations(overall_score, estimated_level, pronunciation, fluency),
+        scripts(question_type, questions(question_short))
       `)
       .eq("user_id", userId)
       .order("started_at", { ascending: false })
@@ -653,12 +654,17 @@ export async function getShadowingHistory(): Promise<ActionResult<ShadowingHisto
       return { error: "쉐도잉 이력 조회에 실패했습니다" };
     }
 
-    const items: ShadowingHistoryItem[] = (data ?? []).map((s) => ({
-      ...s,
-      evaluation: Array.isArray(s.shadowing_evaluations) && s.shadowing_evaluations.length > 0
-        ? s.shadowing_evaluations[0]
-        : null,
-    }));
+    const items: ShadowingHistoryItem[] = (data ?? []).map((s: any) => {
+      const { scripts, shadowing_evaluations, ...rest } = s;
+      return {
+        ...rest,
+        question_short: scripts?.questions?.question_short ?? null,
+        question_type: scripts?.question_type ?? null,
+        evaluation: Array.isArray(shadowing_evaluations) && shadowing_evaluations.length > 0
+          ? shadowing_evaluations[0]
+          : null,
+      };
+    });
 
     return { data: items };
   } catch (err) {
@@ -806,6 +812,7 @@ export interface ShadowingData {
   questionKorean: string | null;
   questionAudioUrl: string | null;
   topic: string | null;
+  category: string | null;
   keyExpressions: string[];
   targetLevel: string | null;
   ttsVoice: string;
@@ -840,7 +847,7 @@ export async function getShadowingData(
 
     const { data: script, error: scriptError } = await supabase
       .from(T.scripts)
-      .select("question_id, question_english, question_korean, topic, key_expressions, target_grade, paragraphs")
+      .select("question_id, question_english, question_korean, topic, category, key_expressions, target_grade, paragraphs")
       .eq("id", pkg.script_id)
       .single();
 
@@ -883,6 +890,7 @@ export async function getShadowingData(
         questionKorean: script.question_korean,
         questionAudioUrl,
         topic: script.topic,
+        category: script.category,
         keyExpressions: script.key_expressions || [],
         targetLevel: script.target_grade,
         ttsVoice: pkg.tts_voice,
@@ -1176,7 +1184,8 @@ export async function getShadowableScripts(): Promise<
         topic, category, question_korean, question_english, target_grade,
         question_type, word_count, status, refine_count,
         created_at, updated_at,
-        script_packages!inner(id, status, progress)
+        script_packages!inner(id, status, progress),
+        questions(question_short)
       `)
       .eq("user_id", userId)
       .eq("status", "confirmed")
@@ -1187,15 +1196,95 @@ export async function getShadowableScripts(): Promise<
       return { error: "스크립트 목록 조회에 실패했습니다" };
     }
 
-    const items: ScriptListItem[] = (data ?? []).map((s: any) => ({
-      ...s,
-      package:
-        Array.isArray(s.script_packages) && s.script_packages.length > 0
-          ? s.script_packages[0]
-          : null,
-    }));
+    const items: ScriptListItem[] = (data ?? []).map((s: any) => {
+      const { questions, script_packages, ...rest } = s;
+      return {
+        ...rest,
+        question_short: questions?.question_short ?? null,
+        package:
+          Array.isArray(script_packages) && script_packages.length > 0
+            ? script_packages[0]
+            : null,
+      };
+    });
 
     return { data: items };
+  } catch (err) {
+    return { error: (err as Error).message };
+  }
+}
+
+// ============================================================
+// 심플 듣기(플레이리스트) — 패키지 완료 스크립트의 재생용 트랙 목록
+// ============================================================
+
+export interface ListenTrack {
+  scriptId: string;
+  packageId: string;
+  topic: string | null;
+  category: string | null;
+  questionType: string | null;
+  questionId: string;
+  questionShort: string | null;
+  questionKorean: string | null;
+  questionEnglish: string | null;
+  answerAudioUrl: string;          // 답변 스크립트 TTS (script-packages 공개 URL)
+  questionAudioUrl: string | null; // 질문 음성 (questions.audio_url, 이미 공개 URL)
+  sentences: TimestampItem[];      // 답변 자막 동기화용 타임스탬프
+}
+
+export async function getListenTracks(): Promise<ActionResult<ListenTrack[]>> {
+  try {
+    const { supabase, userId } = await requireUser();
+
+    const { data, error } = await supabase
+      .from(T.scripts)
+      .select(`
+        id, question_id, topic, category, question_type,
+        question_english, question_korean,
+        script_packages!inner(id, status, wav_file_path, timestamp_data),
+        questions(question_short, audio_url)
+      `)
+      .eq("user_id", userId)
+      .eq("status", "confirmed")
+      .in("script_packages.status", ["completed", "partial"])
+      .order("question_id", { ascending: true });
+
+    if (error) {
+      return { error: "재생 목록 조회에 실패했습니다" };
+    }
+
+    const tracks: ListenTrack[] = [];
+    for (const s of (data ?? []) as any[]) {
+      const pkg = Array.isArray(s.script_packages)
+        ? s.script_packages[0]
+        : s.script_packages;
+      if (!pkg?.wav_file_path) continue;
+
+      const { data: urlData } = supabase.storage
+        .from("script-packages")
+        .getPublicUrl(pkg.wav_file_path);
+      if (!urlData?.publicUrl) continue;
+
+      const q = Array.isArray(s.questions) ? s.questions[0] : s.questions;
+
+      tracks.push({
+        scriptId: s.id,
+        packageId: pkg.id,
+        topic: s.topic,
+        category: s.category,
+        questionType: s.question_type,
+        questionId: s.question_id,
+        questionShort: q?.question_short ?? null,
+        questionKorean: s.question_korean,
+        questionEnglish: s.question_english,
+        answerAudioUrl: urlData.publicUrl,
+        questionAudioUrl: q?.audio_url ?? null,
+        sentences: pkg.timestamp_data || [],
+      });
+    }
+
+    return { data: tracks };
   } catch (err) {
     return { error: (err as Error).message };
   }

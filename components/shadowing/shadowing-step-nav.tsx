@@ -2,9 +2,8 @@
 
 import {
   Headphones,
-  MessageSquare,
-  BookOpen,
-  Radio,
+  Mic,
+  Brain,
   Check,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -14,13 +13,12 @@ import { useShadowingStore } from "@/lib/stores/shadowing";
 import { StepProgressRing } from "./step-progress-ring";
 
 const STEP_ICONS: Record<ShadowingStep, React.ElementType> = {
-  listen: Headphones,
-  shadow: MessageSquare,
-  recite: BookOpen,
-  speak: Radio,
+  listen: Headphones, // 귀 — 감각 익히기
+  shadow: Mic,        // 입 — 따라 말하기
+  recite: Brain,      // 머리 — 통째로 체화
 };
 
-const STEPS: ShadowingStep[] = ["listen", "shadow", "recite", "speak"];
+const STEPS: ShadowingStep[] = ["listen", "shadow", "recite"];
 
 interface ShadowingStepNavProps {
   currentStep: ShadowingStep;
@@ -34,7 +32,6 @@ function useStepProgress(): Record<ShadowingStep, number> {
     listenedSentences,
     shadowPlayCounts,
     reciteRecordingDone,
-    speakResult,
   } = useShadowingStore();
 
   const total = sentences.length || 1;
@@ -49,14 +46,10 @@ function useStepProgress(): Record<ShadowingStep, number> {
   // Step 3: 녹음 완료 = 1
   const reciteProgress = reciteRecordingDone ? 1 : 0;
 
-  // Step 4: 평가 완료 = 1
-  const speakProgress = speakResult ? 1 : 0;
-
   return {
     listen: listenProgress,
     shadow: shadowProgress,
     recite: reciteProgress,
-    speak: speakProgress,
   };
 }
 

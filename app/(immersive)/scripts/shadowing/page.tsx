@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { ImmersiveHeader } from "@/components/layout/immersive-header";
 import { ShadowingContent } from "@/components/shadowing/shadowing-content";
-import { getShadowingData } from "@/lib/actions/scripts";
+import { getShadowingData, getShadowableScripts } from "@/lib/actions/scripts";
 import type { ShadowingData } from "@/lib/actions/scripts";
 import {
   TRIAL_QUESTION,
@@ -34,6 +34,7 @@ export default async function ShadowingPage({ searchParams }: PageProps) {
       questionKorean: TRIAL_QUESTION.question_korean,
       questionAudioUrl: null,
       topic: TRIAL_QUESTION.topic,
+      category: null,
       keyExpressions: [
         "got interested in",
         "sing along to",
@@ -54,7 +55,7 @@ export default async function ShadowingPage({ searchParams }: PageProps) {
       <>
         <ImmersiveHeader title="음악 · 쉐도잉 체험판" backHref="/scripts?tab=shadowing" />
         <main className="flex h-0 min-h-0 flex-grow flex-col md:h-auto md:flex-1">
-          <ShadowingContent data={trialData} isTrialMode />
+          <ShadowingContent data={trialData} scriptList={[]} isTrialMode />
         </main>
       </>
     );
@@ -64,8 +65,11 @@ export default async function ShadowingPage({ searchParams }: PageProps) {
     redirect("/scripts");
   }
 
-  // 서버에서 패키지 데이터 사전 조회
-  const result = await getShadowingData(packageId);
+  // 서버에서 패키지 데이터 + 훈련 가능 목록(인페이지 전환용) 병렬 사전 조회
+  const [result, shadowableResult] = await Promise.all([
+    getShadowingData(packageId),
+    getShadowableScripts(),
+  ]);
 
   if (result.error || !result.data) {
     return (
@@ -93,7 +97,7 @@ export default async function ShadowingPage({ searchParams }: PageProps) {
     <>
       <ImmersiveHeader title={topicLabel} backHref="/scripts?tab=shadowing" />
       <main className="flex h-0 min-h-0 flex-grow flex-col md:h-auto md:flex-1">
-        <ShadowingContent data={result.data} />
+        <ShadowingContent data={result.data} scriptList={shadowableResult.data ?? []} />
       </main>
     </>
   );

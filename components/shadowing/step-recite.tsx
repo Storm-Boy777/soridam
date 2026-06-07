@@ -7,11 +7,25 @@ import {
   Eye,
   EyeOff,
   Layers,
+  RotateCcw,
 } from "lucide-react";
 import { ShadowingRecorder } from "./shadowing-recorder";
 import { RecordingComparison } from "./recording-comparison";
 import { QuestionCard } from "./question-card";
-import { useShadowingStore } from "@/lib/stores/shadowing";
+import { useShadowingStore, type ReciteSelfRating } from "@/lib/stores/shadowing";
+
+// 녹음 후 자기평가 선택지 + 체화 체감별 피드백
+const SELF_RATINGS: { key: ReciteSelfRating; emoji: string; label: string }[] = [
+  { key: "easy", emoji: "🙌", label: "막힘없이" },
+  { key: "recalled", emoji: "🙂", label: "떠올리며" },
+  { key: "hard", emoji: "😅", label: "아직 어려워요" },
+];
+
+const SELF_RATING_FEEDBACK: Record<ReciteSelfRating, string> = {
+  easy: "완전히 입에 붙었네요! 모의고사로 실전 감각까지 점검해보세요.",
+  recalled: "잘 해냈어요. 한 번 더 반복하면 더 자연스러워져요.",
+  hard: "아직 버벅인다면 감각이 덜 익은 거예요. 따라 말하기로 한 번 더 다져볼까요?",
+};
 
 const HINT_LABELS: Record<0 | 1 | 2, string> = {
   0: "숨김",
@@ -30,15 +44,19 @@ export function StepRecite() {
     questionText,
     questionKorean,
     questionAudioUrl,
+    audioUrl,
     structureSummary,
     reciteTimer,
     reciteHintLevel,
     reciteRecordingDone,
+    reciteSelfRating,
     stepCompletions,
     setReciteTimer,
     setReciteHintLevel,
     setReciteRecordingDone,
+    setReciteSelfRating,
     markStepComplete,
+    setStep,
     isRecording,
     setRecording,
     setRecordingDuration,
@@ -64,13 +82,14 @@ export function StepRecite() {
       setRecordingDuration(duration);
       setTimerActive(false);
       setReciteRecordingDone(true);
+      setReciteSelfRating(null); // 새 녹음마다 자기평가 새로 받기
 
       // Step 완료 체크
       if (!stepCompletions.recite) {
         markStepComplete("recite");
       }
     },
-    [setRecordingDuration, setReciteRecordingDone, stepCompletions.recite, markStepComplete]
+    [setRecordingDuration, setReciteRecordingDone, setReciteSelfRating, stepCompletions.recite, markStepComplete]
   );
 
   const cycleHintLevel = useCallback(() => {
@@ -138,14 +157,56 @@ export function StepRecite() {
         </div>
       )}
 
-      {/* 3. 녹음 비교 (녹음 완료 후) */}
-      {recordingBlob && !isRecording && questionAudioUrl && (
+      {/* 3. 녹음 비교 (녹음 완료 후) — 정답 스크립트 전체 음성과 비교 */}
+      {recordingBlob && !isRecording && audioUrl && (
         <RecordingComparison
-          originalUrl={questionAudioUrl}
+          originalUrl={audioUrl}
           recordingBlob={recordingBlob}
-          originalLabel="질문 원본"
+          originalLabel="정답 스크립트"
           recordingLabel="내 녹음"
         />
+      )}
+
+      {/* 4. 자기평가 — 체화 체감을 스스로 인식 + 약하면 복습 유도 */}
+      {recordingBlob && !isRecording && (
+        <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-4 sm:p-5">
+          <p className="text-xs font-semibold text-foreground-secondary">이번 답변, 어땠나요?</p>
+          <div className="mt-2.5 grid grid-cols-3 gap-2">
+            {SELF_RATINGS.map(({ key, emoji, label }) => {
+              const selected = reciteSelfRating === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setReciteSelfRating(key)}
+                  className={`flex flex-col items-center gap-1 rounded-lg border px-2 py-2.5 text-[11px] font-medium transition-colors ${
+                    selected
+                      ? "border-primary-400 bg-primary-50 text-primary-700"
+                      : "border-border bg-surface-secondary/40 text-foreground-secondary hover:border-primary-200 hover:bg-primary-50/40"
+                  }`}
+                >
+                  <span className="text-base leading-none">{emoji}</span>
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          {reciteSelfRating && (
+            <div className="mt-3 rounded-lg bg-surface-secondary/60 px-3 py-2.5">
+              <p className="text-xs leading-relaxed text-foreground-secondary">
+                {SELF_RATING_FEEDBACK[reciteSelfRating]}
+              </p>
+              {reciteSelfRating === "hard" && (
+                <button
+                  onClick={() => setStep("shadow")}
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary-500 px-3 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-primary-600"
+                >
+                  <RotateCcw size={12} />
+                  따라 말하기로 복습
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {/* 5. 타이머 + 녹음 — 모바일: 하단 고정 / 데스크탑: 인라인 */}

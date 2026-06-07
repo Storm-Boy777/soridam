@@ -31,7 +31,6 @@ export function StepShadow() {
     shadowHintLevel,
     shadowPlayCounts,
     shadowComparisonState,
-    shadowComparisonResult,
     currentTime,
     stepCompletions,
     questionText,
@@ -41,7 +40,6 @@ export function StepShadow() {
     setShadowHintLevel,
     incrementShadowPlayCount,
     setShadowComparisonState,
-    setShadowComparisonResult,
     markStepComplete,
     setStep,
     setCurrentTime,
@@ -123,15 +121,14 @@ export function StepShadow() {
     }
   }, [shadowPlayCounts, sentences, stepCompletions.shadow, markStepComplete]);
 
-  // 문장 전환 시 비교 상태 리셋
+  // 문장 전환 시 녹음 상태 리셋
   useEffect(() => {
     setShadowComparisonState("idle");
-    setShadowComparisonResult(null);
     if (recordingBlobUrl) URL.revokeObjectURL(recordingBlobUrl);
     setRecordingBlob(null);
     setRecordingBlobUrl(null);
     setRecordingDuration(0);
-  }, [shadowIndex, setShadowComparisonState, setShadowComparisonResult]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [shadowIndex, setShadowComparisonState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 녹음 시작: 카라오케 즉시 → 0.5초 후 녹음 ON → 카라오케 끝 → 0.5초 후 녹음 OFF
   const RECORD_DELAY = 500; // 카라오케 대비 녹음 시작/종료 딜레이 (ms)
@@ -248,11 +245,10 @@ export function StepShadow() {
 
   const handleRetry = useCallback(() => {
     setShadowComparisonState("ready_to_record");
-    setShadowComparisonResult(null);
     if (recordingBlobUrl) URL.revokeObjectURL(recordingBlobUrl);
     setRecordingBlob(null);
     setRecordingBlobUrl(null);
-  }, [setShadowComparisonState, setShadowComparisonResult, recordingBlobUrl]);
+  }, [setShadowComparisonState, recordingBlobUrl]);
 
   const handleNextFromResult = useCallback(() => {
     if (shadowIndex < sentences.length - 1) {
@@ -365,7 +361,7 @@ export function StepShadow() {
         </div>
 
         {/* 플레이어 — 데스크탑 (결과 화면 때만 숨김, 녹음 중에는 카라오케 가이드로 표시) */}
-        {!isMobile && shadowComparisonState !== "showing_result" && shadowComparisonState !== "analyzing" && (
+        {!isMobile && shadowComparisonState !== "showing_result" && (
           <div className="border-t border-border px-4 py-3 sm:px-5">
             <ShadowingPlayer
               sentenceMode
@@ -476,13 +472,13 @@ export function StepShadow() {
           onClick={() => setStep("recite")}
           className="flex w-full items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50/50 px-4 py-3 text-sm font-medium text-green-700 transition-colors hover:bg-green-50"
         >
-          모든 문장 연습 완료! 구조로 말하기로 이동
+          모든 문장 연습 완료! 통째로 체화하기로 이동
           <ChevronRight size={16} />
         </button>
       )}
 
       {/* 모바일 고정 재생 바 (결과/분석 중 숨김, 녹음 중에는 카라오케 표시) */}
-      {isMobile && shadowComparisonState !== "showing_result" && shadowComparisonState !== "analyzing" && (
+      {isMobile && shadowComparisonState !== "showing_result" && (
         <div className="fixed bottom-[68px] left-0 right-0 z-20 border-t border-border bg-surface px-4 py-3">
           <ShadowingPlayer
             sentenceMode

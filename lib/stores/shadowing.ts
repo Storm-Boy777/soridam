@@ -1,16 +1,18 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { TimestampItem, ShadowingStep, ShadowingEvaluation, StructureSummaryItem, KeySentence } from "@/lib/types/scripts";
-import type { PronunciationScore } from "@/lib/audio/pronunciation-scorer";
 
-// Step 2 비교 분석 상태
-export type ShadowComparisonState = "idle" | "ready_to_record" | "recording" | "analyzing" | "showing_result";
+// Step 2 녹음 상태 (녹음 → 내 녹음 듣기 흐름)
+export type ShadowComparisonState = "idle" | "ready_to_record" | "recording" | "showing_result";
 
 // 표시 모드 (Step 1 듣기 + Step 2 따라읽기 공용)
 export type DisplayMode = "both" | "english" | "korean";
 
 // 하위 호환용 타입 alias
 export type TextHintLevel = DisplayMode;
+
+// Step 3 자기평가 (체화 정도 자기 인식)
+export type ReciteSelfRating = "easy" | "recalled" | "hard";
 
 export interface ShadowingState {
   // === 데이터 (패키지에서 로드) ===
@@ -43,7 +45,6 @@ export interface ShadowingState {
   shadowCompleted: number[];
   shadowPlayCounts: Record<number, number>; // 문장별 재생 횟수 (persist)
   shadowComparisonState: ShadowComparisonState;
-  shadowComparisonResult: PronunciationScore | null;
 
   // === Step 3: 혼자 말하기 ===
   reciteTimer: number;
@@ -51,6 +52,7 @@ export interface ShadowingState {
   reciteShowPeek: boolean;
   reciteHintLevel: 0 | 1 | 2; // 0=숨김, 1=구조만, 2=전체
   reciteRecordingDone: boolean; // 녹음 완료 플래그
+  reciteSelfRating: ReciteSelfRating | null; // 녹음 후 자기평가 (체화 체감)
 
   // === Step 4: 실전 ===
   speakTimer: number;
@@ -94,7 +96,6 @@ export interface ShadowingState {
   markShadowCompleted: (index: number) => void;
   incrementShadowPlayCount: (index: number) => void;
   setShadowComparisonState: (state: ShadowComparisonState) => void;
-  setShadowComparisonResult: (result: PronunciationScore | null) => void;
 
   // Step 3: 혼자 말하기
   setReciteTimer: (time: number) => void;
@@ -102,6 +103,7 @@ export interface ShadowingState {
   togglePeek: () => void;
   setReciteHintLevel: (level: 0 | 1 | 2) => void;
   setReciteRecordingDone: (done: boolean) => void;
+  setReciteSelfRating: (rating: ReciteSelfRating | null) => void;
 
   // Step 4: 실전
   setSpeakTimer: (time: number) => void;
@@ -120,7 +122,6 @@ const initialStepCompletions: Record<ShadowingStep, boolean> = {
   listen: false,
   shadow: false,
   recite: false,
-  speak: false,
 };
 
 const initialState = {
@@ -147,12 +148,12 @@ const initialState = {
   shadowCompleted: [],
   shadowPlayCounts: {} as Record<number, number>,
   shadowComparisonState: "idle" as ShadowComparisonState,
-  shadowComparisonResult: null as PronunciationScore | null,
   reciteTimer: 0,
   recitePeekCount: 0,
   reciteShowPeek: false,
   reciteHintLevel: 2 as 0 | 1 | 2,
   reciteRecordingDone: false,
+  reciteSelfRating: null as ReciteSelfRating | null,
   speakTimer: 0,
   speakResult: null,
   isRecording: false,
@@ -234,7 +235,6 @@ export const useShadowingStore = create<ShadowingState>()(
           },
         })),
       setShadowComparisonState: (comparisonState) => set({ shadowComparisonState: comparisonState }),
-      setShadowComparisonResult: (result) => set({ shadowComparisonResult: result }),
 
       // Step 3: 혼자 말하기
       setReciteTimer: (time) => set({ reciteTimer: time }),
@@ -244,6 +244,7 @@ export const useShadowingStore = create<ShadowingState>()(
         set((state) => ({ reciteShowPeek: !state.reciteShowPeek })),
       setReciteHintLevel: (level) => set({ reciteHintLevel: level }),
       setReciteRecordingDone: (done) => set({ reciteRecordingDone: done }),
+      setReciteSelfRating: (rating) => set({ reciteSelfRating: rating }),
 
       // Step 4: 실전
       setSpeakTimer: (time) => set({ speakTimer: time }),
@@ -274,6 +275,7 @@ export const useShadowingStore = create<ShadowingState>()(
         shadowPlayCounts: state.shadowPlayCounts,
         reciteHintLevel: state.reciteHintLevel,
         reciteRecordingDone: state.reciteRecordingDone,
+        reciteSelfRating: state.reciteSelfRating,
         // stepCompletions는 persist하지 않음 — 실시간 데이터로 재계산
       }),
     }

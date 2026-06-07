@@ -868,8 +868,8 @@ function ShadowingTab({
           </p>
           {bannerOpen && (
             <p className="mt-0.5 text-xs text-foreground-secondary sm:mt-1 sm:text-sm">
-              원어민 발화를 듣고 따라하며 스크립트를 입에 붙이는 4단계 점진 훈련입니다.
-              듣기 → 따라읽기 → 혼자말하기 → 실전 순서로 진행됩니다.
+              원어민 발화를 듣고 따라하며 스크립트를 입에 붙이는 3단계 훈련입니다.
+              감각 익히기 → 따라 말하기 → 통째로 체화 순서로 진행돼요. 실전 평가는 모의고사에서 받을 수 있어요.
             </p>
           )}
         </div>
@@ -883,7 +883,7 @@ function ShadowingTab({
       <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-4 sm:p-6">
         <h3 className="text-sm font-semibold text-foreground sm:text-base">쉐도잉 훈련</h3>
         <p className="mt-0.5 text-xs text-foreground-secondary sm:mt-1 sm:text-sm">
-          패키지가 완료된 스크립트를 선택하여 4단계 점진 훈련을 시작합니다.
+          패키지가 완료된 스크립트를 선택해 3단계 훈련을 시작합니다.
         </p>
 
         {isLoading ? (
@@ -1024,16 +1024,35 @@ function ShadowingTab({
                 className="flex items-center justify-between rounded-lg border border-border bg-surface-secondary/50 p-3"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                  {/* 주제 + 짧은 한글 + 질문 유형 */}
+                  <div className="flex flex-wrap items-center gap-1.5">
                     {(() => {
                       const Icon = TOPIC_ICONS[script.topic || ""] || DEFAULT_TOPIC_ICON;
                       return <Icon size={14} className="shrink-0 text-foreground-secondary" />;
                     })()}
-                    {script.topic || "주제 없음"}
-                  </p>
-                  {script.question_korean && (
+                    <span className="text-sm font-medium text-foreground">
+                      {script.topic || "주제 없음"}
+                    </span>
+                    {script.question_type && QUESTION_TYPE_LABELS[script.question_type] && (
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                          QUESTION_TYPE_COLORS[script.question_type] ||
+                          "bg-surface-secondary text-foreground-secondary"
+                        }`}
+                      >
+                        {QUESTION_TYPE_LABELS[script.question_type]}
+                      </span>
+                    )}
+                    {script.question_short && (
+                      <span className="text-xs text-foreground-secondary line-clamp-1">
+                        {script.question_short}
+                      </span>
+                    )}
+                  </div>
+                  {/* 영어 질문 */}
+                  {script.question_english && (
                     <p className="mt-0.5 text-xs text-foreground-secondary line-clamp-1">
-                      {script.question_korean}
+                      {script.question_english}
                     </p>
                   )}
                   <div className="mt-1 flex items-center gap-2 text-xs text-foreground-muted">
@@ -1072,13 +1091,32 @@ function ShadowingTab({
                 key={session.id}
                 className="flex items-center justify-between rounded-lg border border-border bg-surface-secondary/50 p-3"
               >
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    {session.topic || "주제 없음"}
-                  </p>
-                  {session.question_korean && (
+                <div className="min-w-0 flex-1">
+                  {/* 주제 + 짧은 한글 + 질문 유형 */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-sm font-medium text-foreground">
+                      {session.topic || "주제 없음"}
+                    </span>
+                    {session.question_type && QUESTION_TYPE_LABELS[session.question_type] && (
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                          QUESTION_TYPE_COLORS[session.question_type] ||
+                          "bg-surface-secondary text-foreground-secondary"
+                        }`}
+                      >
+                        {QUESTION_TYPE_LABELS[session.question_type]}
+                      </span>
+                    )}
+                    {session.question_short && (
+                      <span className="text-xs text-foreground-secondary line-clamp-1">
+                        {session.question_short}
+                      </span>
+                    )}
+                  </div>
+                  {/* 영어 질문 */}
+                  {session.question_text && (
                     <p className="mt-0.5 text-xs text-foreground-secondary line-clamp-1">
-                      {session.question_korean}
+                      {session.question_text}
                     </p>
                   )}
                   <div className="mt-1 flex items-center gap-2 text-xs text-foreground-muted">
