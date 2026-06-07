@@ -3,14 +3,16 @@
 // Phase 2: Whisper STT word-level → 타임스탬프 매칭 → JSON → Storage
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { logApiUsage, extractGeminiUsage, extractWhisperDuration } from "../_shared/api-usage-logger.ts";
+import { logApiUsage, extractWhisperDuration } from "../_shared/api-usage-logger.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")!;
+// 서비스 계정 JSON(base64) — Cloud TTS(Gemini-TTS GA)는 API 키가 아닌 OAuth로 호출
+const GOOGLE_TTS_SA_KEY_B64 = Deno.env.get("GOOGLE_TTS_SA_KEY_B64")!;
 
-const TTS_MODEL = "gemini-2.5-pro-preview-tts";
+// Cloud TTS (Gemini-TTS) GA 모델 — 서비스 계정 OAuth로 호출 (preview의 하루 50건 제한 없음)
+const TTS_MODEL = "gemini-2.5-pro-tts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -54,64 +56,89 @@ Deno.serve(async (req: Request) => {
   }
 });
 
-// ── PCM → WAV 변환 ──
+// (PCM→WAV 변환·리샘플 함수는 Cloud TTS GA 전환으로 제거 — LINEAR16 응답이 완성 WAV를 직접 반환)
 
-function pcmToWav(
-  pcmData: ArrayBuffer,
-  sampleRate: number = 44100
-): ArrayBuffer {
-  const pcmLength = pcmData.byteLength;
-  const wavBuffer = new ArrayBuffer(44 + pcmLength);
-  const view = new DataView(wavBuffer);
+// ── Google 서비스 계정 OAuth (Cloud TTS 호출용) ──
 
-  // RIFF 헤더
-  view.setUint32(0, 0x52494646, false); // "RIFF"
-  view.setUint32(4, 36 + pcmLength, true);
-  view.setUint32(8, 0x57415645, false); // "WAVE"
+let _gToken: { token: string; exp: number } | null = null;
 
-  // fmt 서브청크
-  view.setUint32(12, 0x666d7420, false); // "fmt "
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true); // PCM
-  view.setUint16(22, 1, true); // 모노
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * 2, true);
-  view.setUint16(32, 2, true);
-  view.setUint16(34, 16, true);
-
-  // data 서브청크
-  view.setUint32(36, 0x64617461, false); // "data"
-  view.setUint32(40, pcmLength, true);
-
-  const wavBytes = new Uint8Array(wavBuffer);
-  wavBytes.set(new Uint8Array(pcmData), 44);
-
-  return wavBuffer;
+function _b64urlStr(s: string): string {
+  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function _b64urlBytes(bytes: Uint8Array): string {
+  let s = "";
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function _pemToPkcs8(pem: string): ArrayBuffer {
+  const b64 = pem
+    .replace(/-----BEGIN PRIVATE KEY-----/, "")
+    .replace(/-----END PRIVATE KEY-----/, "")
+    .replace(/\s+/g, "");
+  const bin = atob(b64);
+  const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return buf.buffer;
 }
 
-// ── 리샘플링 (24kHz → 44.1kHz 선형 보간) ──
-
-function resample(
-  inputData: Int16Array,
-  inputSampleRate: number,
-  outputSampleRate: number
-): Int16Array {
-  const sampleRateRatio = inputSampleRate / outputSampleRate;
-  const newLength = Math.round(inputData.length / sampleRateRatio);
-  const result = new Int16Array(newLength);
-
-  for (let i = 0; i < newLength; i++) {
-    const index = i * sampleRateRatio;
-    const indexFloor = Math.floor(index);
-    const indexCeil = Math.min(indexFloor + 1, inputData.length - 1);
-    const fraction = index - indexFloor;
-    result[i] = Math.round(
-      inputData[indexFloor] * (1 - fraction) +
-        inputData[indexCeil] * fraction
-    );
+function getServiceAccount(): {
+  client_email: string;
+  private_key: string;
+  token_uri?: string;
+  project_id: string;
+} {
+  if (!GOOGLE_TTS_SA_KEY_B64) {
+    throw new Error("GOOGLE_TTS_SA_KEY_B64가 설정되지 않았습니다");
   }
+  return JSON.parse(atob(GOOGLE_TTS_SA_KEY_B64));
+}
 
-  return result;
+// 서비스 계정 키로 OAuth access token 발급 (RS256 JWT → 토큰 교환, 1시간 캐시)
+async function getGoogleAccessToken(): Promise<{ token: string; projectId: string }> {
+  const sa = getServiceAccount();
+  const now = Math.floor(Date.now() / 1000);
+  if (_gToken && _gToken.exp > now + 60) {
+    return { token: _gToken.token, projectId: sa.project_id };
+  }
+  const tokenUri = sa.token_uri || "https://oauth2.googleapis.com/token";
+  const header = _b64urlStr(JSON.stringify({ alg: "RS256", typ: "JWT" }));
+  const claims = _b64urlStr(
+    JSON.stringify({
+      iss: sa.client_email,
+      scope: "https://www.googleapis.com/auth/cloud-platform",
+      aud: tokenUri,
+      iat: now,
+      exp: now + 3600,
+    }),
+  );
+  const signingInput = `${header}.${claims}`;
+  const key = await crypto.subtle.importKey(
+    "pkcs8",
+    _pemToPkcs8(sa.private_key),
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    key,
+    new TextEncoder().encode(signingInput),
+  );
+  const jwt = `${signingInput}.${_b64urlBytes(new Uint8Array(sig))}`;
+  const resp = await fetch(tokenUri, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: jwt,
+    }),
+  });
+  const j = await resp.json();
+  if (!j.access_token) {
+    throw new Error(`Google 토큰 발급 실패: ${JSON.stringify(j).slice(0, 200)}`);
+  }
+  _gToken = { token: j.access_token, exp: now + (j.expires_in || 3600) };
+  return { token: j.access_token, projectId: sa.project_id };
 }
 
 // ── Phase 1: Gemini TTS 음성 생성 ──
@@ -187,43 +214,35 @@ async function handleGeneratePackage(supabase: any, body: any) {
   const packageId = pkg.id;
 
   try {
-    if (!GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY가 설정되지 않았습니다");
-    }
-
     await updatePackageProgress(supabase, packageId, 20);
 
-    // Gemini TTS API 호출
+    // Cloud TTS (Gemini-TTS GA) 호출 — 서비스 계정 OAuth
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 180000); // 180초
 
-    console.log(`🎵 Gemini TTS 호출: model=${TTS_MODEL}, voice=${tts_voice}`);
+    const { token: gToken, projectId: gProject } = await getGoogleAccessToken();
+    console.log(`🎵 Cloud TTS 호출: model=${TTS_MODEL}, voice=${tts_voice}, project=${gProject}`);
 
     const ttsResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${TTS_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+      "https://texttospeech.googleapis.com/v1/text:synthesize",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          Authorization: `Bearer ${gToken}`,
+          "x-goog-user-project": gProject,
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: `Read aloud as if you are talking to a friend:\n${script.english_text}`,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            response_modalities: ["AUDIO"],
-            speech_config: {
-              voice_config: {
-                prebuilt_voice_config: {
-                  voice_name: tts_voice,
-                },
-              },
-            },
+          input: {
+            prompt: "Read aloud in a friendly, natural way, as if talking to a friend.",
+            text: script.english_text,
           },
+          voice: {
+            languageCode: "en-US",
+            name: tts_voice,
+            model_name: TTS_MODEL,
+          },
+          audioConfig: { audioEncoding: "LINEAR16", sampleRateHertz: 24000 },
         }),
         signal: controller.signal,
       }
@@ -233,26 +252,41 @@ async function handleGeneratePackage(supabase: any, body: any) {
 
     if (!ttsResponse.ok) {
       const errText = await ttsResponse.text();
-      console.error("Gemini TTS 에러:", ttsResponse.status, errText);
+      console.error("Cloud TTS 에러:", ttsResponse.status, errText.slice(0, 500));
       await failPackage(supabase, packageId, `TTS 음성 생성 실패 (${ttsResponse.status})`);
       return jsonResponse({ error: "음성 생성에 실패했습니다" }, 500);
     }
 
     const ttsData = await ttsResponse.json();
 
-    // base64 PCM 추출
-    const base64Audio =
-      ttsData.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    // Cloud TTS LINEAR16 응답은 완성된 WAV(RIFF 헤더 포함)를 base64로 반환
+    const base64Audio = ttsData.audioContent;
 
     if (!base64Audio) {
-      console.error("Gemini 응답에 오디오 데이터 없음");
+      console.error("Cloud TTS 응답에 audioContent 없음");
       await failPackage(supabase, packageId, "TTS 응답에 오디오 없음");
       return jsonResponse({ error: "음성 데이터를 받지 못했습니다" }, 500);
     }
 
-    // Gemini TTS 사용량 로깅 (실패해도 메인 로직 계속)
+    await updatePackageProgress(supabase, packageId, 40);
+
+    // audioContent는 이미 완성된 WAV → base64 디코드만 (리샘플/헤더생성 불필요)
+    const binaryString = atob(base64Audio);
+    const wavBytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      wavBytes[i] = binaryString.charCodeAt(i);
+    }
+    const wavBuffer = wavBytes.buffer;
+
+    console.log("✅ WAV 수신 완료:", { wavSize: wavBuffer.byteLength });
+
+    // 사용량 로깅 (Cloud TTS는 토큰 미반환 → 오디오 길이로 산출: 오디오 초당 25토큰)
     try {
-      const geminiUsage = extractGeminiUsage(ttsData);
+      const SR = 24000; // 요청한 sampleRateHertz, 16-bit mono
+      const audioBytes = Math.max(wavBuffer.byteLength - 44, 0);
+      const durationSec = audioBytes / (SR * 2);
+      const tokensOut = Math.round(durationSec * 25); // 오디오 초당 25 토큰
+      const tokensIn = Math.ceil(script.english_text.length / 4); // 텍스트 토큰 대략 추정
       await logApiUsage(supabase, {
         user_id,
         session_type: "script",
@@ -261,32 +295,14 @@ async function handleGeneratePackage(supabase: any, body: any) {
         service: "gemini_tts",
         model: TTS_MODEL,
         ef_name: "scripts-package",
-        tokens_in: geminiUsage.prompt_tokens,
-        tokens_out: geminiUsage.candidates_tokens,
+        tokens_in: tokensIn,
+        tokens_out: tokensOut,
         text_length: script.english_text.length,
+        audio_duration_sec: Math.round(durationSec),
       });
     } catch (logErr) {
-      console.error("[scripts-package] Gemini TTS 사용량 로깅 실패:", logErr);
+      console.error("[scripts-package] Cloud TTS 사용량 로깅 실패:", logErr);
     }
-
-    await updatePackageProgress(supabase, packageId, 40);
-
-    // base64 → PCM → 리샘플(24kHz→44.1kHz) → WAV
-    const binaryString = atob(base64Audio);
-    const pcmBytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      pcmBytes[i] = binaryString.charCodeAt(i);
-    }
-
-    const pcmData = new Int16Array(pcmBytes.buffer);
-    const resampled = resample(pcmData, 24000, 44100);
-    const wavBuffer = pcmToWav(resampled.buffer as ArrayBuffer, 44100);
-
-    console.log("✅ WAV 변환 완료:", {
-      pcmSize: pcmBytes.length,
-      resampledSize: resampled.length * 2,
-      wavSize: wavBuffer.byteLength,
-    });
 
     // Storage 업로드
     const audioPath = `audio/${packageId}.wav`;

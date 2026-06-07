@@ -25,11 +25,16 @@ export const API_PRICING = {
       per_minute: 0.006,         // $0.006 / minute
     },
   },
-  // Google Gemini TTS — 토큰당 비용
+  // Google Gemini TTS — 토큰당 비용 (오디오 토큰 = 오디오 초당 25개)
   gemini_tts: {
     "gemini-2.5-pro-preview-tts": {
       input: 1.0 / 1_000_000,   // $1.00 / 1M input tokens (text)
       output: 20.0 / 1_000_000, // $20.00 / 1M output tokens (audio)
+    },
+    // GA (Cloud TTS) — 공식 단가가 preview와 동일 (입력 $1/1M, 출력 $20/1M)
+    "gemini-2.5-pro-tts": {
+      input: 1.0 / 1_000_000,
+      output: 20.0 / 1_000_000,
     },
   },
   // Azure Speech Pronunciation Assessment — 초당 비용
@@ -63,7 +68,8 @@ export function calculateCost(params: {
       return minutes * API_PRICING.openai_whisper["whisper-1"].per_minute;
     }
     case "gemini_tts": {
-      const pricing = API_PRICING.gemini_tts["gemini-2.5-pro-preview-tts"];
+      const pricing = API_PRICING.gemini_tts[model as keyof typeof API_PRICING.gemini_tts]
+        ?? API_PRICING.gemini_tts["gemini-2.5-pro-preview-tts"];
       return tokens_in * pricing.input + tokens_out * pricing.output;
     }
     case "azure_speech": {
