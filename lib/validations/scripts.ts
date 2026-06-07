@@ -42,6 +42,23 @@ export const correctScriptSchema = z.object({
 
 export type CorrectScriptInput = z.infer<typeof correctScriptSchema>;
 
+// ── 외부 스크립트 입력 (기존 스크립트 활용 — 기본 교열 + 구조화) ──
+
+export const externalScriptSchema = z.object({
+  question_id: z.string().min(1, "질문을 선택해주세요"),
+  topic: z.string().min(1, "주제를 선택해주세요"),
+  category: z.string().min(1, "카테고리가 필요합니다"),
+  question_english: z.string().min(1, "영어 질문이 필요합니다"),
+  question_korean: z.string().min(1, "한국어 질문이 필요합니다"),
+  question_type: z.string().min(1, "답변 유형이 필요합니다"),
+  external_text: z
+    .string()
+    .min(20, "영어 스크립트를 20자 이상 입력해주세요")
+    .max(5000, "스크립트는 5000자 이내로 입력해주세요"),
+});
+
+export type ExternalScriptInput = z.infer<typeof externalScriptSchema>;
+
 // ── 스크립트 수정 요청 ──
 
 export const refineScriptSchema = z.object({

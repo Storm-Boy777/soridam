@@ -6,6 +6,7 @@ import { T } from "@/lib/constants/tables";
 import {
   generateScriptSchema,
   correctScriptSchema,
+  externalScriptSchema,
   refineScriptSchema,
   confirmScriptSchema,
   createPackageSchema,
@@ -251,6 +252,100 @@ export async function createCorrectScript(
       }
     ).catch((err) => {
       console.error("scripts/correct EF 호출 실패:", err?.message || err);
+    });
+
+    revalidatePath("/scripts");
+    return { data: { id: data.id } };
+  } catch (err) {
+    return { error: (err as Error).message };
+  }
+}
+
+// ============================================================
+// 외부 스크립트 (기존 스크립트 활용 — 기본 교열 + 구조화)
+// ============================================================
+
+export async function createExternalScript(
+  formData: Record<string, unknown>
+): Promise<ActionResult<{ id: string }>> {
+  const parsed = externalScriptSchema.safeParse(formData);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  try {
+    const { supabase, userId } = await requireUser();
+
+    // 크레딧 잔액 확인 (실비용은 EF에서 API 호출 시 자동 차감)
+    const { data: balance } = await supabase.rpc("polar_get_balance", { p_user_id: userId });
+    if (!balance || balance <= 0) {
+      return { error: "크레딧이 부족합니다. 스토어에서 충전해주세요." };
+    }
+
+    // 기존 스크립트 확인 (UPSERT용)
+    const { data: existing } = await supabase
+      .from(T.scripts)
+      .select("id")
+      .eq("user_id", userId)
+      .eq("question_id", parsed.data.question_id)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from(T.script_packages)
+        .delete()
+        .eq("script_id", existing.id);
+    }
+
+    // 스크립트 레코드 UPSERT (draft, 붙여넣은 영어 원문은 user_original_answer에 보존)
+    // target_grade는 외부 스크립트엔 의미 없음(생성이 아님) → null. EF가 Pass2 분석 시 기본 등급 적용.
+    const { data, error } = await supabase
+      .from(T.scripts)
+      .upsert(
+        {
+          user_id: userId,
+          question_id: parsed.data.question_id,
+          source: "external",
+          category: parsed.data.category,
+          topic: parsed.data.topic,
+          question_english: parsed.data.question_english,
+          question_korean: parsed.data.question_korean,
+          question_type: parsed.data.question_type,
+          target_grade: null,
+          user_original_answer: parsed.data.external_text,
+          status: "draft",
+          refine_count: 0,
+          // AI 응답 필드는 Edge Function이 채움
+          english_text: "",
+          korean_translation: null,
+          paragraphs: null,
+          key_expressions: [],
+          highlighted_script: null,
+          word_count: null,
+          generation_time: null,
+        },
+        { onConflict: "user_id,question_id" }
+      )
+      .select("id")
+      .single();
+
+    if (error || !data) {
+      return { error: "스크립트 등록에 실패했습니다" };
+    }
+
+    // EF 호출: 교열 + 구조화 실행 (fire-and-forget — 클라이언트는 폴링으로 결과 확인)
+    fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/scripts/convert`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+        body: JSON.stringify({ script_id: data.id }),
+      }
+    ).catch((err) => {
+      console.error("scripts/convert EF 호출 실패:", err?.message || err);
     });
 
     revalidatePath("/scripts");

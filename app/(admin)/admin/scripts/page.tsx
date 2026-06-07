@@ -178,12 +178,12 @@ function ScriptDetailView({
   const paragraphs = (script.paragraphs as { paragraphs?: ScriptParagraph[] } | null)?.paragraphs;
   const output = script.paragraphs as ScriptDetail["paragraphs"] & {
     structure_summary?: unknown[];
-    key_sentences?: unknown[];
     key_expressions?: unknown[];
     discourse_markers?: unknown[];
     reusable_patterns?: unknown[];
     similar_questions?: unknown[];
     expansion_ideas?: string[];
+    compressed_30s?: { english: string; korean: string };
     connectors?: string[];
     fillers?: string[];
     full_text?: { english: string };
@@ -239,12 +239,12 @@ function ScriptDetailView({
           fullTextEnglish={output.full_text?.english}
           paragraphs={paragraphs}
           structureSummary={output.structure_summary as never[]}
-          keySentences={output.key_sentences as never[]}
           keyExpressions={output.key_expressions as never[]}
           discourseMarkers={output.discourse_markers as never[]}
           reusablePatterns={output.reusable_patterns as never[]}
           similarQuestions={output.similar_questions as never[]}
           expansionIdeas={output.expansion_ideas}
+          compressed30s={output.compressed_30s}
           targetLevel={script.target_grade}
         />
       )}

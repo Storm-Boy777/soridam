@@ -2,8 +2,8 @@
 
 // ── ENUM 리터럴 타입 ──
 
-// 스크립트 소스 (생성/교정)
-export const SCRIPT_SOURCES = ['generate', 'correct'] as const;
+// 스크립트 소스 (생성/교정/외부)
+export const SCRIPT_SOURCES = ['generate', 'correct', 'external'] as const;
 export type ScriptSource = (typeof SCRIPT_SOURCES)[number];
 
 // 스크립트 상태
@@ -35,6 +35,7 @@ export type ShadowingStep = (typeof SHADOWING_STEPS)[number];
 export const SCRIPT_SOURCE_LABELS: Record<ScriptSource, string> = {
   generate: '스크립트 생성',
   correct: '답변 교정',
+  external: '외부 스크립트',
 };
 
 export const SCRIPT_STATUS_LABELS: Record<ScriptStatus, string> = {
@@ -97,11 +98,18 @@ export const SHADOWING_STEP_DESCRIPTIONS: Record<ShadowingStep, string> = {
 
 // ── Pass 2 학습 분석 콘텐츠 타입 ──
 
-// 만능 패턴 메타데이터
+// 만능 패턴 메타데이터 (재사용 슬롯)
 export interface ReusablePattern {
   template: string;        // "What I love most about ___ is that ___."
   description_ko: string;  // "___에서 가장 좋은 점은 ___라는 거예요"
-  example: string;         // 다른 주제 활용 예시
+  examples?: string[];     // 서로 다른 주제 활용 예시 2~3개
+  example?: string;        // (구버전 호환) 단일 활용 예시
+}
+
+// 30초 압축 버전 (실전 탈출/요약용)
+export interface Compressed30s {
+  english: string;
+  korean: string;
 }
 
 // 뼈대 구조
@@ -137,6 +145,13 @@ export interface SimilarQuestion {
   reuse_hint: string;   // 한국어 재사용 힌트
 }
 
+// 교정 항목 (외부 스크립트 기본 교열 내역 — 오타·관사·문법 등 기계적 오류만)
+export interface ScriptCorrection {
+  original: string;   // 원문 (수정 전)
+  corrected: string;  // 수정 후
+  reason: string;     // 한국어 설명 (왜 고쳤는지)
+}
+
 // 문장
 export interface ScriptSentence {
   index: number;        // 전체 스크립트 기준 연속 번호
@@ -169,14 +184,16 @@ export interface ScriptOutput {
     korean: string;
   };
   word_count: number;
-  // Pass 2 학습 분석 (7가지 콘텐츠)
-  structure_summary?: StructureSummaryItem[];  // 뼈대 구조
-  key_sentences?: KeySentence[];               // 핵심 문장
-  key_expressions?: KeyExpression[];           // 핵심 표현 (보강)
+  // Pass 2 학습 분석
+  structure_summary?: StructureSummaryItem[];  // 답변 뼈대 (내용형 슬롯)
+  key_expressions?: KeyExpression[];           // 꼭 가져갈 표현 (범용)
   discourse_markers?: DiscourseMarker[];       // 담화 장치 (연결어+필러 통합)
-  reusable_patterns?: ReusablePattern[];       // 만능 패턴
-  similar_questions?: SimilarQuestion[];        // 유사 질문
+  reusable_patterns?: ReusablePattern[];       // 재사용 슬롯 (★ 주력)
+  similar_questions?: SimilarQuestion[];        // 유사 질문 (확장 가능한 문제)
   expansion_ideas?: string[];                  // 확장 아이디어 (IM3+)
+  compressed_30s?: Compressed30s;              // 30초 압축 버전
+  corrections?: ScriptCorrection[];            // 기본 교열 내역 (외부 스크립트 전용)
+  key_sentences?: KeySentence[];               // (구버전 호환) 핵심 문장 — 신규 생성 X
 }
 
 // 타임스탬프 데이터 (패키지)
@@ -335,6 +352,16 @@ export interface CorrectScriptInput {
   question_type: string;
   target_grade: TargetLevel;
   user_original_answer: string;  // 학습자 영어 답변 (필수)
+}
+
+export interface ExternalScriptInput {
+  question_id: string;
+  topic: string;
+  category: string;
+  question_english: string;
+  question_korean: string;
+  question_type: string;
+  external_text: string;  // 사용자가 붙여넣은 완성된 영어 스크립트 (필수)
 }
 
 export interface RefineScriptInput {

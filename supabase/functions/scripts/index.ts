@@ -119,6 +119,7 @@ const analysisListSchema = {
           additionalProperties: false,
         },
       },
+      // 쉐도잉 listen 단계 하이라이트용 (학습노트에는 미노출)
       key_sentences: {
         type: "array",
         items: {
@@ -165,9 +166,13 @@ const analysisListSchema = {
           properties: {
             template: { type: "string" },
             description_ko: { type: "string" },
-            example: { type: "string" },
+            // 한 슬롯을 서로 다른 OPIc 주제에 적용한 활용 예 2~3개
+            examples: {
+              type: "array",
+              items: { type: "string" },
+            },
           },
-          required: ["template", "description_ko", "example"],
+          required: ["template", "description_ko", "examples"],
           additionalProperties: false,
         },
       },
@@ -187,12 +192,118 @@ const analysisListSchema = {
         type: "array",
         items: { type: "string" },
       },
+      // 30초 압축 버전 (실전에서 답변이 꼬였을 때 탈출용 — 핵심 비트만)
+      compressed_30s: {
+        type: "object",
+        properties: {
+          english: { type: "string" },
+          korean: { type: "string" },
+        },
+        required: ["english", "korean"],
+        additionalProperties: false,
+      },
     },
     required: [
       "structure_summary", "key_sentences", "key_expressions",
       "discourse_markers", "reusable_patterns", "similar_questions",
-      "expansion_ideas",
+      "expansion_ideas", "compressed_30s",
     ],
+    additionalProperties: false,
+  },
+};
+
+// ── 외부 스크립트 변환 JSON Schema (교열 + 구조화 + 교정 내역) ──
+// 생성 스키마와 동일하되 ① 문단/슬롯 최소치 완화(짧은 답변 허용) ② corrections 배열 추가
+
+const scriptConvertSchema = {
+  name: "script_convert_output",
+  strict: true,
+  schema: {
+    type: "object",
+    properties: {
+      paragraphs: {
+        type: "array",
+        // 외부 스크립트는 짧을 수 있음 → 최소 1단락
+        minItems: 1,
+        items: {
+          type: "object",
+          properties: {
+            type: {
+              type: "string",
+              enum: ["introduction", "body", "conclusion"],
+            },
+            label: { type: "string" },
+            slots: {
+              type: "array",
+              minItems: 1,
+              items: {
+                type: "object",
+                properties: {
+                  slot_index: { type: "integer" },
+                  slot_function: { type: "string" },
+                  text: { type: "string" },
+                  translation_ko: { type: "string" },
+                  sentences: {
+                    type: "array",
+                    minItems: 1,
+                    items: {
+                      type: "object",
+                      properties: {
+                        index: { type: "integer", description: "전체 스크립트 기준 1부터 시작하는 연속 번호." },
+                        english: { type: "string" },
+                        korean: { type: "string" },
+                      },
+                      required: ["index", "english", "korean"],
+                      additionalProperties: false,
+                    },
+                  },
+                  keywords: {
+                    type: "array",
+                    items: { type: "string" },
+                  },
+                },
+                required: [
+                  "slot_index",
+                  "slot_function",
+                  "text",
+                  "translation_ko",
+                  "sentences",
+                  "keywords",
+                ],
+                additionalProperties: false,
+              },
+            },
+          },
+          required: ["type", "label", "slots"],
+          additionalProperties: false,
+        },
+      },
+      full_text: {
+        type: "object",
+        properties: {
+          english: { type: "string" },
+          korean: { type: "string" },
+        },
+        required: ["english", "korean"],
+        additionalProperties: false,
+      },
+      word_count: { type: "integer" },
+      // 교정 내역 (오타·관사·문법 등 기계적 오류만). 고친 게 없으면 빈 배열.
+      corrections: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            original: { type: "string" },
+            corrected: { type: "string" },
+            reason: { type: "string" },
+          },
+          required: ["original", "corrected", "reason"],
+          additionalProperties: false,
+        },
+      },
+    },
+    required: ["paragraphs", "full_text", "word_count", "corrections"],
     additionalProperties: false,
   },
 };
@@ -218,6 +329,8 @@ Deno.serve(async (req: Request) => {
         return await handleGenerate(supabase, body);
       case "correct":
         return await handleCorrect(supabase, body);
+      case "convert":
+        return await handleConvert(supabase, body);
       case "refine":
         return await handleRefine(supabase, body);
       case "evaluate":
@@ -320,6 +433,7 @@ async function handleGenerate(supabase: any, body: any) {
   pass1Result.reusable_patterns = analysisLists.reusable_patterns;
   pass1Result.similar_questions = analysisLists.similar_questions;
   pass1Result.expansion_ideas = analysisLists.expansion_ideas;
+  pass1Result.compressed_30s = analysisLists.compressed_30s;
 
   // DB 업데이트
   const generationTime = Math.round((Date.now() - startTime) / 1000);
@@ -437,6 +551,7 @@ async function handleCorrect(supabase: any, body: any) {
   pass1Result.reusable_patterns = analysisLists.reusable_patterns;
   pass1Result.similar_questions = analysisLists.similar_questions;
   pass1Result.expansion_ideas = analysisLists.expansion_ideas;
+  pass1Result.compressed_30s = analysisLists.compressed_30s;
 
   const generationTime = Math.round((Date.now() - startTime) / 1000);
 
@@ -465,6 +580,179 @@ async function handleCorrect(supabase: any, body: any) {
     word_count: pass1Result.word_count,
     generation_time: generationTime,
   });
+}
+
+// ── 외부 스크립트 변환 (convert) — 기본 교열 + 구조화 + 번역 + 교정 내역 ──
+
+async function handleConvert(supabase: any, body: any) {
+  const { script_id } = body;
+  if (!script_id) return jsonResponse({ error: "script_id 필수" }, 400);
+
+  const startTime = Date.now();
+
+  const { data: script, error: scriptError } = await supabase
+    .from("scripts")
+    .select("*")
+    .eq("id", script_id)
+    .single();
+
+  if (scriptError || !script) {
+    return jsonResponse({ error: "스크립트를 찾을 수 없습니다" }, 404);
+  }
+
+  // 붙여넣은 영어 원문은 user_original_answer에 저장돼 있음
+  const externalText = (script.user_original_answer || "").trim();
+  if (!externalText) {
+    return jsonResponse({ error: "변환할 스크립트가 없습니다" }, 400);
+  }
+
+  // Pass 1: 교열 + 구조화 (내용 유지가 핵심 → temperature 낮게)
+  const { system, user } = assembleConvertPrompt(
+    script.question_english,
+    script.question_korean,
+    externalText,
+    script.question_type,
+  );
+
+  const pass1Start = Date.now();
+  const { content: pass1Result, usage: pass1Usage } = await callGPT(
+    system,
+    user,
+    scriptConvertSchema,
+    0.2,
+    4000,
+  );
+  const pass1Ms = Date.now() - pass1Start;
+
+  // Pass 1 사용량 로깅
+  await logApiUsage(supabase, {
+    user_id: script.user_id,
+    session_type: "script",
+    session_id: script_id,
+    feature: "외부 스크립트 교열",
+    service: "openai_chat",
+    model: "gpt-4.1",
+    ef_name: "scripts",
+    tokens_in: pass1Usage.prompt_tokens,
+    tokens_out: pass1Usage.completion_tokens,
+    processing_time_ms: pass1Ms,
+  });
+
+  // Pass 2: 학습 리스트 추출 (교열된 영어 기준). 외부 스크립트는 목표 등급이 없으므로 IH 기준 분석.
+  const analysisLevel = script.target_grade || "IH";
+  const { analysisLists, usage: pass2Usage, processingTimeMs: pass2Ms } = await runPass2Analysis(
+    supabase,
+    pass1Result.full_text.english,
+    analysisLevel,
+    script.question_type,
+    script.question_english,
+  );
+
+  // Pass 2 사용량 로깅
+  if (pass2Usage) {
+    await logApiUsage(supabase, {
+      user_id: script.user_id,
+      session_type: "script",
+      session_id: script_id,
+      feature: "외부 스크립트 학습분석",
+      service: "openai_chat",
+      model: "gpt-4.1",
+      ef_name: "scripts",
+      tokens_in: pass2Usage.prompt_tokens,
+      tokens_out: pass2Usage.completion_tokens,
+      processing_time_ms: pass2Ms,
+    });
+  }
+
+  // 분석 결과를 pass1Result에 병합 (corrections는 pass1Result에 이미 포함)
+  pass1Result.structure_summary = analysisLists.structure_summary;
+  pass1Result.key_sentences = analysisLists.key_sentences;
+  pass1Result.key_expressions = analysisLists.key_expressions;
+  pass1Result.discourse_markers = analysisLists.discourse_markers;
+  pass1Result.reusable_patterns = analysisLists.reusable_patterns;
+  pass1Result.similar_questions = analysisLists.similar_questions;
+  pass1Result.expansion_ideas = analysisLists.expansion_ideas;
+  pass1Result.compressed_30s = analysisLists.compressed_30s;
+
+  const generationTime = Math.round((Date.now() - startTime) / 1000);
+
+  const { error: updateError } = await supabase
+    .from("scripts")
+    .update({
+      english_text: pass1Result.full_text.english,
+      korean_translation: pass1Result.full_text.korean,
+      paragraphs: pass1Result,
+      word_count: pass1Result.word_count,
+      total_slots: countSlots(pass1Result),
+      key_expressions: analysisLists.key_expressions.map((e: { en: string }) => e.en),
+      generation_time: generationTime,
+      ai_model: "gpt-4.1",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", script_id);
+
+  if (updateError) {
+    console.error("DB 업데이트 실패:", updateError);
+    return jsonResponse({ error: "스크립트 저장 실패" }, 500);
+  }
+
+  return jsonResponse({
+    success: true,
+    script_id,
+    word_count: pass1Result.word_count,
+    correction_count: (pass1Result.corrections || []).length,
+    generation_time: generationTime,
+  });
+}
+
+// 외부 스크립트 변환 프롬프트 (교열 전용 — script_specs 불필요, 하드코딩)
+function assembleConvertPrompt(
+  questionEnglish: string,
+  questionKorean: string,
+  externalText: string,
+  questionType: string,
+): { system: string; user: string } {
+  const system = `You are an English proofreader and formatter for OPIc speaking practice scripts.
+
+The learner has pasted their OWN completed English answer (from a textbook, an academy, or their own memorization). Your job is NOT to rewrite or improve it.
+
+## WHAT YOU MUST DO
+1. PROOFREAD — fix ONLY mechanical errors:
+   - spelling / typos
+   - articles (a / an / the)
+   - subject-verb agreement and singular/plural agreement
+   - clearly wrong verb tense (obvious grammatical errors only)
+   - punctuation and capitalization
+2. PRESERVE EVERYTHING ELSE — do NOT change:
+   - vocabulary level or word choice (do NOT make it "more advanced")
+   - expressions, idioms, or the phrasing the learner chose
+   - sentence structure or sentence order
+   - content, meaning, ideas, or details
+   - the learner's voice and proficiency level
+   If a sentence is grammatically correct but simple, LEAVE IT EXACTLY AS IS.
+3. STRUCTURE the corrected script into paragraphs (introduction / body / conclusion when the script clearly has them; a short answer may be a single "body" paragraph) > slots > sentences. Give each sentence a continuous index starting at 1 across the whole script.
+4. TRANSLATE each part into natural (not literal) Korean.
+5. REPORT every change in "corrections": the original phrase, the corrected phrase, and a short reason IN KOREAN. List ONLY actual changes. If you changed nothing, return an empty corrections array.
+
+## HARD RULES
+- The "english" output MUST equal the learner's script with ONLY the mechanical fixes above applied — never add, remove, paraphrase, or reorder content.
+- When unsure whether something is truly an error, DO NOT change it.
+- Return JSON only.`;
+
+  const user = `## QUESTION
+${questionEnglish}
+(Korean) ${questionKorean}
+Answer type: ${questionType}
+
+## LEARNER'S COMPLETED ENGLISH SCRIPT
+(proofread mechanical errors only — preserve content, expressions, level, and voice)
+
+${externalText}
+
+## TASK
+Proofread mechanical errors only, structure into paragraphs > slots > sentences, translate each part to natural Korean, and list every correction with a Korean reason. Return JSON only.`;
+
+  return { system, user };
 }
 
 // ── 수정 (refine) ──
@@ -575,6 +863,7 @@ ${user_prompt || "전체적으로 더 자연스럽게 개선해주세요."}
   pass1Result.reusable_patterns = analysisLists.reusable_patterns;
   pass1Result.similar_questions = analysisLists.similar_questions;
   pass1Result.expansion_ideas = analysisLists.expansion_ideas;
+  pass1Result.compressed_30s = analysisLists.compressed_30s;
 
   const generationTime = Math.round((Date.now() - startTime) / 1000);
 
@@ -698,9 +987,10 @@ interface AnalysisLists {
   key_sentences: { english: string; reason: string }[];
   key_expressions: { en: string; ko: string; tip: string }[];
   discourse_markers: { en: string; ko: string; function: string; usage: string }[];
-  reusable_patterns: { template: string; description_ko: string; example: string }[];
+  reusable_patterns: { template: string; description_ko: string; examples: string[] }[];
   similar_questions: { question: string; reuse_hint: string }[];
   expansion_ideas: string[];
+  compressed_30s: { english: string; korean: string };
 }
 
 const EMPTY_LISTS: AnalysisLists = {
@@ -711,6 +1001,7 @@ const EMPTY_LISTS: AnalysisLists = {
   reusable_patterns: [],
   similar_questions: [],
   expansion_ideas: [],
+  compressed_30s: { english: "", korean: "" },
 };
 
 async function runPass2Analysis(
@@ -745,7 +1036,7 @@ Question: ${questionEnglish}
 Script:
 ${fullEnglishText}
 
-Extract 7 categories of learning content from this script following the density guidelines for ${targetLevel} level.`;
+Extract the learning content from this script following the density guidelines for ${targetLevel} level. Prioritize reusable slots/patterns and the 30-second compressed version.`;
 
     const pass2Start = Date.now();
     const { content: result, usage } = await callGPT(
@@ -766,6 +1057,7 @@ Extract 7 categories of learning content from this script following the density 
         reusable_patterns: result.reusable_patterns || [],
         similar_questions: result.similar_questions || [],
         expansion_ideas: result.expansion_ideas || [],
+        compressed_30s: result.compressed_30s || { english: "", korean: "" },
       },
       usage,
       processingTimeMs: pass2Ms,

@@ -6,7 +6,6 @@
 
 import { useState, useMemo } from "react";
 import {
-  Star,
   ListOrdered,
   Bookmark,
   MessageCircle,
@@ -15,15 +14,19 @@ import {
   Lightbulb,
   MousePointerClick,
   ChevronRight,
+  Wand2,
+  ArrowRight,
+  Zap,
 } from "lucide-react";
 import type {
   ScriptParagraph,
   ReusablePattern,
   StructureSummaryItem,
-  KeySentence,
   KeyExpression,
   DiscourseMarker,
   SimilarQuestion,
+  ScriptCorrection,
+  Compressed30s,
   TargetLevel,
 } from "@/lib/types/scripts";
 
@@ -35,10 +38,9 @@ const PARAGRAPH_LABELS: Record<string, { en: string; ko: string }> = {
 
 // ── 하이라이트 카테고리 설정 ──
 
-type HighlightCategory = "key_sentence" | "key_expression" | "discourse_marker";
+type HighlightCategory = "key_expression" | "discourse_marker";
 
 const CATEGORY_META: Record<HighlightCategory, { mark: string }> = {
-  key_sentence: { mark: "bg-amber-100 text-amber-900" },
   key_expression: { mark: "bg-primary-100 text-primary-900" },
   discourse_marker: { mark: "bg-emerald-100 text-emerald-900" },
 };
@@ -265,43 +267,94 @@ export function ScriptRenderer({
   );
 }
 
+// ── 교정 내역 (외부 스크립트 기본 교열 결과) ──
+
+export function ScriptCorrectionsView({
+  corrections,
+}: {
+  corrections: ScriptCorrection[];
+}) {
+  if (!corrections || corrections.length === 0) {
+    return (
+      <div className="rounded-[var(--radius-lg)] border border-emerald-100 bg-emerald-50/50 px-4 py-3 text-[13px] leading-relaxed text-foreground-secondary">
+        <span className="font-semibold text-foreground">교정할 부분이 없었어요.</span>{" "}
+        오타·문법 오류 없이 깔끔한 스크립트예요. 👍
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-amber-200 bg-amber-50/40">
+      <div className="flex items-center gap-2 border-b border-amber-100 px-4 py-2.5">
+        <Wand2 size={15} className="text-amber-500" />
+        <span className="text-[13px] font-bold text-foreground">교정 내역</span>
+        <span className="text-[11px] text-foreground-muted">
+          ({corrections.length})
+        </span>
+        <span className="ml-1 text-[11px] text-foreground-muted">
+          — 오타·문법 등 기본 오류만 손봤어요
+        </span>
+      </div>
+      <div className="divide-y divide-amber-100">
+        {corrections.map((c, i) => (
+          <div key={i} className="px-4 py-3">
+            <div className="flex flex-wrap items-center gap-2 text-[13px]">
+              <span className="rounded bg-red-50 px-1.5 py-0.5 text-red-600 line-through decoration-red-300">
+                {c.original}
+              </span>
+              <ArrowRight size={13} className="shrink-0 text-foreground-muted" />
+              <span className="rounded bg-emerald-50 px-1.5 py-0.5 font-medium text-emerald-700">
+                {c.corrected}
+              </span>
+            </div>
+            {c.reason && (
+              <p className="mt-1 text-[12px] leading-relaxed text-foreground-secondary">
+                {c.reason}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── 핵심 정리 뷰 — 7가지 학습 콘텐츠 + 인터랙티브 하이라이트 ──
 
 export function ScriptSummaryView({
   fullTextEnglish,
   paragraphs,
   structureSummary,
-  keySentences,
   keyExpressions,
   discourseMarkers,
   reusablePatterns,
   similarQuestions,
   expansionIdeas,
+  compressed30s,
   targetLevel,
 }: {
   fullTextEnglish?: string;
   paragraphs?: ScriptParagraph[];
   structureSummary?: StructureSummaryItem[];
-  keySentences?: KeySentence[];
   keyExpressions?: KeyExpression[];
   discourseMarkers?: DiscourseMarker[];
   reusablePatterns?: ReusablePattern[];
   similarQuestions?: SimilarQuestion[];
   expansionIdeas?: string[];
+  compressed30s?: Compressed30s | null;
   targetLevel?: TargetLevel | null;
 }) {
   const [activeItems, setActiveItems] = useState<Set<string>>(new Set());
 
   const expressions = keyExpressions ?? [];
 
-  // 하이라이트 매핑: 텍스트 → 카테고리
+  // 하이라이트 매핑: 텍스트 → 카테고리 (범용 표현 + 담화 장치)
   const itemCategoryMap = useMemo(() => {
     const map = new Map<string, HighlightCategory>();
-    keySentences?.forEach((ks) => map.set(ks.english, "key_sentence"));
     expressions.forEach((e) => map.set(e.en, "key_expression"));
     discourseMarkers?.forEach((dm) => map.set(dm.en, "discourse_marker"));
     return map;
-  }, [keySentences, expressions, discourseMarkers]);
+  }, [expressions, discourseMarkers]);
 
   const toggleItem = (text: string) => {
     setActiveItems((prev) => {
@@ -319,14 +372,15 @@ export function ScriptSummaryView({
     targetLevel &&
     ["IM3", "IH", "AL"].includes(targetLevel)
   );
+  const hasCompressed = !!(compressed30s && compressed30s.english);
   const hasContent =
-    (keySentences?.length ?? 0) > 0 ||
     (structureSummary?.length ?? 0) > 0 ||
+    patterns.length > 0 ||
     expressions.length > 0 ||
     (discourseMarkers?.length ?? 0) > 0 ||
-    patterns.length > 0 ||
     (similarQuestions?.length ?? 0) > 0 ||
-    showExpansion;
+    showExpansion ||
+    hasCompressed;
 
   if (!hasContent) return null;
 
@@ -343,45 +397,13 @@ export function ScriptSummaryView({
         </div>
       )}
 
-      {/* ── 1. 핵심 문장 ── */}
-      {keySentences && keySentences.length > 0 && (
-        <SummarySection
-          icon={Star}
-          iconColor="text-amber-500"
-          title="핵심 문장"
-          count={keySentences.length}
-          subtitle="이것만 외워도 절반은 성공"
-        >
-          <div className="space-y-2">
-            {keySentences.map((ks, i) => (
-              <button
-                key={i}
-                onClick={() => toggleItem(ks.english)}
-                className={`w-full rounded-[var(--radius-lg)] border px-4 py-3 text-left transition-all ${
-                  activeItems.has(ks.english)
-                    ? "border-amber-400 bg-amber-50 shadow-sm"
-                    : "border-border bg-surface hover:border-amber-200"
-                }`}
-              >
-                <p className="text-[14px] font-medium leading-relaxed text-foreground">
-                  {ks.english}
-                </p>
-                <p className="mt-1 text-[12px] leading-relaxed text-foreground-secondary">
-                  {ks.reason}
-                </p>
-              </button>
-            ))}
-          </div>
-        </SummarySection>
-      )}
-
-      {/* ── 2. 뼈대 구조 ── */}
+      {/* ── 1. 답변 뼈대 (내용형) ── */}
       {structureSummary && structureSummary.length > 0 && (
         <SummarySection
           icon={ListOrdered}
           iconColor="text-blue-500"
-          title="뼈대 구조"
-          subtitle="흐름만 기억해"
+          title="답변 뼈대"
+          subtitle="무슨 내용을 넣을지 — 다른 주제에도 이 순서"
         >
           <div className="flex flex-col gap-1">
             {structureSummary.map((item, i) => (
@@ -410,14 +432,71 @@ export function ScriptSummaryView({
         </SummarySection>
       )}
 
-      {/* ── 3. 핵심 표현 ── */}
+      {/* ── 2. 재사용 슬롯 (★ 주력) ── */}
+      {patterns.length > 0 && (
+        <SummarySection
+          icon={Repeat2}
+          iconColor="text-primary-500"
+          title="재사용 슬롯"
+          count={patterns.length}
+          subtitle="다른 주제에도 그대로 — OPIc 핵심 자산"
+        >
+          <div className="space-y-2">
+            {patterns.map((p, i) => {
+              const exs =
+                p.examples && p.examples.length > 0
+                  ? p.examples
+                  : p.example
+                    ? [p.example]
+                    : [];
+              return (
+                <div
+                  key={i}
+                  className="rounded-[var(--radius-lg)] border border-primary-100 bg-primary-50/30 px-4 py-3.5"
+                >
+                  <div className="text-[14px] font-semibold leading-relaxed text-primary-700">
+                    {p.template.split("___").map((seg, si, arr) => (
+                      <span key={si}>
+                        {seg}
+                        {si < arr.length - 1 && (
+                          <span className="mx-0.5 inline-block min-w-[50px] border-b-2 border-dashed border-primary-300 text-xs font-normal text-foreground-muted">
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                          </span>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-1.5 text-xs leading-relaxed text-foreground-secondary">
+                    <span className="font-medium text-foreground-muted">KO</span>{" "}
+                    {p.description_ko}
+                  </div>
+                  {exs.length > 0 && (
+                    <div className="mt-1.5 space-y-0.5 border-t border-primary-100 pt-1.5">
+                      {exs.map((ex, ei) => (
+                        <div
+                          key={ei}
+                          className="text-xs italic text-foreground-muted"
+                        >
+                          ex. {ex}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </SummarySection>
+      )}
+
+      {/* ── 3. 꼭 가져갈 표현 (범용) ── */}
       {expressions.length > 0 && (
         <SummarySection
           icon={Bookmark}
           iconColor="text-primary-500"
-          title="핵심 표현"
+          title="꼭 가져갈 표현"
           count={expressions.length}
-          subtitle="알아두면 좋은 표현"
+          subtitle="여러 주제에 쓰는 범용 표현"
         >
           <div className="space-y-2">
             {expressions.map((expr, i) => (
@@ -486,54 +565,12 @@ export function ScriptSummaryView({
         </SummarySection>
       )}
 
-      {/* ── 5. 만능 패턴 ── */}
-      {patterns.length > 0 && (
-        <SummarySection
-          icon={Repeat2}
-          iconColor="text-secondary-500"
-          title="만능 패턴"
-          count={patterns.length}
-          subtitle="다른 주제에서도 바로 써먹는 문장 틀"
-        >
-          <div className="space-y-2">
-            {patterns.map((p, i) => (
-              <div
-                key={i}
-                className="rounded-[var(--radius-lg)] border border-border bg-surface px-4 py-3.5"
-              >
-                <div className="text-[14px] font-semibold leading-relaxed text-secondary-500">
-                  {p.template.split("___").map((seg, si, arr) => (
-                    <span key={si}>
-                      {seg}
-                      {si < arr.length - 1 && (
-                        <span className="mx-0.5 inline-block min-w-[50px] border-b-2 border-dashed border-secondary-300 text-xs font-normal text-foreground-muted">
-                          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                        </span>
-                      )}
-                    </span>
-                  ))}
-                </div>
-                <div className="mt-1.5 text-xs leading-relaxed text-foreground-secondary">
-                  <span className="font-medium text-foreground-muted">KO</span>{" "}
-                  {p.description_ko}
-                </div>
-                {p.example && (
-                  <div className="mt-1 text-xs italic text-foreground-muted">
-                    ex. {p.example}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </SummarySection>
-      )}
-
-      {/* ── 6. 유사 질문 ── */}
+      {/* ── 5. 확장 가능한 문제 ── */}
       {similarQuestions && similarQuestions.length > 0 && (
         <SummarySection
           icon={HelpCircle}
           iconColor="text-violet-500"
-          title="유사 질문"
+          title="확장 가능한 문제"
           count={similarQuestions.length}
           subtitle="이 구조로 이것도 답할 수 있어"
         >
@@ -555,7 +592,7 @@ export function ScriptSummaryView({
         </SummarySection>
       )}
 
-      {/* ── 7. 확장 아이디어 (IM3+) ── */}
+      {/* ── 6. 확장 아이디어 (IM3+) ── */}
       {showExpansion && (
         <SummarySection
           icon={Lightbulb}
@@ -573,6 +610,27 @@ export function ScriptSummaryView({
                 <span className="text-foreground-secondary">{idea}</span>
               </div>
             ))}
+          </div>
+        </SummarySection>
+      )}
+
+      {/* ── 7. 30초 압축 버전 ── */}
+      {hasCompressed && (
+        <SummarySection
+          icon={Zap}
+          iconColor="text-amber-500"
+          title="30초 압축 버전"
+          subtitle="답변이 꼬였을 때 탈출용"
+        >
+          <div className="rounded-[var(--radius-lg)] border border-amber-200 bg-amber-50/40 px-4 py-3.5">
+            <p className="text-[15px] leading-[1.9] text-foreground">
+              {compressed30s!.english}
+            </p>
+            {compressed30s!.korean && (
+              <p className="mt-2 border-t border-amber-100 pt-2 text-[13px] leading-relaxed text-foreground-secondary">
+                {compressed30s!.korean}
+              </p>
+            )}
           </div>
         </SummarySection>
       )}

@@ -42,6 +42,7 @@ import {
 } from "@/components/reviews/submit/question-selector";
 import {
   createScript,
+  createExternalScript,
   refineScript,
   confirmScript,
   checkScriptCredit,
@@ -50,6 +51,7 @@ import {
   getOpicTips,
   createPackage,
 } from "@/lib/actions/scripts";
+import { Step2ExternalInput } from "./step2-external-input";
 import { GradeSettingModal } from "@/components/ui/grade-setting-modal";
 import { ALL_PATTERNS } from "@/lib/data/patterns";
 import { PATTERN_TYPES, type PatternType, type UniversalPattern } from "@/lib/types/patterns";
@@ -67,6 +69,9 @@ const ScriptFlatText = dynamic(
 const ScriptSummaryView = dynamic(
   () => import("./script-renderer").then((mod) => ({ default: mod.ScriptSummaryView })),
   { loading: () => <div className="animate-pulse h-20 rounded-xl bg-surface-secondary" /> }
+);
+const ScriptCorrectionsView = dynamic(
+  () => import("./script-renderer").then((mod) => ({ default: mod.ScriptCorrectionsView })),
 );
 import { QUESTION_TYPE_LABELS } from "@/lib/types/reviews";
 import { TARGET_LEVELS } from "@/lib/types/scripts";
@@ -129,6 +134,9 @@ export function ScriptWizard({
 
   // viewId가 있으면 Step 4(결과 확인)로 직접 이동
   const [step, setStep] = useState(viewId ? 4 : 1);
+  // 생성 방식: ai(한국어 경험→AI 생성) | external(기존 영어 스크립트 활용 — 기본 교열)
+  const [genMethod, setGenMethod] = useState<"ai" | "external">("ai");
+  const [externalText, setExternalText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [selectedQuestion, setSelectedQuestion] =
@@ -300,18 +308,20 @@ export function ScriptWizard({
     setError(null);
 
     try {
-      const input = {
+      const base = {
         question_id: selectedQuestion.question_id,
         topic: selectedQuestion.topic,
         category: selectedQuestion.topic_category,
         question_english: selectedQuestion.question_english,
         question_korean: selectedQuestion.question_korean,
         question_type: selectedQuestion.question_type,
-        target_grade: targetLevel,
-        user_story: userInput,
       };
 
-      const result = await createScript(input);
+      // 방식 분기: external(기존 스크립트 활용 — 교열) vs ai(생성)
+      const result =
+        genMethod === "external"
+          ? await createExternalScript({ ...base, external_text: externalText })
+          : await createScript({ ...base, target_grade: targetLevel, user_story: userInput });
 
       if (result.error) {
         setError(result.error);
@@ -328,7 +338,7 @@ export function ScriptWizard({
     } finally {
       setIsGenerating(false);
     }
-  }, [selectedQuestion, targetLevel, userInput, isTrialMode]);
+  }, [selectedQuestion, targetLevel, userInput, isTrialMode, genMethod, externalText]);
 
   // ── 수정 요청 (Step 4 → Step 3 → Step 4) ──
   const [refinePrompt, setRefinePrompt] = useState("");
@@ -484,6 +494,8 @@ export function ScriptWizard({
   // ── 위저드 리셋 (새 스크립트 만들기) ──
   const resetWizard = useCallback(() => {
     setStep(1);
+    setGenMethod("ai");
+    setExternalText("");
     setSelectedCategory(null);
     setSelectedTopic(null);
     setSelectedQuestion(null);
@@ -578,33 +590,97 @@ export function ScriptWizard({
       {/* ── 콘텐츠 영역 (스크롤) ── */}
       <div className="mobile-scrollbar-hidden mx-auto w-full max-w-3xl h-0 flex-grow overflow-y-auto px-4 py-6 sm:px-6 max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden md:h-auto md:flex-1">
         {step === 1 && (
-          <Step1Selection
-            selectedCategory={selectedCategory}
-            onSelectCategory={handleCategorySelect}
-            selectedTopic={selectedTopic}
-            onSelectTopic={handleTopicSelect}
-            onSelectQuestion={handleQuestionSelect}
-            existingScriptIds={existingScriptIds}
-            onViewExistingScript={handleViewExistingScript}
-            isTrialMode={isTrialMode}
-            onTrialQuestionSelect={handleTrialQuestionSelect}
-          />
+          <div className="space-y-6">
+            {/* 생성 방식 선택 (체험판은 AI 생성 고정) */}
+            {!isTrialMode && (
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">생성 방식</h3>
+                <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                  <button
+                    onClick={() => setGenMethod("ai")}
+                    className={`flex items-start gap-3 rounded-[var(--radius-lg)] px-4 py-3.5 text-left transition-all ${
+                      genMethod === "ai"
+                        ? "border-2 border-primary-500 bg-primary-50/60 shadow-sm"
+                        : "border border-border bg-surface hover:border-primary-300 hover:bg-primary-50/30"
+                    }`}
+                  >
+                    <Sparkles
+                      size={20}
+                      className={`mt-0.5 shrink-0 ${genMethod === "ai" ? "text-primary-600" : "text-foreground-muted"}`}
+                    />
+                    <span>
+                      <span className="block text-sm font-semibold text-foreground">
+                        AI 생성
+                      </span>
+                      <span className="mt-0.5 block text-xs text-foreground-secondary">
+                        한국어 경험을 입력하면 AI가 맞춤 스크립트를 만들어요
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setGenMethod("external")}
+                    className={`flex items-start gap-3 rounded-[var(--radius-lg)] px-4 py-3.5 text-left transition-all ${
+                      genMethod === "external"
+                        ? "border-2 border-primary-500 bg-primary-50/60 shadow-sm"
+                        : "border border-border bg-surface hover:border-primary-300 hover:bg-primary-50/30"
+                    }`}
+                  >
+                    <FileText
+                      size={20}
+                      className={`mt-0.5 shrink-0 ${genMethod === "external" ? "text-primary-600" : "text-foreground-muted"}`}
+                    />
+                    <span>
+                      <span className="block text-sm font-semibold text-foreground">
+                        기존 스크립트 활용
+                      </span>
+                      <span className="mt-0.5 block text-xs text-foreground-secondary">
+                        이미 준비한 영어 답변을 붙여넣어 교정·훈련해요
+                      </span>
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <Step1Selection
+              selectedCategory={selectedCategory}
+              onSelectCategory={handleCategorySelect}
+              selectedTopic={selectedTopic}
+              onSelectTopic={handleTopicSelect}
+              onSelectQuestion={handleQuestionSelect}
+              existingScriptIds={existingScriptIds}
+              onViewExistingScript={handleViewExistingScript}
+              isTrialMode={isTrialMode}
+              onTrialQuestionSelect={handleTrialQuestionSelect}
+            />
+          </div>
         )}
 
-        {step === 2 && (
-          <Step2Input
-            question={selectedQuestion!}
-            targetLevel={targetLevel}
-            onTargetLevelChange={setTargetLevel}
-            userInput={userInput}
-            onUserInputChange={setUserInput}
-            isGenerating={isGenerating}
-            hasCredit={creditInfo?.hasCredit ?? false}
-            onBack={() => setStep(1)}
-            onGenerate={handleGenerate}
-            isTrialMode={isTrialMode}
-          />
-        )}
+        {step === 2 &&
+          (genMethod === "external" && !isTrialMode ? (
+            <Step2ExternalInput
+              question={selectedQuestion!}
+              externalText={externalText}
+              onExternalTextChange={setExternalText}
+              isConverting={isGenerating}
+              hasCredit={creditInfo?.hasCredit ?? false}
+              onBack={() => setStep(1)}
+              onConvert={handleGenerate}
+            />
+          ) : (
+            <Step2Input
+              question={selectedQuestion!}
+              targetLevel={targetLevel}
+              onTargetLevelChange={setTargetLevel}
+              userInput={userInput}
+              onUserInputChange={setUserInput}
+              isGenerating={isGenerating}
+              hasCredit={creditInfo?.hasCredit ?? false}
+              onBack={() => setStep(1)}
+              onGenerate={handleGenerate}
+              isTrialMode={isTrialMode}
+            />
+          ))}
 
         {step === 3 && (
           <Step3Loading
@@ -1498,6 +1574,13 @@ function Step4Result({
       {/* 스크립트 탭 */}
       {viewTab === "script" && (
         <>
+          {/* 교정 내역 (외부 스크립트 전용) */}
+          {detail.source === "external" && (
+            <ScriptCorrectionsView
+              corrections={detail.paragraphs?.corrections ?? []}
+            />
+          )}
+
           {/* 보기 옵션 세그먼트 컨트롤 */}
           <div className="flex gap-0.5 rounded-lg border border-border bg-surface-secondary p-[3px]">
             {(
@@ -1542,12 +1625,12 @@ function Step4Result({
           fullTextEnglish={fullTextEnglish}
           paragraphs={paragraphs}
           structureSummary={detail.paragraphs?.structure_summary}
-          keySentences={detail.paragraphs?.key_sentences}
           keyExpressions={detail.paragraphs?.key_expressions}
           discourseMarkers={detail.paragraphs?.discourse_markers}
           reusablePatterns={detail.paragraphs?.reusable_patterns}
           similarQuestions={detail.paragraphs?.similar_questions}
           expansionIdeas={detail.paragraphs?.expansion_ideas}
+          compressed30s={detail.paragraphs?.compressed_30s}
           targetLevel={detail.target_grade}
         />
       )}
