@@ -37,6 +37,12 @@ export const API_PRICING = {
       output: 20.0 / 1_000_000,
     },
   },
+  // ElevenLabs TTS — 문자당 비용 (Gemini 대비 약 5~7배). TODO: 실측 보정
+  elevenlabs: {
+    "eleven_v3": {
+      per_char: 0.00018, // ≈ $180 / 1M chars (Creator 등급 추정)
+    },
+  },
   // Azure Speech Pronunciation Assessment — 초당 비용
   azure_speech: {
     "azure-pronunciation": {
@@ -54,8 +60,9 @@ export function calculateCost(params: {
   tokens_in?: number;
   tokens_out?: number;
   audio_duration_sec?: number;
+  text_length?: number;
 }): number {
-  const { service, model, tokens_in = 0, tokens_out = 0, audio_duration_sec = 0 } = params;
+  const { service, model, tokens_in = 0, tokens_out = 0, audio_duration_sec = 0, text_length = 0 } = params;
 
   switch (service) {
     case "openai_chat": {
@@ -75,6 +82,11 @@ export function calculateCost(params: {
     case "azure_speech": {
       return audio_duration_sec * API_PRICING.azure_speech["azure-pronunciation"].per_second;
     }
+    case "elevenlabs": {
+      const pricing = API_PRICING.elevenlabs[model as keyof typeof API_PRICING.elevenlabs]
+        ?? API_PRICING.elevenlabs["eleven_v3"];
+      return text_length * pricing.per_char;
+    }
     default:
       return 0;
   }
@@ -88,7 +100,7 @@ export interface UsageLogParams {
   session_type: "mock_exam" | "script" | "tutoring" | "shadowing" | "coaching" | "opic_study";
   session_id?: string;
   feature: string;
-  service: "openai_chat" | "openai_whisper" | "gemini_tts" | "azure_speech";
+  service: "openai_chat" | "openai_whisper" | "gemini_tts" | "azure_speech" | "elevenlabs";
   model: string;
   ef_name: string;
   tokens_in?: number;
@@ -108,6 +120,7 @@ export async function logApiUsage(
     tokens_in: params.tokens_in,
     tokens_out: params.tokens_out,
     audio_duration_sec: params.audio_duration_sec,
+    text_length: params.text_length,
   });
 
   // USD → cents (소수점 올림, 최소 1센트)

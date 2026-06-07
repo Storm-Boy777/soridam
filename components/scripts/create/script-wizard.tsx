@@ -85,6 +85,7 @@ import type {
 import {
   TTS_VOICES,
   TTS_VOICE_LABELS,
+  TTS_VOICE_META,
 } from "@/lib/types/scripts";
 import { useTrialMode } from "@/components/trial/use-trial-mode";
 import { TrialBanner } from "@/components/trial/trial-banner";
@@ -1783,21 +1784,37 @@ function Step5Complete({
             원어민 음성 선택
           </p>
           <div className="flex gap-2">
-            {TTS_VOICES.map((voice) => (
-              <button
-                key={voice}
-                onClick={() => setSelectedVoice(voice)}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-lg)] border px-3 py-2 text-xs font-medium transition-colors sm:py-2.5 sm:text-sm ${
-                  selectedVoice === voice
-                    ? "border-primary-400 bg-primary-50 text-primary-600"
-                    : "border-border bg-surface text-foreground-secondary hover:border-primary-200"
-                }`}
-              >
-                <Volume2 size={14} />
-                {TTS_VOICE_LABELS[voice]}
-              </button>
-            ))}
+            {TTS_VOICES.map((voice) => {
+              const meta = TTS_VOICE_META[voice];
+              return (
+                <button
+                  key={voice}
+                  onClick={() => setSelectedVoice(voice)}
+                  className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-lg)] border px-3 py-2 text-xs font-medium transition-colors sm:py-2.5 sm:text-sm ${
+                    selectedVoice === voice
+                      ? "border-primary-400 bg-primary-50 text-primary-600"
+                      : "border-border bg-surface text-foreground-secondary hover:border-primary-200"
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Volume2 size={14} />
+                    {TTS_VOICE_LABELS[voice]}
+                  </span>
+                  {meta.tier === "premium" && (
+                    <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                      프리미엄
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
+          {TTS_VOICE_META[selectedVoice].costHint && (
+            <p className="mt-2 flex items-center justify-center gap-1 text-center text-[11px] text-amber-600">
+              <AlertTriangle size={12} />
+              {TTS_VOICE_META[selectedVoice].costHint}
+            </p>
+          )}
         </div>
 
         {/* 패키지 생성 버튼 */}
@@ -2037,21 +2054,37 @@ function TrialStep5({ onGoToScripts }: { onGoToScripts: () => void }) {
             원어민 음성 선택
           </p>
           <div className="flex gap-2">
-            {TTS_VOICES.map((voice) => (
-              <button
-                key={voice}
-                onClick={() => setSelectedVoice(voice)}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-lg)] border px-3 py-2 text-xs font-medium transition-colors sm:py-2.5 sm:text-sm ${
-                  selectedVoice === voice
-                    ? "border-primary-400 bg-primary-50 text-primary-600"
-                    : "border-border bg-surface text-foreground-secondary hover:border-primary-200"
-                }`}
-              >
-                <Volume2 size={14} />
-                {TTS_VOICE_LABELS[voice]}
-              </button>
-            ))}
+            {TTS_VOICES.map((voice) => {
+              const meta = TTS_VOICE_META[voice];
+              return (
+                <button
+                  key={voice}
+                  onClick={() => setSelectedVoice(voice)}
+                  className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-lg)] border px-3 py-2 text-xs font-medium transition-colors sm:py-2.5 sm:text-sm ${
+                    selectedVoice === voice
+                      ? "border-primary-400 bg-primary-50 text-primary-600"
+                      : "border-border bg-surface text-foreground-secondary hover:border-primary-200"
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Volume2 size={14} />
+                    {TTS_VOICE_LABELS[voice]}
+                  </span>
+                  {meta.tier === "premium" && (
+                    <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                      프리미엄
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
+          {TTS_VOICE_META[selectedVoice].costHint && (
+            <p className="mt-2 flex items-center justify-center gap-1 text-center text-[11px] text-amber-600">
+              <AlertTriangle size={12} />
+              {TTS_VOICE_META[selectedVoice].costHint}
+            </p>
+          )}
         </div>
 
         <button

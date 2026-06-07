@@ -44,7 +44,7 @@ export default async function ShadowingPage({ searchParams }: PageProps) {
         "makes me kind of nostalgic",
       ],
       targetLevel: "IH",
-      ttsVoice: "Zephyr",
+      ttsVoice: "Aoede",
       packageStatus: "completed",
       structureSummary: null,
       keySentences: null,

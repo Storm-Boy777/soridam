@@ -10,9 +10,31 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
 // 서비스 계정 JSON(base64) — Cloud TTS(Gemini-TTS GA)는 API 키가 아닌 OAuth로 호출
 const GOOGLE_TTS_SA_KEY_B64 = Deno.env.get("GOOGLE_TTS_SA_KEY_B64")!;
+// ElevenLabs (남성 프리미엄 음성)
+const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
 
-// Cloud TTS (Gemini-TTS) GA 모델 — 서비스 계정 OAuth로 호출 (preview의 하루 50건 제한 없음)
-const TTS_MODEL = "gemini-2.5-pro-tts";
+// 음성 제공자별 설정
+const TTS_MODEL = "gemini-2.5-pro-tts";            // 여성 (Cloud TTS GA, 서비스계정 OAuth)
+const ELEVEN_VOICE_MALE = "TX3LPaxmHKxFdv7VOQHJ";  // 남성 (ElevenLabs)
+const ELEVEN_MODEL = "eleven_v3";
+
+// tts_voice id → 제공자/음성 해석 (레거시 'Zephyr'/'Aoede' 하위호환)
+function resolveVoice(ttsVoice: string): {
+  provider: "gemini" | "elevenlabs";
+  geminiVoice?: string;
+  elevenVoiceId?: string;
+  elevenModelId?: string;
+} {
+  if (ttsVoice === "eleven_male") {
+    return {
+      provider: "elevenlabs",
+      elevenVoiceId: ELEVEN_VOICE_MALE,
+      elevenModelId: ELEVEN_MODEL,
+    };
+  }
+  // 'Aoede'(여성) + 레거시 'Zephyr'(구 Gemini 남성) → Gemini Cloud TTS
+  return { provider: "gemini", geminiVoice: ttsVoice === "Zephyr" ? "Zephyr" : "Aoede" };
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -144,7 +166,7 @@ async function getGoogleAccessToken(): Promise<{ token: string; projectId: strin
 // ── Phase 1: Gemini TTS 음성 생성 ──
 
 async function handleGeneratePackage(supabase: any, body: any) {
-  const { script_id, tts_voice = "Zephyr", user_id } = body;
+  const { script_id, tts_voice = "Aoede", user_id } = body;
   if (!script_id) return jsonResponse({ error: "script_id 필수" }, 400);
   if (!user_id) return jsonResponse({ error: "user_id 필수" }, 400);
 
@@ -216,101 +238,161 @@ async function handleGeneratePackage(supabase: any, body: any) {
   try {
     await updatePackageProgress(supabase, packageId, 20);
 
-    // Cloud TTS (Gemini-TTS GA) 호출 — 서비스 계정 OAuth
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 180000); // 180초
+    const voiceCfg = resolveVoice(tts_voice);
+    console.log(`🎵 TTS 호출: provider=${voiceCfg.provider}, voice=${tts_voice}`);
 
-    const { token: gToken, projectId: gProject } = await getGoogleAccessToken();
-    console.log(`🎵 Cloud TTS 호출: model=${TTS_MODEL}, voice=${tts_voice}, project=${gProject}`);
+    let audioBuffer: ArrayBuffer;
+    let audioExt: string;
+    let audioContentType: string;
 
-    const ttsResponse = await fetch(
-      "https://texttospeech.googleapis.com/v1/text:synthesize",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${gToken}`,
-          "x-goog-user-project": gProject,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          input: {
-            prompt: "Read aloud in a friendly, natural way, as if talking to a friend.",
-            text: script.english_text,
-          },
-          voice: {
-            languageCode: "en-US",
-            name: tts_voice,
-            model_name: TTS_MODEL,
-          },
-          audioConfig: { audioEncoding: "LINEAR16", sampleRateHertz: 24000 },
-        }),
-        signal: controller.signal,
+    if (voiceCfg.provider === "elevenlabs") {
+      // ── 남성 (ElevenLabs 프리미엄) → MP3 ──
+      if (!ELEVENLABS_API_KEY) {
+        throw new Error("ELEVENLABS_API_KEY가 설정되지 않았습니다");
       }
-    );
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 180000); // 180초
+      const elResp = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${voiceCfg.elevenVoiceId}`,
+        {
+          method: "POST",
+          headers: {
+            "xi-api-key": ELEVENLABS_API_KEY,
+            "Accept": "audio/mpeg",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text: script.english_text,
+            model_id: voiceCfg.elevenModelId,
+            voice_settings: {
+              stability: 0.4,
+              similarity_boost: 0.75,
+              use_speaker_boost: true,
+            },
+          }),
+          signal: controller.signal,
+        }
+      );
+      clearTimeout(timeoutId);
 
-    clearTimeout(timeoutId);
+      if (!elResp.ok) {
+        const errText = await elResp.text();
+        console.error("ElevenLabs 에러:", elResp.status, errText.slice(0, 500));
+        await failPackage(supabase, packageId, `TTS 음성 생성 실패 (${elResp.status})`);
+        return jsonResponse({ error: "음성 생성에 실패했습니다" }, 500);
+      }
 
-    if (!ttsResponse.ok) {
-      const errText = await ttsResponse.text();
-      console.error("Cloud TTS 에러:", ttsResponse.status, errText.slice(0, 500));
-      await failPackage(supabase, packageId, `TTS 음성 생성 실패 (${ttsResponse.status})`);
-      return jsonResponse({ error: "음성 생성에 실패했습니다" }, 500);
+      audioBuffer = await elResp.arrayBuffer();
+      audioExt = "mp3";
+      audioContentType = "audio/mpeg";
+
+      await updatePackageProgress(supabase, packageId, 40);
+      console.log("✅ MP3 수신 완료:", { size: audioBuffer.byteLength });
+
+      // 사용량 로깅 (ElevenLabs는 문자당 과금)
+      try {
+        await logApiUsage(supabase, {
+          user_id,
+          session_type: "script",
+          session_id: script_id,
+          feature: "TTS 음성 생성",
+          service: "elevenlabs",
+          model: voiceCfg.elevenModelId!,
+          ef_name: "scripts-package",
+          text_length: script.english_text.length,
+        });
+      } catch (logErr) {
+        console.error("[scripts-package] ElevenLabs 사용량 로깅 실패:", logErr);
+      }
+    } else {
+      // ── 여성 (Cloud TTS Gemini-TTS GA) → WAV ──
+      const { token: gToken, projectId: gProject } = await getGoogleAccessToken();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 180000); // 180초
+      const ttsResponse = await fetch(
+        "https://texttospeech.googleapis.com/v1/text:synthesize",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${gToken}`,
+            "x-goog-user-project": gProject,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            input: {
+              prompt: "Read aloud in a friendly, natural way, as if talking to a friend.",
+              text: script.english_text,
+            },
+            voice: {
+              languageCode: "en-US",
+              name: voiceCfg.geminiVoice,
+              model_name: TTS_MODEL,
+            },
+            audioConfig: { audioEncoding: "LINEAR16", sampleRateHertz: 24000 },
+          }),
+          signal: controller.signal,
+        }
+      );
+      clearTimeout(timeoutId);
+
+      if (!ttsResponse.ok) {
+        const errText = await ttsResponse.text();
+        console.error("Cloud TTS 에러:", ttsResponse.status, errText.slice(0, 500));
+        await failPackage(supabase, packageId, `TTS 음성 생성 실패 (${ttsResponse.status})`);
+        return jsonResponse({ error: "음성 생성에 실패했습니다" }, 500);
+      }
+
+      const ttsData = await ttsResponse.json();
+      const base64Audio = ttsData.audioContent; // LINEAR16 → 완성 WAV(RIFF)
+
+      if (!base64Audio) {
+        console.error("Cloud TTS 응답에 audioContent 없음");
+        await failPackage(supabase, packageId, "TTS 응답에 오디오 없음");
+        return jsonResponse({ error: "음성 데이터를 받지 못했습니다" }, 500);
+      }
+
+      await updatePackageProgress(supabase, packageId, 40);
+
+      const binaryString = atob(base64Audio);
+      const wavBytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        wavBytes[i] = binaryString.charCodeAt(i);
+      }
+      audioBuffer = wavBytes.buffer;
+      audioExt = "wav";
+      audioContentType = "audio/wav";
+      console.log("✅ WAV 수신 완료:", { size: audioBuffer.byteLength });
+
+      // 사용량 로깅 (오디오 길이로 산출: 오디오 초당 25토큰)
+      try {
+        const SR = 24000; // 요청한 sampleRateHertz, 16-bit mono
+        const audioBytes = Math.max(audioBuffer.byteLength - 44, 0);
+        const durationSec = audioBytes / (SR * 2);
+        await logApiUsage(supabase, {
+          user_id,
+          session_type: "script",
+          session_id: script_id,
+          feature: "TTS 음성 생성",
+          service: "gemini_tts",
+          model: TTS_MODEL,
+          ef_name: "scripts-package",
+          tokens_in: Math.ceil(script.english_text.length / 4),
+          tokens_out: Math.round(durationSec * 25),
+          text_length: script.english_text.length,
+          audio_duration_sec: Math.round(durationSec),
+        });
+      } catch (logErr) {
+        console.error("[scripts-package] Cloud TTS 사용량 로깅 실패:", logErr);
+      }
     }
 
-    const ttsData = await ttsResponse.json();
-
-    // Cloud TTS LINEAR16 응답은 완성된 WAV(RIFF 헤더 포함)를 base64로 반환
-    const base64Audio = ttsData.audioContent;
-
-    if (!base64Audio) {
-      console.error("Cloud TTS 응답에 audioContent 없음");
-      await failPackage(supabase, packageId, "TTS 응답에 오디오 없음");
-      return jsonResponse({ error: "음성 데이터를 받지 못했습니다" }, 500);
-    }
-
-    await updatePackageProgress(supabase, packageId, 40);
-
-    // audioContent는 이미 완성된 WAV → base64 디코드만 (리샘플/헤더생성 불필요)
-    const binaryString = atob(base64Audio);
-    const wavBytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      wavBytes[i] = binaryString.charCodeAt(i);
-    }
-    const wavBuffer = wavBytes.buffer;
-
-    console.log("✅ WAV 수신 완료:", { wavSize: wavBuffer.byteLength });
-
-    // 사용량 로깅 (Cloud TTS는 토큰 미반환 → 오디오 길이로 산출: 오디오 초당 25토큰)
-    try {
-      const SR = 24000; // 요청한 sampleRateHertz, 16-bit mono
-      const audioBytes = Math.max(wavBuffer.byteLength - 44, 0);
-      const durationSec = audioBytes / (SR * 2);
-      const tokensOut = Math.round(durationSec * 25); // 오디오 초당 25 토큰
-      const tokensIn = Math.ceil(script.english_text.length / 4); // 텍스트 토큰 대략 추정
-      await logApiUsage(supabase, {
-        user_id,
-        session_type: "script",
-        session_id: script_id,
-        feature: "TTS 음성 생성",
-        service: "gemini_tts",
-        model: TTS_MODEL,
-        ef_name: "scripts-package",
-        tokens_in: tokensIn,
-        tokens_out: tokensOut,
-        text_length: script.english_text.length,
-        audio_duration_sec: Math.round(durationSec),
-      });
-    } catch (logErr) {
-      console.error("[scripts-package] Cloud TTS 사용량 로깅 실패:", logErr);
-    }
-
-    // Storage 업로드
-    const audioPath = `audio/${packageId}.wav`;
+    // Storage 업로드 (provider에 따라 wav/mp3)
+    const audioPath = `audio/${packageId}.${audioExt}`;
 
     const { error: uploadError } = await supabase.storage
       .from("script-packages")
-      .upload(audioPath, wavBuffer, {
-        contentType: "audio/wav",
+      .upload(audioPath, audioBuffer, {
+        contentType: audioContentType,
         upsert: true,
       });
 
@@ -325,7 +407,7 @@ async function handleGeneratePackage(supabase: any, body: any) {
       .from("script_packages")
       .update({
         wav_file_path: audioPath,
-        wav_file_size: wavBuffer.byteLength,
+        wav_file_size: audioBuffer.byteLength,
         progress: 60,
       })
       .eq("id", packageId);
@@ -334,7 +416,7 @@ async function handleGeneratePackage(supabase: any, body: any) {
       success: true,
       package_id: packageId,
       wav_file_path: audioPath,
-      file_size: wavBuffer.byteLength,
+      file_size: audioBuffer.byteLength,
     });
   } catch (err) {
     console.error("Phase 1 실패:", err);
@@ -403,8 +485,15 @@ async function handleGenerateShadowing(supabase: any, body: any) {
     await updatePackageProgress(supabase, package_id, 70);
 
     // Whisper STT (word-level timestamps)
+    // Phase 1 provider에 따라 .wav(Gemini) 또는 .mp3(ElevenLabs) — Whisper는 파일명 확장자로 포맷 판별
+    const audioExt = (pkg.wav_file_path.split(".").pop() || "wav").toLowerCase();
+    const audioMime = audioExt === "mp3" ? "audio/mpeg" : "audio/wav";
     const formData = new FormData();
-    formData.append("file", audioData, "audio.wav");
+    formData.append(
+      "file",
+      new Blob([await audioData.arrayBuffer()], { type: audioMime }),
+      `audio.${audioExt}`
+    );
     formData.append("model", "whisper-1");
     formData.append("response_format", "verbose_json");
     formData.append("timestamp_granularities[]", "word");

@@ -198,7 +198,7 @@ const TRIAL_PACKAGE: ScriptPackage = {
   json_file_path: "json/1320fb1b-8093-4986-8816-d717fe7b1df6.json",
   timestamp_data: TRIAL_TIMESTAMPS,
   wav_file_size: 7829642,
-  tts_voice: "Zephyr",
+  tts_voice: "Aoede",
   error_message: null,
   created_at: "2026-03-14T22:59:02.768Z",
   completed_at: "2026-03-14T23:00:53.221Z",

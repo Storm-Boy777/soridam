@@ -18,8 +18,9 @@ export type TargetLevel = (typeof TARGET_LEVELS)[number];
 export const PACKAGE_STATUSES = ['processing', 'completed', 'partial', 'failed'] as const;
 export type PackageStatus = (typeof PACKAGE_STATUSES)[number];
 
-// TTS 음성 (Gemini TTS prebuilt voices)
-export const TTS_VOICES = ['Aoede', 'Zephyr'] as const;
+// TTS 음성 — 여성(Gemini Cloud TTS GA) / 남성(ElevenLabs 프리미엄)
+// ※ 레거시 패키지엔 'Zephyr'(구 Gemini 남성)도 존재 — 표시/EF에서 하위호환 처리
+export const TTS_VOICES = ['Aoede', 'eleven_male'] as const;
 export type TtsVoice = (typeof TTS_VOICES)[number];
 
 // 쉐도잉 세션 상태
@@ -69,8 +70,26 @@ export const PACKAGE_STATUS_LABELS: Record<PackageStatus, string> = {
 };
 
 export const TTS_VOICE_LABELS: Record<TtsVoice, string> = {
-  Zephyr: 'Zephyr (남성)',
-  Aoede: 'Aoede (여성)',
+  Aoede: '여성 (Aoede)',
+  eleven_male: '남성 (Liam)',
+};
+
+// 음성 메타 — 제공자/등급/비용 안내 (UI 배지 + 비용 노출용)
+export interface TtsVoiceMeta {
+  gender: string;
+  provider: 'gemini' | 'elevenlabs';
+  tier: 'standard' | 'premium';
+  costHint?: string;
+}
+
+export const TTS_VOICE_META: Record<TtsVoice, TtsVoiceMeta> = {
+  Aoede: { gender: '여성', provider: 'gemini', tier: 'standard' },
+  eleven_male: {
+    gender: '남성',
+    provider: 'elevenlabs',
+    tier: 'premium',
+    costHint: '프리미엄 음성 · 비용이 약 5~7배 높아요',
+  },
 };
 
 export const SHADOWING_STEP_LABELS: Record<ShadowingStep, string> = {
