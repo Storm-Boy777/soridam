@@ -6,7 +6,7 @@ import type { ShadowingStep } from "@/lib/types/scripts";
 
 const DISPLAY_MODES: DisplayMode[] = ["both", "english", "korean"];
 const HINT_LEVELS: TextHintLevel[] = ["both", "english", "korean"];
-const STEPS: ShadowingStep[] = ["listen", "shadow", "recite", "speak"];
+const STEPS: ShadowingStep[] = ["listen", "shadow", "recite"];
 
 interface ShortcutCallbacks {
   // Step 1 전용
@@ -35,9 +35,9 @@ export function useShadowingShortcuts(callbacks: ShortcutCallbacks = {}) {
 
       const { currentStep } = store;
 
-      // 숫자 1-4: Step 전환
+      // 숫자 키: Step 전환
       const num = parseInt(e.key);
-      if (num >= 1 && num <= 4) {
+      if (num >= 1 && num <= STEPS.length) {
         e.preventDefault();
         store.setStep(STEPS[num - 1]);
         return;
@@ -50,7 +50,7 @@ export function useShadowingShortcuts(callbacks: ShortcutCallbacks = {}) {
             callbacks.onTogglePlay?.();
           } else if (currentStep === "shadow") {
             callbacks.onToggleSentencePlay?.();
-          } else if (currentStep === "recite" || currentStep === "speak") {
+          } else if (currentStep === "recite") {
             callbacks.onToggleRecording?.();
           }
           break;
