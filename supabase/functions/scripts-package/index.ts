@@ -286,10 +286,17 @@ async function handleGeneratePackage(supabase: any, body: any) {
       audioExt = "mp3";
       audioContentType = "audio/mpeg";
 
-      await updatePackageProgress(supabase, packageId, 40);
-      console.log("✅ MP3 수신 완료:", { size: audioBuffer.byteLength });
+      // 공식 단가 $0.10/1K characters 기준으로 문자수로 과금 (character-cost 헤더는 참고용 로깅)
+      const elCharCostHdr = parseInt(elResp.headers.get("character-cost") || "", 10);
 
-      // 사용량 로깅 (ElevenLabs는 문자당 과금)
+      await updatePackageProgress(supabase, packageId, 40);
+      console.log("✅ MP3 수신 완료:", {
+        size: audioBuffer.byteLength,
+        chars: script.english_text.length,
+        charCostHeader: Number.isFinite(elCharCostHdr) ? elCharCostHdr : "n/a",
+      });
+
+      // 사용량 로깅 (ElevenLabs = 문자당 과금, text_length × per_char)
       try {
         await logApiUsage(supabase, {
           user_id,
@@ -320,7 +327,9 @@ async function handleGeneratePackage(supabase: any, body: any) {
           },
           body: JSON.stringify({
             input: {
-              prompt: "Read aloud in a friendly, natural way, as if talking to a friend.",
+              // 목표: 실제 OPIc 인터뷰에서 답변하는 자연스러운 원어민 음성 (낭독 X)
+              prompt:
+                "Speak in natural, conversational American English, like a real person genuinely answering this question out loud in a speaking test. Use a relaxed, authentic pace with natural rhythm and intonation — not a formal narration or reading voice.",
               text: script.english_text,
             },
             voice: {

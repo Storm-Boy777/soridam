@@ -88,7 +88,7 @@ export const TTS_VOICE_META: Record<TtsVoice, TtsVoiceMeta> = {
     gender: '남성',
     provider: 'elevenlabs',
     tier: 'premium',
-    costHint: '프리미엄 음성 · 비용이 약 5~7배 높아요',
+    costHint: '프리미엄 음성 · 비용이 더 높아요',
   },
 };
 

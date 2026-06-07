@@ -37,10 +37,11 @@ export const API_PRICING = {
       output: 20.0 / 1_000_000,
     },
   },
-  // ElevenLabs TTS — 문자당 비용 (Gemini 대비 약 5~7배). TODO: 실측 보정
+  // ElevenLabs TTS — 크레딧당 비용 (공식 API 단가). character-cost 헤더(실소비 크레딧)에 적용
   elevenlabs: {
+    // Multilingual v2/v3 = $0.10 / 1,000 크레딧 ($100/1M). Flash/Turbo는 $0.05/1k.
     "eleven_v3": {
-      per_char: 0.00018, // ≈ $180 / 1M chars (Creator 등급 추정)
+      per_char: 0.0001,
     },
   },
   // Azure Speech Pronunciation Assessment — 초당 비용
