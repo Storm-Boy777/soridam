@@ -4,6 +4,7 @@ import type { ListenTrack } from "@/lib/actions/scripts";
 import type { CurrentSubtitle } from "./listen-content";
 import { useListenSettings } from "@/lib/stores/listen";
 import { QUESTION_TYPE_LABELS, QUESTION_TYPE_COLORS } from "@/lib/types/reviews";
+import { TrackArtwork, gradientFor } from "./track-artwork";
 import {
   Play,
   Pause,
@@ -76,17 +77,34 @@ export function ListenPlayer({
   const progress = duration > 0 ? (time / duration) * 100 : 0;
 
   return (
-    <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-4 shadow-sm sm:p-5">
-      {/* now playing */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="truncate text-sm font-semibold text-foreground">
+    <div className="relative overflow-hidden rounded-[var(--radius-2xl)] border border-border bg-surface p-5 shadow-[var(--shadow-card)] transition-shadow sm:p-6">
+      {/* 앰비언트 헤일로 — 현재 곡 커버색이 카드 상단에 6%만 번짐(곡 전환 시 부드럽게 전환) */}
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute inset-x-0 top-0 h-2/5 ${gradientFor(track?.questionType ?? null)} opacity-[0.06] blur-2xl transition-colors duration-500`}
+      />
+
+      <div className="relative z-10">
+        {/* 아트워크 */}
+        <div className="mb-5 mt-1">
+          <TrackArtwork
+            track={track}
+            isPlaying={isPlaying}
+            inGap={inGap}
+            gapLeft={gapLeft}
+            size="hero"
+          />
+        </div>
+
+        {/* 제목 + 부제 (가운데) */}
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-2">
+            <h2 className="max-w-full truncate text-xl font-bold tracking-tight text-foreground sm:text-2xl">
               {track?.topic || "재생할 곡을 선택하세요"}
-            </span>
+            </h2>
             {typeLabel && (
               <span
-                className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${
                   QUESTION_TYPE_COLORS[track!.questionType!] || "bg-surface-secondary text-foreground-secondary"
                 }`}
               >
@@ -94,116 +112,109 @@ export function ListenPlayer({
               </span>
             )}
           </div>
-          <p className="mt-0.5 truncate text-[11px] text-foreground-muted">
-            {track?.questionShort || track?.questionEnglish || ""}
+          <p className="mt-1 truncate text-sm text-foreground-secondary">
+            {track?.questionShort || track?.questionEnglish || " "}
           </p>
         </div>
-        <span
-          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-            inGap ? "bg-amber-50 text-amber-600" : "bg-surface-secondary text-foreground-secondary"
-          }`}
-        >
-          {segText}
-        </span>
-      </div>
 
-      {/* 진행 바 */}
-      <div className="mt-3 flex items-center gap-2">
-        <span className="w-9 shrink-0 text-right text-[10px] tabular-nums text-foreground-muted">{fmt(time)}</span>
-        <input
-          type="range"
-          min={0}
-          max={duration || 0}
-          step={0.1}
-          value={Math.min(time, duration || 0)}
-          onChange={(e) => onSeek(Number(e.target.value))}
-          disabled={inGap || !duration}
-          className="h-1 flex-1 cursor-pointer appearance-none rounded-full bg-surface-secondary accent-primary-500 disabled:cursor-not-allowed disabled:opacity-60"
-          aria-label="재생 위치"
-          style={{
-            background: duration
-              ? `linear-gradient(to right, var(--color-primary-500) ${progress}%, var(--color-border) ${progress}%)`
-              : undefined,
-          }}
-        />
-        <span className="w-9 shrink-0 text-[10px] tabular-nums text-foreground-muted">{fmt(duration)}</span>
-      </div>
+        {/* 상태 라벨 + 진행 바 */}
+        <p className="mt-4 text-center text-[11px] font-medium text-foreground-muted">
+          {inGap ? <span className="text-amber-600">생각 중</span> : segText}
+        </p>
+        <div className="mt-1.5 flex h-6 items-center gap-2">
+          <span className="w-10 shrink-0 text-right text-[11px] tabular-nums text-foreground-muted">{fmt(time)}</span>
+          <input
+            type="range"
+            min={0}
+            max={duration || 0}
+            step={0.1}
+            value={Math.min(time, duration || 0)}
+            onChange={(e) => onSeek(Number(e.target.value))}
+            disabled={inGap || !duration}
+            aria-label="재생 위치"
+            style={{
+              background: duration
+                ? `linear-gradient(to right, var(--color-primary-500) ${progress}%, var(--color-border) ${progress}%)`
+                : undefined,
+            }}
+            className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-surface-secondary accent-primary-500 transition-[height] duration-150 hover:h-2.5 focus:h-2.5 disabled:cursor-not-allowed disabled:opacity-60 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary-500"
+          />
+          <span className="w-10 shrink-0 text-[11px] tabular-nums text-foreground-muted">{fmt(duration)}</span>
+        </div>
 
-      {/* 컨트롤 */}
-      <div className="mt-3 flex items-center justify-between">
-        {/* 셔플 */}
-        <button
-          onClick={() => update({ shuffle: !s.shuffle })}
-          className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
-            s.shuffle ? "text-primary-600" : "text-foreground-muted hover:text-foreground-secondary"
-          }`}
-          aria-label="셔플"
-          aria-pressed={s.shuffle}
-        >
-          <Shuffle size={16} />
-        </button>
-
-        {/* 이전 / 재생 / 다음 */}
-        <div className="flex items-center gap-2">
+        {/* 메인 컨트롤 — 큰 원형 재생 버튼이 핵심 */}
+        <div className="mt-5 grid grid-cols-5 items-center justify-items-center">
+          <button
+            onClick={() => update({ shuffle: !s.shuffle })}
+            aria-pressed={s.shuffle}
+            aria-label="셔플"
+            className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors ${
+              s.shuffle ? "text-primary-600" : "text-foreground-muted hover:text-foreground-secondary"
+            }`}
+          >
+            <Shuffle size={18} />
+          </button>
           <button
             onClick={onPrev}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-foreground-secondary transition-colors hover:bg-surface-secondary"
             aria-label="이전"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-foreground-secondary transition-colors hover:bg-surface-secondary"
           >
-            <SkipBack size={18} />
+            <SkipBack size={22} />
           </button>
           <button
             onClick={onToggle}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-500 text-white shadow-md transition-colors hover:bg-primary-600 active:scale-95"
             aria-label={isPlaying ? "일시정지" : "재생"}
+            className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-500 text-white shadow-[var(--shadow-primary)] transition-all hover:bg-primary-600 active:scale-95"
           >
-            {isPlaying ? <Pause size={20} /> : <Play size={20} className="ml-0.5" />}
+            {isPlaying ? <Pause size={26} /> : <Play size={26} className="ml-0.5" />}
           </button>
           <button
             onClick={onNext}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-foreground-secondary transition-colors hover:bg-surface-secondary"
             aria-label="다음"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-foreground-secondary transition-colors hover:bg-surface-secondary"
           >
-            <SkipForward size={18} />
+            <SkipForward size={22} />
+          </button>
+          <button
+            onClick={cycleRepeat}
+            aria-label="반복"
+            title={s.repeat === "off" ? "반복 끄기" : s.repeat === "all" ? "전체 반복" : "한 곡 반복"}
+            className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors ${
+              s.repeat !== "off" ? "text-primary-600" : "text-foreground-muted hover:text-foreground-secondary"
+            }`}
+          >
+            {s.repeat === "one" ? <Repeat1 size={18} /> : <Repeat size={18} />}
           </button>
         </div>
 
-        {/* 반복 */}
-        <button
-          onClick={cycleRepeat}
-          className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
-            s.repeat !== "off" ? "text-primary-600" : "text-foreground-muted hover:text-foreground-secondary"
-          }`}
-          aria-label="반복"
-          title={s.repeat === "off" ? "반복 끄기" : s.repeat === "all" ? "전체 반복" : "한 곡 반복"}
-        >
-          {s.repeat === "one" ? <Repeat1 size={16} /> : <Repeat size={16} />}
-        </button>
-      </div>
+        {/* 보조 옵션: 속도 / 자막 / EN·KR — 고정 높이 슬롯(토글해도 안 움직임) */}
+        <div className="mt-5 flex h-9 items-center justify-center gap-2 border-t border-border/60 pt-4">
+          <button
+            onClick={cycleSpeed}
+            className="w-12 rounded-full border border-border px-2.5 py-1 text-center text-[11px] font-medium tabular-nums text-foreground-secondary transition-colors hover:bg-surface-secondary"
+          >
+            {s.speed.toFixed(2).replace(/0$/, "")}x
+          </button>
 
-      {/* 보조 옵션: 속도 / 자막 */}
-      <div className="mt-3 flex items-center justify-center gap-2 border-t border-border/60 pt-3">
-        <button
-          onClick={cycleSpeed}
-          className="rounded-full border border-border px-2.5 py-1 text-[11px] font-medium text-foreground-secondary transition-colors hover:bg-surface-secondary"
-        >
-          {s.speed.toFixed(2).replace(/0$/, "")}x
-        </button>
+          <button
+            onClick={() => update({ subtitleOn: !s.subtitleOn })}
+            aria-pressed={s.subtitleOn}
+            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+              s.subtitleOn
+                ? "border-primary-300 bg-primary-50 text-primary-700"
+                : "border-border text-foreground-secondary hover:bg-surface-secondary"
+            }`}
+          >
+            <Captions size={13} /> 자막
+          </button>
 
-        <button
-          onClick={() => update({ subtitleOn: !s.subtitleOn })}
-          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
-            s.subtitleOn
-              ? "border-primary-300 bg-primary-50 text-primary-700"
-              : "border-border text-foreground-secondary hover:bg-surface-secondary"
-          }`}
-          aria-pressed={s.subtitleOn}
-        >
-          <Captions size={13} /> 자막
-        </button>
-
-        {s.subtitleOn && (
-          <div className="inline-flex overflow-hidden rounded-full border border-border">
+          {/* EN/KR — 항상 DOM에 두고 opacity로 토글 → 폭 reflow 없음(layout shift 0) */}
+          <div
+            className={`inline-flex overflow-hidden rounded-full border border-border transition-opacity ${
+              s.subtitleOn ? "opacity-100" : "pointer-events-none opacity-0"
+            }`}
+            aria-hidden={!s.subtitleOn}
+          >
             {(["en", "ko"] as const).map((lang) => (
               <button
                 key={lang}
@@ -216,18 +227,20 @@ export function ListenPlayer({
               </button>
             ))}
           </div>
-        )}
-      </div>
-
-      {/* 자막(가사) — 컨트롤·옵션 아래. 고정 높이 + 2줄 클램프로 문장 길이가 달라도 높이 불변 */}
-      {s.subtitleOn && (
-        <div className="mt-3 flex h-14 items-center justify-center overflow-hidden rounded-lg bg-surface-secondary/50 px-3 text-center">
-          <p className={`line-clamp-2 text-sm leading-snug ${inGap ? "text-amber-600" : "text-foreground"}`}>
-            {subLine || "—"}
-            {inGap && <span className="ml-1 tabular-nums text-amber-500">{gapLeft}</span>}
-          </p>
         </div>
-      )}
+
+        {/* 자막(가사) — 항상 고정 높이 슬롯으로 렌더(켜고 꺼도 아래가 안 밀림) */}
+        <div className="mt-4 flex h-14 items-center justify-center overflow-hidden rounded-[var(--radius-lg)] bg-surface-secondary/50 px-3 text-center">
+          {s.subtitleOn ? (
+            <p className={`line-clamp-2 text-sm leading-snug ${inGap ? "text-amber-600" : "text-foreground"}`}>
+              {subLine || "—"}
+              {inGap && <span className="ml-1 tabular-nums text-amber-500">{gapLeft}</span>}
+            </p>
+          ) : (
+            <p className="text-[11px] text-foreground-muted">자막이 꺼져 있어요</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -6,8 +6,9 @@ import { useListenSettings } from "@/lib/stores/listen";
 import type { ListenSettingsState } from "@/lib/stores/listen";
 import { ListenSettings } from "./listen-settings";
 import { ListenPlayer } from "./listen-player";
-import { Headphones, Check, ListChecks, Settings, X } from "lucide-react";
+import { Headphones, Check, ListChecks, Settings, X, Pause } from "lucide-react";
 import { QUESTION_TYPE_LABELS } from "@/lib/types/reviews";
+import { TrackArtwork, gradientFor, EqBars } from "./track-artwork";
 
 // ── 세그먼트: 한 트랙은 1~2개 세그먼트(질문/답변)로 재생됨 ──
 type SegKind = "question" | "answer";
@@ -441,25 +442,25 @@ export function ListenContent({ tracks }: { tracks: ListenTrack[] }) {
     contentMode === "answer" ? "답변만" : contentMode === "qa" ? (thinkGap ? "질문→답변·생각 간격" : "질문→답변") : "질문만";
 
   return (
-    <div className="space-y-4 pb-28 sm:pb-24">
-      {/* 설정 요약 바 — 탭하면 모달 */}
+    <div className="mx-auto max-w-2xl space-y-4 pb-28 sm:pb-24">
+      {/* 설정 요약 pill — 탭하면 모달 */}
       <button
         onClick={() => setSettingsOpen(true)}
-        className="flex w-full items-center justify-between gap-3 rounded-[var(--radius-xl)] border border-border bg-surface px-4 py-3 text-left transition-colors hover:bg-surface-secondary/50"
+        className="flex w-full items-center justify-between gap-3 rounded-full border border-border bg-surface px-4 py-2.5 text-left shadow-[var(--shadow-card)] transition-colors hover:bg-surface-secondary/50"
       >
-        <div className="min-w-0">
-          <p className="text-[11px] text-foreground-muted">재생 설정</p>
-          <p className="truncate text-sm font-medium text-foreground">
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="shrink-0 text-[11px] font-medium text-foreground-muted">재생 설정</span>
+          <span className="truncate text-sm font-medium text-foreground">
             {filterSummary} · {contentSummary}
-          </p>
-        </div>
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-secondary text-foreground-secondary">
-          <Settings size={17} />
+          </span>
+        </span>
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-secondary text-foreground-secondary">
+          <Settings size={16} />
         </span>
       </button>
 
-      {/* 플레이어 (now playing + 컨트롤 + 자막) — 네비바(h-16=64px) 아래에 고정 */}
-      <div className="sticky top-16 z-20">
+      {/* 플레이어 — PC(lg)에서만 네비바 아래 고정(기존 유지). 모바일은 자연 스크롤(목록이 플레이어 밑으로 말려드는 현상 방지) */}
+      <div className="z-20 lg:sticky lg:top-16">
         <ListenPlayer
           track={currentTrack}
           segKind={segKind}
@@ -476,9 +477,9 @@ export function ListenContent({ tracks }: { tracks: ListenTrack[] }) {
       </div>
 
       {/* 재생목록 */}
-      <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface">
-        {/* 헤더 — 일반 / 선택 모드 */}
-        <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
+      <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface shadow-[var(--shadow-card)]">
+        {/* 헤더 — 일반 / 선택 모드 (고정 높이라 모드 전환 시 안 움직임) */}
+        <div className="flex h-12 items-center justify-between gap-2 border-b border-border px-4">
           {selectionMode ? (
             <>
               <button
@@ -532,9 +533,10 @@ export function ListenContent({ tracks }: { tracks: ListenTrack[] }) {
 
         {/* 목록 */}
         {(selectionMode ? queue : activeQueue).length === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-foreground-secondary">
-            선택한 조건에 맞는 곡이 없어요
-          </p>
+          <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+            <TrackArtwork track={null} isPlaying={false} size="mini" />
+            <p className="text-sm text-foreground-secondary">선택한 조건에 맞는 곡이 없어요</p>
+          </div>
         ) : selectionMode ? (
           <ul className="divide-y divide-border/50">
             {queue.map((t, i) => {
@@ -543,20 +545,20 @@ export function ListenContent({ tracks }: { tracks: ListenTrack[] }) {
                 <li key={`${t.scriptId}-${i}`}>
                   <button
                     onClick={() => toggleDraft(t.scriptId)}
-                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-surface-secondary/60"
+                    className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-surface-secondary/60"
                   >
                     <span
-                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
-                        checked ? "border-primary-500 bg-primary-500 text-white" : "border-border bg-surface"
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border-2 transition-colors ${
+                        checked ? "border-primary-500 bg-primary-500 text-white" : "border-border bg-surface-secondary/40"
                       }`}
                     >
-                      {checked && <Check size={11} strokeWidth={3} />}
+                      {checked && <Check size={16} strokeWidth={3} />}
                     </span>
                     <div className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium text-foreground">
                         {t.topic || "주제 없음"}
                       </span>
-                      <p className="truncate text-[11px] text-foreground-muted">
+                      <p className="truncate text-xs text-foreground-muted">
                         {t.questionShort || t.questionEnglish || ""}
                       </p>
                     </div>
@@ -573,18 +575,22 @@ export function ListenContent({ tracks }: { tracks: ListenTrack[] }) {
                 <li key={`${t.scriptId}-${i}`}>
                   <button
                     onClick={() => jumpTo(i)}
-                    className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                    className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${
                       active ? "bg-primary-50/60" : "hover:bg-surface-secondary/60"
                     }`}
                   >
-                    <span className={`w-5 shrink-0 text-center text-xs tabular-nums ${active ? "text-primary-600" : "text-foreground-muted"}`}>
-                      {active && isPlaying ? "♪" : i + 1}
+                    {/* 미니 그라디언트 커버 + 번호/EQ 오버레이 */}
+                    <span className={`relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-[10px] ${gradientFor(t.questionType)}`}>
+                      <span className="absolute inset-0 bg-black/25" />
+                      <span className="relative flex items-center justify-center text-[11px] font-semibold tabular-nums text-white">
+                        {active && isPlaying ? <EqBars size="sm" /> : active ? <Pause size={14} /> : i + 1}
+                      </span>
                     </span>
                     <div className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-foreground">
+                      <span className={`block truncate text-sm font-medium ${active ? "text-primary-700" : "text-foreground"}`}>
                         {t.topic || "주제 없음"}
                       </span>
-                      <p className="truncate text-[11px] text-foreground-muted">
+                      <p className="truncate text-xs text-foreground-muted">
                         {t.questionShort || t.questionEnglish || ""}
                       </p>
                     </div>
@@ -603,7 +609,7 @@ export function ListenContent({ tracks }: { tracks: ListenTrack[] }) {
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setSettingsOpen(false)}
           />
-          <div className="relative max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-surface p-5 shadow-xl">
+          <div className="relative max-h-[85vh] w-full max-w-md overflow-y-auto rounded-[var(--radius-2xl)] border border-border bg-surface p-5 shadow-[var(--shadow-card-hover)] max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Settings size={18} className="text-primary-500" />

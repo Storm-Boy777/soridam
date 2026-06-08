@@ -290,6 +290,12 @@ details.faq-item .faq-answer {
   100% { transform: translateX(-50%); }
 }
 
+/* 듣기 플레이어 — 이퀄라이저 바(재생 중 표시). transform: scaleY 기반 → 레이아웃 비용 0 */
+@keyframes eq-bar {
+  0%, 100% { transform: scaleY(0.35); }
+  50%      { transform: scaleY(1); }
+}
+
 /* 훈련 모드 개별평가 패널 애니메이션 */
 @keyframes slideUp {
   from {
