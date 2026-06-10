@@ -327,6 +327,7 @@ function StartTab({
               실제 OPIc과 동일하게 15문제를 풀고, 예상 등급과 상세 피드백을 받습니다.
               <span className="font-medium text-foreground-secondary"> 훈련 모드</span>는 자유롭게 연습하고,
               <span className="font-medium text-foreground-secondary"> 실전 모드</span>는 40분 제한으로 실제 시험처럼 진행됩니다.
+              <span className="font-medium text-foreground-secondary"> 실전 감각 훈련</span>은 평가 없이 내 답변 텍스트만 빠르게 확인하며 같은 문제로 반복 응시할 수 있어요.
             </p>
           )}
         </div>
@@ -346,9 +347,9 @@ function StartTab({
         {/* 모바일 세로 */}
         <div className="relative mt-4 sm:hidden">
           {[
-            { step: 1, title: "기출 문제 선택", desc: "후기 기반 기출 세트 선택" },
-            { step: 2, title: "모드 선택 + 응시", desc: "훈련/실전 모드로 15문항 답변" },
-            { step: 3, title: "평가 리포트 확인", desc: "예상 등급과 문항별 피드백 확인" },
+            { step: 1, title: "모드 선택", desc: "훈련/실전/실전 감각 중 선택" },
+            { step: 2, title: "기출 선택 + 응시", desc: "기출 세트로 15문항 답변" },
+            { step: 3, title: "결과 확인", desc: "모드별 평가 또는 답변 트랜스크립트" },
           ].map((s, i) => (
             <div key={s.step} className="relative flex gap-3 pb-4 last:pb-0">
               {i < 2 && (
@@ -367,9 +368,9 @@ function StartTab({
         {/* PC 가로 — 단계 사이 화살표 */}
         <div className="hidden sm:mt-6 sm:grid sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-center sm:gap-3">
           {[
-            { step: 1, title: "기출 문제 선택", desc: "후기 기반 기출 세트 선택" },
-            { step: 2, title: "모드 선택 + 응시", desc: "훈련/실전 모드로 15문항 답변" },
-            { step: 3, title: "평가 리포트 확인", desc: "예상 등급과 문항별 피드백 확인" },
+            { step: 1, title: "모드 선택", desc: "훈련/실전/실전 감각 중 선택" },
+            { step: 2, title: "기출 선택 + 응시", desc: "기출 세트로 15문항 답변" },
+            { step: 3, title: "결과 확인", desc: "모드별 평가 또는 답변 트랜스크립트" },
           ].flatMap((s, i) => [
             <div key={s.step} className="flex flex-col items-center text-center">
               <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-border bg-surface-secondary text-sm font-bold text-foreground-muted">
@@ -400,30 +401,38 @@ function StartTab({
         </div>
       )}
 
-      {/* 크레딧 있을 때: 기존 플로우 (기출 선택 → 모드 선택) */}
+      {/* 크레딧 있을 때: 모드 선택 → 기출 선택 순서 */}
       {hasCredit === true && (
         <>
+          {/* 1단계: 모드 선택 (항상 표시) */}
           <div className="rounded-xl border border-border bg-surface p-4 sm:p-6">
+            <ModeSelector
+              selectedMode={selectedMode}
+              onSelect={setSelectedMode}
+              hasCredit={true}
+            />
+          </div>
+
+          {/* 2단계: 기출 선택 — 모드 미선택 시 비활성화 느낌(숨기지 않음) */}
+          <div
+            className={`rounded-xl border border-border bg-surface p-4 transition-opacity sm:p-6 ${
+              !selectedMode ? "pointer-events-none opacity-50" : ""
+            }`}
+          >
+            {!selectedMode && (
+              <p className="mb-3 text-xs font-medium text-foreground-muted">
+                먼저 응시 모드를 선택하면 기출을 고를 수 있어요
+              </p>
+            )}
             <ExamPoolSelector
               pools={pools}
               selectedId={selectedPoolId}
               onSelect={setSelectedPoolId}
               isLoading={poolLoading}
               onRefresh={() => refetchPool()}
-              disabled={!!activeSession}
+              disabled={!!activeSession || !selectedMode}
             />
           </div>
-
-          {/* 모드 선택 — 기출 선택 후에만 표시 */}
-          {selectedPoolId && (
-            <div className="rounded-xl border border-border bg-surface p-4 sm:p-6">
-              <ModeSelector
-                selectedMode={selectedMode}
-                onSelect={setSelectedMode}
-                hasCredit={true}
-              />
-            </div>
-          )}
         </>
       )}
 

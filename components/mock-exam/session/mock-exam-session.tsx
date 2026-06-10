@@ -81,6 +81,8 @@ export function MockExamSession({
   const { session, answers: initialAnswers, questions } = initialData;
   const mode = session.mode as MockExamMode;
   const isTraining = mode === "training";
+  // 실전 감각 훈련: 평가 없이 트랜스크립트만 (폴링/대기화면 없음, 완료 시 결과로 이동)
+  const isTranscript = mode === "transcript";
 
   // ── 훈련 모드: 인라인 평가 뷰 상태 ──
   const [viewingEvalQNum, setViewingEvalQNum] = useState<number | null>(null);
@@ -172,7 +174,7 @@ export function MockExamSession({
   // 실전 모드: 평가 대기 화면에서만 폴링
   const evalPolling = useEvalPolling({
     sessionId,
-    enabled: !isTrialMode && (phase === "waiting" || (isTraining && phase === "exam")),
+    enabled: !isTrialMode && !isTranscript && (phase === "waiting" || (isTraining && phase === "exam")),
     interval: isTraining && phase === "exam" ? 8000 : 5000,
   });
 
@@ -362,8 +364,13 @@ export function MockExamSession({
           setPhase("exam");
           return;
         }
-        queryClient.invalidateQueries({ queryKey: ["mock-exam-history"] });
         queryClient.invalidateQueries({ queryKey: ["mock-active-session"] });
+        // 실전 감각 훈련: 평가 대기 없이 바로 트랜스크립트 결과로 이동
+        if (isTranscript) {
+          router.push(`/mock-exam/result/${sessionId}`);
+          return;
+        }
+        queryClient.invalidateQueries({ queryKey: ["mock-exam-history"] });
         setPhase("waiting");
       });
       return;
@@ -374,7 +381,7 @@ export function MockExamSession({
     setUploadState("idle");
     setError(null);
     setShowQuestion("hidden");
-  }, [currentQ, sessionId, queryClient, recorder, questionPlayer, isTrialMode]);
+  }, [currentQ, sessionId, queryClient, recorder, questionPlayer, isTrialMode, isTranscript, router]);
 
   // ── "다음" 버튼 핸들러 (소리담 패턴: 1클릭으로 중지+업로드+이동) ──
   const handleNext = useCallback(() => {
@@ -543,7 +550,7 @@ export function MockExamSession({
               currentQ={currentQ}
               mode={mode}
               answeredQuestions={answeredQuestions}
-              skippedQuestions={new Set()}
+              skippedQuestions={isTranscript ? new Set([1]) : new Set()}
               evalStatuses={evalStatusMap}
               viewingEvalQNum={viewingEvalQNum}
               onEvalClick={(qNum) => setViewingEvalQNum(qNum)}

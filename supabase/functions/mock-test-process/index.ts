@@ -225,12 +225,14 @@ Deno.serve(async (req) => {
       question_id,
       audio_url,
       audio_duration,
+      mode,
     } = parsedBody as {
       session_id: string;
       question_number: number;
       question_id?: string;
       audio_url: string;
       audio_duration?: number;
+      mode?: string;
     };
 
     // 필수 파라미터 검증
@@ -245,6 +247,77 @@ Deno.serve(async (req) => {
 
     // eval_status → processing
     await updateAnswerStatus(supabase, session_id, question_number, "processing");
+
+    // ── 실전 감각 훈련(transcript): Whisper STT만 수행, 평가/발음/체인 모두 생략 ──
+    if (mode === "transcript") {
+      try {
+        // user_id 조회 (로깅/비용차감용)
+        const { data: sd } = await supabase
+          .from("mock_test_sessions")
+          .select("user_id")
+          .eq("session_id", session_id)
+          .single();
+        const uid = sd?.user_id || "";
+
+        // 오디오 다운로드
+        const audioResp = await fetch(audio_url);
+        if (!audioResp.ok) {
+          throw new Error(`오디오 다운로드 실패 (${audioResp.status})`);
+        }
+        const audioBuffer = await audioResp.arrayBuffer();
+
+        // Whisper STT (재시도 포함)
+        const whisperStart = Date.now();
+        const transcript = await withRetry(
+          () => whisperSTT(audioBuffer),
+          3,
+          "Whisper STT",
+        );
+        const whisperTimeMs = Date.now() - whisperStart;
+
+        // Whisper 사용량 로깅 (실비만 차감)
+        logApiUsage(supabase, {
+          user_id: uid,
+          session_type: "mock_exam",
+          session_id: session_id,
+          feature: "실전감각 음성인식",
+          service: "openai_whisper",
+          model: "whisper-1",
+          ef_name: "mock-test-process",
+          audio_duration_sec: estimateAudioDuration(audioBuffer.byteLength, "wav"),
+          processing_time_ms: whisperTimeMs,
+        }).catch((err) => console.error("[process] Whisper 로깅 실패:", err?.message));
+
+        // 단어 수 / WPM 계산 (참고용)
+        const words = transcript.split(/\s+/).filter((w: string) => w.length > 0);
+        const wordCount = words.length;
+        const wpm = calculateWPM(wordCount, audio_duration || 0);
+
+        // 트랜스크립트 저장 + 완료 처리 (평가 없음)
+        await updateAnswerStatus(supabase, session_id, question_number, "completed", {
+          transcript,
+          word_count: wordCount,
+          wpm,
+        });
+
+        return new Response(
+          JSON.stringify({ status: "completed", transcript, word_count: wordCount }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      } catch (transcriptErr) {
+        // transcript 모드는 재호출 안전망이 없으므로 즉시 failed 마킹 (폴링 종료 가능)
+        const msg =
+          transcriptErr instanceof Error ? transcriptErr.message : String(transcriptErr);
+        console.error("[process] transcript STT 실패:", msg);
+        await updateAnswerStatus(supabase, session_id, question_number, "failed", {
+          eval_error: msg,
+        });
+        return new Response(
+          JSON.stringify({ error: msg }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
 
     // ── 1차 스킵: 오디오 길이 ──
     const audioSkip = checkAudioSkip(audio_duration || 0);

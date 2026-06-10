@@ -7,6 +7,7 @@ import {
   Check,
   AlertTriangle,
   Lock,
+  FileText,
 } from "lucide-react";
 import type { MockExamMode } from "@/lib/types/mock-exam";
 
@@ -26,7 +27,7 @@ export function ModeSelector({ selectedMode, onSelect, hasCredit = true }: ModeS
         모드를 선택하세요
       </p>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
         {/* 훈련 모드 */}
         <button
           onClick={() => hasCredit && onSelect("training")}
@@ -104,6 +105,46 @@ export function ModeSelector({ selectedMode, onSelect, hasCredit = true }: ModeS
                   size={12}
                   className="mt-0.5 shrink-0 text-accent-500"
                 />
+                {text}
+              </li>
+            ))}
+          </ul>
+        </button>
+
+        {/* 실전 감각 훈련 모드 */}
+        <button
+          onClick={() => hasCredit && onSelect("transcript")}
+          className={`relative rounded-xl border p-5 text-left transition-all ${
+            !hasCredit
+              ? "cursor-not-allowed border-border bg-surface opacity-60"
+              : selectedMode === "transcript"
+                ? "border-emerald-500 bg-emerald-50/30 ring-2 ring-emerald-100"
+                : "border-border bg-surface hover:border-emerald-200"
+          }`}
+        >
+          {!hasCredit && (
+            <div className="absolute right-3 top-3">
+              <Lock size={14} className="text-foreground-muted" />
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100">
+              <FileText size={16} className="text-emerald-600" />
+            </div>
+            <span className="font-semibold text-foreground">실전 감각 훈련</span>
+          </div>
+          <ul className="mt-3 space-y-1.5 pl-10">
+            {[
+              "사전 설정·마이크 체크 없이 바로 시작",
+              "자기소개 생략, 2번 문제부터 응시",
+              "내 답변 텍스트만 확인 (AI 평가 없음)",
+              "같은 문제로 반복 재응시 · 크레딧 거의 안 듦",
+            ].map((text) => (
+              <li
+                key={text}
+                className="flex items-start gap-1.5 text-xs text-foreground-secondary"
+              >
+                <Check size={12} className="mt-0.5 shrink-0 text-emerald-500" />
                 {text}
               </li>
             ))}

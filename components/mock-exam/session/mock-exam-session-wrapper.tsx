@@ -66,6 +66,14 @@ export function MockExamSessionWrapper({
       if (session.status === "expired") {
         setPhase("error");
       }
+      // 실전 감각 훈련(transcript): 서베이/디바이스/복원 단계 생략, 바로 세션. 완료 세션은 결과로 이동
+      else if (session.mode === "transcript") {
+        if (session.status === "completed") {
+          router.replace(`/mock-exam/result/${sessionId}`);
+        } else {
+          setPhase("session");
+        }
+      }
       // 세션이 이미 완료 상태면 바로 세션 화면 (평가 대기로 전환됨)
       else if (session.status === "completed") {
         setPhase("session");
@@ -89,7 +97,7 @@ export function MockExamSessionWrapper({
         setPhase("survey");
       }
     }
-  }, [isLoading, queryError, sessionResult, sessionId, isTrialMode]);
+  }, [isLoading, queryError, sessionResult, sessionId, isTrialMode, router]);
 
   // 서베이 완료 → 디바이스 테스트
   const handleSurveyComplete = useCallback(() => {

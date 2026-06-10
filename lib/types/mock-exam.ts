@@ -3,7 +3,8 @@
 // ── ENUM 리터럴 타입 ──
 
 // 모의고사 모드 (F-5)
-export const MOCK_EXAM_MODES = ['training', 'test'] as const;
+// transcript = 실전 감각 훈련: 사전설정/자기소개 생략, Whisper 트랜스크립트만 생성(평가·리포트 없음), 반복 재응시용
+export const MOCK_EXAM_MODES = ['training', 'test', 'transcript'] as const;
 export type MockExamMode = (typeof MOCK_EXAM_MODES)[number];
 
 // 세션 상태
@@ -63,6 +64,7 @@ export const QUESTION_TYPE_TO_CHECKBOX: Record<string, CheckboxType> = {
 export const MOCK_EXAM_MODE_LABELS: Record<MockExamMode, string> = {
   training: '훈련',
   test: '실전',
+  transcript: '실전 감각',
 };
 
 export const SESSION_STATUS_LABELS: Record<SessionStatus, string> = {

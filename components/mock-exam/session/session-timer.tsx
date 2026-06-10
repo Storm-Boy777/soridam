@@ -11,19 +11,20 @@ interface SessionTimerProps {
 }
 
 export function SessionTimer({ mode, startedAt, onTimeExpired }: SessionTimerProps) {
-  const isTraining = mode === "training";
+  // test만 40분 카운트다운, training·transcript는 경과시간(카운트업)
+  const isCountUp = mode !== "test";
   const hasTriggeredRef = useRef(false);
 
   const [seconds, setSeconds] = useState(() => {
     const start = new Date(startedAt).getTime();
     const elapsed = Math.floor((Date.now() - start) / 1000);
-    return isTraining ? elapsed : Math.max(2400 - elapsed, 0);
+    return isCountUp ? elapsed : Math.max(2400 - elapsed, 0);
   });
 
   useEffect(() => {
     const timer = setInterval(() => {
       setSeconds((prev) => {
-        if (isTraining) return prev + 1;
+        if (isCountUp) return prev + 1;
         const next = prev - 1;
         // 40분 경과 트리거 (1회만)
         if (next <= 0 && !hasTriggeredRef.current) {
@@ -35,7 +36,7 @@ export function SessionTimer({ mode, startedAt, onTimeExpired }: SessionTimerPro
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isTraining, onTimeExpired]);
+  }, [isCountUp, onTimeExpired]);
 
   // 포맷
   const formatted = useMemo(() => {
@@ -47,7 +48,7 @@ export function SessionTimer({ mode, startedAt, onTimeExpired }: SessionTimerPro
   }, [seconds]);
 
   // 색상 (실전 모드)
-  const colorClass = isTraining
+  const colorClass = isCountUp
     ? "text-foreground-secondary"
     : seconds <= 0
       ? "text-red-500"

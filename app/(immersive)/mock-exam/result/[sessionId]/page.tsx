@@ -1,6 +1,8 @@
 import { ImmersiveHeader } from "@/components/layout/immersive-header";
 import { ResultPage } from "@/components/mock-exam/result/result-page";
 import type { ResultPageData } from "@/components/mock-exam/result/result-page";
+import { TranscriptResult } from "@/components/mock-exam/result/transcript-result";
+import { getTranscriptResult } from "@/lib/actions/mock-exam";
 import {
   getOverviewData,
   getDiagnosisData,
@@ -21,6 +23,20 @@ const VALID_TABS = ["overview", "diagnosis", "questions", "growth"] as const;
 
 export default async function MockExamResultPage({ params, searchParams }: Props) {
   const { sessionId } = await params;
+
+  // 실전 감각 훈련(transcript) 모드 분기 — 평가 리포트 없이 트랜스크립트 뷰
+  const transcriptRes = await getTranscriptResult(sessionId).catch(() => null);
+  if (transcriptRes?.data?.mode === "transcript") {
+    return (
+      <>
+        <ImmersiveHeader title="실전 감각 훈련" backHref="/mock-exam?tab=start" />
+        <main className="flex h-0 min-h-0 flex-grow flex-col md:h-auto md:flex-1">
+          <TranscriptResult sessionId={sessionId} initialData={transcriptRes.data} />
+        </main>
+      </>
+    );
+  }
+
   const { tab } = await searchParams;
   const initialTab = VALID_TABS.includes(tab as (typeof VALID_TABS)[number])
     ? (tab as (typeof VALID_TABS)[number])

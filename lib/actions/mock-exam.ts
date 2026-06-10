@@ -49,7 +49,8 @@ export async function getExamPool(): Promise<ActionResult<ExamPoolPreview[]>> {
       .from(T.mock_test_sessions)
       .select("submission_id")
       .eq("user_id", userId)
-      .neq("status", "expired");
+      .neq("status", "expired")
+      .neq("mode", "transcript"); // 실전 감각 훈련 세션은 일반 풀에 영향 없음
 
     const usedIds = (usedSessions || []).map((s) => s.submission_id);
 
@@ -194,7 +195,8 @@ export async function getRandomSubmissionId(): Promise<ActionResult<number>> {
       .from(T.mock_test_sessions)
       .select("submission_id")
       .eq("user_id", userId)
-      .neq("status", "expired");
+      .neq("status", "expired")
+      .neq("mode", "transcript"); // 실전 감각 훈련 세션은 일반 풀에 영향 없음
 
     const usedIds = (usedSessions || []).map((s) => s.submission_id);
 
@@ -279,12 +281,15 @@ export async function createSession(
 
     const questionIds = subQuestions.map((q) => q.question_id);
 
-    // 세션 만료 시간 계산
+    // 세션 만료 시간 계산 (실전만 90분, 훈련·실전감각은 72시간)
     const now = new Date();
     const expiresAt =
-      parsed.data.mode === "training"
-        ? new Date(now.getTime() + 72 * 60 * 60 * 1000) // 72시간
-        : new Date(now.getTime() + 90 * 60 * 1000); // 90분
+      parsed.data.mode === "test"
+        ? new Date(now.getTime() + 90 * 60 * 1000) // 90분
+        : new Date(now.getTime() + 72 * 60 * 60 * 1000); // 72시간
+
+    // 실전 감각 훈련(transcript): 자기소개(Q1) 생략 → Q2부터 시작
+    const startQuestion = parsed.data.mode === "transcript" ? 2 : 1;
 
     const sessionId = generateSessionId();
 
@@ -298,7 +303,7 @@ export async function createSession(
         mode: parsed.data.mode,
         status: "active",
         question_ids: questionIds,
-        current_question: 1,
+        current_question: startQuestion,
         total_questions: 15,
         expires_at: expiresAt.toISOString(),
       });
@@ -403,6 +408,7 @@ export async function submitAnswer(
           question_id: parsed.data.question_id,
           audio_url: parsed.data.audio_url,
           audio_duration: parsed.data.audio_duration,
+          mode: session.mode, // transcript면 EF가 STT만 수행
         }),
       }).catch((err) => {
         console.error("fire-and-forget mock-test-process 호출 실패:", err?.message || err);
@@ -505,7 +511,7 @@ export async function completeSession(
     // 세션 소유자 확인
     const { data: session } = await supabase
       .from(T.mock_test_sessions)
-      .select("user_id, status")
+      .select("user_id, status, mode")
       .eq("session_id", parsed.data.session_id)
       .single();
 
@@ -528,6 +534,11 @@ export async function completeSession(
 
     if (updateErr) {
       return { error: "세션 완료 처리 실패" };
+    }
+
+    // 실전 감각 훈련(transcript): 평가/리포트 파이프라인이 없으므로 트리거 스킵
+    if (session.mode === "transcript") {
+      return {};
     }
 
     // 미완료 답변 확인 (completed/skipped/failed 제외)
@@ -637,6 +648,7 @@ export async function getHistory(): Promise<
         question_ids
       `)
       .eq("user_id", userId)
+      .neq("mode", "transcript") // 실전 감각 훈련은 이력/등급추이에서 제외
       .in("status", ["completed", "expired"])
       .order("started_at", { ascending: false })
       .limit(50);
@@ -854,5 +866,93 @@ export async function checkMockExamCredit(): Promise<
     };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "크레딧 조회 실패" };
+  }
+}
+
+// ============================================================
+// 12. 실전 감각 훈련 결과 조회 (getTranscriptResult)
+// transcript 모드 전용 — 문항별 "질문 + 내 답변 트랜스크립트" 묶음 반환
+// ============================================================
+
+export interface TranscriptResultItem {
+  question_number: number;
+  question_english: string;
+  question_korean: string;
+  topic: string;
+  category: string;
+  transcript: string | null;
+  eval_status: string;
+  audio_url: string | null;
+}
+
+export async function getTranscriptResult(
+  sessionId: string
+): Promise<
+  ActionResult<{
+    submission_id: number;
+    mode: string;
+    status: string;
+    items: TranscriptResultItem[];
+  }>
+> {
+  try {
+    const { supabase, userId } = await requireUser();
+
+    const { data: session, error: sessErr } = await supabase
+      .from(T.mock_test_sessions)
+      .select("submission_id, mode, status, question_ids, user_id")
+      .eq("session_id", sessionId)
+      .single();
+
+    if (sessErr || !session) {
+      return { error: "세션을 찾을 수 없습니다" };
+    }
+    if (session.user_id !== userId) {
+      return { error: "권한이 없습니다" };
+    }
+
+    const [{ data: answers }, { data: questions }] = await Promise.all([
+      supabase
+        .from(T.mock_test_answers)
+        .select("question_number, transcript, eval_status, audio_url, question_id")
+        .eq("session_id", sessionId)
+        .order("question_number"),
+      supabase
+        .from(T.questions)
+        .select("id, question_english, question_korean, topic, category")
+        .in("id", session.question_ids || []),
+    ]);
+
+    const qMap = new Map(
+      (questions || []).map((q) => [q.id, q])
+    );
+
+    // 자기소개(Q1) 제외 → Q2~Q15
+    const items: TranscriptResultItem[] = (answers || [])
+      .filter((a) => a.question_number >= 2)
+      .map((a) => {
+        const q = a.question_id ? qMap.get(a.question_id) : null;
+        return {
+          question_number: a.question_number,
+          question_english: q?.question_english || "",
+          question_korean: q?.question_korean || "",
+          topic: q?.topic || "",
+          category: q?.category || "",
+          transcript: a.transcript,
+          eval_status: a.eval_status,
+          audio_url: a.audio_url,
+        };
+      });
+
+    return {
+      data: {
+        submission_id: session.submission_id,
+        mode: session.mode,
+        status: session.status,
+        items,
+      },
+    };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "결과 조회 실패" };
   }
 }
