@@ -108,6 +108,23 @@ async function requireSessionAccess<TSession extends Record<string, unknown>>(
   };
 }
 
+/** 결과 페이지의 "이 기출로 다시 응시" 액션용 — 세션의 submission_id만 반환 */
+export async function getSessionSubmissionId(
+  sessionId: string,
+): Promise<ActionResult<{ submission_id: number; mode: string }>> {
+  try {
+    const { session } = await requireSessionAccess<{
+      submission_id: number;
+      mode: string;
+    }>(sessionId, "submission_id, mode");
+    return {
+      data: { submission_id: session.submission_id, mode: session.mode },
+    };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 export async function getOverviewData(
   sessionId: string,
 ): Promise<ActionResult<OverviewData>> {

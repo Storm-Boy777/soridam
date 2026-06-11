@@ -8,7 +8,9 @@ import {
   getDiagnosisData,
   getQuestionsData,
   getGrowthData,
+  getSessionSubmissionId,
 } from "@/lib/actions/mock-exam-result";
+import type { MockExamMode } from "@/lib/types/mock-exam";
 
 export const metadata = {
   title: "나의 모의고사",
@@ -42,13 +44,15 @@ export default async function MockExamResultPage({ params, searchParams }: Props
     ? (tab as (typeof VALID_TABS)[number])
     : "overview";
 
-  // 4탭 데이터 병렬 조회
-  const [overviewRes, diagnosisRes, questionsRes, growthRes] = await Promise.all([
-    getOverviewData(sessionId).catch(() => ({ data: undefined, error: "조회 실패" })),
-    getDiagnosisData(sessionId).catch(() => ({ data: undefined, error: "조회 실패" })),
-    getQuestionsData(sessionId).catch(() => ({ data: undefined, error: "조회 실패" })),
-    getGrowthData(sessionId).catch(() => ({ data: undefined, error: "조회 실패" })),
-  ]);
+  // 4탭 데이터 + 재응시용 submission_id 병렬 조회
+  const [overviewRes, diagnosisRes, questionsRes, growthRes, submissionRes] =
+    await Promise.all([
+      getOverviewData(sessionId).catch(() => ({ data: undefined, error: "조회 실패" })),
+      getDiagnosisData(sessionId).catch(() => ({ data: undefined, error: "조회 실패" })),
+      getQuestionsData(sessionId).catch(() => ({ data: undefined, error: "조회 실패" })),
+      getGrowthData(sessionId).catch(() => ({ data: undefined, error: "조회 실패" })),
+      getSessionSubmissionId(sessionId).catch(() => ({ data: undefined })),
+    ]);
 
   const data: ResultPageData = {
     overview: overviewRes.data ?? null,
@@ -57,11 +61,20 @@ export default async function MockExamResultPage({ params, searchParams }: Props
     growth: growthRes.data ?? null,
   };
 
+  const submissionId = submissionRes.data?.submission_id ?? null;
+  const currentMode = (submissionRes.data?.mode as MockExamMode | undefined) ?? null;
+
   return (
     <>
       <ImmersiveHeader title="나의 모의고사" backHref="/mock-exam?tab=history" />
       <main className="flex h-0 min-h-0 flex-grow flex-col md:h-auto md:flex-1">
-        <ResultPage sessionId={sessionId} data={data} initialTab={initialTab} />
+        <ResultPage
+          sessionId={sessionId}
+          data={data}
+          initialTab={initialTab}
+          submissionId={submissionId}
+          currentMode={currentMode}
+        />
       </main>
     </>
   );

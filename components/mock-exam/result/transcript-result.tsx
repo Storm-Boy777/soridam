@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Copy, Check, RefreshCw, Loader2, FileText } from "lucide-react";
+import { Copy, Check, Loader2, FileText } from "lucide-react";
 import {
   getTranscriptResult,
-  createSession,
   type TranscriptResultItem,
 } from "@/lib/actions/mock-exam";
+import { RetakeCard } from "./retake-card";
 
 interface TranscriptResultData {
   submission_id: number;
@@ -26,9 +25,7 @@ export function TranscriptResult({
   sessionId: string;
   initialData: TranscriptResultData;
 }) {
-  const router = useRouter();
   const [copied, setCopied] = useState(false);
-  const [isRetrying, setIsRetrying] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
   // 트랜스크립트 생성 폴링 (아직 STT 진행 중인 문항이 있으면 3초마다)
@@ -72,21 +69,6 @@ export function TranscriptResult({
     }
   }, [buildCopyText]);
 
-  const handleRetake = useCallback(async () => {
-    setIsRetrying(true);
-    setActionError(null);
-    const res = await createSession({
-      submission_id: data.submission_id,
-      mode: "transcript",
-    });
-    if (res.error || !res.data) {
-      setActionError(res.error || "재응시 세션 생성에 실패했습니다");
-      setIsRetrying(false);
-      return;
-    }
-    router.push(`/mock-exam/session?id=${res.data.session_id}`);
-  }, [data.submission_id, router]);
-
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="relative min-h-0 flex-1">
@@ -107,26 +89,14 @@ export function TranscriptResult({
                 </div>
               </div>
 
-              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <div className="mt-4">
                 <button
                   onClick={handleCopyAll}
                   disabled={pendingCount > 0}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-600 disabled:opacity-50"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-600 disabled:opacity-50"
                 >
                   {copied ? <Check size={16} /> : <Copy size={16} />}
                   {copied ? "복사 완료!" : "전체 복사"}
-                </button>
-                <button
-                  onClick={handleRetake}
-                  disabled={isRetrying}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground-secondary transition-colors hover:bg-surface-secondary disabled:opacity-50"
-                >
-                  {isRetrying ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <RefreshCw size={16} />
-                  )}
-                  같은 문제로 다시 응시
                 </button>
               </div>
 
@@ -207,6 +177,13 @@ export function TranscriptResult({
               })}
             </div>
           </div>
+
+          {/* ── 재응시 카드 (페이지 하단) ── */}
+          <RetakeCard
+            submissionId={data.submission_id}
+            currentMode="transcript"
+            maxWidthClass="max-w-3xl"
+          />
         </div>
       </div>
     </div>

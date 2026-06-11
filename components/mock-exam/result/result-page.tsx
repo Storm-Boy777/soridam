@@ -5,6 +5,7 @@ import { BarChart3, ClipboardCheck, FileText, TrendingUp } from "lucide-react";
 import { TabOverview } from "./tab-overview";
 import { TabDiagnosis } from "./tab-diagnosis";
 import { TabQuestions } from "./tab-questions";
+import { RetakeCard } from "./retake-card";
 import dynamic from "next/dynamic";
 
 const TabGrowth = dynamic(
@@ -15,6 +16,7 @@ import type { DiagnosisTransformOutput } from "@/lib/mock-exam-result/diagnosis-
 import type { OverviewData } from "./tab-overview";
 import type { QuestionsData } from "./tab-questions";
 import type { GrowthReportV2 } from "@/lib/mock-data/mock-exam-result";
+import type { MockExamMode } from "@/lib/types/mock-exam";
 
 // ── 결과 페이지 메인 래퍼 ──
 
@@ -39,11 +41,17 @@ export function ResultPage({
   sessionId,
   data,
   initialTab,
+  submissionId,
+  currentMode,
 }: {
   sessionId: string;
   data?: ResultPageData;
   /** 서버에서 전달받은 초기 탭 (Hydration 불일치 방지) */
   initialTab?: TabKey;
+  /** 재응시 카드용 submission_id (조회 실패 시 null → 카드 숨김) */
+  submissionId?: number | null;
+  /** 현재 결과 페이지가 보여주는 세션의 모드 — 재응시 카드의 "현재 결과" 뱃지용 */
+  currentMode?: MockExamMode | null;
 }) {
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab || "overview");
 
@@ -92,6 +100,14 @@ export function ResultPage({
             <Suspense fallback={<div className="animate-pulse h-64 rounded-xl bg-surface-secondary" />}>
               <TabGrowth data={data?.growth} />
             </Suspense>
+          )}
+
+          {/* ── 재응시 카드 (탭과 무관하게 페이지 하단 고정) ── */}
+          {submissionId != null && (
+            <RetakeCard
+              submissionId={submissionId}
+              currentMode={currentMode ?? undefined}
+            />
           )}
         </div>
       </div>

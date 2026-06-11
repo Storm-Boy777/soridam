@@ -138,7 +138,7 @@ export function ModeSelector({ selectedMode, onSelect, hasCredit = true }: ModeS
               "사전 설정·마이크 체크 없이 바로 시작",
               "자기소개 생략, 2번 문제부터 응시",
               "내 답변 텍스트만 확인 (AI 평가 없음)",
-              "같은 문제로 반복 재응시 · 크레딧 거의 안 듦",
+              "같은 문제로 제한 없이 반복 재응시",
             ].map((text) => (
               <li
                 key={text}
