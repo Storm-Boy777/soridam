@@ -1,0 +1,603 @@
+[
+  {
+    "id": "self-intro",
+    "badge": "0",
+    "title": "진성 소개",
+    "mode": "현재 · 자기소개 고정",
+    "hook": "모든 회차 1번 문항. 100% 적중하는 가장 확실한 자산 — 워밍업으로 자신감 확보.",
+    "kind": "story",
+    "leverage": "100% 적중",
+    "covers": ["1번 문항 (Tell me about yourself) — 모든 회차 고정"],
+    "beats": [
+      { "n": 1, "en": "Hi, my name is Jinseong, and I'm in my early thirties living in Korea.", "ko": "안녕하세요, 제 이름은 진성이고 한국에 사는 30대 초반이에요." },
+      { "n": 2, "en": "I work as an office worker, so my weekdays are pretty busy.", "ko": "회사원이라 평일은 꽤 바빠요." },
+      { "n": 3, "en": "But when I get free time, I'm really into music — I listen to it every single day.", "ko": "근데 여유가 생기면 음악에 푹 빠져요 — 매일 들어요.", "tenseLock": "현재형 습관 (음악 떡밥)" },
+      { "n": 4, "en": "I also love traveling, especially short trips around Korea to clear my head.", "ko": "여행도 좋아해요, 특히 머리 식히려고 국내 짧은 여행을요.", "tenseLock": "현재형 습관 (여행 떡밥)" },
+      { "n": 5, "en": "People say I'm outgoing and talkative, so I make friends pretty easily.", "ko": "사람들은 제가 외향적이고 말이 많다고 해요, 그래서 친구를 쉽게 사귀어요." },
+      { "n": 6, "en": "These days I'm working hard on my English speaking — that's why I'm here today.", "ko": "요즘은 영어 말하기를 열심히 연습 중이에요 — 그래서 오늘 여기 있는 거고요." }
+    ],
+    "alSkeleton": {
+      "topic1": "Well, to talk about myself, I'm Jinseong, an office worker in my early thirties.",
+      "topic2": "If I had to describe myself in one word, it would be [outgoing] — I genuinely enjoy meeting new people.",
+      "supporting": [
+        "The first thing is that I'm really into [music] — I listen to it every single day to recharge.",
+        "Another thing is that I love traveling, especially short trips to clear my head, doing nothing and thinking nothing.",
+        "And the last thing is that these days I'm working hard on my English, because I believe it'll open up new opportunities for me."
+      ],
+      "conclusion": "Overall, I'd say I'm a positive person who enjoys the little things in life.",
+      "ending": "That's pretty much about it."
+    },
+    "alWeapons": [
+      { "type": "grammar", "label": "가정법 If I had to ~", "chunk": "If I had to describe myself, it would be [outgoing]" },
+      { "type": "grammar", "label": "분사구문 -ing", "chunk": "to clear my head, doing nothing and thinking nothing" },
+      { "type": "vocab", "label": "격상 recharge / open up opportunities", "chunk": "I listen to music to recharge" }
+    ],
+    "slots": [
+      { "key": "성격 한 단어", "examples": ["outgoing", "curious", "easygoing"] },
+      { "key": "취미", "examples": ["music", "working out", "watching movies"] }
+    ],
+    "memorizePolicy": { "memorize": ["alSkeleton", "alWeapons"], "improvise": ["slots"] },
+    "mappings": [
+      { "topic": "자기소개", "question": "Let's start the interview. Tell me about yourself.", "intro": "AL 골격 그대로. 3번(음악)·4번(여행) 떡밥을 깔아 시험관을 아크 C·A 주제로 유도" }
+    ],
+    "tips": [
+      "3번·4번에 음악·여행 떡밥을 깔면 시험관이 그 주제로 이어가게 유도 → 외운 아크로 받기",
+      "'outgoing'은 주제유지 약점을 캐릭터로 덮는 장치 — 가정법 'If I had to ~'로 격상"
+    ]
+  },
+  {
+    "id": "broke-down",
+    "badge": "B",
+    "title": "그날 다 고장났다",
+    "mode": "과거 · 문제해결 에피소드",
+    "hook": "중요한 날 아침 물건이 고장 → 당황 → 시도 → 해결한 드라마. 명사만 갈면 문제해결·rp_12 거의 다 커버. 시제 3종(must have·had pp·should have)으로 AL.",
+    "kind": "story",
+    "leverage": "최대 레버 ⭐",
+    "covers": [
+      "문제 경험 past_special (MP3·가전·은행·집·교통·기술·인터넷)",
+      "rp_12 롤플레이 문제해결과 사건구조 공유"
+    ],
+    "beats": [
+      { "n": 1, "en": "A while ago, I had a really stressful experience with [my laptop / MP3 / bank card].", "ko": "얼마 전에 [노트북 / MP3 / 은행 카드] 때문에 정말 스트레스받는 일이 있었어요.", "slot": "고장난 대상 → 질문 토픽에 맞춰 교체", "tenseLock": "과거 (had)" },
+      { "n": 2, "en": "It happened on a morning when I had something important to do — worst timing ever.", "ko": "중요한 일이 있던 날 아침에 그랬어요 — 최악의 타이밍이었죠.", "tenseLock": "과거 (happened/had)" },
+      { "n": 3, "en": "At first I thought it was a small glitch, so I tried turning it off and on — nothing.", "ko": "처음엔 사소한 오류인 줄 알고 껐다 켜봤는데 — 소용없었어요.", "tenseLock": "과거 (thought/tried)" },
+      { "n": 4, "en": "I started to panic because I needed it right then.", "ko": "당장 그게 필요해서 당황하기 시작했어요." },
+      { "n": 5, "en": "So I [called the service center / went straight to the store] and explained everything.", "ko": "그래서 [서비스 센터에 전화 / 매장으로 바로 가서] 상황을 다 설명했어요.", "slot": "해결 경로 → 토픽에 맞춰 교체", "tenseLock": "과거 (called/went)" },
+      { "n": 6, "en": "After some back and forth, they finally figured out the problem and fixed it.", "ko": "몇 번 주고받은 끝에 결국 원인을 찾아서 고쳐줬어요." },
+      { "n": 7, "en": "In the end it worked out, but it was one of the most frustrating mornings I've had.", "ko": "결국 잘 해결됐지만, 제 인생에서 가장 답답한 아침 중 하나였어요." }
+    ],
+    "alSkeleton": {
+      "topic1": "A while ago, I went through one of the most frustrating mornings I've ever had.",
+      "topic2": "It was the day I had [an important presentation], and everything went wrong at the worst possible time.",
+      "supporting": [
+        "The first thing is that my [laptop] suddenly went completely black. I must have overcharged it the night before.",
+        "The second thing is that I started to panic, because I had saved everything only on that device — I should have backed it up on the cloud.",
+        "And the last thing is that I rushed to [the service center], and luckily the technician fixed it on the spot. I had never been so relieved in my life."
+      ],
+      "conclusion": "Overall, the bottom line is that it taught me a real lesson. Ironically, the gadgets that are supposed to make life easier are the ones that cause the most stress when they break down.",
+      "ending": "But that's pretty much about it."
+    },
+    "alWeapons": [
+      { "type": "tense", "label": "추측 must have pp", "chunk": "I must have overcharged it the night before" },
+      { "type": "tense", "label": "대과거 had pp + 후회 should have", "chunk": "I had saved it only there — I should have backed it up" },
+      { "type": "tense", "label": "대과거 강조 had never", "chunk": "I had never been so relieved in my life" },
+      { "type": "discourse", "label": "역설 결론", "chunk": "Ironically, the gadgets supposed to make life easier cause the most stress" }
+    ],
+    "slots": [
+      { "key": "중요 일정", "examples": ["an important presentation", "a job interview", "a flight to catch"] },
+      { "key": "고장 대상", "examples": ["my laptop", "my MP3", "the water heater", "my bank card"] }
+    ],
+    "memorizePolicy": { "memorize": ["alSkeleton", "alWeapons"], "improvise": ["slots"] },
+    "anchors": [
+      { "label": "뭐가/왜 (정확한 원인)", "en": "The screen just went completely black — it turned out the battery connector was loose." },
+      { "label": "감정 (긴박함)", "en": "I was sweating because I had a presentation in just two hours." },
+      { "label": "해결 디테일", "en": "The technician replaced the part on the spot, and it only took twenty minutes." }
+    ],
+    "mappings": [
+      { "topic": "MP3", "question": "equipment that broke (past_special)", "intro": "1: '…my MP3, it stopped playing right before a long trip'" },
+      { "topic": "가전제품", "question": "broken appliance", "intro": "1: '…my washing machine, it broke with clothes still soaking wet'" },
+      { "topic": "은행", "question": "card/ATM problem", "intro": "1: '…my bank card, the ATM swallowed it' / 5: 'went to the bank counter'" },
+      { "topic": "집", "question": "something broke at home", "intro": "1: '…the water heater stopped in the middle of winter' / 5: 'called a repair person'" },
+      { "topic": "롤플 rp_12", "question": "사과+대안 제시", "intro": "사건만 빌려 E2 틀에 합체 (비트2를 '친구 물건을 망가뜨림'으로)" }
+    ],
+    "whitelist": ["MP3", "가전제품", "기술", "은행", "집", "부동산", "교통", "인터넷"],
+    "avoid": "반드시 질문 토픽에 맞춰 명사 스왑. '가구' 물었는데 'MP3 고장'으로 답하면 토픽 미스매치 감점.",
+    "tips": [
+      "비트 1~6 전부 과거시제 고정 + AL은 시제 3종(must have·had pp·should have) — 시제 약점을 무기로 전환",
+      "rp_12(E2)와 같은 사건구조 → E2와 함께 외우면 시너지 최대",
+      "가장 먼저 외울 스토리. past_* + rp_12를 한 번에 먹는 최고 가성비"
+    ]
+  },
+  {
+    "id": "jeju-trip",
+    "badge": "A",
+    "title": "제주 인생여행",
+    "mode": "과거 · 긍정 에피소드",
+    "hook": "대학 시절 친구들과 떠난 제주 — 한라산 + 해변 + 게스트하우스의 인생 최고의 순간. 도입만 갈면 여행·자연체험 전부 커버.",
+    "kind": "story",
+    "leverage": "고빈도 여행권",
+    "covers": [
+      "국내여행 unforgettable trip",
+      "지형 natural place / mountain",
+      "해외여행 first trip abroad (명사 스왑)",
+      "호텔 last overnight stay",
+      "집에서휴가 / 휴일 memorable time"
+    ],
+    "beats": [
+      { "n": 1, "en": "A couple of years ago, I went to Jeju Island with three close friends.", "ko": "몇 년 전에 친한 친구 셋이랑 제주도에 갔어요.", "tenseLock": "과거 (went)" },
+      { "n": 2, "en": "The first thing we did was climb Hallasan — honestly my legs were killing me.", "ko": "제일 먼저 한 건 한라산 등반이었는데 — 솔직히 다리가 끊어질 것 같았어요.", "tenseLock": "과거 (did/were)" },
+      { "n": 3, "en": "But when we reached the top, the view was absolutely breathtaking.", "ko": "근데 정상에 도착하니 풍경이 정말 숨막히게 멋졌어요." },
+      { "n": 4, "en": "After that, we drove along the coast and spent the afternoon at a quiet beach.", "ko": "그 후엔 해안도로를 달려서 한적한 해변에서 오후를 보냈어요." },
+      { "n": 5, "en": "At night, we stayed at a cozy guesthouse, and the owner cooked us fresh seafood.", "ko": "밤엔 아늑한 게스트하우스에 묵었고, 주인분이 신선한 해산물을 해주셨어요." },
+      { "n": 6, "en": "We stayed up almost all night, talking and laughing.", "ko": "거의 밤새도록 이야기하고 웃었어요." },
+      { "n": 7, "en": "What made it so special was that it was my first real trip without my parents.", "ko": "그게 특별했던 건 부모님 없이 떠난 첫 진짜 여행이었기 때문이에요.", "tenseLock": "What made it special was ~ (마무리 정형구)" }
+    ],
+    "alSkeleton": {
+      "topic1": "One of the most unforgettable trips I've ever taken was to [Jeju Island] a couple of years ago.",
+      "topic2": "What made it so special was that it was my first real trip without my parents, with my closest friends.",
+      "supporting": [
+        "The first thing is that we climbed [Hallasan], and when we reached the top, the view was absolutely breathtaking.",
+        "Another thing is that I had always dreamed of [traveling like that], so being there felt like a dream come true.",
+        "And the last thing is that on the way down it started raining and we got completely soaked, laughing the whole time."
+      ],
+      "conclusion": "Overall, it couldn't have been a better trip. I highly recommend [Jeju] to anyone planning a getaway — you won't regret it.",
+      "ending": "That's all I can think of for now."
+    },
+    "alWeapons": [
+      { "type": "tense", "label": "대과거 had always dreamed", "chunk": "I had always dreamed of traveling like that" },
+      { "type": "grammar", "label": "가정법 최상 couldn't have been better", "chunk": "It couldn't have been a better trip" },
+      { "type": "discourse", "label": "추천 결론", "chunk": "I highly recommend it. You won't regret it." },
+      { "type": "grammar", "label": "분사구문 -ing", "chunk": "we got soaked, laughing the whole time" }
+    ],
+    "slots": [
+      { "key": "여행지", "examples": ["Jeju Island", "Busan", "Osaka"] },
+      { "key": "명소", "examples": ["Hallasan", "Haeundae Beach", "Dotonbori"] }
+    ],
+    "memorizePolicy": { "memorize": ["alSkeleton", "alWeapons"], "improvise": ["slots"] },
+    "anchors": [
+      { "label": "동행", "en": "Minjun, who's been my friend since high school, and two others from college." },
+      { "label": "계절 / 날씨", "en": "It was early summer, so the weather was perfect — warm but breezy." },
+      { "label": "사고 / 에피소드", "en": "On the way down, it started raining and we got completely soaked — we couldn't stop laughing." }
+    ],
+    "mappings": [
+      { "topic": "국내여행", "question": "unforgettable trip", "intro": "'The most unforgettable trip I've ever taken was to Jeju…'" },
+      { "topic": "지형", "question": "natural place / mountain", "intro": "'One of the most memorable natural places I visited was Hallasan…'" },
+      { "topic": "해외여행", "question": "first trip abroad", "intro": "'My first trip abroad was Osaka…' (비트 2~6 명사만 일본식 스왑)" },
+      { "topic": "호텔", "question": "last overnight stay", "intro": "'The last time I stayed somewhere was this guesthouse in Jeju…'" }
+    ],
+    "whitelist": ["국내여행", "해외여행", "지형", "집에서휴가", "호텔", "휴일", "자유시간"],
+    "avoid": "사물·상황을 명시 지정하는 past_special(가구 산 경험, 은행 문제 등) → 그건 아크 B로.",
+    "tips": ["AL은 대과거 'had always dreamed' + 가정법 'couldn't have been better' + 추천 결론으로 격상", "'What made it so special was ~' 마무리 정형구는 어떤 긍정 경험에도 붙음"]
+  },
+  {
+    "id": "concert",
+    "badge": "C",
+    "title": "그 콘서트 밤",
+    "mode": "과거 · 긍정 에피소드 (음악/공연)",
+    "hook": "좋아하는 밴드 첫 라이브에 친구와 간 밤. 음악·공연이 전체 최고빈도라 가장 두껍게 외울 아크.",
+    "kind": "story",
+    "leverage": "전체 최고빈도",
+    "covers": [
+      "음악 memorable live music",
+      "음악 first became interested",
+      "공연 못 간 경험 (B와 합체)",
+      "음악 description / routine 도입 연결"
+    ],
+    "beats": [
+      { "n": 1, "en": "About a year ago, I went to my first-ever live concert with my best friend.", "ko": "약 1년 전에 단짝 친구랑 생애 첫 라이브 콘서트에 갔어요.", "tenseLock": "과거 (went)" },
+      { "n": 2, "en": "We bought the tickets months in advance, counting down the days.", "ko": "몇 달 전에 미리 티켓을 사두고 날짜를 세며 기다렸어요." },
+      { "n": 3, "en": "When the lights went down and the music started, the whole crowd exploded — I got chills.", "ko": "조명이 꺼지고 음악이 시작되니 관객 전체가 폭발했어요 — 소름이 돋았죠." },
+      { "n": 4, "en": "We sang along to every song at the top of our lungs.", "ko": "모든 노래를 목청껏 따라 불렀어요." },
+      { "n": 5, "en": "My favorite moment was when they played the song that got me into music.", "ko": "제일 좋았던 순간은 제가 음악에 빠지게 된 그 노래를 연주했을 때예요." },
+      { "n": 6, "en": "After the show we grabbed food and talked about it for hours.", "ko": "공연 끝나고 밥 먹으면서 몇 시간이나 그 얘기를 했어요." },
+      { "n": 7, "en": "It was honestly one of the best nights of my life.", "ko": "솔직히 제 인생 최고의 밤 중 하나였어요." }
+    ],
+    "alSkeleton": {
+      "topic1": "It wasn't long ago that I went to [my first-ever live concert] with my best friend.",
+      "topic2": "What made it so memorable was the energy of the crowd the moment the lights went down.",
+      "supporting": [
+        "The first thing is that [the band] opened with the very song that got me into music years ago — my heart was pounding the whole time.",
+        "Another thing is that we sang along at the top of our lungs, completely losing track of time.",
+        "And the last thing is that I had never had such a mind-blowing experience at a concert before."
+      ],
+      "conclusion": "Overall, it was beyond my expectations — honestly, it couldn't have been better. I heard there's another show coming, and you can bet I'll be there, without a doubt.",
+      "ending": "That's pretty much about it."
+    },
+    "alWeapons": [
+      { "type": "tense", "label": "대과거 강조 had never had such", "chunk": "I had never had such a mind-blowing experience" },
+      { "type": "grammar", "label": "가정법 최상 couldn't have been better", "chunk": "it couldn't have been better" },
+      { "type": "discourse", "label": "미래확신 결론", "chunk": "You can bet I'll be there, without a doubt" },
+      { "type": "vocab", "label": "격상 mind-blowing / beyond my expectations", "chunk": "a mind-blowing experience beyond my expectations" }
+    ],
+    "slots": [
+      { "key": "이벤트", "examples": ["my first live concert", "a music festival", "a musical"] },
+      { "key": "주체", "examples": ["the band", "the singer", "the orchestra"] }
+    ],
+    "memorizePolicy": { "memorize": ["alSkeleton", "alWeapons"], "improvise": ["slots"] },
+    "anchors": [
+      { "label": "밴드명", "en": "It was an indie rock band called The Black Skirts — I'd loved them for years." },
+      { "label": "장소", "en": "The concert was at Olympic Hall in Seoul, and it was completely packed." },
+      { "label": "곡", "en": "They opened with my favorite song, and I almost teared up." }
+    ],
+    "mappings": [
+      { "topic": "음악", "question": "memorable live music", "intro": "'The most memorable time I heard live music was my first concert…'" },
+      { "topic": "음악", "question": "first became interested in music", "intro": "'I first got into music in high school, and that concert sealed it…' (비트5 연결)" },
+      { "topic": "공연", "question": "had tickets but couldn't go", "intro": "문제해결 버전 → E2 + 'I had tickets but got really sick that day…'" },
+      { "topic": "음악", "question": "description / routine", "intro": "'My favorite band is the one I saw live…' / 'I listen everywhere — subway, work, concerts…'" }
+    ],
+    "whitelist": ["음악", "공연", "영화"],
+    "tips": ["콘서트는 디테일 추궁이 잦음 → 밴드명·곡명·장소 anchor를 반드시 미리 확정", "AL은 'had never had such ~'(대과거 강조) + 'couldn't have been better'(가정법) + 미래확신 결론으로 격상"]
+  },
+  {
+    "id": "rp-resolve",
+    "badge": "E2",
+    "title": "전화로 사과 + 대안 (롤플 12)",
+    "mode": "롤플레이 · 문제해결 (rp_12)",
+    "hook": "문제 발생 → 사과 → 상황설명 → 2~3 대안. 상황 명사만 갈면 모든 rp_12 커버. 가장 점수 잘 나오는 만능틀.",
+    "kind": "story",
+    "leverage": "점수 잘 나옴 ✅",
+    "covers": ["롤플레이 rp_12 전 토픽 (공연·여행·부동산·은행·친척집 등)"],
+    "beats": [
+      { "n": 1, "en": "Hey [name], it's me — I'm so sorry, but I have a bit of a problem.", "ko": "야 [이름], 나야 — 정말 미안한데 문제가 좀 생겼어.", "slot": "상대 → 친구/매니저/가게" },
+      { "n": 2, "en": "The thing is, [I broke your MP3 / I woke up sick] this morning.", "ko": "사실은, 오늘 아침에 [네 MP3를 망가뜨렸어 / 아파서 일어났어].", "slot": "상황 → 질문 토픽에 맞춰 교체", "tenseLock": "과거 (broke / woke up) ⭐" },
+      { "n": 3, "en": "I feel really bad, and I know this might be inconvenient.", "ko": "정말 미안하고, 불편할 수도 있다는 거 알아." },
+      { "n": 4, "en": "So here's what I'm thinking — first, I could [buy you a new one / reschedule].", "ko": "그래서 내 생각은 — 우선, [새로 사주거나 / 일정을 다시 잡을] 수 있어.", "slot": "대안1", "tenseLock": "could + 동사원형 ⭐" },
+      { "n": 5, "en": "Or, we could [get it repaired / meet some other time].", "ko": "아니면, [수리를 맡기거나 / 다른 날 만날] 수도 있고.", "slot": "대안2", "tenseLock": "could + 동사원형 ⭐" },
+      { "n": 6, "en": "Let me know which works better — I'm totally flexible.", "ko": "뭐가 더 나은지 알려줘 — 난 완전 맞출 수 있어." }
+    ],
+    "alSkeleton": {
+      "topic1": "Hey [name], it's me — I'm so sorry, but I'm afraid I have a bit of a problem.",
+      "topic2": "The thing is, [I accidentally broke your MP3] this morning, and I feel terrible about it.",
+      "supporting": [
+        "I was wondering if I could make it up to you somehow.",
+        "First, I could [buy you a brand-new one] right away, if that works for you.",
+        "Or, if you'd prefer, we could [get it repaired] instead — whichever is more convenient."
+      ],
+      "conclusion": "Either way, just let me know — I'm totally flexible, and I'll make sure to sort it out.",
+      "ending": "Again, I'm really sorry about this."
+    },
+    "alWeapons": [
+      { "type": "tense", "label": "과거 사건 → could 전환", "chunk": "I broke it this morning → I could buy you a new one" },
+      { "type": "grammar", "label": "간접의문문 I was wondering if", "chunk": "I was wondering if I could make it up to you" },
+      { "type": "grammar", "label": "정중 if you'd prefer", "chunk": "if you'd prefer, we could get it repaired" }
+    ],
+    "slots": [
+      { "key": "문제 상황", "examples": ["I broke your MP3", "I woke up sick", "something came up at work"] },
+      { "key": "대안", "examples": ["buy you a new one", "reschedule", "get it repaired"] }
+    ],
+    "memorizePolicy": { "memorize": ["alSkeleton", "alWeapons"], "improvise": ["slots"] },
+    "mappings": [
+      { "topic": "공연", "question": "공연 당일 아픔", "intro": "비트2: 'I woke up really sick this morning' → 대안: 환불/다음 공연" },
+      { "topic": "친척집", "question": "약속한 일을 못 하게 됨", "intro": "비트2: 'something came up at work' → 대안: 다른 사람/다른 날" },
+      { "topic": "은행/MP3", "question": "물건 문제", "intro": "B 사건을 비트2에 합체" }
+    ],
+    "tips": [
+      "시제 락인: 비트2 = 과거형(broke/woke up), 비트4~5 = could + 동사원형",
+      "AL은 간접의문문 'I was wondering if I could ~' + 정중 'if you'd prefer'로 격상 → rp_12 만점권"
+    ]
+  },
+  {
+    "id": "rp-ask",
+    "badge": "E1",
+    "title": "전화로 질문하기 (롤플 11)",
+    "mode": "롤플레이 · 정보요청 (rp_11)",
+    "hook": "인사 → 질문 8~10개 → 마무리. 롤플11은 IM3 관문 — 질문 수가 많아야 통과. AL 골격에 만능 수식절(that is ~).",
+    "kind": "template",
+    "leverage": "관문 · 질문 많을수록 ↑",
+    "covers": ["롤플레이 rp_11 전 토픽 (공연 예매·여행·부동산·헬스장 등)"],
+    "beats": [
+      { "n": 1, "en": "Hi! I heard about [the box office / your gym], and I wanted to ask a few questions.", "ko": "안녕하세요! [매표소 / 헬스장] 얘기를 듣고, 몇 가지 여쭤보고 싶어서요.", "slot": "객체 → 토픽에 맞춰 교체" },
+      { "n": 2, "en": "First, could you tell me how much it costs, and are there any discounts?", "ko": "먼저, 비용이 얼마인지랑 할인이 있는지 알려주실 수 있나요?", "tenseLock": "Could you tell me ~ (정중 의문문)" },
+      { "n": 3, "en": "Second, I was wondering about [availability / what's included] for next weekend.", "ko": "둘째로, 다음 주말 [예약 가능 여부 / 포함 사항]이 궁금해요.", "slot": "질문2 → 객체에 맞게" },
+      { "n": 4, "en": "Also, is there anything I need to prepare beforehand?", "ko": "그리고, 미리 준비해야 할 게 있을까요?" },
+      { "n": 5, "en": "That's everything — thanks so much!", "ko": "그게 다예요 — 정말 감사합니다!" }
+    ],
+    "alSkeleton": {
+      "topic1": "Hi there! I heard about [your gym] and I'm really interested, so I'd like to ask a few questions.",
+      "topic2": "Do you mind if I ask you several things to make sure it's the right fit for me?",
+      "supporting": [
+        "First, how much is the monthly membership, and are there any discounts that are currently available?",
+        "Second, what kind of equipment do you have, and is there anything that's newly installed?",
+        "Also, what are your operating hours, and do you happen to have trainers who can help beginners like me?",
+        "One more thing — is there a locker room, and is there anything I need to prepare before I come in?"
+      ],
+      "conclusion": "I think that covers everything I wanted to know. Thank you so much for your help.",
+      "ending": "I really appreciate it — see you soon!"
+    },
+    "alWeapons": [
+      { "type": "grammar", "label": "만능 수식절 that is ~", "chunk": "discounts that are available / equipment that's newly installed" },
+      { "type": "grammar", "label": "정중 Do you mind if / do you happen to", "chunk": "Do you mind if I ask you several things" },
+      { "type": "connector", "label": "질문 연쇄 First/Second/Also/One more", "chunk": "First ~ Second ~ Also ~ One more thing ~" }
+    ],
+    "slots": [
+      { "key": "객체", "examples": ["your gym", "the box office", "a real estate agent", "the travel agency"] },
+      { "key": "질문 항목", "examples": ["price", "hours", "equipment", "availability", "what to prepare"] }
+    ],
+    "memorizePolicy": { "memorize": ["alSkeleton", "alWeapons"], "improvise": ["slots"] },
+    "mappings": [
+      { "topic": "공연", "question": "티켓 예매 문의", "intro": "객체='the box office', 질문=가격/좌석/날짜/할인" },
+      { "topic": "헬스클럽", "question": "헬스장 가입 문의", "intro": "객체='your gym', 질문=요금/시설/운영시간/트레이너" },
+      { "topic": "부동산", "question": "집 알아보기", "intro": "객체='a real estate agent', 질문=매물/위치/가격/조건" }
+    ],
+    "tips": [
+      "⚠️ 관문구조: 롤플11에서 질문이 적으면 IM3로 막혀 뒤 IH/AL 심사가 시작조차 안 됨 → AL 골격은 질문 8~10개",
+      "만능 수식절(that is available / that's newly installed)을 붙이면 IM2 질문도 격상",
+      "약간의 즉석 조합이 필요한 구간 — 강점(순발력)으로 메우기"
+    ]
+  },
+  {
+    "id": "change-arc",
+    "badge": "F",
+    "title": "예전엔 ~ 지금은",
+    "mode": "과거↔현재 · 변화 서사 (comparison)",
+    "hook": "주제 명사만 갈면 모든 '어떻게 변했나' 질문을 한 방에. AL은 🤖 AI 변화 만능 이식 — '예전엔 수동 → 지금은 AI'.",
+    "kind": "story",
+    "leverage": "AI 변화 만능",
+    "covers": ["comparison 전 토픽 (음악·집·은행·교통·TV)", "adv_14 (AI 사회확장)"],
+    "beats": [
+      { "n": 1, "en": "[Music / Banking] has changed so much compared to when I was younger.", "ko": "[음악 / 은행]은 제가 어렸을 때에 비해 정말 많이 변했어요.", "slot": "주제 → 토픽에 맞춰 교체", "tenseLock": "현재완료 (has changed)" },
+      { "n": 2, "en": "Back then, we used to [buy CDs / go to the bank in person] — much more effort.", "ko": "그때는 [CD를 사거나 / 직접 은행에 가곤] 했어요 — 훨씬 번거로웠죠.", "slot": "과거 행동", "tenseLock": "used to + 동사원형 ⭐" },
+      { "n": 3, "en": "I remember [carrying a CD player / waiting in long lines], which is unbelievable now.", "ko": "[CD 플레이어를 들고 다니던 / 긴 줄을 서던] 게 기억나는데, 지금 생각하면 믿기지 않아요." },
+      { "n": 4, "en": "But these days, everything is [on our phones / done with an app].", "ko": "근데 요즘은 모든 게 [폰 안에 / 앱으로] 있어요.", "slot": "현재 상태", "tenseLock": "these days + 현재 ⭐" },
+      { "n": 5, "en": "Now I can just [stream any song / transfer money in seconds] from home.", "ko": "이제는 집에서 [아무 노래나 스트리밍 / 몇 초 만에 송금]할 수 있어요." },
+      { "n": 6, "en": "Honestly the change has been mostly for the better, though I miss the old days a bit.", "ko": "솔직히 대체로 더 좋아진 변화예요, 옛날이 조금 그립긴 하지만요." }
+    ],
+    "alSkeleton": {
+      "topic1": "Honestly, when I think about how [music] has changed, I'd say AI has completely transformed the way we live these days.",
+      "topic2": "The difference between the past and now is like night and day.",
+      "supporting": [
+        "In the past, people had to do everything manually — [buy CDs and carry a bulky player], all by hand, doing everything on their own.",
+        "But now, with AI, things that used to take hours can be done in a matter of seconds.",
+        "For instance, with generative AI such as ChatGPT, among others, you can [discover, stream, and even create] music instantly. In fact, ChatGPT hit a hundred million users in just two months — the fastest-growing app in history."
+      ],
+      "conclusion": "The bottom line is that AI has made our lives far more convenient and efficient. But ironically, the smarter our tools become, the more dependent on them we get. Still, there's no denying it's a total game changer.",
+      "ending": "That's pretty much about it."
+    },
+    "alWeapons": [
+      { "type": "discourse", "label": "AI 만능 선언", "chunk": "AI has completely transformed the way we live" },
+      { "type": "vocab", "label": "격상 such as ~, among others", "chunk": "generative AI such as ChatGPT, among others" },
+      { "type": "grammar", "label": "정량화", "chunk": "a hundred million users in just two months" },
+      { "type": "grammar", "label": "비교급 강조 far more (❌very)", "chunk": "far more convenient and efficient" },
+      { "type": "discourse", "label": "역설 결론", "chunk": "the smarter our tools become, the more dependent we get" }
+    ],
+    "slots": [
+      { "key": "주제", "examples": ["music", "shopping", "transportation", "banking"] },
+      { "key": "옛날 행동", "examples": ["buy CDs and carry a player", "go to the store in person", "use printed maps"] },
+      { "key": "AI 기능", "examples": ["discover, stream, and create", "recommend and compare", "plan and navigate"] }
+    ],
+    "memorizePolicy": { "memorize": ["alSkeleton", "alWeapons"], "improvise": ["slots"] },
+    "mappings": [
+      { "topic": "음악", "question": "음악에 대한 관심이 어떻게 변했나", "intro": "주제='music', AI 기능='recommends and creates playlists'" },
+      { "topic": "은행", "question": "어릴 때 은행 vs 지금", "intro": "주제='banking', 옛날='go in person', AI='mobile and AI-powered fintech'" },
+      { "topic": "교통", "question": "예전 교통수단 vs 지금", "intro": "주제='transportation', AI='self-driving and AI navigation'" }
+    ],
+    "tips": ["IH 버전(비트)은 used to ↔ these days 시제 대조 훈련용", "AL은 🤖 'AI 만능' 카드를 그대로 이식 — 개인사에 갇히지 말고 'AI가 사회 전체를 바꿨다'로 확장해야 14번 AL"]
+  },
+  {
+    "id": "home-desc",
+    "badge": "D",
+    "title": "우리 집 & 동네",
+    "mode": "현재 · 묘사 허브 (description)",
+    "hook": "내 집·동네를 묘사하는 단일 현재형 틀. ⚠️ 골격 1개 + 토픽별 어휘카드 구조 (장소 28개라 명사세트 별도 필수).",
+    "kind": "template",
+    "leverage": "틀 + 어휘카드",
+    "covers": ["description 다수 토픽 (집·은행·음식점·미용실·병원·쇼핑 등 28토픽)"],
+    "beats": [
+      { "n": 1, "en": "I live in a cozy apartment in [동네], not huge but really comfortable.", "ko": "저는 [동네]의 아늑한 아파트에 살아요, 크진 않지만 정말 편해요.", "slot": "동네/장소명", "tenseLock": "현재 단순" },
+      { "n": 2, "en": "It has two bedrooms, a living room, a kitchen, and a bathroom.", "ko": "방 두 개, 거실, 부엌, 화장실이 있어요." },
+      { "n": 3, "en": "My favorite spot is the living room — it gets a lot of sunlight and I relax there.", "ko": "제가 제일 좋아하는 곳은 거실이에요 — 햇빛이 잘 들고 거기서 쉬어요." },
+      { "n": 4, "en": "There's a big comfy sofa, a TV, and a little shelf full of my stuff.", "ko": "큰 푹신한 소파, TV, 그리고 제 물건이 가득한 작은 선반이 있어요.", "slot": "내부 묘사 → 장소에 맞게" },
+      { "n": 5, "en": "The neighborhood is convenient — there's a [bank / restaurant] right around the corner.", "ko": "동네가 편리해요 — 모퉁이만 돌면 [은행 / 식당]이 있어요.", "slot": "주변 묘사 → 장소에 맞게" },
+      { "n": 6, "en": "What I like most is that it's quiet but close to everything.", "ko": "제일 마음에 드는 건 조용하면서도 모든 게 가깝다는 거예요." }
+    ],
+    "alSkeleton": {
+      "topic1": "To talk about my place, I live in a cozy apartment in [Seoul], which is full of hustle and bustle.",
+      "topic2": "Living in an apartment offers both convenience and a strong sense of community.",
+      "supporting": [
+        "The first thing is that it has [two bedrooms, a living room, and a kitchen], and everything I need is within reach.",
+        "The second thing is that my favorite spot is the living room, where I unwind on the sofa, watching YouTube without a care.",
+        "And the last thing is that the neighborhood is super convenient — there's a [bank and a cafe] just a few minutes away."
+      ],
+      "conclusion": "Overall, my place is comfortable and welcoming — it perfectly suits my needs.",
+      "ending": "That's all I can say."
+    },
+    "alWeapons": [
+      { "type": "grammar", "label": "관계사 where + 분사구문", "chunk": "the living room, where I unwind, watching YouTube" },
+      { "type": "vocab", "label": "격상 welcoming / a few minutes away", "chunk": "comfortable and welcoming / just a few minutes away" },
+      { "type": "connector", "label": "강사 공용 토픽센텐스", "chunk": "Living in an apartment offers both convenience and a sense of community" }
+    ],
+    "slots": [
+      { "key": "장소", "examples": ["my apartment", "the bank", "my favorite cafe", "the salon"] },
+      { "key": "특징 명사", "examples": ["two bedrooms", "glass doors and ATMs", "cozy seats", "big mirrors"] }
+    ],
+    "memorizePolicy": { "memorize": ["alSkeleton", "alWeapons"], "improvise": ["slots"] },
+    "mappings": [
+      { "topic": "미용실", "question": "자주 가는 미용실 묘사", "intro": "어휘카드: small but clean, big mirrors, friendly stylists" },
+      { "topic": "은행", "question": "우리나라 은행 묘사", "intro": "어휘카드: modern building, glass doors, ATMs, waiting area" },
+      { "topic": "음식점", "question": "동네 식당 묘사", "intro": "어휘카드: cozy, reasonable prices, I go once a week" },
+      { "topic": "병원/치과", "question": "병원 묘사", "intro": "어휘카드: clean and bright, kind staff, comfortable waiting room" }
+    ],
+    "tips": [
+      "⚠️ IH 버전(비트)은 나열형 → AL은 햄버거 골격(Topic×2 → first/second/last → Overall)으로 재구성해야 'skeleton paragraph' 체크",
+      "빈 묘사틀만으론 AL 내용밀도 미달 — 토픽당 핵심 명사·형용사 3~5개를 반드시 채워둘 것"
+    ]
+  },
+  {
+    "id": "routine",
+    "badge": "R",
+    "title": "평소 일상",
+    "mode": "현재 · 반복 습관 (routine)",
+    "hook": "'평소 ~할 때 보통 하는 일' 현재형 반복. 시퀀스 부사 골격 고정 + 활동 동사만 스왑. AL은 분사구문.",
+    "kind": "story",
+    "leverage": "시제 락인",
+    "covers": ["routine 다수 토픽 (음악·집·교통·은행·미용실)"],
+    "beats": [
+      { "n": 1, "en": "On a typical day, I [listen to music] pretty much everywhere I go.", "ko": "보통 하루엔 가는 곳마다 거의 [음악을 들어요].", "slot": "활동 → 토픽에 맞춰 교체", "tenseLock": "현재 단순 + 빈도부사" },
+      { "n": 2, "en": "The first thing I do in the morning is [put on some music] while I get ready.", "ko": "아침에 제일 먼저 하는 건 준비하면서 [음악을 트는] 거예요.", "tenseLock": "The first thing I do is ~" },
+      { "n": 3, "en": "On my way to work, I usually [put in my earphones] on the subway.", "ko": "출근길엔 보통 지하철에서 [이어폰을 껴요].", "slot": "이동 중 행동" },
+      { "n": 4, "en": "During the day, I [put on something calm] to help me focus.", "ko": "낮엔 집중하려고 [잔잔한 걸 틀어요]." },
+      { "n": 5, "en": "And in the evening, I like to [unwind with a few of my favorite songs].", "ko": "그리고 저녁엔 [좋아하는 노래 몇 곡으로 긴장을 풀어요]." }
+    ],
+    "alSkeleton": {
+      "topic1": "To talk about my daily routine, I'm the type of person who likes to keep things simple but consistent.",
+      "topic2": "On a typical day, [music] is pretty much always with me, wherever I go.",
+      "supporting": [
+        "First, the moment I wake up, I put on some music while getting ready for the day.",
+        "Then, on my way to work, I usually pop in my earphones on the subway, scrolling through my playlist.",
+        "After that, in the evening, I like to unwind with a few of my favorite songs to recharge."
+      ],
+      "conclusion": "Overall, it's a small habit, but it keeps me grounded throughout the day.",
+      "ending": "That's pretty much about it."
+    },
+    "alWeapons": [
+      { "type": "grammar", "label": "분사구문 -ing", "chunk": "while getting ready / scrolling through my playlist" },
+      { "type": "connector", "label": "순서 다양화 First/Then/After that", "chunk": "First ~ Then ~ After that ~" },
+      { "type": "vocab", "label": "격상 unwind / recharge", "chunk": "unwind with my favorite songs to recharge" }
+    ],
+    "slots": [
+      { "key": "활동", "examples": ["listen to music", "work out", "check the news"] }
+    ],
+    "memorizePolicy": { "memorize": ["alSkeleton", "alWeapons"], "improvise": ["slots"] },
+    "mappings": [
+      { "topic": "음악", "question": "평소 음악 듣는 방식", "intro": "비트 그대로" },
+      { "topic": "교통", "question": "평소 이용하는 교통수단", "intro": "활동='take the subway', 단계별 이동 동선으로" },
+      { "topic": "은행", "question": "은행 가서 보통 하는 일", "intro": "활동='go to the bank', First/Then/After that 순서로" }
+    ],
+    "tips": ["First / Then / After that / Usually 시퀀스 부사 골격을 고정하고 활동 동사만 스왑", "AL은 분사구문(while getting ready / scrolling through my playlist)으로 syntax 격상"]
+  },
+  {
+    "id": "adv-news",
+    "badge": "!",
+    "title": "사회이슈 골격 (만능 저항)",
+    "mode": "고급 · 사회이슈 (adv_15)",
+    "hook": "🔴 만능 저항 구간이었지만, 이제 🤖 AI 이슈 만능으로 받아요. 골격에 AI 양면토론을 박으면 AL.",
+    "kind": "frame",
+    "leverage": "AI 이슈 만능",
+    "covers": ["adv_15 사회이슈 (음악·인터넷·전화기·집·지형 등 — 토픽별 내용 상이)"],
+    "beats": [
+      { "n": 1, "en": "Recently, there's been a lot of talk about [X] in Korea.", "ko": "최근 한국에서 [X]에 대한 얘기가 많아요.", "slot": "이슈 → 시사카드에서", "tenseLock": "현재완료 (there's been)" },
+      { "n": 2, "en": "The main concern is that [people worry Y].", "ko": "주된 우려는 [사람들이 Y를 걱정한다]는 거예요.", "slot": "우려 내용 → 시사카드" },
+      { "n": 3, "en": "A lot of people in my community feel [reaction], and it's become a real topic of discussion.", "ko": "제 주변 많은 사람들이 [반응]을 느끼고, 실제로 화제가 되고 있어요.", "slot": "지역 반응 → 시사카드" },
+      { "n": 4, "en": "Personally, I think [Z], though I can see both sides.", "ko": "개인적으론 [Z]라고 생각해요, 양쪽 입장 다 이해는 되지만요.", "slot": "내 의견 → 시사카드" }
+    ],
+    "alSkeleton": {
+      "topic1": "It is commonly said that AI is the hottest topic these days.",
+      "topic2": "AI is incredibly useful, but it's not all good news — still, it's something none of us can ignore.",
+      "supporting": [
+        "When people talk about AI, the first thing that comes to mind is how it's reshaping the job market, and there's a strong connection between AI and [the industry].",
+        "As AI keeps getting smarter, more and more companies rely on it to cut costs. In fact, some experts estimate it could affect up to three hundred million jobs worldwide.",
+        "On one hand, it makes our work far more productive. On the other hand, a large number of people are worried about losing their jobs, with growing concerns about privacy."
+      ],
+      "conclusion": "In conclusion, AI is truly a double-edged sword. Ironically, the very technology built to help us could end up replacing us if we're not careful. So I believe it is imperative that we learn to use it wisely.",
+      "ending": "That's all I can think of for now."
+    },
+    "alWeapons": [
+      { "type": "grammar", "label": "가주어 It is commonly said that", "chunk": "It is commonly said that AI is the hottest topic" },
+      { "type": "discourse", "label": "양면 토론화", "chunk": "useful, but not all good news — still, we can't ignore it" },
+      { "type": "grammar", "label": "정량화", "chunk": "affect up to three hundred million jobs worldwide" },
+      { "type": "discourse", "label": "역설 + imperative that", "chunk": "Ironically ~ it is imperative that we learn to use it wisely" }
+    ],
+    "slots": [
+      { "key": "주제/산업", "examples": ["the music industry", "education", "healthcare", "the job market"] }
+    ],
+    "memorizePolicy": { "memorize": ["alSkeleton", "alWeapons"], "improvise": ["slots"] },
+    "mappings": [
+      { "topic": "음악", "question": "음악 애호가들의 최신 전자기기 트렌드", "intro": "AI 이슈 만능: 'AI is changing how we discover and create music'" },
+      { "topic": "인터넷", "question": "인터넷 관련 우려", "intro": "AI 이슈 만능: privacy / fake information 강조" },
+      { "topic": "전화기", "question": "젊은 세대 대면소통 저하 우려", "intro": "AI 이슈 만능: 'AI assistants are replacing real conversations'" }
+    ],
+    "avoid": "빈 골격만 말하면 거의 0점. AI 이슈 만능으로 양면토론+정량화를 채워야 AL.",
+    "tips": [
+      "🤖 'AI 이슈 만능' 카드를 그대로 이식 — 선택주제도 14·15번은 'AI 사회이슈'로 받기",
+      "순수 경제 이슈(집값·물가)엔 돈/인플레 만능을 보조로"
+    ]
+  },
+  {
+    "id": "ai-change",
+    "badge": "🤖",
+    "title": "AI 만능 — 모든 변화 (14번)",
+    "mode": "고급 · 변화/14번 엔진",
+    "hook": "어떤 주제가 '어떻게 변했나'로 나와도 이 골격에 꽂으면 끝. 강사 스마트폰 만능의 AI 현대화판.",
+    "kind": "engine",
+    "leverage": "14번 화력",
+    "covers": ["14번 변화·비교 (comparison/adv_14)", "기술·인터넷·전화기·음악·영화·쇼핑·교통·은행·직장·교육"],
+    "beats": [],
+    "alSkeleton": {
+      "topic1": "Honestly, when I think about how [topic] has changed, I'd say AI has completely transformed the way we live these days.",
+      "topic2": "The difference between the past and now is like night and day.",
+      "supporting": [
+        "In the past, people had to do everything manually — [old action 1] and [old action 2], all by hand, doing everything on their own.",
+        "But now, with AI, things that used to take hours can be done in a matter of seconds.",
+        "For instance, with generative AI such as ChatGPT, among others, you can [function 1], [function 2], and even [function 3] instantly. In fact, ChatGPT hit a hundred million users in just two months — the fastest-growing app in history."
+      ],
+      "conclusion": "The bottom line is that AI has made our lives far more convenient and efficient. But ironically, the smarter our tools become, the more dependent on them we get. Still, there's no denying it's a total game changer.",
+      "ending": "That's pretty much about it."
+    },
+    "alWeapons": [
+      { "type": "discourse", "label": "AI 만능 선언", "chunk": "AI has completely transformed the way we live" },
+      { "type": "discourse", "label": "physical → AI 공식", "chunk": "had to do everything manually ↔ done in a matter of seconds" },
+      { "type": "vocab", "label": "격상 such as ~, among others", "chunk": "generative AI such as ChatGPT, among others" },
+      { "type": "grammar", "label": "정량화 (신뢰 인상)", "chunk": "a hundred million users in just two months" },
+      { "type": "grammar", "label": "비교급 강조 far more (❌very)", "chunk": "far more convenient and efficient" },
+      { "type": "discourse", "label": "역설 결론", "chunk": "the smarter our tools become, the more dependent we get" }
+    ],
+    "slots": [
+      { "key": "주제", "examples": ["music", "shopping", "transportation", "banking", "work", "education"] },
+      { "key": "옛날 행동", "examples": ["go to the store in person", "use printed maps", "visit the bank", "buy physical CDs"] },
+      { "key": "AI 기능", "examples": ["recommend, create, and personalize", "plan and navigate", "analyze and predict"] }
+    ],
+    "memorizePolicy": { "memorize": ["alSkeleton", "alWeapons"], "improvise": ["slots"] },
+    "mappings": [
+      { "topic": "기술/인터넷/전화기", "question": "how it changed (14)", "intro": "주제 슬롯에 그대로" },
+      { "topic": "음악/영화/쇼핑", "question": "산업 변화로 받기", "intro": "'AI has changed how we enjoy music / shop / watch movies'" },
+      { "topic": "은행/교통", "question": "14번 변화", "intro": "은행='AI-powered mobile banking' / 교통='self-driving cars'" }
+    ],
+    "tips": [
+      "강사 원칙: 선택주제도 14·15번은 '사회/산업 이슈'로 받아라 → 어떤 주제든 'AI가 이걸 어떻게 바꿨나'로 격상",
+      "돈/인플레는 AI 못 끼우는 순수 경제 이슈용 보조",
+      "정량화 한 줄(1억 사용자/2개월)이 신뢰 인상 — 강사가 14·15에서 강조"
+    ]
+  },
+  {
+    "id": "ai-issue",
+    "badge": "🤖",
+    "title": "AI 만능 — 모든 이슈 (15번)",
+    "mode": "고급 · 사회이슈/15번 엔진",
+    "hook": "어떤 사회이슈가 나와도 'AI 양면토론'으로 받는 엔진. 강사 돈/인플레 만능의 AI 현대화판.",
+    "kind": "engine",
+    "leverage": "15번 화력",
+    "covers": ["15번 사회이슈 (adv_15)", "기술·인터넷·전화기·산업·직장 + 선택주제 사회확장"],
+    "beats": [],
+    "alSkeleton": {
+      "topic1": "It is commonly said that AI is the hottest topic these days.",
+      "topic2": "AI is incredibly useful, but it's not all good news — still, it's something none of us can ignore.",
+      "supporting": [
+        "When people talk about AI, the first thing that comes to mind is how it's reshaping the job market, and there's a strong connection between AI and [the industry].",
+        "As AI keeps getting smarter, more and more companies rely on it to cut costs and boost efficiency. In fact, some experts estimate that AI could affect up to three hundred million jobs worldwide.",
+        "On one hand, it makes our work faster and far more productive. On the other hand, a large number of people are worried about losing their jobs, and there are growing concerns about privacy and fake information."
+      ],
+      "conclusion": "In conclusion, AI is truly a double-edged sword. Ironically, the very technology built to help us could end up replacing us if we're not careful. So I believe it is imperative that we learn to use it wisely, rather than depend on it blindly.",
+      "ending": "That's all I can think of for now."
+    },
+    "alWeapons": [
+      { "type": "grammar", "label": "가주어 It is commonly said that", "chunk": "It is commonly said that AI is the hottest topic" },
+      { "type": "discourse", "label": "양면 토론화", "chunk": "incredibly useful, but not all good news — still, we can't ignore it" },
+      { "type": "discourse", "label": "양면 on one hand / on the other hand", "chunk": "On one hand ~ far more productive. On the other hand ~ worried about jobs" },
+      { "type": "grammar", "label": "정량화 (신뢰 인상)", "chunk": "affect up to three hundred million jobs worldwide" },
+      { "type": "discourse", "label": "역설 + imperative that", "chunk": "Ironically ~ it is imperative that we learn to use it wisely" }
+    ],
+    "slots": [
+      { "key": "주제/산업", "examples": ["the music industry", "education", "healthcare", "the job market"] }
+    ],
+    "memorizePolicy": { "memorize": ["alSkeleton", "alWeapons"], "improvise": ["slots"] },
+    "mappings": [
+      { "topic": "기술/인터넷/산업", "question": "사회이슈 (15)", "intro": "주제 슬롯에 그대로" },
+      { "topic": "선택주제 음악/영화/쇼핑", "question": "14·15는 사회이슈로", "intro": "'AI is changing this industry, and people are talking about it a lot'" }
+    ],
+    "tips": [
+      "돈/인플레 만능은 순수 경제 이슈(집값·물가)용 보조 — AI 안 끼울 때만",
+      "정량화(1억 사용자/3억 일자리)로 신뢰 인상 — 강사가 사회이슈서 강조",
+      "양면토론(on one hand/on the other) + 역설 결론이 AL 변별 핵심"
+    ]
+  }
+]

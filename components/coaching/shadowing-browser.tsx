@@ -61,47 +61,82 @@ export function ShadowingBrowser() {
   const raw: ShadowQuestion[] = (isEtc ? orphansQ.data : questionsQ.data) ?? [];
   const listLoading = isEtc ? orphansQ.isLoading : questionsQ.isLoading;
 
-  // 같은 종류(도메인)가 2개 이상이면 도메인으로 묶고(묘사: 장소/사람/사물/활동/사회),
-  // 아니면 토픽으로 묶는다. 표시 순서 = 카드 이전/다음 순서.
-  const { items, byDomain, groupCounts } = useMemo(() => {
+  // 같은 종류(도메인)가 2개 이상이면 도메인 > 토픽 2단계로 묶고(묘사: 장소>카페/도서관…),
+  // 아니면 토픽 1단계로 묶는다. 표시 순서 = 도메인 순(DOMAIN_ORDER) > 토픽 가나다.
+  const { items, byDomain, domainCounts, topicCounts } = useMemo(() => {
     const distinct = new Set<string>();
     for (const q of raw) if (q.domain) distinct.add(q.domain);
     const useDomain = distinct.size >= 2;
 
-    const keyOf = (q: ShadowQuestion) => (useDomain ? q.domain ?? "기타" : q.topic);
-    const m = new Map<string, ShadowQuestion[]>();
-    for (const q of raw) {
-      const k = keyOf(q);
-      const arr = m.get(k);
-      if (arr) arr.push(q);
-      else m.set(k, [q]);
-    }
+    // 토픽 카운트 키 — 도메인 안에서만 의미 있으므로 도메인|토픽 결합 키
+    const dCounts = new Map<string, number>();
+    const tCounts = new Map<string, number>();
 
-    const entries = [...m.entries()];
-    if (useDomain) {
-      const idx = (k: string) => {
-        const i = DOMAIN_ORDER.indexOf(k);
-        return i < 0 ? 999 : i;
+    if (!useDomain) {
+      // 1단계 (토픽만) — 기존 동작 유지
+      const m = new Map<string, ShadowQuestion[]>();
+      for (const q of raw) {
+        const arr = m.get(q.topic);
+        if (arr) arr.push(q);
+        else m.set(q.topic, [q]);
+      }
+      const entries = [...m.entries()].sort(
+        (a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0], "ko")
+      );
+      for (const [k, qs] of entries) tCounts.set(k, qs.length);
+      return {
+        items: entries.flatMap(([, qs]) => qs),
+        byDomain: false,
+        domainCounts: dCounts,
+        topicCounts: tCounts,
       };
-      entries.sort((a, b) => idx(a[0]) - idx(b[0]) || a[0].localeCompare(b[0], "ko"));
-      for (const [, qs] of entries)
-        qs.sort((x, y) => x.topic.localeCompare(y.topic, "ko") || x.id.localeCompare(y.id));
-    } else {
-      entries.sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0], "ko"));
     }
 
-    const counts = new Map<string, number>();
-    for (const [k, qs] of entries) counts.set(k, qs.length);
-    return {
-      items: entries.flatMap(([, qs]) => qs),
-      byDomain: useDomain,
-      groupCounts: counts,
+    // 2단계 (도메인 > 토픽)
+    const dMap = new Map<string, Map<string, ShadowQuestion[]>>();
+    for (const q of raw) {
+      const d = q.domain ?? "기타";
+      let inner = dMap.get(d);
+      if (!inner) {
+        inner = new Map();
+        dMap.set(d, inner);
+      }
+      const arr = inner.get(q.topic);
+      if (arr) arr.push(q);
+      else inner.set(q.topic, [q]);
+    }
+
+    const idx = (k: string) => {
+      const i = DOMAIN_ORDER.indexOf(k);
+      return i < 0 ? 999 : i;
     };
+    const domainEntries = [...dMap.entries()].sort(
+      (a, b) => idx(a[0]) - idx(b[0]) || a[0].localeCompare(b[0], "ko")
+    );
+
+    const flat: ShadowQuestion[] = [];
+    for (const [d, inner] of domainEntries) {
+      const topicEntries = [...inner.entries()].sort((a, b) =>
+        a[0].localeCompare(b[0], "ko")
+      );
+      let total = 0;
+      for (const [topic, qs] of topicEntries) {
+        qs.sort((x, y) => x.id.localeCompare(y.id));
+        flat.push(...qs);
+        tCounts.set(`${d}|${topic}`, qs.length);
+        total += qs.length;
+      }
+      dCounts.set(d, total);
+    }
+
+    return { items: flat, byDomain: true, domainCounts: dCounts, topicCounts: tCounts };
   }, [raw]);
 
-  const groupKeyOf = (q: ShadowQuestion) => (byDomain ? q.domain ?? "기타" : q.topic);
-  const groupLabelOf = (q: ShadowQuestion) =>
-    byDomain ? DOMAIN_LABELS[q.domain ?? ""] ?? q.domain ?? "기타" : q.topic;
+  const domainKeyOf = (q: ShadowQuestion) => q.domain ?? "기타";
+  const topicKeyOf = (q: ShadowQuestion) =>
+    byDomain ? `${q.domain ?? "기타"}|${q.topic}` : q.topic;
+  const domainLabelOf = (q: ShadowQuestion) =>
+    DOMAIN_LABELS[q.domain ?? ""] ?? q.domain ?? "기타";
 
   const openIndex = openId ? items.findIndex((q) => q.id === openId) : -1;
   const openQ = openIndex >= 0 ? items[openIndex] : null;
@@ -148,12 +183,12 @@ export function ShadowingBrowser() {
   const doneInView = items.filter((q) => progress.isDone(q.id)).length;
   const label = isEtc ? "기타" : QUESTION_TYPE_LABELS[selectedType as QuestionType];
 
-  // 그룹(소제목) 내 번호 — 소제목마다 1부터
+  // 그룹(토픽) 내 번호 — 토픽마다 1부터
   const groupNumbers: number[] = [];
   let prevK: string | null = null;
   let gn = 0;
   items.forEach((q, j) => {
-    const k = groupKeyOf(q);
+    const k = topicKeyOf(q);
     if (k !== prevK) {
       prevK = k;
       gn = 0;
@@ -179,7 +214,7 @@ export function ShadowingBrowser() {
       <div className="rounded-2xl border border-border bg-surface px-5 py-4">
         <h3 className="text-base font-semibold text-foreground">{label}</h3>
         <p className="text-xs text-foreground-secondary">
-          {items.length}개 질문 · {byDomain ? "종류별로 묶음" : "토픽별로 묶음"}
+          {items.length}개 질문 · {byDomain ? "종류 > 주제로 묶음" : "주제별로 묶음"}
         </p>
       </div>
 
@@ -192,15 +227,36 @@ export function ShadowingBrowser() {
       ) : (
         <div className="space-y-2">
           {items.map((q, i) => {
-            const key = groupKeyOf(q);
-            const showHeader = i === 0 || groupKeyOf(items[i - 1]) !== key;
+            const prev = i > 0 ? items[i - 1] : null;
+            const showDomain =
+              byDomain && (prev === null || domainKeyOf(prev) !== domainKeyOf(q));
+            const showTopic =
+              prev === null ||
+              topicKeyOf(prev) !== topicKeyOf(q) ||
+              (byDomain && domainKeyOf(prev) !== domainKeyOf(q));
             return (
               <Fragment key={q.id}>
-                {showHeader && (
-                  <div className="flex items-baseline gap-2 px-1 pb-0.5 pt-4 first:pt-0">
-                    <span className="text-sm font-semibold text-foreground">{groupLabelOf(q)}</span>
+                {showDomain && (
+                  <div className="flex items-baseline gap-2 border-b border-border px-1 pb-1.5 pt-6 first:pt-1">
+                    <span className="text-base font-bold text-foreground">
+                      {domainLabelOf(q)}
+                    </span>
+                    <span className="text-xs text-foreground-muted">
+                      {domainCounts.get(domainKeyOf(q))}문항
+                    </span>
+                  </div>
+                )}
+                {showTopic && (
+                  <div
+                    className={`flex items-baseline gap-2 px-1 pb-0.5 ${
+                      showDomain ? "pt-2" : "pt-4"
+                    } ${byDomain ? "pl-2" : ""} first:pt-0`}
+                  >
+                    <span className="text-sm font-semibold text-foreground-secondary">
+                      {q.topic}
+                    </span>
                     <span className="text-[11px] text-foreground-muted">
-                      {groupCounts.get(key)}문항
+                      {topicCounts.get(topicKeyOf(q))}문항
                     </span>
                   </div>
                 )}

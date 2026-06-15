@@ -138,7 +138,7 @@ docs/
 - `/scripts` — 스크립트 생성 · 내 스크립트 · 쉐도잉 훈련
 - `/mock-exam` — 응시 · 결과 · 나의 이력
 - `/tutoring` — 진단 · 훈련 · 나의 튜터링
-- `/coaching` — 유형별 · 주제별 · 쉐도잉 · 시제
+- `/coaching` — 유형별 · 주제별 · 쉐도잉(유형) · 쉐도잉(주제)(카테고리→주제 진입) · 시제 · 만능(기출 기반 만능 스토리 훈련, 본인 전용)
 - `/opic-study` — 별도 디자인 시스템(.bp-scope) — 홈 · lobby · session · my · history · explore
 
 ---

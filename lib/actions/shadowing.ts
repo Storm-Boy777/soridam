@@ -16,6 +16,7 @@ import { TYPE_TO_ENGINE } from "@/lib/types/shadowing";
 import type {
   RawBankEntry,
   ShadowQuestion,
+  ShadowTopicQuestion,
   ShadowTypeCard,
   SlotSeg,
 } from "@/lib/types/shadowing";
@@ -159,6 +160,59 @@ export async function getShadowingQuestions(
       answer: ANSWER_BY_ID.get(q.id) ?? null,
       structure: structOf(q.id),
     }));
+
+    return { data: items };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "질문 조회 실패" };
+  }
+}
+
+// ── 3. 카테고리+주제 질문 (모범답안 join) — 주제별 쉐도잉 탭 ──
+//   카테고리(일반/롤플레이/어드밴스) + 주제로 질문을 모아 쉐도잉 카드용으로 반환.
+//   '쉐도잉' 탭이 유형 진입이라면 이 경로는 주제 진입 — 한 주제에 여러 유형이 섞이므로
+//   question_type을 함께 실어 화면에서 유형 소제목으로 묶을 수 있게 한다.
+export async function getShadowingByCategoryTopic(
+  category: "일반" | "롤플레이" | "어드밴스",
+  topic: string
+): Promise<ActionResult<ShadowTopicQuestion[]>> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from(T.questions)
+      .select("id, topic, question_type_eng, question_english, question_korean, audio_url")
+      .eq("category", category)
+      .eq("topic", topic)
+      .order("id");
+    if (error) throw error;
+    const rows = (data ?? []) as {
+      id: string;
+      topic: string | null;
+      question_type_eng: string | null;
+      question_english: string | null;
+      question_korean: string | null;
+      audio_url: string | null;
+    }[];
+
+    const items: ShadowTopicQuestion[] = rows.map((q) => {
+      const type = q.question_type_eng as QuestionType | null;
+      return {
+        id: q.id,
+        topic: q.topic ?? topic,
+        domain: DOMAIN_BY_ID.get(q.id) ?? null,
+        question_type: q.question_type_eng,
+        engineKey:
+          type === "description"
+            ? (DOMAIN_BY_ID.get(q.id) ?? null)
+            : type
+              ? (TYPE_TO_ENGINE[type] ?? type)
+              : null,
+        question_english: q.question_english ?? "",
+        question_korean: q.question_korean,
+        audio_url: q.audio_url,
+        answer: ANSWER_BY_ID.get(q.id) ?? null,
+        structure: structOf(q.id),
+      };
+    });
 
     return { data: items };
   } catch (err) {

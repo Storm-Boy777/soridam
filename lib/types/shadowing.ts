@@ -36,6 +36,12 @@ export interface ShadowQuestion {
   engineKey: string | null; // 슬롯 라벨/골격 조회용 (묘사=도메인, 그 외=유형)
 }
 
+// 주제별 쉐도잉 질문 (한 주제 안에 여러 유형이 섞이므로 유형값을 함께 싣는다)
+//   ShadowingCard는 ShadowQuestion만 읽으므로 그대로 전달 가능
+export interface ShadowTopicQuestion extends ShadowQuestion {
+  question_type: string | null; // question_type_eng — 주제 안 유형 소제목 그룹핑용
+}
+
 // 도메인(같은 종류 묶음) 한글 라벨 + 표시 순서
 export const DOMAIN_LABELS: Record<string, string> = {
   place: "장소",
