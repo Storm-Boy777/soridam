@@ -68,25 +68,27 @@ export default function GwpHubPage() {
             </div>
           </Link>
 
-          {/* Coming Soon 카드 (비활성) */}
-          <div className="relative group cursor-not-allowed">
-            <div className="bg-white/40 backdrop-blur-lg border border-white/30 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-md h-full flex flex-col opacity-70">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-gray-300 to-gray-400 rounded-xl sm:rounded-2xl flex items-center justify-center mb-4 sm:mb-6 mx-auto">
-                <span className="text-2xl sm:text-3xl">✨</span>
+          {/* 팀 매칭 게임 카드 */}
+          <Link href="/events/gwp/team-game" className="group">
+            <div className="bg-white/70 backdrop-blur-lg border border-white/40 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 hover:bg-white/85 h-full flex flex-col">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-rose-400 to-pink-500 rounded-xl sm:rounded-2xl flex items-center justify-center mb-4 sm:mb-6 mx-auto group-hover:scale-110 transition-transform">
+                <span className="text-2xl sm:text-3xl">🤝</span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-600 mb-2 sm:mb-3 text-center">새로운 이벤트</h2>
-              <p className="text-sm sm:text-base text-gray-500 mb-4 sm:mb-6 leading-relaxed text-center sm:min-h-[3.25rem]">
-                다음 GWP 이벤트가
-                <br />추가될 예정입니다
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2 sm:mb-3 text-center">팀 매칭 게임</h2>
+              <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 leading-relaxed text-center sm:min-h-[3.25rem]">
+                두 파트를 랜덤 혼합 팀으로 묶고
+                <br />&ldquo;저요!&rdquo; 버저 게임을 진행해요.
               </p>
               <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2 mb-4 sm:mb-6 mt-auto">
-                <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-gray-200 text-gray-600 rounded-full text-[10px] sm:text-xs font-medium">Coming Soon</span>
+                <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-rose-100 text-rose-700 rounded-full text-[10px] sm:text-xs font-medium">랜덤 팀 배정</span>
+                <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-pink-100 text-pink-700 rounded-full text-[10px] sm:text-xs font-medium">QR 체크인</span>
+                <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-amber-100 text-amber-700 rounded-full text-[10px] sm:text-xs font-medium">저요 버저</span>
               </div>
-              <div className="w-full rounded-xl bg-gray-300 py-3 text-center text-sm sm:text-base font-bold text-gray-500">
-                준비 중
+              <div className="w-full rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 py-3 text-center text-sm sm:text-base font-bold text-white shadow-md transition-all group-hover:shadow-lg group-hover:-translate-y-0.5">
+                시작하기
               </div>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* 푸터 */}
