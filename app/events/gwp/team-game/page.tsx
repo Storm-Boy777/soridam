@@ -8,6 +8,8 @@ import { fetchAttendanceStatus } from "@/lib/api/event-attendance";
 import {
   createSession,
   resetCheckins,
+  startGame,
+  endGame,
   armBuzzer,
   stopBuzzer,
   clearRound,
@@ -545,6 +547,50 @@ function GameTab({ session, presses }: { session: GwpSession | null; presses: Gw
     setBusy(false);
   };
 
+  const doStart = async () => {
+    setBusy(true);
+    try {
+      await startGame(session.id);
+    } catch (e) {
+      showErrorToast((e as Error).message);
+    }
+    setBusy(false);
+  };
+  const doEnd = async () => {
+    if (!confirm("게임을 종료할까요? 참가자 폰에 종료 화면이 표시돼요.")) return;
+    setBusy(true);
+    try {
+      await endGame(session.id);
+    } catch (e) {
+      showErrorToast((e as Error).message);
+    }
+    setBusy(false);
+  };
+
+  // 게임 시작 전 — 큰 시작 버튼만. 누르면 모든 폰이 게임 화면으로 전환.
+  if (session.status !== "playing") {
+    return (
+      <div className="mx-auto max-w-xl">
+        <div className="rounded-3xl border border-slate-200/60 bg-white p-8 text-center shadow-sm">
+          <div className="text-5xl mb-3">🎮</div>
+          <h3 className="text-xl font-black text-slate-800">게임을 시작할까요?</h3>
+          <p className="mt-2 text-sm font-medium text-slate-500">
+            행사 마지막에 누르세요. 누르는 순간 <b>모든 참가자 폰</b>이 팀 발표 화면에서
+            <br />게임(저요 버저) 화면으로 동시에 전환돼요.
+          </p>
+          <button
+            onClick={doStart}
+            disabled={busy}
+            className="mt-6 w-full py-4 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-lg font-black rounded-2xl shadow-lg active:scale-[0.98] transition-all disabled:opacity-40"
+          >
+            🎮 게임 시작
+          </button>
+          <p className="mt-3 text-xs text-slate-400">시작 전까지 참가자 폰엔 팀 번호가 크게 표시돼요</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
       {/* 컨트롤 */}
@@ -574,6 +620,13 @@ function GameTab({ session, presses }: { session: GwpSession | null; presses: Gw
           다음 문제 (초기화)
         </button>
         <span className="text-xs font-bold text-slate-400">라운드 {session.buzzer_round}</span>
+        <button
+          onClick={doEnd}
+          disabled={busy}
+          className="ml-auto rounded-2xl px-4 py-4 text-sm font-bold text-slate-400 hover:text-red-500 disabled:opacity-40"
+        >
+          게임 종료
+        </button>
       </div>
 
       {/* 1등 발표 */}

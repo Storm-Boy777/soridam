@@ -88,7 +88,116 @@ export default function GwpJoinPage() {
   if (!me) {
     return <CheckinView session={session} roster={roster} onCheckedIn={handleCheckedIn} />;
   }
-  return <PlayView supabase={supabase} session={session} me={me} />;
+  // 게임 시작 전 = 큰 팀 발표 화면 / 시작 후 = 버저 게임
+  if (session.status === "playing") {
+    return <PlayView supabase={supabase} session={session} me={me} />;
+  }
+  return <TeamRevealView supabase={supabase} session={session} me={me} />;
+}
+
+// ─────────────────────────────────────────────
+// 팀 발표 (체크인 후 ~ 게임 시작 전) — 행사 내내 유지
+// ─────────────────────────────────────────────
+function TeamRevealView({
+  supabase,
+  session,
+  me,
+}: {
+  supabase: ReturnType<typeof createClient>;
+  session: GwpSession;
+  me: Me;
+}) {
+  const teamGradient = TEAM_COLORS[(me.team_number - 1) % TEAM_COLORS.length];
+  const [teammates, setTeammates] = useState<{ member_id: string; member_name: string; part: string }[]>([]);
+
+  // 같은 팀원 실시간 (체크인이 늘수록 채워짐)
+  useEffect(() => {
+    const load = () => {
+      supabase
+        .from("gwp_team_assignments")
+        .select("member_id, member_name, part")
+        .eq("session_id", session.id)
+        .eq("team_number", me.team_number)
+        .order("checked_in_at", { ascending: true })
+        .then(({ data }) => setTeammates((data as typeof teammates) || []));
+    };
+    load();
+    const ch = supabase
+      .channel(`gwp-team:${session.id}:${me.team_number}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "gwp_team_assignments", filter: `session_id=eq.${session.id}` },
+        () => load(),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [supabase, session.id, me.team_number]);
+
+  return (
+    <div className={`relative flex min-h-dvh flex-col items-center justify-center overflow-y-auto bg-gradient-to-br ${teamGradient} px-6 py-10 text-center text-white`}>
+      {/* 배경 장식 */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -left-16 top-1/4 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+        <div className="absolute -right-12 bottom-1/4 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+      </div>
+
+      <div className="relative w-full max-w-md">
+        <p className="text-sm font-bold uppercase tracking-[0.3em] text-white/70">{me.part}</p>
+        <p className="mt-2 text-lg font-bold text-white/90">{me.member_name}님의 팀은</p>
+        <div className="my-3 flex items-center justify-center">
+          <span className="text-[6.5rem] font-black leading-none drop-shadow-lg sm:text-[8rem]">{me.team_number}</span>
+          <span className="ml-1 mt-7 text-4xl font-black sm:text-5xl">팀</span>
+        </div>
+        <div className="mx-auto inline-flex items-center gap-2 rounded-full bg-white/20 px-5 py-2 backdrop-blur">
+          <span className="text-sm font-bold">🎉 같은 팀원을 찾아 인사해 보세요!</span>
+        </div>
+
+        {/* 우리 팀원 실시간 명단 */}
+        {teammates.length > 0 && (
+          <div className="mt-7">
+            <p className="mb-3 text-xs font-bold uppercase tracking-wider text-white/60">
+              우리 팀원 {teammates.length}명
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {teammates.map((t) => {
+                const isMe = t.member_id === me.member_id;
+                return (
+                  <span
+                    key={t.member_id}
+                    className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-bold backdrop-blur ${
+                      isMe ? "bg-white text-slate-900 shadow-md ring-2 ring-white/70" : "bg-white/20 text-white"
+                    }`}
+                  >
+                    {t.member_name}
+                    {isMe && <span className="text-[10px] font-black text-amber-500">나</span>}
+                    <span className={`text-[10px] font-medium ${isMe ? "text-slate-400" : "text-white/55"}`}>
+                      · {t.part}
+                    </span>
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-9 flex flex-col items-center gap-2">
+          <div className="flex gap-1.5">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className="h-2 w-2 animate-pulse rounded-full bg-white/60"
+                style={{ animationDelay: `${i * 200}ms` }}
+              />
+            ))}
+          </div>
+          <p className="text-sm font-medium text-white/70">게임은 행사 마지막에 진행돼요</p>
+          <p className="text-xs text-white/50">진행자가 시작하면 이 화면이 자동으로 바뀌어요 ✨</p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ─────────────────────────────────────────────

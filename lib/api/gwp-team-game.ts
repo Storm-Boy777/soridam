@@ -68,6 +68,15 @@ export function updateSession(
   return call("update_session", { session_id, ...patch });
 }
 
+// 게임 시작/종료 (status 전환 — 모든 폰 화면 전환 트리거)
+export function startGame(session_id: string): Promise<{ session: GwpSession }> {
+  return updateSession(session_id, { status: "playing" });
+}
+
+export function endGame(session_id: string): Promise<{ session: GwpSession }> {
+  return updateSession(session_id, { status: "ended" });
+}
+
 export function armBuzzer(session_id: string): Promise<{ session: GwpSession }> {
   return call("arm_buzzer", { session_id });
 }
