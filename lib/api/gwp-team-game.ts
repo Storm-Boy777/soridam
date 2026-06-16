@@ -11,6 +11,7 @@ export interface GwpSession {
   team_size: number;
   parts: string[];
   status: "setup" | "checkin" | "playing" | "ended";
+  checkin_open: boolean;
   buzzer_active: boolean;
   buzzer_round: number;
   created_at: string;
@@ -57,15 +58,29 @@ export function createSession(input: {
   team_count: number;
   team_size: number;
   parts: string[];
-}): Promise<{ session: GwpSession }> {
+}): Promise<{ session: GwpSession; code: string }> {
   return call("create_session", input);
 }
 
 export function updateSession(
   session_id: string,
-  patch: Partial<Pick<GwpSession, "title" | "team_count" | "team_size" | "parts" | "status">>,
+  patch: Partial<Pick<GwpSession, "title" | "team_count" | "team_size" | "parts" | "status" | "checkin_open">>,
 ): Promise<{ session: GwpSession }> {
   return call("update_session", { session_id, ...patch });
+}
+
+// 체크인 마감/열기
+export function setCheckinOpen(session_id: string, open: boolean): Promise<{ session: GwpSession }> {
+  return updateSession(session_id, { checkin_open: open });
+}
+
+// 입장 코드 검증(사전 확인) / 재발급(진행자)
+export function verifyCode(session_id: string, code: string): Promise<{ ok: boolean }> {
+  return call("verify_code", { session_id, code });
+}
+
+export function regenerateCode(session_id: string): Promise<{ code: string }> {
+  return call("regenerate_code", { session_id });
 }
 
 // 게임 시작/종료 (status 전환 — 모든 폰 화면 전환 트리거)
@@ -97,8 +112,9 @@ export function resetCheckins(session_id: string): Promise<{ ok: true }> {
 export function checkin(
   session_id: string,
   member_id: string,
+  code: string,
 ): Promise<{ team_number: number; member_name: string; part: string; already: boolean }> {
-  return call("checkin", { session_id, member_id });
+  return call("checkin", { session_id, member_id, code });
 }
 
 export function buzz(

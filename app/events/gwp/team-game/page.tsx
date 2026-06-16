@@ -8,6 +8,8 @@ import { fetchAttendanceStatus } from "@/lib/api/event-attendance";
 import {
   createSession,
   resetCheckins,
+  setCheckinOpen,
+  regenerateCode,
   startGame,
   endGame,
   armBuzzer,
@@ -118,6 +120,7 @@ function Console() {
   const [assignments, setAssignments] = useState<GwpAssignment[]>([]);
   const [presses, setPresses] = useState<GwpPress[]>([]);
   const [roster, setRoster] = useState<RosterMember[]>([]);
+  const [joinCode, setJoinCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   // 명단 로드 (파트 선택지용)
@@ -138,6 +141,9 @@ function Console() {
       .limit(1);
     const s = (sessions?.[0] as GwpSession) || null;
     setSession(s);
+    if (s && typeof window !== "undefined") {
+      setJoinCode(localStorage.getItem(`gwp-game-code:${s.id}`));
+    }
     if (s) {
       const [{ data: a }, { data: pr }] = await Promise.all([
         supabase.from("gwp_team_assignments").select("*").eq("session_id", s.id),
@@ -253,7 +259,14 @@ function Console() {
         ) : tab === "setup" ? (
           <SetupTab roster={roster} session={session} onChanged={loadSession} />
         ) : tab === "checkin" ? (
-          <CheckinTab session={session} assignments={assignments} count={checkedInCount} onReset={loadSession} />
+          <CheckinTab
+            session={session}
+            assignments={assignments}
+            count={checkedInCount}
+            joinCode={joinCode}
+            setJoinCode={setJoinCode}
+            onReset={loadSession}
+          />
         ) : (
           <GameTab session={session} presses={presses} />
         )}
@@ -296,8 +309,14 @@ function SetupTab({
       return;
     setSaving(true);
     try {
-      await createSession({ title, team_count: teamCount, team_size: teamSize, parts });
-      showSuccessToast("새 게임 세션을 시작했어요");
+      const { session: newSession, code } = await createSession({
+        title,
+        team_count: teamCount,
+        team_size: teamSize,
+        parts,
+      });
+      if (typeof window !== "undefined") localStorage.setItem(`gwp-game-code:${newSession.id}`, code);
+      showSuccessToast(`새 게임 시작! 입장 코드 ${code}`);
       onChanged();
     } catch (e) {
       showErrorToast((e as Error).message);
@@ -396,11 +415,15 @@ function CheckinTab({
   session,
   assignments,
   count,
+  joinCode,
+  setJoinCode,
   onReset,
 }: {
   session: GwpSession | null;
   assignments: GwpAssignment[];
   count: number;
+  joinCode: string | null;
+  setJoinCode: (c: string | null) => void;
   onReset: () => void;
 }) {
   const joinUrl = useMemo(
@@ -409,6 +432,26 @@ function CheckinTab({
   );
 
   if (!session) return <NoSession />;
+
+  const handleRegen = async () => {
+    if (!confirm("입장 코드를 재발급할까요? 새 코드를 화면에 다시 띄워 주세요.")) return;
+    try {
+      const { code } = await regenerateCode(session.id);
+      if (typeof window !== "undefined") localStorage.setItem(`gwp-game-code:${session.id}`, code);
+      setJoinCode(code);
+      showSuccessToast(`새 입장 코드: ${code}`);
+    } catch (e) {
+      showErrorToast((e as Error).message);
+    }
+  };
+
+  const handleToggleCheckin = async () => {
+    try {
+      await setCheckinOpen(session.id, !session.checkin_open); // 세션 UPDATE는 realtime으로 반영
+    } catch (e) {
+      showErrorToast((e as Error).message);
+    }
+  };
 
   const partColor = (part: string) => {
     const idx = session.parts.indexOf(part);
@@ -430,6 +473,32 @@ function CheckinTab({
 
   return (
     <div className="space-y-5">
+      {/* 입장 코드 + 체크인 마감 토글 — 코드는 행사장 화면에 띄우세요 */}
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-amber-600">입장 코드 · 화면에 띄우세요</p>
+          <p className="mt-0.5 text-4xl font-black tracking-[0.25em] text-amber-700 tabular-nums">
+            {joinCode || "----"}
+          </p>
+          {!joinCode && <p className="text-xs font-medium text-amber-500">코드 재발급을 눌러 표시하세요</p>}
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <button
+            onClick={handleToggleCheckin}
+            className={`rounded-full px-4 py-2 text-sm font-bold transition-colors ${
+              session.checkin_open
+                ? "bg-emerald-500 text-white hover:bg-emerald-600"
+                : "bg-slate-200 text-slate-600 hover:bg-slate-300"
+            }`}
+          >
+            {session.checkin_open ? "🟢 체크인 열림 (눌러서 마감)" : "🔴 체크인 마감됨 (눌러서 열기)"}
+          </button>
+          <button onClick={handleRegen} className="text-xs font-bold text-amber-600 hover:text-amber-800">
+            🔄 코드 재발급
+          </button>
+        </div>
+      </div>
+
       {/* QR 배포 + 카운터 */}
       <div className="grid gap-4 sm:grid-cols-[auto_1fr]">
         <div className="flex flex-col items-center rounded-2xl border border-slate-200/60 bg-white p-6 shadow-sm">

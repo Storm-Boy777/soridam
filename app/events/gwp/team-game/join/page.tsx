@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { fetchAttendanceStatus } from "@/lib/api/event-attendance";
-import { checkin, buzz, type GwpSession, type GwpPress } from "@/lib/api/gwp-team-game";
+import { checkin, buzz, verifyCode, type GwpSession, type GwpPress } from "@/lib/api/gwp-team-game";
 import { showErrorToast } from "@/lib/utils/toast";
 
 type RosterMember = { id: string; name: string; department: string | null };
@@ -86,6 +86,14 @@ export default function GwpJoinPage() {
   if (session.status === "ended") return <CenterScreen emoji="🎉">게임이 종료되었어요</CenterScreen>;
 
   if (!me) {
+    if (!session.checkin_open || session.status !== "checkin") {
+      return (
+        <CenterScreen emoji="🔒">
+          체크인이 마감되었어요
+          <span className="mt-1 block text-sm font-medium text-amber-900/50">진행자에게 문의해 주세요</span>
+        </CenterScreen>
+      );
+    }
     return <CheckinView session={session} roster={roster} onCheckedIn={handleCheckedIn} />;
   }
   // 게임 시작 전 = 큰 팀 발표 화면 / 시작 후 = 버저 게임
@@ -150,8 +158,10 @@ function TeamRevealView({
           <span className="text-[6.5rem] font-black leading-none drop-shadow-lg sm:text-[8rem]">{me.team_number}</span>
           <span className="ml-1 mt-7 text-4xl font-black sm:text-5xl">팀</span>
         </div>
-        <div className="mx-auto inline-flex items-center gap-2 rounded-full bg-white/20 px-5 py-2 backdrop-blur">
-          <span className="text-sm font-bold">🎉 같은 팀원을 찾아 인사해 보세요!</span>
+        <div className="mx-auto inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 shadow-lg">
+          <span className="text-base font-black text-slate-900">
+            🪑 {me.team_number}팀 자리로 가서 앉아 주세요
+          </span>
         </div>
 
         {/* 우리 팀원 실시간 명단 */}
@@ -182,8 +192,15 @@ function TeamRevealView({
           </div>
         )}
 
-        <div className="mt-9 flex flex-col items-center gap-2">
-          <div className="flex gap-1.5">
+        <div className="mt-9">
+          <div className="mx-auto max-w-sm rounded-2xl border border-white/20 bg-black/25 px-5 py-4 backdrop-blur">
+            <p className="text-sm font-black text-white">📌 이 화면을 닫지 말고 그대로 둬 주세요</p>
+            <p className="mt-1.5 text-xs leading-relaxed text-white/75">
+              진행자가 게임을 시작하면 이 화면이 <b className="text-white">자동으로</b> 바뀌어요.
+              <br />닫으면 다시 들어와야 해요!
+            </p>
+          </div>
+          <div className="mt-4 flex justify-center gap-1.5">
             {[0, 1, 2].map((i) => (
               <span
                 key={i}
@@ -192,8 +209,6 @@ function TeamRevealView({
               />
             ))}
           </div>
-          <p className="text-sm font-medium text-white/70">게임은 행사 마지막에 진행돼요</p>
-          <p className="text-xs text-white/50">진행자가 시작하면 이 화면이 자동으로 바뀌어요 ✨</p>
         </div>
       </div>
     </div>
@@ -215,6 +230,31 @@ function CheckinView({
   const [dept, setDept] = useState<string | null>(session.parts.length === 1 ? session.parts[0] : null);
   const [busy, setBusy] = useState<string | null>(null);
 
+  // 입장 코드 게이트 (행사장 화면 코드 입력 — 불참자 차단)
+  const [code, setCode] = useState("");
+  const [codeOk, setCodeOk] = useState(false);
+  const [codeErr, setCodeErr] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+
+  const submitCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!code.trim()) return;
+    setVerifying(true);
+    try {
+      const r = await verifyCode(session.id, code.trim());
+      if (r.ok) {
+        setCodeOk(true);
+        setCodeErr(false);
+      } else {
+        setCodeErr(true);
+        setCode("");
+      }
+    } catch {
+      setCodeErr(true);
+    }
+    setVerifying(false);
+  };
+
   // 참가 파트에 속한 멤버만
   const members = useMemo(
     () => roster.filter((m) => m.department && session.parts.includes(m.department)),
@@ -228,7 +268,7 @@ function CheckinView({
   const handlePick = async (m: RosterMember) => {
     setBusy(m.id);
     try {
-      const r = await checkin(session.id, m.id);
+      const r = await checkin(session.id, m.id, code.trim());
       onCheckedIn(
         { member_id: m.id, member_name: r.member_name, team_number: r.team_number, part: r.part },
         session.id,
@@ -238,6 +278,44 @@ function CheckinView({
     }
     setBusy(null);
   };
+
+  // 1단계 — 입장 코드 입력 (행사장 화면 코드)
+  if (!codeOk) {
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center bg-gradient-to-br from-amber-100 via-orange-50 to-rose-100 p-6">
+        <div className="w-full max-w-sm text-center">
+          <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg">
+            <span className="text-3xl">🔐</span>
+          </div>
+          <h1 className="text-2xl font-black text-amber-900">{session.title}</h1>
+          <p className="mt-1 text-sm font-bold text-amber-700/70">행사장 화면의 입장 코드를 입력하세요</p>
+          <form onSubmit={submitCode} className="mt-6">
+            <input
+              autoFocus
+              inputMode="numeric"
+              value={code}
+              onChange={(e) => {
+                setCode(e.target.value.replace(/\D/g, "").slice(0, 6));
+                setCodeErr(false);
+              }}
+              placeholder="• • • •"
+              className={`h-16 w-full rounded-2xl border-2 bg-white/85 text-center text-3xl font-black tracking-[0.4em] text-slate-800 backdrop-blur focus:outline-none ${
+                codeErr ? "border-red-400 bg-red-50" : "border-transparent focus:border-amber-400"
+              }`}
+            />
+            {codeErr && <p className="mt-2 text-sm font-bold text-red-500">코드가 올바르지 않아요</p>}
+            <button
+              type="submit"
+              disabled={!code.trim() || verifying}
+              className="mt-4 h-14 w-full rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-lg font-black text-white shadow-lg transition-all active:scale-[0.98] disabled:opacity-40"
+            >
+              {verifying ? "확인 중…" : "입장"}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-dvh bg-gradient-to-br from-amber-100 via-orange-50 to-rose-100 p-4 pb-16">

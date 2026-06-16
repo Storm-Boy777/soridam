@@ -30,6 +30,11 @@ function json(body: unknown, status = 200) {
   });
 }
 
+// 입장 코드 — 4자리 숫자
+function genCode(): string {
+  return String(Math.floor(1000 + Math.random() * 9000));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -71,14 +76,20 @@ Deno.serve(async (req) => {
           .select()
           .single();
         if (error) throw error;
-        return json({ session: data });
+        // 입장 코드 생성 → 비밀 테이블에 저장 (응답으로만 진행자에게 전달)
+        const code = genCode();
+        const { error: secErr } = await supabase
+          .from("gwp_session_secrets")
+          .insert({ session_id: data.id, join_code: code });
+        if (secErr) throw secErr;
+        return json({ session: data, code });
       }
 
       // ── 세션 설정/상태 변경 ──────────────────────────────
       case "update_session": {
         if (!p.session_id) return json({ error: "session_id 누락" }, 400);
         const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
-        for (const k of ["title", "team_count", "team_size", "parts", "status"]) {
+        for (const k of ["title", "team_count", "team_size", "parts", "status", "checkin_open"]) {
           if (p[k] !== undefined) patch[k] = p[k];
         }
         const { data, error } = await supabase
@@ -91,10 +102,53 @@ Deno.serve(async (req) => {
         return json({ session: data });
       }
 
+      // ── 입장 코드 검증 (체크인 전 사전 확인용) ──────────────
+      case "verify_code": {
+        if (!p.session_id) return json({ error: "session_id 누락" }, 400);
+        const { data: sec } = await supabase
+          .from("gwp_session_secrets")
+          .select("join_code")
+          .eq("session_id", p.session_id)
+          .maybeSingle();
+        const ok = !sec || String(p.code ?? "").trim() === sec.join_code;
+        return json({ ok });
+      }
+
+      // ── 입장 코드 재발급 (진행자) ──────────────────────────
+      case "regenerate_code": {
+        if (!p.session_id) return json({ error: "session_id 누락" }, 400);
+        const code = genCode();
+        const { error } = await supabase
+          .from("gwp_session_secrets")
+          .upsert({ session_id: p.session_id, join_code: code }, { onConflict: "session_id" });
+        if (error) throw error;
+        return json({ code });
+      }
+
       // ── 체크인 → 팀 배정 (RPC, advisory lock으로 동시성 안전) ──
       case "checkin": {
         if (!p.session_id || !p.member_id)
           return json({ error: "session_id / member_id 누락" }, 400);
+
+        // 마감 여부 (게임 시작/수동 마감)
+        const { data: sess, error: sErr } = await supabase
+          .from("gwp_team_sessions")
+          .select("status, checkin_open")
+          .eq("id", p.session_id)
+          .single();
+        if (sErr) throw sErr;
+        if (sess.status !== "checkin" || !sess.checkin_open)
+          return json({ error: "체크인이 마감되었어요", closed: true }, 409);
+
+        // 입장 코드 검증
+        const { data: sec } = await supabase
+          .from("gwp_session_secrets")
+          .select("join_code")
+          .eq("session_id", p.session_id)
+          .maybeSingle();
+        if (sec && String(p.code ?? "").trim() !== sec.join_code)
+          return json({ error: "입장 코드가 올바르지 않아요", bad_code: true }, 403);
+
         const { data, error } = await supabase.rpc("gwp_assign_team", {
           p_session: p.session_id,
           p_member: p.member_id,
