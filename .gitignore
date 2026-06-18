@@ -161,10 +161,14 @@ _backup/
 
 # Local-only experiment / dump files (커밋 금지)
 /local-questions-rows.json
-/temp_*
-/docs/temp_*
+# temp_ 접두 덤프는 어느 디렉터리에 있든 제외 (DB 테이블 CSV 덤프 = 실데이터/PII)
+temp_*
 /docs/질문 DB/*.pdf
 /docs/질문 DB/temp_pages/
+# 루트 데이터 덤프 (questions/매핑 등 일회성)
+/haruopic_questions.csv
+/question_id_mapping.json
+/soridam_questions_complete.json
 
 # Editor / AI assistant configs
 /.kiro/
