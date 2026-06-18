@@ -73,8 +73,20 @@ function detectLongPauses(wpm: number, audioDurationSec: number): number {
   return 0;
 }
 
+// Whisper STT 결과 (verbose_json 기반)
+interface WhisperResult {
+  text: string; // 트랜스크립트 (기존 다운스트림 호환)
+  duration: number; // 정확한 오디오 길이(초) — 비용 로깅용
+  words: { word: string; start: number; end: number }[]; // 단어 타임스탬프 (whisper-1은 단어별 confidence 미제공)
+  lowConfidenceSegments: string[]; // avg_logprob 낮은(흐릿하게 말한) 구간 텍스트
+}
+
+// 저신뢰 구간 임계값: avg_logprob < -0.7 ≈ 확률 0.5 미만 → 흐릿/불확실 발화로 간주
+const LOW_CONFIDENCE_LOGPROB = -0.7;
+
 // Whisper STT 호출
-async function whisperSTT(audioBuffer: ArrayBuffer): Promise<string> {
+// verbatim 정밀도 향상: temperature 0(환각 최소화) + verbose_json(단어 타임스탬프 + 세그먼트 신뢰도)
+async function whisperSTT(audioBuffer: ArrayBuffer): Promise<WhisperResult> {
   const formData = new FormData();
   formData.append(
     "file",
@@ -83,6 +95,11 @@ async function whisperSTT(audioBuffer: ArrayBuffer): Promise<string> {
   );
   formData.append("model", "whisper-1");
   formData.append("language", "en");
+  // 샘플링 환각(없는 관사 삽입 등) 최소화 — greedy 디코딩
+  formData.append("temperature", "0");
+  // 단어 타임스탬프 + 세그먼트별 avg_logprob 확보
+  formData.append("response_format", "verbose_json");
+  formData.append("timestamp_granularities[]", "word");
 
   const resp = await fetch(
     "https://api.openai.com/v1/audio/transcriptions",
@@ -99,7 +116,28 @@ async function whisperSTT(audioBuffer: ArrayBuffer): Promise<string> {
   }
 
   const json = await resp.json();
-  return (json.text || "").trim();
+
+  // 세그먼트별 avg_logprob로 저신뢰(흐릿한) 구간 추출
+  // whisper-1은 단어 단위 confidence를 제공하지 않으므로 세그먼트 단위가 최선
+  const segments = (json.segments ?? []) as Array<{
+    text: string;
+    avg_logprob: number;
+  }>;
+  const lowConfidenceSegments = segments
+    .filter(
+      (s) =>
+        typeof s.avg_logprob === "number" &&
+        s.avg_logprob < LOW_CONFIDENCE_LOGPROB,
+    )
+    .map((s) => (s.text || "").trim())
+    .filter((t) => t.length > 0);
+
+  return {
+    text: (json.text || "").trim(),
+    duration: (json.duration as number) ?? 0,
+    words: (json.words ?? []) as WhisperResult["words"],
+    lowConfidenceSegments,
+  };
 }
 
 // eval_status 업데이트 헬퍼
@@ -268,14 +306,15 @@ Deno.serve(async (req) => {
 
         // Whisper STT (재시도 포함)
         const whisperStart = Date.now();
-        const transcript = await withRetry(
+        const stt = await withRetry(
           () => whisperSTT(audioBuffer),
           3,
           "Whisper STT",
         );
+        const transcript = stt.text;
         const whisperTimeMs = Date.now() - whisperStart;
 
-        // Whisper 사용량 로깅 (실비만 차감)
+        // Whisper 사용량 로깅 (실비만 차감) — duration은 Whisper 응답값 우선(정확), 없으면 blob 추정
         logApiUsage(supabase, {
           user_id: uid,
           session_type: "mock_exam",
@@ -284,7 +323,8 @@ Deno.serve(async (req) => {
           service: "openai_whisper",
           model: "whisper-1",
           ef_name: "mock-test-process",
-          audio_duration_sec: estimateAudioDuration(audioBuffer.byteLength, "wav"),
+          audio_duration_sec:
+            stt.duration || estimateAudioDuration(audioBuffer.byteLength, "wav"),
           processing_time_ms: whisperTimeMs,
         }).catch((err) => console.error("[process] Whisper 로깅 실패:", err?.message));
 
@@ -373,14 +413,23 @@ Deno.serve(async (req) => {
 
     // ── Whisper STT ──
     const whisperStart = Date.now();
-    const transcript = await withRetry(
+    const stt = await withRetry(
       () => whisperSTT(audioBuffer),
       3,
       "Whisper STT",
     );
+    const transcript = stt.text;
     const whisperTimeMs = Date.now() - whisperStart;
 
-    // Whisper 사용량 로깅 (실패해도 메인 로직 중단 안 함)
+    // 저신뢰(흐릿하게 말한) 구간 로깅 — 관사/시제 검출 보정 참고용
+    if (stt.lowConfidenceSegments.length > 0) {
+      console.log(
+        `[process] 저신뢰 구간 ${stt.lowConfidenceSegments.length}개:`,
+        stt.lowConfidenceSegments,
+      );
+    }
+
+    // Whisper 사용량 로깅 (실패해도 메인 로직 중단 안 함) — duration은 Whisper 응답값 우선(정확)
     logApiUsage(supabase, {
       user_id: userId,
       session_type: "mock_exam",
@@ -389,7 +438,7 @@ Deno.serve(async (req) => {
       service: "openai_whisper",
       model: "whisper-1",
       ef_name: "mock-test-process",
-      audio_duration_sec: estimateAudioDuration(audioFileSize, "wav"),
+      audio_duration_sec: stt.duration || estimateAudioDuration(audioFileSize, "wav"),
       processing_time_ms: whisperTimeMs,
     }).catch((err) => console.error("[process] Whisper 로깅 실패:", err?.message));
 
