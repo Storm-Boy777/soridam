@@ -29,6 +29,7 @@ import { QuestionGrid } from "./question-grid";
 import { AvaAvatar } from "./ava-avatar";
 import { EvalWaiting } from "../evaluation/eval-waiting";
 import { TrainingEvalPanel } from "./training-eval-panel";
+import { TranscriptPanel } from "./transcript-panel";
 import { submitAnswer, completeSession } from "@/lib/actions/mock-exam";
 import { TrialBanner } from "@/components/trial/trial-banner";
 import { TrialComplete } from "@/components/trial/trial-complete";
@@ -171,11 +172,14 @@ export function MockExamSession({
 
   // ── 커스텀 훅: 평가 폴링 (체험판이면 비활성) ──
   // 훈련 모드: 시험 중에도 폴링 (개별 평가 결과 실시간 표시)
+  // 실전 감각 훈련: 시험 중 폴링 (문항별 트랜스크립트 준비 즉시 확인)
   // 실전 모드: 평가 대기 화면에서만 폴링
   const evalPolling = useEvalPolling({
     sessionId,
-    enabled: !isTrialMode && !isTranscript && (phase === "waiting" || (isTraining && phase === "exam")),
-    interval: isTraining && phase === "exam" ? 8000 : 5000,
+    enabled:
+      !isTrialMode &&
+      (phase === "waiting" || ((isTraining || isTranscript) && phase === "exam")),
+    interval: (isTraining || isTranscript) && phase === "exam" ? 8000 : 5000,
   });
 
   // 폴링 결과를 로컬 상태에 반영
@@ -191,9 +195,9 @@ export function MockExamSession({
     }
   }, [evalPolling.evalStatuses]);
 
-  // ── 훈련 모드: evalStatusMap 변화 감지 → 평가 완료 알림 ──
+  // ── 훈련/실전 감각: evalStatusMap 변화 감지 → 완료 알림 ──
   useEffect(() => {
-    if (!isTraining) return;
+    if (!isTraining && !isTranscript) return;
     for (const [qStr, status] of Object.entries(evalStatusMap)) {
       const qNum = Number(qStr);
       if (qNum <= 1 || evalNotifiedRef.current.has(qNum)) continue;
@@ -202,7 +206,7 @@ export function MockExamSession({
         if (status === "completed") handleEvalNotify(qNum);
       }
     }
-  }, [evalStatusMap, isTraining, handleEvalNotify]);
+  }, [evalStatusMap, isTraining, isTranscript, handleEvalNotify]);
 
   // ── 업로드 재시도 ref ──
   const uploadRetryRef = useRef(0);
@@ -560,29 +564,50 @@ export function MockExamSession({
         </div>
       </div>
 
-      {/* ── 메인 영역: 평가 뷰 / 세션 뷰 조건부 렌더링 ── */}
-      {isTraining && viewingEvalQNum ? (
-        <TrainingEvalPanel
-          sessionId={sessionId}
-          questionNumber={viewingEvalQNum}
-          questionInfo={(() => {
-            const qId = session.question_ids?.[viewingEvalQNum - 1];
-            const q = qId ? questionsMap.get(qId) : null;
-            return q ? { question_english: q.question_english, question_korean: q.question_korean, question_type_eng: q.question_type_eng, topic: q.topic, category: q.category } : null;
-          })()}
-          onClose={() => setViewingEvalQNum(null)}
-        />
+      {/* ── 메인 영역: 평가/트랜스크립트 뷰 / 세션 뷰 조건부 렌더링 ── */}
+      {(isTraining || isTranscript) && viewingEvalQNum ? (
+        (() => {
+          const qId = session.question_ids?.[viewingEvalQNum - 1];
+          const q = qId ? questionsMap.get(qId) : null;
+          const qInfo = q
+            ? {
+                question_english: q.question_english,
+                question_korean: q.question_korean,
+                question_type_eng: q.question_type_eng,
+                topic: q.topic,
+                category: q.category,
+              }
+            : null;
+          return isTranscript ? (
+            <TranscriptPanel
+              sessionId={sessionId}
+              questionNumber={viewingEvalQNum}
+              questionInfo={qInfo}
+              onClose={() => setViewingEvalQNum(null)}
+            />
+          ) : (
+            <TrainingEvalPanel
+              sessionId={sessionId}
+              questionNumber={viewingEvalQNum}
+              questionInfo={qInfo}
+              onClose={() => setViewingEvalQNum(null)}
+            />
+          );
+        })()
       ) : (
       <div className="mx-auto flex w-full max-w-5xl min-h-0 flex-1 flex-col overflow-hidden px-3 py-2 sm:px-6 sm:py-4 md:min-h-auto md:overflow-visible">
         {/* 5단계 진행 가이드 (relative 컨테이너 — 알림 배너 오버랩용) */}
         <div className="relative mb-2 rounded-xl border border-border bg-surface p-2 md:mb-4 md:p-3">
-          {/* 훈련 모드: 평가 완료 알림 배너 (오버랩) */}
-          {isTraining && evalBanner && (
+          {/* 훈련/실전 감각: 완료 알림 배너 (오버랩) */}
+          {(isTraining || isTranscript) && evalBanner && (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-primary-50/95 animate-fadeIn">
               <div className="flex items-center gap-2 text-xs font-medium text-primary-700">
                 <CheckCircle2 size={14} className="shrink-0" />
                 <span>
-                  <strong>Q{evalBanner}</strong> 평가 완료 — 상단 번호를 눌러 결과를 확인하세요
+                  <strong>Q{evalBanner}</strong>{" "}
+                  {isTranscript
+                    ? "트랜스크립트 준비 완료 — 상단 번호를 눌러 확인하세요"
+                    : "평가 완료 — 상단 번호를 눌러 결과를 확인하세요"}
                 </span>
               </div>
             </div>

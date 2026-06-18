@@ -58,6 +58,9 @@ export function QuestionGrid({
   onReturnToSession,
 }: QuestionGridProps) {
   const isTraining = mode === "training";
+  // 실전 감각 훈련: 완료된 문항을 눌러 트랜스크립트를 바로 확인
+  const isTranscript = mode === "transcript";
+  const allowView = isTraining || isTranscript;
 
   const getStatus = (qNum: number): QStatus => {
     if (qNum === currentQ) return "current";
@@ -79,13 +82,17 @@ export function QuestionGrid({
   };
 
   const handleClick = (qNum: number, status: QStatus) => {
-    // 평가 뷰 중 현재 문항 클릭 → 세션 복귀
+    // 평가/트랜스크립트 뷰 중 현재 문항 클릭 → 세션 복귀
     if (qNum === currentQ && viewingEvalQNum != null && onReturnToSession) {
       onReturnToSession();
       return;
     }
-    // 평가 완료된 문항 → 평가 보기 (훈련 모드)
-    if (status === "eval_done" && isTraining && onEvalClick) {
+    // 완료된 문항 → 평가(훈련) / 트랜스크립트(실전감각) 보기
+    if (
+      allowView &&
+      onEvalClick &&
+      (status === "eval_done" || (isTranscript && status === "eval_failed"))
+    ) {
       onEvalClick(qNum);
       return;
     }
@@ -107,12 +114,18 @@ export function QuestionGrid({
       {Array.from({ length: 15 }, (_, i) => i + 1).map((qNum) => {
         const status = getStatus(qNum);
         const canClick =
-          isTraining &&
-          ((qNum === currentQ && viewingEvalQNum != null) ||
-            (qNum !== currentQ &&
-              (status === "eval_done" ||
-                answeredQuestions.has(qNum) ||
-                skippedQuestions.has(qNum))));
+          // 뷰 열림 상태에서 현재 문항 → 세션 복귀
+          (allowView && qNum === currentQ && viewingEvalQNum != null) ||
+          // 훈련: 완료/답변/스킵 문항 클릭 (이전 이동 포함)
+          (isTraining &&
+            qNum !== currentQ &&
+            (status === "eval_done" ||
+              answeredQuestions.has(qNum) ||
+              skippedQuestions.has(qNum))) ||
+          // 실전 감각: 트랜스크립트 완료/실패 문항만 클릭
+          (isTranscript &&
+            qNum !== currentQ &&
+            (status === "eval_done" || status === "eval_failed"));
 
         const gridCol = qNum > 8 ? { gridColumnStart: qNum - 7 } : undefined;
         const tooltip = TOOLTIP_CONFIG[status];

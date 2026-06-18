@@ -956,3 +956,60 @@ export async function getTranscriptResult(
     return { error: err instanceof Error ? err.message : "결과 조회 실패" };
   }
 }
+
+// ============================================================
+// 12-1. 단일 문항 트랜스크립트 조회 (getAnswerTranscript)
+// transcript 모드 인라인 뷰 전용 — 시험 중 해당 문항만 가볍게 조회
+// (consult 레코드가 없어 getEvaluation을 쓸 수 없음)
+// ============================================================
+
+export interface AnswerTranscriptData {
+  transcript: string | null;
+  word_count: number | null;
+  wpm: number | null;
+  audio_url: string | null;
+  eval_status: string;
+}
+
+export async function getAnswerTranscript(input: {
+  session_id: string;
+  question_number: number;
+}): Promise<ActionResult<AnswerTranscriptData>> {
+  try {
+    const { supabase, userId } = await requireUser();
+
+    // 세션 소유권 검증
+    const { data: session } = await supabase
+      .from(T.mock_test_sessions)
+      .select("user_id")
+      .eq("session_id", input.session_id)
+      .single();
+
+    if (!session || session.user_id !== userId) {
+      return { error: "권한이 없습니다" };
+    }
+
+    const { data: answer, error } = await supabase
+      .from(T.mock_test_answers)
+      .select("transcript, word_count, wpm, audio_url, eval_status")
+      .eq("session_id", input.session_id)
+      .eq("question_number", input.question_number)
+      .maybeSingle();
+
+    if (error || !answer) {
+      return { error: "답변을 찾을 수 없습니다" };
+    }
+
+    return {
+      data: {
+        transcript: answer.transcript,
+        word_count: answer.word_count,
+        wpm: answer.wpm,
+        audio_url: answer.audio_url,
+        eval_status: answer.eval_status,
+      },
+    };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "트랜스크립트 조회 실패" };
+  }
+}
