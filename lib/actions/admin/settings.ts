@@ -6,6 +6,7 @@ import { T } from "@/lib/constants/tables";
 // 설정 키 타입
 export type SettingKey =
   | "maintenance_mode"
+  | "payment_enabled"
   | "payment_provider"
   | "welcome_credit_cents"
   | "signup_enabled"

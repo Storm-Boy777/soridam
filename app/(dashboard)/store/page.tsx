@@ -1,4 +1,5 @@
 import { getAuthClaims } from "@/lib/auth";
+import { isPaymentEnabled } from "@/lib/settings";
 import { StoreContent } from "@/components/store/store-content";
 
 export const metadata = {
@@ -7,7 +8,10 @@ export const metadata = {
 };
 
 export default async function StorePage() {
-  const claims = await getAuthClaims();
+  const [claims, paymentEnabled] = await Promise.all([
+    getAuthClaims(),
+    isPaymentEnabled(),
+  ]);
   const userId = (claims?.sub as string) || "";
 
   return (
@@ -18,7 +22,7 @@ export default async function StorePage() {
           크레딧을 충전하고, AI 학습 기능을 바로 이용하세요.
         </p>
       </div>
-      <StoreContent userId={userId} />
+      <StoreContent userId={userId} paymentEnabled={paymentEnabled} />
     </div>
   );
 }

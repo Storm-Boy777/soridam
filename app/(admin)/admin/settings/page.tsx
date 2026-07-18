@@ -40,6 +40,7 @@ export default function AdminSettingsPage() {
     site_name: "",
     site_description: "",
     og_image_url: "",
+    payment_enabled: true,
     payment_provider: "creem",
     welcome_credit_cents: 0,
     signup_google_enabled: false,
@@ -61,6 +62,9 @@ export default function AdminSettingsPage() {
         site_name: parseVal(settings.site_name),
         site_description: parseVal(settings.site_description),
         og_image_url: parseVal(settings.og_image_url),
+        // 키 부재 시 true — 서버측 isPaymentEnabled()의 폴백과 동일하게 맞춘다.
+        // parseBool()을 쓰면 키가 없을 때 실제로는 결제가 열려 있는데 토글이 꺼져 보인다.
+        payment_enabled: settings.payment_enabled !== false,
         payment_provider: parseVal(settings.payment_provider) || "creem",
         welcome_credit_cents: parseNum(settings.welcome_credit_cents),
         signup_google_enabled: parseBool(settings.signup_google_enabled),
@@ -108,7 +112,7 @@ export default function AdminSettingsPage() {
     setInviteInput("");
   };
 
-  const toggle = async (key: "signup_google_enabled" | "signup_kakao_enabled" | "signup_email_enabled" | "maintenance_mode") => {
+  const toggle = async (key: "signup_google_enabled" | "signup_kakao_enabled" | "signup_email_enabled" | "maintenance_mode" | "payment_enabled") => {
     const newVal = !form[key];
     setForm((f) => ({ ...f, [key]: newVal }));
 
@@ -208,6 +212,16 @@ export default function AdminSettingsPage() {
 
         {/* ── 결제 설정 ── */}
         <Card icon={CreditCard} title="결제 설정">
+          <Field label="크레딧 결제" hint="충전 · 후원 일괄" right>
+            <Toggle
+              enabled={form.payment_enabled}
+              onChange={() => toggle("payment_enabled")}
+              saving={saving === "payment_enabled"}
+              labelOn="판매 중"
+              labelOff="중단"
+              dangerWhenOff
+            />
+          </Field>
           <Field label="결제 Provider">
             <div className="flex items-center gap-3">
               {(["creem", "polar"] as const).map((p) => (
@@ -387,23 +401,31 @@ function SaveIndicator({ onSave, saving, saved, label = "저장" }: { onSave: ()
   );
 }
 
+// danger        — 켜짐이 비정상 상태 (예: 점검 모드)
+// dangerWhenOff — 꺼짐이 비정상 상태 (예: 결제 중단). 둘은 반대 방향이라 별도 플래그.
 function Toggle({
-  enabled, onChange, saving, labelOn, labelOff, danger,
+  enabled, onChange, saving, labelOn, labelOff, danger, dangerWhenOff,
 }: {
-  enabled: boolean; onChange: () => void; saving: boolean; labelOn: string; labelOff: string; danger?: boolean;
+  enabled: boolean; onChange: () => void; saving: boolean; labelOn: string; labelOff: string;
+  danger?: boolean; dangerWhenOff?: boolean;
 }) {
+  const trackClass = enabled
+    ? (danger ? "bg-red-500" : "bg-green-500")
+    : (dangerWhenOff ? "bg-red-400" : "bg-gray-300");
+  const labelClass = enabled
+    ? (danger ? "text-red-600" : "text-green-600")
+    : (dangerWhenOff ? "text-red-600" : "text-foreground-muted");
+
   return (
     <div className="flex items-center gap-2.5">
       <button
         onClick={onChange}
         disabled={saving}
-        className={`flex h-5 w-9 items-center rounded-full px-0.5 transition-colors ${
-          enabled ? (danger ? "bg-red-500" : "bg-green-500") : "bg-gray-300"
-        } disabled:opacity-50`}
+        className={`flex h-5 w-9 items-center rounded-full px-0.5 transition-colors ${trackClass} disabled:opacity-50`}
       >
         <span className={`h-4 w-4 rounded-full bg-white shadow transition-transform ${enabled ? "translate-x-4" : "translate-x-0"}`} />
       </button>
-      <span className={`text-xs font-medium ${enabled ? (danger ? "text-red-600" : "text-green-600") : "text-foreground-muted"}`}>
+      <span className={`text-xs font-medium ${labelClass}`}>
         {enabled ? labelOn : labelOff}
       </span>
       {saving && <Loader2 size={10} className="animate-spin text-foreground-muted" />}

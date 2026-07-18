@@ -16,6 +16,7 @@ import {
   Coins,
   Heart,
   Sparkles,
+  Info,
 } from "lucide-react";
 
 /* ── 잔액 조회 ── */
@@ -69,7 +70,7 @@ const PRODUCT_CARDS = [
 ] as const;
 
 /* ── 메인 컴포넌트 ── */
-export function StoreContent({ userId }: { userId: string }) {
+export function StoreContent({ userId, paymentEnabled = true }: { userId: string; paymentEnabled?: boolean }) {
   const searchParams = useSearchParams();
   const isSuccess = searchParams.get("success") === "true";
   const queryClient = useQueryClient();
@@ -110,6 +111,7 @@ export function StoreContent({ userId }: { userId: string }) {
   });
 
   const handleCheckout = (productKey: keyof typeof PRODUCTS) => {
+    if (!paymentEnabled) return;
     setLoadingProduct(productKey);
     startTransition(async () => {
       const result = await createCheckout(productKey);
@@ -133,6 +135,21 @@ export function StoreContent({ userId }: { userId: string }) {
           <div>
             <p className="text-sm font-bold text-emerald-800">결제가 완료되었습니다!</p>
             <p className="text-sm text-emerald-600">잔액이 곧 반영됩니다.</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── 결제 중단 안내 ── */}
+      {!paymentEnabled && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <Info className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+          <div>
+            <p className="text-sm font-bold text-amber-800">
+              현재 크레딧 충전을 일시 중단하고 있어요.
+            </p>
+            <p className="text-sm text-amber-700">
+              보유하신 크레딧은 그대로 사용하실 수 있어요. 재개되면 다시 안내드릴게요 🙌
+            </p>
           </div>
         </div>
       )}
@@ -193,13 +210,21 @@ export function StoreContent({ userId }: { userId: string }) {
               ) : (
                 <button
                   onClick={() => handleCheckout(card.key)}
-                  disabled={isLoading}
-                  className={`mt-5 w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold transition-colors ${card.buttonClass} disabled:opacity-60`}
+                  disabled={isLoading || !paymentEnabled}
+                  className={`mt-5 w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold transition-colors ${
+                    paymentEnabled
+                      ? `${card.buttonClass} disabled:opacity-60`
+                      : "cursor-not-allowed bg-foreground-muted/15 text-foreground-muted"
+                  }`}
                 >
                   {isLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : null}
-                  {product.creditCents > 0 ? "충전하기" : "후원하기"}
+                  {!paymentEnabled
+                    ? "준비 중"
+                    : product.creditCents > 0
+                      ? "충전하기"
+                      : "후원하기"}
                 </button>
               )}
             </div>

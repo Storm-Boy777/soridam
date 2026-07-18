@@ -2,6 +2,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "./supabase-server";
+import { isPaymentEnabled } from "./settings";
 
 // ── getUser(): Supabase 서버 검증 (34-43ms) ──
 // 최신 데이터가 필요한 곳에 사용: 마이페이지 프로필, Server Actions
@@ -127,11 +128,17 @@ export async function requireCoachingAccess() {
 //   1) 관리자
 //   2) exam_archive_access 보유자
 //   3) polar_balances.balance_cents > 0 (크레딧 잔액 보유)
+//   4) 결제 비활성화 중 — 로그인 사용자 전원 허용
+//      (충전 경로가 막힌 상태에서 3)을 그대로 두면 신규 사용자는 잔액을 만들 방법이
+//       없어 영구 진입 불가가 된다. 결제 재개 시 자동으로 원래 조건으로 복귀.)
 // 비로그인은 false. 호출 측에서 false 시 "관리자에게 문의" 안내.
 export const hasExamArchiveAccess = cache(async () => {
   const user = await getUser();
   if (!user) return false;
   if (user.app_metadata?.role === "admin") return true;
+
+  if (!(await isPaymentEnabled())) return true;
+
   const supabase = await createServerSupabaseClient();
 
   const [{ data: access }, { data: balance }] = await Promise.all([

@@ -36,3 +36,24 @@ export async function getSetting(key: string, fallback: unknown = null): Promise
   const settings = await getSiteSettings();
   return settings[key] ?? fallback;
 }
+
+// ── isPaymentEnabled(): 결제(크레딧 충전·후원) 활성화 여부 ──
+//
+// ⚠️ 위의 getSiteSettings()/getSetting()을 쓰면 안 된다.
+//    60초 모듈 캐시에 무효화 훅이 없어서, 관리자가 토글을 꺼도
+//    서버리스 인스턴스마다 최대 1분간 결제가 열린 채로 남는다.
+//    결제 개시는 저빈도 이벤트라 매번 직접 조회해도 부담이 없다.
+//
+// 키가 없으면 true를 반환한다 — 마이그 108 미적용 상태로 배포됐을 때
+// 결제가 조용히 죽는 사고를 막기 위한 폴백.
+export async function isPaymentEnabled(): Promise<boolean> {
+  const supabase = getServiceClient();
+  const { data } = await supabase
+    .from("system_settings")
+    .select("value")
+    .eq("key", "payment_enabled")
+    .maybeSingle();
+
+  // value는 jsonb — 'false'만 차단, 그 외(true/키 부재/조회 실패)는 허용
+  return data?.value !== false;
+}
