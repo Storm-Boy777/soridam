@@ -63,7 +63,7 @@ export const ANIMATIONS: { key: AnimationType; label: string; icon: string; desc
   { key: "vs-battle", label: "VS배틀", icon: "⚔️", desc: "1:1 대결", multi: false, maxCount: 1 },
   { key: "slot", label: "슬롯머신", icon: "🎰", desc: "최대 8명", multi: true, maxCount: 8 },
   { key: "card-flip", label: "카드뒤집기", icon: "🃏", desc: "최대 10명", multi: true, maxCount: 10 },
-  { key: "list-shuffle", label: "리스트셔플", icon: "📜", desc: "최대 20명", multi: true, maxCount: 20 },
+  { key: "list-shuffle", label: "리스트셔플", icon: "📜", desc: "최대 25명", multi: true, maxCount: 25 },
 ];
 
 interface EventDrawState {

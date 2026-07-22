@@ -59,7 +59,7 @@ export default function ListShuffle({ winners, participants, onComplete }: Props
 
   useEffect(() => {
     winners.forEach((winner, i) => {
-      const delay = i * 800;
+      const delay = i * 500;
       const duration = 5000 + i * 500;
 
       const startTimeout = setTimeout(() => {

@@ -200,7 +200,7 @@ export default function SetupTab({ onRefresh }: SetupTabProps) {
                           <label className="text-[10px] font-bold text-slate-400 mb-1 block">인원</label>
                           <input
                             type="number" min={1}
-                            max={round.mode === "batch" ? (animInfo?.maxCount ?? 20) : undefined}
+                            max={round.mode === "batch" ? (animInfo?.maxCount ?? 25) : undefined}
                             value={round.count}
                             onChange={(e) => updateRound(idx, "count", parseInt(e.target.value) || 1)}
                             className="w-full h-8 px-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 text-xs font-bold text-center focus:outline-none focus:border-blue-400"
