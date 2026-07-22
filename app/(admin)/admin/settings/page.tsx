@@ -190,24 +190,30 @@ export default function AdminSettingsPage() {
 
         {/* ── 이벤트(참석관리) 설정 ── */}
         <Card icon={Settings} title="이벤트(참석관리) 설정">
-          <Field label="전체화면 QR 메인 제목">
+          <Field label="전체화면 QR 메인 제목" hint="{월} 사용 가능">
             <InputWithSave
               value={form.attendance_event_title}
               onChange={(v) => update("attendance_event_title", v)}
               onSave={() => save("attendance_event_title", form.attendance_event_title)}
               saving={saving === "attendance_event_title"}
               saved={saved === "attendance_event_title"}
+              placeholder="{월}월 월례회"
             />
           </Field>
-          <Field label="전체화면 QR 부제">
+          <Field label="전체화면 QR 부제" hint="{월} 사용 가능">
             <InputWithSave
               value={form.attendance_event_subtitle}
               onChange={(v) => update("attendance_event_subtitle", v)}
               onSave={() => save("attendance_event_subtitle", form.attendance_event_subtitle)}
               saving={saving === "attendance_event_subtitle"}
               saved={saved === "attendance_event_subtitle"}
+              placeholder="출석 체크인"
             />
           </Field>
+          <p className="pb-1 text-[10px] leading-relaxed text-foreground-muted">
+            제목에 <code className="rounded bg-surface-secondary px-1 py-0.5 font-mono">{"{월}"}</code>을 넣으면 참석 관리 &gt; QR 체크인 탭의
+            월 선택기 값으로 치환됩니다. (예: <code className="rounded bg-surface-secondary px-1 py-0.5 font-mono">{"{월}월 월례회"}</code> → 7월 월례회)
+          </p>
         </Card>
 
         {/* ── 결제 설정 ── */}

@@ -602,6 +602,40 @@ function MembersTab({ members, onRefresh }: { members: EventMember[]; onRefresh:
   );
 }
 
+// ── 제목 월 토큰 ──────────────────────────────────────────────
+// 관리자 설정의 제목/부제에 `{월}`(또는 `{month}`)을 넣으면 아래 월 선택기 값으로 치환된다.
+// 예) "{월}월 월례회" → "7월 월례회"
+const MONTH_TOKEN = /\{(?:월|month)\}/g;
+const MONTH_STORAGE_KEY = "attendance_event_month";
+
+const applyMonth = (text: string, month: number) => text.replace(MONTH_TOKEN, String(month));
+const hasMonthToken = (...texts: string[]) => texts.some((t) => /\{(?:월|month)\}/.test(t));
+
+// 선택한 월은 "설정한 달" 안에서만 유지된다.
+// (7월에 8월로 미리 맞춰두는 건 되고, 달이 바뀌면 자동으로 그달로 초기화)
+const currentYm = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth() + 1}`;
+};
+
+const loadStoredMonth = (): number | null => {
+  try {
+    const raw = localStorage.getItem(MONTH_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { m?: number; ym?: string };
+    if (parsed.ym !== currentYm()) return null;
+    return Number.isInteger(parsed.m) && parsed.m! >= 1 && parsed.m! <= 12 ? parsed.m! : null;
+  } catch {
+    return null;
+  }
+};
+
+const storeMonth = (month: number) => {
+  try {
+    localStorage.setItem(MONTH_STORAGE_KEY, JSON.stringify({ m: month, ym: currentYm() }));
+  } catch { /* 무시 */ }
+};
+
 // QR 체크인 탭
 function QRTab() {
   const checkinUrl = typeof window !== "undefined"
@@ -611,6 +645,31 @@ function QRTab() {
   const [liveStats, setLiveStats] = useState<{ total: number; attended: number } | null>(null);
   const [eventTitle, setEventTitle] = useState("");
   const [eventSubtitle, setEventSubtitle] = useState("");
+  const [month, setMonth] = useState(() => new Date().getMonth() + 1);
+
+  // 저장된 월 복원 (localStorage는 클라이언트에서만 접근)
+  useEffect(() => {
+    const stored = loadStoredMonth();
+    if (stored !== null) setMonth(stored);
+  }, []);
+
+  const shiftMonth = useCallback((delta: number) => {
+    setMonth((prev) => {
+      const next = ((prev - 1 + delta + 12) % 12) + 1;
+      storeMonth(next);
+      return next;
+    });
+  }, []);
+
+  const resetMonth = useCallback(() => {
+    const now = new Date().getMonth() + 1;
+    setMonth(now);
+    storeMonth(now);
+  }, []);
+
+  const showMonthPicker = hasMonthToken(eventTitle, eventSubtitle);
+  const displayTitle = applyMonth(eventTitle || "이벤트 제목을 설정하세요", month);
+  const displaySubtitle = applyMonth(eventSubtitle || "출석 체크인", month);
 
   // 실시간 폴링 (15초 간격)
   useEffect(() => {
@@ -657,10 +716,10 @@ function QRTab() {
         </div>
 
         <div className="relative flex flex-col items-center gap-8">
-          {/* 타이틀 (관리자 설정 > 이벤트(참석관리) 설정에서 변경 가능) */}
+          {/* 타이틀 (관리자 설정 > 이벤트(참석관리) 설정에서 변경 가능 · {월}은 QR 탭 월 선택기 값) */}
           <div className="text-center">
-            <p className="text-emerald-300/80 text-sm font-semibold uppercase tracking-[0.3em] mb-2">{eventSubtitle || "출석 체크인"}</p>
-            <h1 className="text-white text-3xl sm:text-4xl font-black">{eventTitle || "이벤트 제목을 설정하세요"}</h1>
+            <p className="text-emerald-300/80 text-sm font-semibold uppercase tracking-[0.3em] mb-2">{displaySubtitle}</p>
+            <h1 className="text-white text-3xl sm:text-4xl font-black">{displayTitle}</h1>
           </div>
 
           {/* QR + 카운터 */}
@@ -706,6 +765,50 @@ function QRTab() {
 
   return (
     <div className="space-y-4">
+      {/* 전체화면에 띄울 제목 미리보기 + 월 선택 */}
+      <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/60">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">전체화면 표시 제목</p>
+            <p className="text-[11px] font-bold text-emerald-500 truncate">{displaySubtitle}</p>
+            <p className="text-lg font-black text-slate-800 truncate">{displayTitle}</p>
+          </div>
+
+          {showMonthPicker && (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1">
+                <button onClick={() => shiftMonth(-1)} aria-label="이전 달"
+                  className="w-8 h-8 rounded-lg bg-white text-slate-500 hover:text-emerald-600 shadow-sm flex items-center justify-center transition-colors">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <span className="w-14 text-center text-sm font-black text-slate-800 tabular-nums">{month}월</span>
+                <button onClick={() => shiftMonth(1)} aria-label="다음 달"
+                  className="w-8 h-8 rounded-lg bg-white text-slate-500 hover:text-emerald-600 shadow-sm flex items-center justify-center transition-colors">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+              {month !== new Date().getMonth() + 1 && (
+                <button onClick={resetMonth}
+                  className="px-2.5 py-1.5 text-[11px] font-bold text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors">
+                  이번 달로
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {!showMonthPicker && (
+          <p className="mt-3 text-[11px] text-slate-400 leading-relaxed">
+            관리자 설정 &gt; 이벤트(참석관리) 설정에서 제목을 <code className="px-1 py-0.5 bg-slate-100 rounded font-mono text-slate-500">{"{월}월 월례회"}</code> 형태로 저장하면
+            여기서 월을 바로 바꿀 수 있어요.
+          </p>
+        )}
+      </div>
+
       {/* 전체화면 버튼 */}
       <button onClick={() => setIsFullscreen(true)}
         className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-base rounded-2xl transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0">
