@@ -18,13 +18,13 @@ export default function MyDataPage() {
       {/* 종료 안내 */}
       <div className="mb-6 rounded-2xl bg-[#1A1A2E] px-5 py-5 sm:px-6">
         <p className="text-sm font-bold text-white">
-          AI 기능이 2026년 8월 31일에 종료됩니다
+          AI 기능 종료 안내 · 2026년 8월 31일
         </p>
         <p className="mt-1.5 text-sm leading-relaxed text-white/55">
-          소리담을 더 오래, 건강하게 이어가기 위해 서비스를 개편하면서 크레딧 기반 AI
-          기능을 정리하게 되었습니다. 그동안 만드신 자료는{" "}
+          크레딧 기반 AI 기능이 2026년 8월 31일 종료됩니다. 그동안 만드신 스크립트와 음성은{" "}
           <span className="font-medium text-primary-300">8월 31일까지</span> 내려받으실 수
-          있으며, 이후 순차적으로 삭제됩니다. 잊지 마시고 미리 저장해 두세요.
+          있으며, 이후에는 순차적으로 삭제됩니다. 내려받으시면 인터넷 없이도 계속 학습하실 수
+          있는 프로그램 형태로 제공되니, 미리 받아 두시길 부탁드립니다.
         </p>
       </div>
 
