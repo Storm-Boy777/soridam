@@ -10,7 +10,7 @@ export default function TermsPage() {
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
       <h1 className="text-3xl font-bold">이용약관</h1>
       <p className="mt-2 text-sm text-foreground-muted">
-        시행일: 2026년 2월 18일 | 개정일: 2026년 4월 10일
+        시행일: 2026년 2월 18일 | 개정일: 2026년 7월 18일
       </p>
 
       <div className="mt-10 space-y-10 text-sm leading-relaxed text-foreground-secondary">
@@ -139,7 +139,13 @@ export default function TermsPage() {
               크레딧 충전은 1회성이며, 자동 갱신(정기결제)되지 않습니다.
             </li>
             <li>
-              충전된 크레딧은 유효기간 없이 사용 시까지 유지됩니다.
+              <strong>
+                AI 기능 종료에 따라 크레딧 충전은 2026년 7월 18일자로
+                중단되었으며, 보유하신 크레딧은 2026년 8월 31일까지
+                사용하실 수 있습니다.
+              </strong>{" "}
+              해당 일자 이후 AI 기능 제공이 종료되며 잔여 크레딧은 소멸됩니다.
+              자세한 사항은 제13조에 따릅니다.
             </li>
             <li>
               결제 대행은 Creem을 통해 처리되며, 충전 금액 및 결제 방법은
@@ -261,12 +267,58 @@ export default function TermsPage() {
           </ol>
         </section>
 
+        {/* 제13조 */}
+        <section>
+          <h2 className="text-lg font-semibold text-foreground">
+            제13조 (AI 기능 종료에 관한 특례)
+          </h2>
+          <p className="mt-2">
+            운영자는 서버 및 외부 AI API 비용 부담으로 인해 크레딧 기반 AI
+            기능의 제공을 종료합니다. 이에 관한 사항은 다음과 같습니다.
+          </p>
+          <ol className="mt-2 list-decimal space-y-1 pl-5">
+            <li>
+              <strong>크레딧 충전 중단</strong> — 2026년 7월 18일부로 신규
+              크레딧 충전 및 후원 결제를 중단하였습니다.
+            </li>
+            <li>
+              <strong>크레딧 사용 기한</strong> — 보유하신 크레딧은 2026년 8월
+              31일까지 사용하실 수 있으며, 해당 일자 이후 잔여 크레딧은
+              소멸됩니다.
+            </li>
+            <li>
+              <strong>AI 기능 종료</strong> — 2026년 8월 31일자로 스크립트
+              생성, 모의고사 평가, 튜터링, 쉐도잉 평가, AI 코치 등 크레딧을
+              사용하는 기능의 제공이 종료됩니다.
+            </li>
+            <li>
+              <strong>데이터 보관 및 삭제</strong> — 회원이 생성한 스크립트,
+              음성 파일 및 녹음 자료는 2026년 8월 31일까지 다운로드하실 수
+              있으며, 해당 일자 이후 순차적으로 삭제됩니다.
+            </li>
+            <li>
+              <strong>존속 기능</strong> — 시험 후기, 기출 분석, 오픽 스터디 등
+              AI 기능을 사용하지 않는 서비스는 종료 이후에도 계속 제공됩니다.
+            </li>
+            <li>
+              본 조에 관한 문의는 서비스 내 소통함 또는 제1항의 문의처를 통해
+              접수하실 수 있습니다.
+            </li>
+          </ol>
+        </section>
+
         {/* 부칙 */}
         <section>
           <h2 className="text-lg font-semibold text-foreground">부칙</h2>
           <p className="mt-2">
             이 약관은 2026년 2월 18일부터 시행하며, 2026년 4월 10일 개정된
             내용은 같은 날부터 적용됩니다.
+          </p>
+          <p className="mt-2">
+            2026년 7월 18일 개정된 내용(제6조 제4항, 제13조)은 2026년 7월
+            18일부터 시행합니다. 개정 사유는 크레딧 기반 AI 기능의 제공
+            종료이며, 개정 내용은 회원에게 이메일 및 서비스 내 공지를 통해
+            안내합니다.
           </p>
         </section>
 
