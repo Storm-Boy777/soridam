@@ -218,6 +218,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <span class="time" id="tc">0:00</span>
   <div class="scrub" id="scrub"><div class="fill" id="fill"></div></div>
   <span class="time" id="td">0:00</span>
+  <button class="tog" id="tRep" title="현재 문장 반복">↻ 반복</button>
   <button class="tog on" id="tEn">영어</button>
   <button class="tog on" id="tKo">한글</button>
   <button class="spd" id="spd">1.0×</button>
@@ -230,7 +231,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 var DATA = ${embedJson(scripts)};
 var au = document.getElementById("au");
 var auQ = document.getElementById("auQ");
-var cur = 0, act = -1, follow = true;
+var cur = 0, act = -1, follow = true, rep = false;
 var SPEEDS = [1, 1.25, 1.5, 0.75], sp = 0;
 var IC_PLAY = '<path d="M8 5.5v13l11-6.5z"/>';
 var IC_PAUSE = '<path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/>';
@@ -338,11 +339,16 @@ function scrollTo_(i){
   if(el) el.scrollIntoView({block:"center",behavior:"smooth"});
 }
 au.addEventListener("timeupdate",function(){
+  var arr=sents();
+  // 반복: 현재 문장 끝에 닿으면 그 문장 처음으로 되돌린다
+  if(rep && act>=0 && arr[act] && au.currentTime>=arr[act].end){
+    au.currentTime=arr[act].start; return;
+  }
   var dur=au.duration||0;
   document.getElementById("tc").textContent=s2(au.currentTime);
   if(dur) document.getElementById("fill").style.width=(au.currentTime/dur*100)+"%";
   // 현재 문장 하이라이트 (하단바 진행만, 문장 밑줄 없음)
-  var arr=sents(), found=-1;
+  var found=-1;
   for(var i=0;i<arr.length;i++){
     if(au.currentTime>=arr[i].start && au.currentTime<arr[i].end){ found=i; break; }
   }
@@ -362,6 +368,11 @@ document.getElementById("scrub").onclick=function(e){
 document.getElementById("spd").onclick=function(){
   sp=(sp+1)%SPEEDS.length; au.playbackRate=SPEEDS[sp];
   this.textContent=SPEEDS[sp].toFixed(SPEEDS[sp]%1?2:1).replace(/0$/,"")+"×";
+};
+document.getElementById("tRep").onclick=function(){
+  rep=!rep; this.classList.toggle("on",rep);
+  // 반복을 켰는데 아직 재생 문장이 없으면 첫 문장부터
+  if(rep && act<0 && sents().length) playFrom(0);
 };
 document.getElementById("tEn").onclick=function(){
   var off=document.body.classList.toggle("hide-en"); this.classList.toggle("on",!off);
