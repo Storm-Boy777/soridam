@@ -28,6 +28,7 @@ import {
   BookOpen,
   FlaskConical,
   Coins,
+  Download,
   type LucideIcon,
 } from "lucide-react";
 import { formatUsd } from "@/lib/constants/pricing";
@@ -150,6 +151,23 @@ function CreateTab() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* AI 기능 종료 — 자료 백업 안내 (2026-08-31 이후 제거) */}
+      <a
+        href="/my-data"
+        className="flex items-start gap-2.5 rounded-[var(--radius-xl)] border border-amber-200 bg-amber-50 p-3 transition-colors hover:bg-amber-100 sm:gap-3 sm:p-4"
+      >
+        <Download size={18} className="mt-0.5 shrink-0 text-amber-600" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold text-amber-900">
+            8월 31일까지 내 스크립트를 내려받아 주세요
+          </p>
+          <p className="mt-0.5 text-xs leading-relaxed text-amber-800 sm:text-sm">
+            AI 기능이 2026년 8월 31일에 종료됩니다. 만드신 스크립트와 음성을 내려받으면
+            이후에도 오프라인으로 학습하실 수 있어요 →
+          </p>
+        </div>
+      </a>
+
       {/* 안내 배너 (접이식) */}
       <button
         onClick={() => setBannerOpen(!bannerOpen)}
