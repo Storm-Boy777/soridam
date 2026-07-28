@@ -134,7 +134,7 @@ export async function getMyExportData(): Promise<
   }
 
   // script_id 하나당 패키지는 하나(재생성 시 기존 행 전량 삭제)이나, 방어적으로 마지막 것을 쓴다
-  const pkgByScript = new Map<string, (typeof packages)[number]>();
+  const pkgByScript = new Map<string, NonNullable<typeof packages>[number]>();
   for (const p of packages || []) {
     if (p.status === "completed" && p.wav_file_path) pkgByScript.set(p.script_id, p);
   }

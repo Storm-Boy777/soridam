@@ -73,7 +73,7 @@ export function ExportContent() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const scripts = data && "scripts" in data ? data.scripts : [];
+  const scripts: ExportScript[] = data && "scripts" in data && Array.isArray(data.scripts) ? data.scripts : [];
   const audioCount = scripts.filter((s) => s.audio).length;
   const totalSize = scripts.reduce((sum, s) => sum + (s.audio?.size ?? 0), 0);
   const parts = splitParts(scripts);
