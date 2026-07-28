@@ -273,7 +273,7 @@ export default function TermsPage() {
             제13조 (AI 기능 종료에 관한 특례)
           </h2>
           <p className="mt-2">
-            운영자는 서버 및 외부 AI API 비용 부담으로 인해 크레딧 기반 AI
+            운영자는 서비스의 지속 가능한 운영과 개편을 위해 크레딧 기반 AI
             기능의 제공을 종료합니다. 이에 관한 사항은 다음과 같습니다.
           </p>
           <ol className="mt-2 list-decimal space-y-1 pl-5">

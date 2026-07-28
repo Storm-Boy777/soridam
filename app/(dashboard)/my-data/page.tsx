@@ -21,9 +21,10 @@ export default function MyDataPage() {
           AI 기능이 2026년 8월 31일에 종료됩니다
         </p>
         <p className="mt-1.5 text-sm leading-relaxed text-white/55">
-          서버 운영비 부담으로 크레딧 기반 AI 기능을 정리하게 되었습니다. 그동안 만드신
-          자료는 <span className="font-medium text-primary-300">8월 31일까지</span> 내려받으실
-          수 있으며, 이후 순차적으로 삭제됩니다. 잊지 마시고 미리 저장해 두세요.
+          소리담을 더 오래, 건강하게 이어가기 위해 서비스를 개편하면서 크레딧 기반 AI
+          기능을 정리하게 되었습니다. 그동안 만드신 자료는{" "}
+          <span className="font-medium text-primary-300">8월 31일까지</span> 내려받으실 수
+          있으며, 이후 순차적으로 삭제됩니다. 잊지 마시고 미리 저장해 두세요.
         </p>
       </div>
 
